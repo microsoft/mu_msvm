@@ -1,20 +1,20 @@
 [submodule "MU_BASECORE"]
-	path = MU_BASECORE
-	url = https://github.com/microsoft/mu_basecore.git
-	branch = release/202405
+    path = MU_BASECORE
+    url = https://github.com/microsoft/mu_basecore.git
+    branch = release/202405
 [submodule "Common/MU"]
-	path = Common/MU
-	url = https://github.com/microsoft/mu_plus.git
-	branch = release/202405
+    path = Common/MU
+    url = https://github.com/microsoft/mu_plus.git
+    branch = release/202405
 [submodule "Common/MU_TIANO"]
-	path = Common/MU_TIANO
-	url = https://github.com/microsoft/mu_tiano_plus.git
-	branch = release/202405
+    path = Common/MU_TIANO
+    url = https://github.com/microsoft/mu_tiano_plus.git
+    branch = release/202405
 [submodule "Feature/DEBUGGER"]
-	path = Feature/DEBUGGER
-	url = https://github.com/microsoft/mu_feature_debugger.git
+    path = Feature/DEBUGGER
+    url = https://github.com/microsoft/mu_feature_debugger.git
     branch = main
 [submodule "Silicon/ARM/MU_TIANO"]
-	path = Silicon/ARM/MU_TIANO
-	url = https://github.com/microsoft/mu_silicon_arm_tiano.git
-	branch = release/202405
+    path = Silicon/ARM/MU_TIANO
+    url = https://github.com/microsoft/mu_silicon_arm_tiano.git
+    branch = release/202405
