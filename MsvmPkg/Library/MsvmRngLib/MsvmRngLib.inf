@@ -1,0 +1,68 @@
+## @file
+#  Instance of RNG (Random Number Generator) Library.
+#
+#  BaseRng Library that uses CPU RNG instructions (e.g. RdRand) to
+#  provide random numbers.
+#
+#  Copyright (c) 2023, Arm Limited. All rights reserved.<BR>
+#  Copyright (c) 2021, NUVIA Inc. All rights reserved.<BR>
+#  Copyright (c) 2015, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#
+##
+
+#Override : 00000002 | MdePkg/Library/BaseRngLib/BaseRngLib.inf | 37c64f26382798e13243e768535d16b3 | 2024-10-03T17-42-35 | c59d3eaa5c33d8f515a018072b467d7f196ed84d
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = BaseRngLib
+  MODULE_UNI_FILE                = BaseRngLib.uni
+  FILE_GUID                      = 626440D8-1971-41D9-9AB2-FB25F4AE79BC
+  MODULE_TYPE                    = DXE_DRIVER ## MS_HYP_CHANGE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = RngLib | DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER DXE_RUNTIME_DRIVER ## MS_HYP_CHANGE
+  CONSTRUCTOR                    = MsvmRngLibConstructor ## MS_HYP_CHANGE
+
+#
+#  VALID_ARCHITECTURES           = IA32 X64 AARCH64
+#
+
+[Sources]
+  BaseRng.c
+  BaseRngLibInternals.h
+  MsvmRng.c               ## MS_HYP_CHANGE
+
+[Sources.Ia32, Sources.X64]
+  Rand/RdRand.c
+
+[Sources.AARCH64]
+  AArch64/Rndr.c
+  AArch64/ArmRng.h
+
+  AArch64/ArmRng.S           | GCC
+
+  AArch64/ArmRng.asm         | MSFT
+
+[Guids.AARCH64]
+  gEfiRngAlgorithmArmRndr
+  gEfiRngAlgorithmRaw     ## MS_HYP_CHANGE
+
+[Guids.Ia32, Guids.X64]
+  gEfiRngAlgorithmSp80090Ctr256Guid
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec     ## MS_HYP_CHANGE
+
+[Pcd.AARCH64]
+  gEfiMdePkgTokenSpaceGuid.PcdCpuRngSupportedAlgorithm
+
+[LibraryClasses]
+  BaseLib
+  BiosDeviceLib           ## MS_HYP_CHANGE
+  CrashLib                ## MS_HYP_CHANGE
+  DebugLib
+  IsolationLib            ## MS_HYP_CHANGE

@@ -1,0 +1,74 @@
+## @file
+# Serial driver for standard UARTs on an ISA bus.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SerialDxe
+  FILE_GUID                      = 23510367-1393-4DF8-A7C7-4B86313829C5
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SerialEntryPoint
+
+[Sources]
+  MsvmSerial.h
+  Serial.h
+  ComponentName.c
+  Serial.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Packages.AARCH64]
+  ArmPlatformPkg/ArmPlatformPkg.dec
+
+[LibraryClasses]
+  PcdLib
+  ReportStatusCodeLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  DevicePathLib
+  UefiLib
+  UefiDriverEntryPoint
+  DebugLib
+  ConfigLib
+
+[LibraryClasses.X64]
+  PCUartLib
+
+[LibraryClasses.AARCH64]
+  PL011UartLib
+
+[Guids]
+  gEfiUartDevicePathGuid                        ## CONSUMES
+
+[Protocols]
+  gEfiSerialIoProtocolGuid                      ## PRODUCES
+  gEfiDevicePathProtocolGuid                    ## CONSUMES
+
+[FeaturePcd]
+
+
+[FixedPcd.X64]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialClockRate     ## SOMETIMES_CONSUMES
+
+[FixedPcd.AARCH64]
+  gArmPlatformTokenSpaceGuid.PL011UartClkInHz           ## SOMETIMES_CONSUMES
+
+[FixedPcd]
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate       ## CONSUMES
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultDataBits       ## CONSUMES
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultParity         ## CONSUMES
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultStopBits       ## CONSUMES
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled    ## CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdDebuggerEnabled             ## CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdConsoleMode                 ## CONSUMES

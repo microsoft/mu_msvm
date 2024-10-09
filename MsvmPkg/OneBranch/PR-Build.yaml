@@ -1,0 +1,45 @@
+# https://aka.ms/obpipelines/triggers
+trigger: none
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+
+parameters:
+- name: PublishPRNuget
+  displayName: Publish Nuget Pkg for this PR for testing?
+  type: boolean
+  default: false
+
+variables:
+  Parameters.vPack.pushPkgName: "$(Build.Repository.Name).mscoreuefi.PR.$(Build.Arch).$(Build.Target)"
+  Parameters.vPack.majorVer: "24"
+  Parameters.vPack.minorVer: "0"
+
+extends:
+  template: v2/Microsoft.NonOfficial.yml@templates # https://aka.ms/obpipelines/templates
+  parameters:
+    platform:
+      name: 'windows_undocked'
+    globalSdl:
+      tsa:
+        enabled: false
+    featureFlags:
+      WindowsHostVersion: '1ESWindows2022'
+    nugetPublishing:
+      feeds:
+      - name: OS/HyperVUefi
+        continueOnConflict: false
+        files_to_publish: '*.nupkg;!*.symbols.nupkg'
+    git:
+      submodules: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: MsvmPkg\OneBranch\Build-And-Publish.yaml@self
+        parameters:
+          pipeline: 'PR'
+          publishNuget: ${{parameters.PublishPRNuget}}

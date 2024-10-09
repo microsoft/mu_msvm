@@ -1,0 +1,52 @@
+## @file
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION = 0x00010005
+    BASE_NAME = VpcivscDxe
+    FILE_GUID = 5D1C9F32-965E-432E-B4BF-ED585D4E0896
+    MODULE_TYPE = UEFI_DRIVER
+    VERSION_STRING = 1.0
+    ENTRY_POINT = VpcivscDriverEntryPoint
+
+[Sources]
+    VpcivscDxe.c
+    VpcivscPciIo.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    CrashLib
+    DebugLib
+    DevicePathLib
+    EmclLib
+    IoLib
+    IsolationLib
+    MemoryAllocationLib
+    MmioAllocationLib
+    UefiDriverEntryPoint
+    UefiLib
+    UefiBootServicesTableLib
+
+[Protocols]
+    gEfiVmbusProtocolGuid           #CONSUMES
+    gEfiEmclV2ProtocolGuid          #CONSUMES
+    gEfiPciIoProtocolGuid           #PRODUCES
+
+[Guids]
+    gEfiVmbusChannelDevicePathGuid  #CONSUMES
+    gSyntheticVpciClassGuid         #CONSUMES
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+    gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled
+    gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr

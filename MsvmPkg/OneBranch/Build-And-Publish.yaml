@@ -1,0 +1,182 @@
+parameters:
+- name: pipeline
+  type: string
+  values:
+  - Official
+  - PR
+  default: false
+- name: publishNuget
+  type: boolean
+  default: false
+
+jobs:
+- job: job
+  pool:
+    type: windows
+  strategy:
+    matrix:
+      TARGET_DEBUG_X64:
+        Build.Target: 'DEBUG'
+        Build.Arch: 'x64'
+        Build.Extra: 'BLD_*_DEBUG_NOISY=1 BLD_*_DEBUGLIB_SERIAL=1'
+      TARGET_RELEASE_x64:
+        Build.Target: 'RELEASE'
+        Build.Arch: 'x64'
+        Build.Extra: ''
+      TARGET_DEBUG_AARCH64:
+        Build.Target: 'DEBUG'
+        Build.Arch: 'AARCH64'
+        Build.Extra: ''
+      TARGET_RELEASE_AARCH64:
+        Build.Target: 'RELEASE'
+        Build.Arch: 'AARCH64'
+        Build.Extra: ''
+  variables:
+    Build.ToolChainTag: "VS2022"
+    Env.PythonVersion: "3.12"
+    GIT_TERMINAL_PROMPT: "0"
+    ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+    ob_nugetPublishing_enabled:  ${{parameters.publishNuget}}
+    ob_artifactSuffix: '_$(Build.Arch)_$(Build.Target)'
+    ${{ if eq(parameters.pipeline, 'Official') }}:
+      ob_createvpack_vpackdirectory: '$(ob_outputDirectory)/Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/Bin'
+    PlatformPkg: "MsvmPkg"
+    WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest' # https://aka.ms/obpipelines/containers
+  steps:
+  - task: NuGetAuthenticate@1
+    inputs:
+      nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+  - task: PipAuthenticate@1
+    displayName: 'Pip authenticate'
+    inputs:
+      artifactFeeds: '$(System.TeamProject)/$(System.TeamProject)_PublicPackages'
+  - task: PowerShell@2
+    displayName: 'Update Az Module'
+    inputs:
+      targetType: 'inline'
+      script: |
+        Get-PackageProvider -Name NuGet -ForceBootstrap
+        install-module Az.Accounts -MinimumVersion 2.2.0 -verbose -force -AllowClobber
+        Uninstall-AzureRm -verbose
+  - task: AzurePowerShell@5
+    displayName: 'Set the access token'
+    inputs:
+      azureSubscription: 'hyperv.uefi OneBranch Service Connection'
+      ScriptType: InlineScript
+      azurePowerShellVersion: LatestVersion
+      pwsh: true
+      Inline: |
+        $ado = Get-AzAccessToken -Resource "499b84ac-1321-427f-aa17-267ca6975798"
+        $token = $ado.Token
+        git config --global http.https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore.extraheader "AUTHORIZATION: Bearer $token"
+        git config --global http.https://dev.azure.com/windowspartners/MSCoreUEFI/_git/Core_UEFI_Internal.extraheader "AUTHORIZATION: Bearer $token"
+        git config --global http.https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_tiano_plus.extraheader "AUTHORIZATION: Bearer $token"
+  - task: UsePythonVersion@0
+    displayName: 'Install Python $(Env.PythonVersion)'
+    inputs:
+      versionSpec: '$(Env.PythonVersion)'
+      architecture: 'x64'
+  - task: CmdLine@2
+    displayName: 'Add mu_build pip'
+    inputs:
+      script: python.exe -m pip install --upgrade -r pip_requirement_stable.txt --force-reinstall --no-cache-dir
+  - task: CmdLine@2
+    displayName: 'Platform build Setup'
+    inputs:
+      script: python.exe $(PlatformPkg)/PlatformBuild.py --setup
+  - task: CmdLine@2
+    displayName: 'Platform build Update'
+    inputs:
+      script: python.exe $(PlatformPkg)/PlatformBuild.py --update
+  - task: CmdLine@2
+    displayName: 'Run Build '
+    inputs:
+      script: python.exe $(PlatformPkg)/PlatformBuild.py $(Build.Extra) tool_chain_tag=$(Build.ToolChainTag) BUILDREPORTING=TRUE BUILDREPORT_TYPES="PCD DEPEX FLASH BUILD_FLAGS LIBRARY" TARGET=$(Build.Target) BUILD_ARCH=$(Build.Arch) LaunchLogOnSuccess=FALSE LaunchLogOnError=FALSE
+  - task: CopyFiles@2
+    displayName: "Copy build logs"
+    inputs:
+      targetFolder: "$(Build.ArtifactStagingDirectory)"
+      SourceFolder: "Build"
+      contents: |
+        BuildLog.txt
+        BUILDLOG_*.txt
+        BUILDLOG_*.md
+        **/BUILD_REPORT.txt
+        CI_*.txt
+        CI_*.md
+        CISETUP.txt
+        SETUPLOG.txt
+        UPDATE_LOG.txt
+        PREVALLOG.txt
+        TestSuites.xml
+        **/BUILD_TOOLS_REPORT.html
+        **/OVERRIDELOG.TXT
+        BASETOOLS_BUILD*.*
+        **/FD_REPORT.HTML
+      flattenFolders: true
+    condition: succeededOrFailed()
+  - task: CopyFiles@2
+    continueOnError: true
+    displayName: "Copy Files for 'Publish build logs' publish task"
+    inputs:
+      SourceFolder: "$(Build.ArtifactStagingDirectory)"
+      Contents: '**'
+      TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/Build Logs $(System.JobName)
+    condition: succeededOrFailed()
+  - task: CopyFiles@2
+    displayName: "Copy Files for 'Publish Artifact: Firmware Bin File $(Build.Target)_$(Build.Arch)' publish task"
+    inputs:
+      Contents: 'Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/FV/Msvm.fd'
+      TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/Firmware Binary File $(Build.Target)_$(Build.Arch)
+  - task: CopyFiles@2
+    displayName: "Copy Files for 'Publish Artifact: Firmware PDB Files $(Build.Target)_$(Build.Arch)' publish task"
+    inputs:
+      SourceFolder: 'Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/PDB/'
+      Contents: '**'
+      TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/Firmware PDB Files $(Build.Target)_$(Build.Arch)
+  - task: CopyFiles@2
+    displayName: "Copy Files for 'Publish Artifact: Firmware Map Files $(Build.Target)_$(Build.Arch)' publish task"
+    inputs:
+      SourceFolder: 'Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/MAP/'
+      Contents: '**'
+      TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/Firmware Map Files $(Build.Target)_$(Build.Arch)
+  - task: PublishSymbols@2
+    displayName: 'Publish symbols to the symbol server'
+    inputs:
+      SearchPattern: 'Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/PDB/*.pdb'
+      IndexSources: true
+      SymbolServerType: 'TeamServices'
+      SymbolsProduct: 'Hyper-V UEFI'
+      enablesymbolspublishing: true
+    continueOnError: true
+  - ${{ if eq(parameters.pipeline, 'Official') }}:
+    - task: Powershell@2
+      displayName: 'Compute Hash and copy firmware to vpack folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $LocalCommit = & 'git' rev-parse "@"
+          Write-Host "##vso[task.setvariable variable=Build.CommitHash]$LocalCommit"
+          $folder = "$(ob_outputDirectory)/Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/Bin"
+          New-Item $folder -Type Directory
+          copy-item "Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/FV/Msvm.fd" $folder
+          copy-item "Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/PDB" $folder -Recurse
+          copy-item "Build/Msvm$(Build.Arch)/$(Build.Target)_$(Build.ToolChainTag)/$(Build.Arch)/MsvmPkg/AcpiTables/AcpiTables/OUTPUT/Dsdt.aml" $folder
+          copy-item "MsvmPkg/Include/BiosInterface.h" $folder
+  - ${{ if eq(parameters.publishNuget, true) }}:
+    - task: NuGetCommand@2
+      displayName: 'Pack the NuGet package'
+      inputs:
+        command: 'pack'
+        packagesToPack: '$(PlatformPkg)/HyperVUefi.NuSpec'
+        packDestination: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/packages'
+        packTimezone: 'utc'
+        buildProperties: 'id=$(Build.Repository.Name).mscoreuefi.$(Build.Arch).$(Build.Target);version=$(Parameters.vPack.majorVer).$(Parameters.vPack.minorVer)-$(Build.SourceBranchName).$(Build.SourceVersion)'
+  - task: Powershell@2
+    displayName: 'Unset access token'
+    inputs:
+      targetType: 'inline'
+      script: |
+        git config --global --unset http.https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore.extraheader
+        git config --global --unset http.https://dev.azure.com/windowspartners/MSCoreUEFI/_git/Core_UEFI_Internal.extraheader
+        git config --global --unset http.https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_tiano_plus.extraheader

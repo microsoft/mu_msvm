@@ -1,0 +1,51 @@
+/** @file
+  Defines the WAET fixed ACPI table. This table informs the OS that the
+  RTC and ACPI PM timer are implemented correctly. This dramatically
+  improves performance on operating systems that access these devices
+  during timer ticks, since the workarounds for the bugs involved accessing
+  the virtual hardware registers many more times than actually necessary.
+
+  This is necessary for all supported Windows OSes before Windows 8.
+  Starting in Windows 8, the hypervisor reference timer and synthetic
+  interrupt timers are used instead of the PM timer and RTC, respectively.
+
+  It is also necessary for Windows 8 when the PCI bus is present and labeled
+  a PIIX4, since Windows 8 will bugcheck if the ACPI_PM_TIMER_GOOD_FLAG
+  is not set. This is despite the fact though Windows 8 does not use the PM
+  timer when running on a Hyper-V VM.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+#include <Base.h>
+#include <AcpiTables.h>
+
+#define RTC_GOOD_FLAG               0x00000001
+#define ACPI_PM_TIMER_GOOD_FLAG     0x00000002
+
+#pragma pack(push, 1)
+
+typedef struct
+{
+    EFI_ACPI_DESCRIPTION_HEADER Header;
+    UINT32 Flags;
+} WINDOWS_ACPI_EMULATED_DEVICES_TABLE;
+
+#pragma pack(pop)
+
+WINDOWS_ACPI_EMULATED_DEVICES_TABLE WAET =
+{
+    STANDARD_HEADER(EFI_ACPI_6_2_WINDOWS_ACPI_EMULATED_DEVICES_TABLE_SIGNATURE,
+                    sizeof(WINDOWS_ACPI_EMULATED_DEVICES_TABLE),
+                    1)
+    RTC_GOOD_FLAG | ACPI_PM_TIMER_GOOD_FLAG
+};
+
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &WAET;
+}
+

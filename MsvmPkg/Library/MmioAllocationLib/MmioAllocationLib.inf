@@ -1,0 +1,36 @@
+## @file
+#  MMIO allocation library
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = MmioAllocationLib
+  FILE_GUID                      = BD3BD6AB-E716-47AE-BCD4-C635A382E44B
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MmioAllocationLib|DXE_CORE DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER
+  CONSTRUCTOR                    = MmioAllocationLibConstructor
+
+[Sources]
+  MmioAllocationLib.c
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  EventLogLib
+  MemoryAllocationLib
+  PcdLib
+  UefiBootServicesTableLib
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber
+  gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages

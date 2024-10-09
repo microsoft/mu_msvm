@@ -1,0 +1,103 @@
+## @file
+#  ACPI Platform Driver
+#
+#  Copyright (c) 2008 - 2010, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = AcpiPlatform
+  FILE_GUID                      = cb933912-df8f-4305-b1f9-7b44fa11395c
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AcpiPlatformInitializeAcpiTables
+
+[Sources]
+    AcpiPlatform.c
+    Dsdt.c
+    Facp.c
+    Oem0.c
+    spcr.c
+    wdat.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[Packages.AARCH64]
+    ArmPkg/ArmPkg.dec
+
+[LibraryClasses]
+    BaseMemoryLib
+    ConfigLib
+    DebugLib
+    DxeServicesLib
+    IoLib
+    IsolationLib
+    PcdLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiLib
+
+[Protocols]
+    gEfiAcpiTableProtocolGuid                     ## CONSUMES
+
+[Pcd]
+    gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiTableStorageFile      ## CONSUMES
+    gEfiMdePkgTokenSpaceGuid.PcdDefaultTerminalType             ## CONSUMES
+    gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate             ## CONSUMES
+    gEfiMdePkgTokenSpaceGuid.PcdUartDefaultParity               ## CONSUMES
+    gEfiMdePkgTokenSpaceGuid.PcdUartDefaultStopBits             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr                      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize                     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom1RegisterBase                  ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom1Vector                        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase                  ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom2Vector                        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdConsoleMode                       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdDebuggerEnabled                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdEntropyPtr                        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHibernateEnabled                  ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdLoadOempTable                     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapBasePageNumber          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapSizeInPages             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdLowPowerS0IdleEnabled             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMadtPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMadtSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMcfgPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMcfgSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSsdtPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSsdtSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdNvdimmCount                       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdPpttPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdPpttSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcessorCount                    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled                  ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSlitPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSlitSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSratPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSratSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHmatPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHmatSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdTpmEnabled                        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled                   ## CONSUMES
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress          ## PRODUCES
+    gMsvmPkgTokenSpaceGuid.PcdAsptPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdAsptSize                          ## CONSUMES
+
+[Depex]
+    gEfiAcpiTableProtocolGuid
+

@@ -1,0 +1,773 @@
+/** @file
+  Defines the Microsoft Hardware Watchdog Action Table. This table informs the OS that
+  hardware support for a watchdog is provided.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+/*++
+
+Each WDAT instruction is exposed as two entires in the WDAT table (for compatibility with VMWP
+architecure). The first entry informs the VMWP the IoPort/MMIO hole to operate on. The second
+instruction performs a read/write on the requested register (IoPort/MMIO hole). These
+read/writes are plumbed through the BiosWdatDataPort and operate on BiosWatchdog registers
+(BiosConfigWatchdogConfig & BiosConfigWatchdogCount).
+
+//
+// Values for the BiosConfigWatchdogConfig DWORD.
+// Update BIOS_WATCHDOG_VALID_CONFIG_BITS as new values are added.
+//
+#define BIOS_WATCHDOG_CONFIGURED    0x00000001
+#define BIOS_WATCHDOG_ENABLED       0x00000002
+#define BIOS_WATCHDOG_ONE_SHOT      0x00000010
+#define BIOS_WATCHDOG_BOOT_STATUS   0x00000100
+#define BIOS_WATCHDOG_FOR_GUEST     0x00001000
+
+//
+// The WDAT instructions exposed to the guest are:
+//
+1. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_RESET - Set 'configured' and 'enabled' bit for the register
+        BiosConfigWatchdogConfig. Setting 'enabled' bit restarts watchdog timer.
+
+2. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_COUNTDOWN_PERIOD - Value in BiosConfigWatchdogCount
+        register is read by the guest.
+
+3. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_COUNTDOWN_PERIOD - Value provided by the guest is assigned to
+        the BiosConfigWatchdogCount register.
+
+4. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_RUNNING_STATE - Value in the BiosConfigWatchdogConfig
+        register is read by the guest. Watchdog is enabled if 'configured' and 'enabled' bits are set.
+
+5. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_RUNNING_STATE - 'configured' and 'enabled' bits of the
+        BiosConfigWatchdogConfig register are set. This enables the watchdog and starts the timer.
+
+6. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_STOPPED_STATE - Value in the BiosConfigWatchdogConfig
+        register is read by the guest. Watchdog is in the stopped state if 'configured' bit is set
+        and 'enabled' bit is not set.
+
+7. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_STOPPED_STATE - 'configured' bit of BiosConfigWatchdogConfig
+        register is set and 'enabled' bit is cleared. This stops the watchdog and the timer.
+
+8. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_WATCHDOG_STATUS - Value in the BiosConfigWatchdogConfig
+        register is read by the guest. Previous guest reset was a result of the watchdog if the
+        'boot status' bit is set.
+
+9. EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_WATCHDOG_STATUS - 'boot status' bit of the
+        BiosConfigWatchdogConfig register is set. This is the protocol to clear the bit.
+
+--*/
+
+#include <Base.h>
+#include <AcpiTables.h>
+
+#define EFI_ACPI_WATCHDOG_ACTION_1_0_TABLE_SIZE sizeof(EFI_ACPI_WATCHDOG_ACTION_1_0_TABLE)
+#define WATCHDOG_HEADER_SIZE EFI_ACPI_WATCHDOG_ACTION_1_0_TABLE_SIZE - sizeof(EFI_ACPI_DESCRIPTION_HEADER)
+#define VM_HARDWARE_WATCHDOG_FLAGS (EFI_ACPI_WDAT_1_0_WATCHDOG_ENABLED | EFI_ACPI_WDAT_1_0_WATCHDOG_STOPPED_IN_SLEEP_STATE)
+
+//
+// TimerPeriod is 1s (1000ms)
+//
+#define VM_HARDWARE_TIMERPERIOD 0x3E8
+
+//
+// Any changes to VM_HARDWARE_WATCHDOG_MIN_COUNT should also be reflected
+// on the host side.
+//
+#define VM_HARDWARE_WATCHDOG_MIN_COUNT 0x5
+#define VM_HARDWARE_WATCHDOG_MAX_COUNT 0xFFFF
+
+#if defined(MDE_CPU_X64)
+
+VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
+{
+    {
+        STANDARD_HEADER(EFI_ACPI_6_2_WATCHDOG_ACTION_TABLE_SIGNATURE,
+                        sizeof(VM_HARDWARE_WATCHDOG_ACTION_TABLE),
+                        EFI_ACPI_WATCHDOG_ACTION_1_0_TABLE_REVISION)
+        WATCHDOG_HEADER_SIZE,      // WatchdogHeaderLength
+        0xFF,                      // PciSegment
+        0xFF,                      // PciBusNumber
+        0xFF,                      // PciDeviceNumber
+        0xFF,                      // PciFunctionNumber
+        {                          // Reserved_45[3]
+            0,
+            0,
+            0
+        },
+        VM_HARDWARE_TIMERPERIOD,   // TimerPeriod in milli-seconds
+        VM_HARDWARE_WATCHDOG_MAX_COUNT, // MaximumCount
+        VM_HARDWARE_WATCHDOG_MIN_COUNT, // MinimumCount
+        VM_HARDWARE_WATCHDOG_FLAGS,// WatchdogFlags
+        {                          // Reserved_61[3]
+            0,
+            0,
+            0
+        },
+        VM_HARDWARE_WATCHDOG_ACTION_COUNT, // Number of Watchdog instruction entries
+    },
+    {                              // Watchdog Instruction Entries
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_RESET, // WatchdogAction_reset
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_RESET, // WatchdogAction_reset
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000003,            // Value (configured & enabled)
+            0x0000000F             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_COUNTDOWN_PERIOD, // WatchdogAction_query_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogCount, // Value (watchdog count register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_COUNTDOWN_PERIOD, // WatchdogAction_query_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_COUNTDOWN, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0xFFFFFFFF,            // Value is ignored
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_COUNTDOWN_PERIOD, // WatchdogAction_set_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  //AddressRegisterOffset
+            },
+            BiosConfigWatchdogCount, // Value (watchdog count register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_COUNTDOWN_PERIOD, // WatchdogAction_set_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_COUNTDOWN, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  //DataRegisterOffset
+            },
+            0xFFFFFFFF,            // Value is ignored
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_RUNNING_STATE, // WatchdogAction_query_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_RUNNING_STATE, // WatchdogAction_query_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000003,            // Value (configured & enabled)
+            0x0000000F             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_RUNNING_STATE, // WatchdogAction_set_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                 // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF            // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_RUNNING_STATE, // WatchdogAction_set_running
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000003,            // Value (configured & enabled)
+            0x0000000F             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_STOPPED_STATE, // WatchdogAction_query_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_STOPPED_STATE, // WatchdogAction_query_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000001,            // Value (configured)
+            0x0000000F             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_STOPPED_STATE, // WatchdogAction_set_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_STOPPED_STATE, // WatchdogAction_set_stopped
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000001,            // Value (configured)
+            0x0000000F             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_WATCHDOG_STATUS, // WatchdogAction_query_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // DataRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (configured)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_WATCHDOG_STATUS, // WatchdogAction_query_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000100,            // Value (status bit)
+            0x00000F00             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_WATCHDOG_STATUS, // WatchdogAction_clear_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_WATCHDOG_STATUS, // WatchdogAction_clear_status
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_IO,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000100,            // Value (write to status it to clear it)
+            0x00000F00             // Mask
+        },
+    },
+};
+
+#elif defined(MDE_CPU_AARCH64)
+VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
+{
+    {
+        STANDARD_HEADER(EFI_ACPI_6_2_WATCHDOG_ACTION_TABLE_SIGNATURE,
+                        sizeof(VM_HARDWARE_WATCHDOG_ACTION_TABLE),
+                        EFI_ACPI_WATCHDOG_ACTION_1_0_TABLE_REVISION)
+        WATCHDOG_HEADER_SIZE,      // WatchdogHeaderLength
+        0xFF,                      // PciSegment
+        0xFF,                      // PciBusNumber
+        0xFF,                      // PciDeviceNumber
+        0xFF,                      // PciFunctionNumber
+        {                          // Reserved_45[3]
+            0,
+            0,
+            0
+        },
+        VM_HARDWARE_TIMERPERIOD,   // TimerPeriod in milli-seconds (1000ms = 1s)
+        VM_HARDWARE_WATCHDOG_MAX_COUNT, // MaximumCount
+        VM_HARDWARE_WATCHDOG_MIN_COUNT, // MinimumCount
+        VM_HARDWARE_WATCHDOG_FLAGS,// WatchdogFlags
+        {                          // Reserved_61[3]
+            0,
+            0,
+            0
+        },
+        VM_HARDWARE_WATCHDOG_ACTION_COUNT, // Number of Watchdog instruction entries
+    },
+    {                              // Watchdog Instruction Entries
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_RESET, // WatchdogAction_reset
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig,// Value (watchdog config register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_RESET, // WatchdogAction_reset
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0x00000003,             // Value (configured & enabled)
+            0x0000000F              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_COUNTDOWN_PERIOD, // WatchdogAction_query_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                // AddressRegisterOffset
+            },
+            BiosConfigWatchdogCount,// Value (watchdog count register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_COUNTDOWN_PERIOD, // WatchdogAction_query_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_COUNTDOWN, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0xFFFFFFFF,             // Value is ignored
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_COUNTDOWN_PERIOD, // WatchdogAction_set_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                //AddressRegisterOffset
+            },
+            BiosConfigWatchdogCount,// Value (watchdog count register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_COUNTDOWN_PERIOD, // WatchdogAction_set_countdown
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_COUNTDOWN, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                //DataRegisterOffset
+            },
+            0xFFFFFFFF,             // Value is ignored
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_RUNNING_STATE, // WatchdogAction_query_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig,// Value (watchdog config register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_RUNNING_STATE, // WatchdogAction_query_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0x00000003,             // Value (configured & enabled)
+            0x0000000F              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_RUNNING_STATE, // WatchdogAction_set_running
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0               // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig,// Value (watchdog config register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_RUNNING_STATE, // WatchdogAction_set_running
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0x00000003,             // Value (configured & enabled)
+            0x0000000F              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_STOPPED_STATE, // WatchdogAction_query_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_STOPPED_STATE, // WatchdogAction_query_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0x00000001,             // Value (configured)
+            0x0000000F              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_STOPPED_STATE, // WatchdogAction_set_stopped
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_STOPPED_STATE, // WatchdogAction_set_stopped
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                // DataRegisterOffset
+            },
+            0x00000001,             // Value (configured)
+            0x0000000F              // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_WATCHDOG_STATUS, // WatchdogAction_query_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // DataRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (configured)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_QUERY_WATCHDOG_STATUS, // WatchdogAction_query_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_READ_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000100,            // Value (status bit)
+            0x00000100             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_WATCHDOG_STATUS, // WatchdogAction_clear_status
+            EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE, // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                0                  // AddressRegisterOffset
+            },
+            BiosConfigWatchdogConfig, // Value (watchdog config register)
+            0xFFFFFFFF             // Mask
+        },
+        {
+            EFI_ACPI_WDAT_1_0_WATCHDOG_ACTION_SET_WATCHDOG_STATUS, // WatchdogAction_clear_status
+            (EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_WRITE_VALUE |
+             EFI_ACPI_WDAT_1_0_WATCHDOG_INSTRUCTION_PRESERVE_REGISTER), // InstructionFlags
+            {                      // Reserved_2[2]
+                0,
+                0
+            },
+            {                      // RegisterRegion (address populated during initalization)
+                EFI_ACPI_6_2_SYSTEM_MEMORY,
+                32,
+                0,
+                EFI_ACPI_6_2_DWORD,
+                4                  // DataRegisterOffset
+            },
+            0x00000000,            // Value (clear status)
+            0x00000100             // Mask
+        },
+    },
+};
+
+#else
+#error Unsupported Architecture
+#endif
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &WDAT;
+}

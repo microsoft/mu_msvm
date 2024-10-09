@@ -1,0 +1,58 @@
+## @file
+# Ps2 Keyboard UEFI Driver which produce gEfiSimpleTextInProtocolGuid and gEfiSimpleTextInputExProtocolGuid
+# protocol.
+# The keyboard type implemented follows IBM compatible PS2 protocol, with Scan Codes Set 1.
+#
+# This dirver directly uses IsaIo protocol service to support KeyBoard work.
+#
+# Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = SynthKeyDxe
+    FILE_GUID                      = 8d5ea93e-f438-464b-aa26-00165028a7a6
+    MODULE_TYPE                    = UEFI_DRIVER
+    VERSION_STRING                 = 1.0
+    ENTRY_POINT                    = SynthKeyDriverEntry
+
+[Sources]
+    ComponentName.c
+    SynthSimpleTextIn.c
+    SynthKeyChannel.c
+    SynthKeyDxe.c
+    SynthKeyLayout.c
+
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    DebugLib
+    EmclLib
+    MemoryAllocationLib
+    PcdLib
+    ReportStatusCodeLib
+    TimerLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiLib
+    UefiRuntimeServicesTableLib
+
+
+[Protocols]
+    gEfiVmbusProtocolGuid                   ## CONSUMES
+    gEfiEmclProtocolGuid                    ## CONSUMES
+    gEfiDevicePathProtocolGuid              ## CONSUMES
+    gEfiSimpleTextInProtocolGuid            ## PRODUCES
+    gEfiSimpleTextInputExProtocolGuid       ## PRODUCES
+
+[Guids]
+    gEfiVmbusChannelDevicePathGuid          ## CONSUMES
+    gSyntheticKeyboardClassGuid             ## CONSUMES

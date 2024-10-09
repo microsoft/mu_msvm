@@ -1,0 +1,26 @@
+## @file
+#  Watchdog Timer Library instance.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = MsvmWatchdogTimerLib
+  FILE_GUID                      = 5AC0AB9B-AC06-43F9-AFF9-89E13FD17008
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = WatchdogTimerLib
+
+[Sources]
+  WatchdogTimerLib.c
+
+[LibraryClasses]
+  BiosDeviceLib
+  IsolationLib
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec

@@ -1,0 +1,30 @@
+/** @file
+  Defines the OEM0 fixed ACPI table. This table is used to provide initial
+  entropy to the VM during boot for the random number generator. It is
+  initialized in the worker process with random data.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+#include <Base.h>
+#include <AcpiTables.h>
+
+VM_ACPI_ENTROPY_TABLE OEM0 =
+{
+    STANDARD_HEADER(VM_ACPI_ENTROPY_TABLE_SIGNATURE,
+                    sizeof(VM_ACPI_ENTROPY_TABLE),
+                    1)
+
+    //
+    // The data will be initialized at runtime.
+    //
+};
+
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &OEM0;
+}
+

@@ -1,0 +1,35 @@
+## @file
+#  This instance of the Tcg2PhysicalPresencePromptLib approves all requests without prompting.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+# MS_CHANGE: Entire file created.
+
+[Defines]
+  INF_VERSION         = 0x00010017
+  BASE_NAME           = Tcg2PhysicalPresencePromptLibApprove
+  FILE_GUID           = 9515E7CC-3320-4E2E-AFD9-1FEBFDBEFF69
+  VERSION_STRING      = 1.0
+  MODULE_TYPE         = DXE_DRIVER
+  LIBRARY_CLASS       = Tcg2PhysicalPresencePromptLib|DXE_DRIVER
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64
+#
+
+
+[Sources]
+  Tcg2PhysicalPresencePromptLibApprove.c
+
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+
+[LibraryClasses]
+  BaseLib

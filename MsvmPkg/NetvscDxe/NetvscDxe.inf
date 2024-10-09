@@ -1,0 +1,88 @@
+## @file
+#  This module produces EFI SNP Protocol.
+#
+#  This module produces Simple Network Protocol upon EFI Network Interface
+#  Identifier Protocol, to provide a packet level interface to a network adapter.
+#
+#  Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+#Override : 00000002 | NetworkPkg/SnpDxe/SnpDxe.inf | 6de8f98fe6ab90e0008e85b2bb4062eb | 2024-09-27T00-21-20 | f77e9e031e954b294b0d282e9f46ec526f811de6
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = NetvscDxe
+  FILE_GUID                      = d2c1389f-e54f-4b33-a4b3-231b373ca37f
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = InitializeSnpDriver
+  UNLOAD_IMAGE                   = NetLibDefaultUnload
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 EBC
+#
+#  DRIVER_BINDING                =  mSimpleNetworkDriverBinding
+#  COMPONENT_NAME                =  gSimpleNetworkComponentName
+#  COMPONENT_NAME2               =  gSimpleNetworkComponentName2
+#
+
+[Sources]
+  Receive.c
+  Snp.h
+  Nvdata.c
+  Get_status.c
+  Start.c
+  Snp.c
+  Stop.c
+  Statistics.c
+  Reset.c
+  Shutdown.c
+  Mcast_ip_to_mac.c
+  Transmit.c
+  WaitForPacket.c
+  Receive_filters.c
+  Initialize.c
+  ComponentName.c
+  Station_address.c
+  NetvscDxe.c                     ## MS_HYP_CHANGE
+  NetvscDxe.h                     ## MS_HYP_CHANGE
+
+[Packages]
+  MdeModulePkg/MdeModulePkg.dec   ## MS_HYP_CHANGE
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec             ## MS_HYP_CHANGE
+  NetworkPkg/NetworkPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  EmclLib
+  IsolationLib
+  NetLib
+  PcdLib
+  PrintLib
+  UefiDriverEntryPoint
+
+[Guids]
+  # MU_CHANGE [BEGIN] - Shutdown SnpDxe in BeforeExitBootServices
+  #  gEfiEventExitBootServicesGuid                 ## SOMETIMES_CONSUMES ## Event
+  gEfiEventBeforeExitBootServicesGuid           ## SOMETIMES_CONSUMES ## Event
+  gSnpNetworkInitializedEventGuid               ## SOMETIMES_PRODUCES ## MU_CHANGE - Signal
+  # MU_CHANGE [END]
+  gEfiVmbusChannelDevicePathGuid                # CONSUMES MS_HYP_CHANGE
+  gSyntheticNetworkClassGuid                    # CONSUMES MS_HYP_CHANGE
+
+[Protocols]
+  gEfiSimpleNetworkProtocolGuid                 # PRODUCES
+  gEfiDevicePathProtocolGuid                    # PRODUCES
+  gEfiEmclProtocolGuid                          # CONSUMES MS_HYP_CHANGE
+  gEfiVmbusProtocolGuid                         # CONSUMES MS_HYP_CHANGE
+  gInternalEventServicesProtocolGuid            # CONSUMES MS_HYP_CHANGE
+
+[Pcd]
+  gEfiNetworkPkgTokenSpaceGuid.PcdSnpCreateExitBootServicesEvent   ## CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdMediaPresentEnabledByDefault           ## CONSUMES MS_HYP_CHANGE

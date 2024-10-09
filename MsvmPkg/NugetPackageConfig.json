@@ -1,0 +1,8 @@
+{
+    "name": "HyperVUefi",
+    "author_string": "HyperV",
+    "server_url": "https://api.nuget.org/v3/index.json",
+    "project_url": "https://microsoft.visualstudio.com/DefaultCollection/OS/_git/hyperv.uefi/",
+    "description_string": "Hyper-V UEFI firmware binaries.",
+    "copyright_string": "Copyright (C) Microsoft."
+}

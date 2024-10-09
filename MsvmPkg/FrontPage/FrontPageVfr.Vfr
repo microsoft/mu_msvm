@@ -1,0 +1,129 @@
+// *++
+// VFR file used for the Hyper-V FrontPage driver.
+//
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+// --*/
+
+#include <Guid/FrontPageEventDataStruct.h>
+#include "FrontPageVfr.h"
+
+
+//
+// Hyper-V UEFI Front Page Formset
+//
+formset
+
+  //
+  // Common Formset values
+  //
+  guid      = FRONT_PAGE_CONFIG_FORMSET_GUID,           // Formset GUID
+  title     = STRING_TOKEN(STR_FRONT_PAGE_TITLE),       // Formset title (ex: "Hyper-V UEFI")
+  help      = STRING_TOKEN(STR_NULL_STRING),            // Formset help: None
+  classguid = FRONT_PAGE_CONFIG_FORMSET_GUID,           // Formset class GUID
+  class     = FRONT_PAGE_CLASS,                         // Formset class
+  subclass  = FRONT_PAGE_SUBCLASS,                      // Formset subclass
+
+  //
+  // Formset variable store (settings)
+  //
+  varstore FRONT_PAGE_HACK,
+    varid = FRONT_PAGE_HACK_VARID,
+    name  = FrontPageHack,                                      // Settings variable name
+    guid  = FRONT_PAGE_CONFIG_FORMSET_GUID;                     // Settings GUID
+
+  //
+  // Formset variable store (settings)
+  //
+  varstore FRONT_PAGE_SECURITY_CONFIGURATION,
+    varid = FRONT_PAGE_SECURITY_VARID,
+    name  = FrontPageSecurity,                                  // Settings variable name
+    guid  = FRONT_PAGE_CONFIG_FORMSET_GUID;                     // Settings GUID
+
+  //
+  // Formset variable store (settings)
+  //
+  varstore FRONT_PAGE_GRAYOUT_CONFIGURATION,
+    varid = FRONT_PAGE_GRAYOUT_VARID,
+    name  = FrontPageGrayOut,                                  // Settings variable name
+    guid  = FRONT_PAGE_CONFIG_FORMSET_GUID;                    // Settings GUID
+
+  //
+  // Formset variable store (settings)
+  //
+  varstore FRONT_PAGE_DEVICE_CONFIGURATION,
+    varid = FRONT_PAGE_DEVICE_VARID,
+    name  = FrontPageDeviceConfig,                            // Settings variable name
+    guid  = FRONT_PAGE_CONFIG_FORMSET_GUID;                    // Settings GUID
+
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Form ID 7: Boot Summary
+  //
+  form formid = FRONT_PAGE_FORM_ID_BOOT_SUMMARY,                                        // Boot Summary form
+    title  = STRING_TOKEN(STR_BOOT_SUMMARY_MENU_TITLE);
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Header
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_HEADER);                                  //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // SPACING
+      text    = STRING_TOKEN(STR_NULL_STRING);                                          //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_DEVICE_1);                                //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_ERROR_1);                                 //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_DEVICE_2);                                //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_ERROR_2);                                 //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_DEVICE_3);                                //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_ERROR_3);                                 //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_DEVICE_4);                                //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_ERROR_4);                                 //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_DEVICE_5);                                //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_SUMMARY_ERROR_5);                                 //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_RETRY);                                           //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // Boot Summary Info
+      text    = STRING_TOKEN(STR_BOOT_RETRY2);                                          //
+
+    text
+      help    = STRING_TOKEN(STR_NULL_STRING),                                          // "Restart now" button
+      text    = STRING_TOKEN(STR_FP_RESTART_NOW_BUTTON),                                //
+      flags   = INTERACTIVE | RESET_REQUIRED,
+      key     = FRONT_PAGE_ACTION_EXIT_FRONTPAGE;
+  endform;
+
+endformset;

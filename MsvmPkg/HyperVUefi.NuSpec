@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <description>
+      Hyper-V UEFI firmware binaries.
+    </description>
+    <projectUrl>https://microsoft.visualstudio.com/DefaultCollection/OS/_git/hyperv.uefi/</projectUrl>
+    <copyright>Copyright (C) Microsoft. All rights reserved.</copyright>
+    <tags>Microsoft,Hyper-V,UEFI</tags>
+  </metadata>
+  <files>
+    <file src="..\Build\**\FV\Msvm.fd"/>
+    <file src="..\Build\**\PDB\*" target="symbols"/>
+    <file src="..\Build\**\MAP\*" target="map"/>
+  </files>
+</package>

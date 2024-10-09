@@ -1,0 +1,32 @@
+## @file
+#  The TimerLib library class.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = HvTimerLib
+    FILE_GUID                      = 1D40190D-0556-4561-B896-57E55644BBBF
+    MODULE_TYPE                    = BASE
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = TimerLib
+
+[Sources]
+    HvTimerLib.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    DebugLib
+
+[LibraryClasses.AARCH64]
+    HvHypercallLib
+
+[LibraryClasses.X64]
+    IoLib
+

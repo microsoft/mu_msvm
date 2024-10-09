@@ -1,0 +1,57 @@
+## @file
+#
+#  Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = VmbfsDxe
+  FILE_GUID                      = ba0cf5fd-6cfc-4747-83c6-6acf062a781d
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = VmbfsEntry
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64 IPF EBC
+#
+#  DRIVER_BINDING                = gVmbfsDriverBindingProtocol
+#
+
+[Sources]
+  Vmbfs.c
+  VmbfsDxe.c
+  VmbfsFile.c
+  VmbfsEfi.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  EmclLib
+  MemoryAllocationLib
+  SynchronizationLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Guids]
+  gEfiVmbusChannelDevicePathGuid                ## CONSUMES
+  gEfiFileInfoGuid                              ## CONSUMES
+  gEfiFileSystemInfoGuid                        ## CONSUMES
+  gSyntheticVmbfsClassGuid                      ## CONSUMES
+
+[Protocols]
+  gEfiDevicePathProtocolGuid                    ## CONSUMES
+  gEfiEmclProtocolGuid                          ## CONSUMES
+  gEfiSimpleFileSystemProtocolGuid              ## PRODUCES
+  gEfiVmbusProtocolGuid                         ## CONSUMES

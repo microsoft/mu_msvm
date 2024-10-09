@@ -1,0 +1,5 @@
+{
+  "scope": "global",
+  "name": "Flatten Map Files Uefi Build Plugin",
+  "module": "FlattenMapFiles"
+}

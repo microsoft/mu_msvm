@@ -1,0 +1,57 @@
+
+name: $(SourceBranchName)_$(Date:yyyyMMdd_HHmmss)$(Rev:.r)
+
+# https://aka.ms/obpipelines/triggers
+trigger:
+  batch: false
+  branches:
+    include:
+    - official/*
+pr: none
+
+resources:
+  repositories:
+    - repository: templates_onebranch
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+variables:
+  Parameters.vPack.pushPkgName: "$(Build.Repository.Name).mscoreuefi.$(Build.Arch).$(Build.Target)"
+  Parameters.vPack.majorVer: "24"
+  Parameters.vPack.minorVer: "0"
+
+extends:
+  template: v2/Microsoft.Official.yml@templates_onebranch                   # EXTEND MICROSOFT.OFFICIAL.YML
+  parameters:
+    platform:
+      name: 'windows_undocked'
+    globalSdl:
+      tsa:
+        enabled: false
+    featureFlags:
+      WindowsHostVersion: '1ESWindows2022'
+      createVPack:
+        enabled: true
+        packagename: '$(Parameters.vPack.pushPkgName)'
+        description: 'Hyper V UEFI Firmware'
+        versionAs: parts
+        majorVer: '$(Parameters.vPack.majorVer)'
+        minorVer: '$(Parameters.vPack.minorVer)'
+        metadata: '$(Build.CommitHash)'
+        failOnStdErr: true
+    nugetPublishing:
+      feeds:
+      - name: OS/HyperVUefi
+        continueOnConflict: false
+        files_to_publish: '*.nupkg;!*.symbols.nupkg'
+    git:
+      submodules: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: MsvmPkg\OneBranch\Build-And-Publish.yaml@self
+        parameters:
+          pipeline: 'Official'
+          publishNuget: true
+

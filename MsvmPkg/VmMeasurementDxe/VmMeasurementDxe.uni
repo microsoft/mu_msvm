@@ -1,0 +1,12 @@
+//
+//  This driver measures VM Identify information to the TPM.
+//
+//  Copyright (c) Microsoft Corporation.
+//  SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+
+
+#string STR_MODULE_ABSTRACT             #language en-US "This driver measures VM properties to the TPM."
+
+#string STR_MODULE_DESCRIPTION          #language en-US "This driver measures VM properties to TPM PCR[06]."
+

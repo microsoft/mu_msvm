@@ -1,0 +1,41 @@
+## @file
+#  This component sets up the device state information during PEI.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+
+[Defines]
+INF_VERSION         = 0x00010017
+BASE_NAME           = PlatformDeviceStateHelper
+FILE_GUID           = 40935bea-b500-45cf-8d74-92c09296bb62
+VERSION_STRING      = 1.0
+MODULE_TYPE         = DXE_DRIVER
+ENTRY_POINT         = PlatformDeviceStateHelperInit
+
+[Sources]
+  PlatformDeviceStateHelper.c
+
+[LibraryClasses]
+  BaseLib
+  CrashLib
+  DebugLib
+  DeviceStateLib
+  IsolationLib
+  MemoryAllocationLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Packages]
+  MsvmPkg/MsvmPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsCorePkg/MsCorePkg.dec
+
+[Guids]
+  gEfiGlobalVariableGuid                                  ## CONSUMES
+
+[Depex]
+  gEfiVariableArchProtocolGuid AND
+  gEfiVariableWriteArchProtocolGuid

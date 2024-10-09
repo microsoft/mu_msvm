@@ -1,0 +1,36 @@
+## @file
+#  Hypercall library (PEI).
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = HvHypercallLib
+    FILE_GUID                      = df485110-86a9-11ea-bc55-0242ac130003
+    MODULE_TYPE                    = PEIM
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = HvHypercallLib|PEIM PEI_CORE
+
+[Sources]
+    HvHypercallLib.c
+    PeiHvHypercallLibSupport.c
+
+[Sources.X64]
+    X64/GhcbHypercall.c
+
+[Sources.AARCH64]
+    AArch64/HypercallImpl.masm
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses.X64]
+    PcdLib
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask

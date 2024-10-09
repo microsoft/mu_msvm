@@ -1,0 +1,209 @@
+## @file
+#  Platform PEI driver
+#
+#  This module provides platform specific function to detect boot mode.
+#  Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = PlatformPei
+    FILE_GUID                      = 222c386d-5abc-4fb4-b124-fbb82488acf4
+    MODULE_TYPE                    = PEIM
+    VERSION_STRING                 = 1.0
+    ENTRY_POINT                    = InitializePlatform
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64 AARCH64
+#
+
+[Sources.AARCH64]
+    AArch64/Mmu.c
+    AArch64/Extra.masm
+
+[Sources]
+    Config.c
+    IgvmConfig.c
+    Hob.c
+    Hv.c
+    Platform.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    NetworkPkg/NetworkPkg.dec
+    SecurityPkg/SecurityPkg.dec
+    UefiCpuPkg/UefiCpuPkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[Packages.AARCH64]
+    ArmPkg/ArmPkg.dec
+
+[LibraryClasses]
+    CrashLib
+    DeviceStateLib
+    DebugLib
+    HobLib
+    IoLib
+    IsolationLib
+    PeCoffLib
+    PeimEntryPoint
+    PeiServicesLib
+    PeiServicesTablePointerLib
+    PcdLib
+    ResourcePublicationLib
+
+[LibraryClasses.X64]
+    HostVisibilityLib
+    MtrrLib
+
+[LibraryClasses.AARCH64]
+    ArmLib
+
+[Guids]
+    gEfiMemoryTypeInformationGuid
+    gMsvmDebuggerEnabledGuid
+    gMsvmDebuggerKdnetBinaryGuid
+    gDxeMemoryProtectionSettingsGuid
+
+[Guids.AARCH64]
+    gArmTokenSpaceGuid
+
+[Pcd]
+    gEfiNetworkPkgTokenSpaceGuid.PcdDhcp6UidType
+    gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdFdSize
+    gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdFvSize
+    gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
+    gMsvmPkgTokenSpaceGuid.PcdConfigBlobSize
+    gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap
+    gMsvmPkgTokenSpaceGuid.PcdMadtPtr
+    gMsvmPkgTokenSpaceGuid.PcdMadtSize
+    gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
+    gMsvmPkgTokenSpaceGuid.PcdMcfgSize
+    gMsvmPkgTokenSpaceGuid.PcdSratPtr
+    gMsvmPkgTokenSpaceGuid.PcdSratSize
+    gMsvmPkgTokenSpaceGuid.PcdSlitPtr
+    gMsvmPkgTokenSpaceGuid.PcdSlitSize
+    gMsvmPkgTokenSpaceGuid.PcdSsdtPtr
+    gMsvmPkgTokenSpaceGuid.PcdSsdtSize
+    gMsvmPkgTokenSpaceGuid.PcdPpttPtr
+    gMsvmPkgTokenSpaceGuid.PcdPpttSize
+    gMsvmPkgTokenSpaceGuid.PcdHmatPtr
+    gMsvmPkgTokenSpaceGuid.PcdHmatSize
+    gMsvmPkgTokenSpaceGuid.PcdMemoryMapPtr
+    gMsvmPkgTokenSpaceGuid.PcdMemoryMapSize
+    gMsvmPkgTokenSpaceGuid.PcdEntropyPtr
+    gMsvmPkgTokenSpaceGuid.PcdBiosGuidPtr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilyStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilySize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorType
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorID
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVoltage
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorExternalClock
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorMaxSpeed
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCurrentSpeed
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorStatus
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorUpgrade
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCharacteristics
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorFamily2
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagSize
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberStr
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberSize
+    gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled
+    gMsvmPkgTokenSpaceGuid.PcdPauseAfterBootFailure
+    gMsvmPkgTokenSpaceGuid.PcdPxeIpV6
+    gMsvmPkgTokenSpaceGuid.PcdDebuggerEnabled
+    gMsvmPkgTokenSpaceGuid.PcdLoadOempTable
+    gMsvmPkgTokenSpaceGuid.PcdTpmEnabled
+    gMsvmPkgTokenSpaceGuid.PcdHibernateEnabled
+    gMsvmPkgTokenSpaceGuid.PcdConsoleMode
+    gMsvmPkgTokenSpaceGuid.PcdMemoryAttributesTableEnabled
+    gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled
+    gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled
+    gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled
+    gMsvmPkgTokenSpaceGuid.PcdMediaPresentEnabledByDefault
+    gMsvmPkgTokenSpaceGuid.PcdIsVmbfsBoot
+    gMsvmPkgTokenSpaceGuid.PcdDisableFrontpage
+    gMsvmPkgTokenSpaceGuid.PcdDefaultBootAlwaysAttempt
+    gMsvmPkgTokenSpaceGuid.PcdLowPowerS0IdleEnabled
+    gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled
+    gMsvmPkgTokenSpaceGuid.PcdProcessorCount
+    gMsvmPkgTokenSpaceGuid.PcdProcessorsPerVirtualSocket
+    gMsvmPkgTokenSpaceGuid.PcdThreadsPerProcessor
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapBasePageNumber
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapSizeInPages
+    gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber
+    gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages
+    gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr
+    gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize
+    gMsvmPkgTokenSpaceGuid.PcdNvdimmCount
+    gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr
+    gMsvmPkgTokenSpaceGuid.PcdIsolationArchitecture
+    gMsvmPkgTokenSpaceGuid.PcdIsolationParavisorPresent
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+    gMsvmPkgTokenSpaceGuid.PcdSvsmCallingArea
+    gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated
+    gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled
+    gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
+    gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
+
+[Pcd.AArch64]
+    gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize
+    gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
+    gArmTokenSpaceGuid.PcdGicDistributorBase
+    gArmTokenSpaceGuid.PcdGicRedistributorsBase
+
+[Pcd.X64]
+    gEfiMdeModulePkgTokenSpaceGuid.PcdUse1GPageTable
+    gEfiSecurityPkgTokenSpaceGuid.TcgMeasureBootStringsInPcr4
+    gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
+    gMsvmPkgTokenSpaceGuid.PcdAsptPtr
+    gMsvmPkgTokenSpaceGuid.PcdAsptSize
+    gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements
+
+[Ppis]
+    gEfiPeiMasterBootModePpiGuid
+
+[Depex]
+    TRUE
+
