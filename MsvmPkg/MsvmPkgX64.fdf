@@ -1,0 +1,443 @@
+## @file
+#  Microsoft Virtual Machine Firmware Flash Description File
+#
+#  Copyright (C) Microsoft.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#  This file describes the layout and contents of the BIOS image that would
+#  normally get burned to flash on a physical machine.   In a Hyper-V VM
+#  this image gets put in VM memory by the host VM worker process.  The
+#  net effect is the same.
+#
+#  The UEFI image is copied to guest memory starting at 1 MB, up until the end
+#  of the image. The host will set the VP state to the SEC C entry point,
+#  skipping the architectural reset vector startup process, along with the
+#  transitions from 16 bit to 32 bit to 64 bit mode.
+#
+##
+
+################################################################################
+#
+#  This FD section describes the layout of the full BIOS image.
+#
+#  It consists of a main volume containing the PEI modules and an embedded volume
+#  containing the DXE modules.  The main volume is followed by the SEC volume that
+#  contains the SEC modules followed by the raw reset vector code at the top of
+#  the image.
+#
+#          +------------------------- high mem
+#          | Reset vector code (raw)
+#  SEC FV  | SEC modules
+#          +-------------------------
+#  MAIN FV | PEI modules
+#          +-------------------------
+#  DXE FV  | DXE modules
+#          +------------------------- low mem
+#
+#
+#  In order to make more room for more PEI and/or DXE modules you should:
+#  - increase the Size variable
+#  - lower the BaseAddress variable to accommodate the Size increase
+#  - increase the size of the MAIN volume
+#  - Update BlockSize or NumBlocks accordingly so their product matches
+#    the size of the MAIN volume.
+#  - use the size of the MAIN volume as the new offset for the start of
+#    the SECFV volume
+#
+
+[FD.MSVM]
+BaseAddress   = 0x00100000|gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
+Size          = 0x00600000|gMsvmPkgTokenSpaceGuid.PcdFdSize
+
+ErasePolarity = 1
+BlockSize     = 0x1000
+NumBlocks     = 0x600
+
+# DXE volume that is not force rebased so that the section alignment and
+# file alignment do not need to match
+0x00000000|0x004E0000
+gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
+FV = DXE
+
+# The MAIN volume (start|size)
+0x004E0000|0x100000
+gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
+FV = MAINFV
+
+# The SEC volume (start|size)
+0x005E0000|0x00020000
+FV = SECFV
+
+
+################################################################################
+#
+#  This FV section describes the SEC volume contents.
+#
+[FV.SECFV]
+BlockSize          = 0x1000
+FvAlignment        = 16
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+
+#
+# The code in this volume handles the initial firmware startup, locates the main
+# firmware volume and then transfers control there.
+#
+INF  MsvmPkg/Sec/SecMain.inf
+INF  RuleOverride=RESET_VECTOR UefiCpuPkg/ResetVector/Vtf0/Vtf0.inf
+
+
+################################################################################
+#
+# This FV section describes the MAIN volume contents. It contains PEI
+# modules. This section gets forced rebased by the basetools, as it contains
+# some XIP modules. DxeMain is in this FV also so that DxeIpl can find and
+# load it. However, the DXE modules are in a separate FV because non-XIP
+# drivers do not have a requirement for the file alignment and section
+# alignment to match and to support smaller file sizes, the force rebasing
+# is removed from the DXE FV. There is an added benefit here
+# that PeiCore does not have to spend time enumerating the DXE drivers to
+# determine if it needs to launch them or not.
+#
+[FV.MAINFV]
+BlockSize          = 0x10000
+FvAlignment        = 16
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+
+#
+# Dispatch these components first in PEI.
+#
+APRIORI PEI {
+  INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+}
+
+#
+# PEI components
+#
+INF MdeModulePkg/Core/Pei/PeiMain.inf
+INF MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+INF MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
+INF SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf
+INF RuleOverride = PLATFORM_PEI MsvmPkg/PlatformPei/PlatformPei.inf
+INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
+INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
+INF MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
+INF MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTablePei/FirmwarePerformancePei.inf
+INF DebuggerFeaturePkg/DebugConfigPei/DebugConfigPei.inf
+
+!include $(SHARED_CRYPTO_PATH)/Driver/Bin/CryptoDriver.PEI.inc.fdf
+
+#
+# DXE components.
+#
+INF MdeModulePkg/Core/Dxe/DxeMain.inf
+
+[FV.DXE]
+BlockSize          = 0x1000
+FvAlignment        = 16
+FvForceRebase      = FALSE
+ERASE_POLARITY     = 1
+MEMORY_MAPPED      = TRUE
+STICKY_WRITE       = TRUE
+LOCK_CAP           = TRUE
+LOCK_STATUS        = TRUE
+WRITE_DISABLED_CAP = TRUE
+WRITE_ENABLED_CAP  = TRUE
+WRITE_STATUS       = TRUE
+WRITE_LOCK_CAP     = TRUE
+WRITE_LOCK_STATUS  = TRUE
+READ_DISABLED_CAP  = TRUE
+READ_ENABLED_CAP   = TRUE
+READ_STATUS        = TRUE
+READ_LOCK_CAP      = TRUE
+READ_LOCK_STATUS   = TRUE
+
+#
+# Dispatch these components first in DXE.
+#
+APRIORI DXE {
+  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+  INF MsvmPkg/CpuDxe/CpuDxe.inf
+  INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
+  INF MdeModulePkg/Universal/Metronome/Metronome.inf
+  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
+  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
+  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
+  INF MsvmPkg/EventLogDxe/EventLogDxe.inf
+  INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
+  INF MsvmPkg/VariableDxe/VariableDxe.inf
+  INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
+}
+
+!if $(FILE_LOGGER) == 1
+  INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf
+!endif
+
+
+INF FatPkg/EnhancedFatDxe/Fat.inf
+
+INF MdeModulePkg/Bus/Scsi/ScsiDiskDxe/ScsiDiskDxe.inf
+INF MdeModulePkg/Bus/Scsi/ScsiBusDxe/ScsiBusDxe.inf
+INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
+INF MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
+INF MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.inf
+INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
+INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
+INF MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
+INF MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
+INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
+INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
+INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
+INF MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
+INF MdeModulePkg/Universal/Disk/PartitionDxe/PartitionDxe.inf
+INF MdeModulePkg/Universal/Disk/RamDiskDxe/RamDiskDxe.inf
+INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
+INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+INF MdeModulePkg/Universal/MemoryTest/NullMemoryTestDxe/NullMemoryTestDxe.inf
+INF MdeModulePkg/Universal/Metronome/Metronome.inf
+INF MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
+INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
+INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
+INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
+INF MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
+INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
+
+INF MsGraphicsPkg/DisplayEngineDxe/DisplayEngineDxe.inf
+
+!include $(SHARED_CRYPTO_PATH)/Driver/Bin/CryptoDriver.DXE.inc.fdf
+
+INF MsvmPkg/AcpiPlatformDxe/AcpiPlatformDxe.inf
+INF RuleOverride=ACPITABLE MsvmPkg/AcpiTables/AcpiTables.inf
+INF MsvmPkg/CpuDxe/CpuDxe.inf
+INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
+INF MsvmPkg/EmclDxe/EmclDxe.inf
+INF MsvmPkg/EventLogDxe/EventLogDxe.inf
+INF MsvmPkg/MsvmPcAtRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
+INF MsvmPkg/NetvscDxe/NetvscDxe.inf
+INF MsvmPkg/NvmExpressDxe/NvmExpressDxe.inf
+INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
+INF MsvmPkg/SerialDxe/SerialDxe.inf
+INF MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
+INF MsvmPkg/StorvscDxe/StorvscDxe.inf
+INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
+INF MsvmPkg/SynthKeyDxe/SynthKeyDxe.inf
+INF MsvmPkg/VariableDxe/VariableDxe.inf
+INF MsvmPkg/VideoDxe/VideoDxe.inf
+INF MsvmPkg/VmbfsDxe/VmbfsDxe.inf
+INF MsvmPkg/VmbusDxe/VmbusDxe.inf
+INF MsvmPkg/VmMeasurementDxe/VmMeasurementDxe.inf
+INF MsvmPkg/VpcivscDxe/VpcivscDxe.inf
+INF MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
+
+!if $(PRM_ENABLE) == TRUE
+INF PrmPkg/PrmConfigDxe/PrmConfigDxe.inf
+INF PrmPkg/Samples/PrmSampleAcpiParameterBufferModule/PrmSampleAcpiParameterBufferModule.inf
+INF PrmPkg/Samples/PrmSampleHardwareAccessModule/PrmSampleHardwareAccessModule.inf
+INF PrmPkg/Samples/PrmSampleContextBufferModule/PrmSampleContextBufferModule.inf
+INF PrmPkg/PrmLoaderDxe/PrmLoaderDxe.inf
+INF PrmPkg/PrmSsdtInstallDxe/PrmSsdtInstallDxe.inf
+!endif
+
+INF SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
+
+INF NetworkPkg/ArpDxe/ArpDxe.inf
+INF NetworkPkg/Dhcp4Dxe/Dhcp4Dxe.inf
+INF NetworkPkg/Dhcp6Dxe/Dhcp6Dxe.inf
+INF NetworkPkg/DnsDxe/DnsDxe.inf
+INF NetworkPkg/DpcDxe/DpcDxe.inf
+INF NetworkPkg/HttpDxe/HttpDxe.inf
+INF NetworkPkg/HttpUtilitiesDxe/HttpUtilitiesDxe.inf
+INF NetworkPkg/Ip4Dxe/Ip4Dxe.inf
+INF NetworkPkg/Ip6Dxe/Ip6Dxe.inf
+INF NetworkPkg/MnpDxe/MnpDxe.inf
+INF NetworkPkg/Mtftp4Dxe/Mtftp4Dxe.inf
+INF NetworkPkg/Mtftp6Dxe/Mtftp6Dxe.inf
+INF NetworkPkg/TcpDxe/TcpDxe.inf
+INF NetworkPkg/TlsDxe/TlsDxe.inf
+INF NetworkPkg/Udp4Dxe/Udp4Dxe.inf
+INF NetworkPkg/Udp6Dxe/Udp6Dxe.inf
+INF NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf
+
+
+INF SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf
+INF SecurityPkg/Tcg/MemoryOverwriteControl/TcgMor.inf
+INF SecurityPkg/Tcg/Tcg2Dxe/Tcg2Dxe.inf
+
+# UI Theme Protocol.
+INF  MsGraphicsPkg/MsUiTheme/Dxe/MsUiThemeProtocol.inf
+# Rendering Engine (SRE) driver.
+INF  MsGraphicsPkg/RenderingEngineDxe/RenderingEngineDxe.inf
+# Simple Window Manager (SWM) driver.
+INF  MsGraphicsPkg/SimpleWindowManagerDxe/SimpleWindowManagerDxe.inf
+
+# FrontPage application.
+INF  MsvmPkg/FrontPage/FrontPage.inf
+
+INF  MdeModulePkg/Universal/Acpi/FirmwarePerformanceDataTableDxe/FirmwarePerformanceDxe.inf
+
+FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdLogoFile) {
+    SECTION RAW = MsvmPkg/bootlogo.bmp
+    SECTION UI = "Logo"
+  }
+
+FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdFpMsLogoFile) {
+    SECTION RAW = MsvmPkg/FrontPage/Resources/MicrosoftLogo.bmp
+}
+
+FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
+    SECTION RAW = MsvmPkg/FrontPage/Resources/NoBoot.bmp
+}
+
+#FILE APPLICATION = c57ad6b7-0515-40a8-9d21-551652854e37 {
+#     SECTION PE32 = ShellBinPkg/UefiShell/X64/Shell.efi
+#  }
+
+
+################################################################################
+#
+# Rules section.
+#
+[Rule.Common.SEC]
+  FILE SEC = $(NAMED_GUID) {
+    PE32     PE32           $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.PEI_CORE]
+  FILE PEI_CORE = $(NAMED_GUID) {
+    PE32     PE32   Align=32    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING ="$(MODULE_NAME)" Optional
+    VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.PEIM]
+  FILE PEIM = $(NAMED_GUID) {
+     PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
+     PE32      PE32   Align=32           $(INF_OUTPUT)/$(MODULE_NAME).efi
+     UI       STRING="$(MODULE_NAME)" Optional
+     VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.PEIM.BINARY]
+  FILE PEIM = $(NAMED_GUID) {
+    PEI_DEPEX PEI_DEPEX Optional      |.depex
+    PE32      PE32     Align = Auto   |.efi
+    UI        STRING="$(MODULE_NAME)" Optional
+    VERSION   STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.PEIM.PLATFORM_PEI]
+  FILE PEIM = $(NAMED_GUID) {
+     PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
+     PE32      PE32   Align=32           $(INF_OUTPUT)/$(MODULE_NAME).efi
+     UI       STRING="$(MODULE_NAME)" Optional
+     VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_CORE]
+  FILE DXE_CORE = $(NAMED_GUID) {
+    PE32     PE32           $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING="$(MODULE_NAME)" Optional
+    VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    DXE_DEPEX    DXE_DEPEX Optional      $(INF_OUTPUT)/$(MODULE_NAME).depex
+    PE32     PE32                    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING="$(MODULE_NAME)" Optional
+    VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+    RAW ACPI  Optional               |.acpi
+    RAW ASL   Optional               |.aml
+  }
+
+[Rule.Common.DXE_DRIVER.BINARY]
+  FILE DRIVER = $(NAMED_GUID) {
+    DXE_DEPEX DXE_DEPEX Optional      |.depex
+    PE32      PE32                    |.efi
+    UI        STRING="$(MODULE_NAME)" Optional
+    VERSION   STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.DXE_RUNTIME_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    DXE_DEPEX    DXE_DEPEX Optional      $(INF_OUTPUT)/$(MODULE_NAME).depex
+    PE32     PE32                    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING="$(MODULE_NAME)" Optional
+    VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_DRIVER]
+  FILE DRIVER = $(NAMED_GUID) {
+    DXE_DEPEX    DXE_DEPEX Optional      $(INF_OUTPUT)/$(MODULE_NAME).depex
+    PE32     PE32                    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING="$(MODULE_NAME)" Optional
+    VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_DRIVER.BINARY]
+  FILE DRIVER = $(NAMED_GUID) {
+    DXE_DEPEX DXE_DEPEX Optional      |.depex
+    PE32      PE32                    |.efi
+    UI        STRING="$(MODULE_NAME)" Optional
+    VERSION   STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_APPLICATION]
+  FILE APPLICATION = $(NAMED_GUID) {
+    PE32     PE32                    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    UI       STRING="$(MODULE_NAME)" Optional
+    VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.UEFI_APPLICATION.BINARY]
+  FILE APPLICATION = $(NAMED_GUID) {
+    PE32      PE32                    |.efi
+    UI        STRING="$(MODULE_NAME)" Optional
+    VERSION   STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
+  }
+
+[Rule.Common.USER_DEFINED.ACPITABLE]
+  FILE FREEFORM = $(NAMED_GUID) {
+    RAW ACPI               |.acpi
+    RAW ASL                |.aml
+  }
+
+[Rule.Common.USER_DEFINED.CSM]
+  FILE FREEFORM = $(NAMED_GUID) {
+    RAW BIN                |.bin
+  }
+
+[Rule.Common.SEC.RESET_VECTOR]
+  FILE RAW = $(NAMED_GUID) {
+    RAW BIN   |.bin
+  }

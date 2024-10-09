@@ -1,0 +1,51 @@
+## @file
+#  Provides an implementation of the Synthetic SCSI Controller driver.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION = 0x00010005
+    BASE_NAME = StorvscDxe
+    FILE_GUID = 6D6AE65A-393E-4E54-958F-C18E01956A00
+    MODULE_TYPE = UEFI_DRIVER
+    VERSION_STRING = 1.0
+    ENTRY_POINT = StorvscDriverEntryPoint
+
+
+[Sources]
+    ComponentName.c
+    ExtScsiPassThru.c
+    StorchannelDxe.c
+    StorportDxe.h
+    StorvscDxe.h
+    StorvscDxe.c
+
+[Packages]
+    MdeModulePkg/MdeModulePkg.dec
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    CrashLib
+    DebugLib
+    DevicePathLib
+    EmclLib
+    MemoryAllocationLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiLib
+
+[Protocols]
+    gEfiVmbusProtocolGuid               ## CONSUMES
+    gEfiEmclV2ProtocolGuid              ## CONSUMES
+    gEfiExtScsiPassThruProtocolGuid     ## PRODUCES
+    gInternalEventServicesProtocolGuid  ## CONSUMES
+
+[Guids]
+    gEfiVmbusChannelDevicePathGuid      ## CONSUMES
+    gSyntheticStorageClassGuid          ## CONSUMES

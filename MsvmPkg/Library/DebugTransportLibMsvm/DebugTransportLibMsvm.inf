@@ -1,0 +1,49 @@
+## @file
+#  Implementation of the DebugTransportLib that wraps the IO implementation
+#  of serial port lib to change port address. Taken from QemuQ5Pkg from MU 
+#  TIANO.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = DebugTransportLibMsvm
+  FILE_GUID                      = 917CFE9C-0E35-43FB-BDCC-3D39F15A8BBA
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = DebugTransportLib
+
+[Sources.X64]
+  X64/DebugTransportLibMsvm.c
+
+[Sources.AARCH64]
+  AArch64/DebugTransportLibMsvm.c
+
+[Packages]
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+  DebuggerFeaturePkg/DebuggerFeaturePkg.dec
+
+[Packages.AArch64]
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+
+[LibraryClasses]
+  SerialPortLib
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdFeatureDebuggerPortUartBase   ## CONSUMES
+
+[FixedPcd.AARCH64]
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultDataBits
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultParity
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultStopBits
+  gArmPlatformTokenSpaceGuid.PL011UartClkInHz
+
+[Depex]
+  TRUE

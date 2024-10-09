@@ -1,0 +1,68 @@
+## @file
+#  General BDS defines and produce general interfaces for platform BDS driver including:
+#  1) BDS boot policy interface;
+#  2) BDS boot device connect interface;
+#  3) BDS Misc interfaces for mainting boot variable, ouput string, etc.
+#
+#  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MsLogoLib
+  FILE_GUID                      = F5AE5B5C-42E8-4A9B-829D-5B631CD5367A
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MsLogoLib|DXE_DRIVER UEFI_APPLICATION DXE_RUNTIME_DRIVER
+  CONSTRUCTOR                    = MsLogoLibConstructor
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC
+#
+
+[Sources]
+  Logo.c
+
+[Packages]
+  MsvmPkg/MsvmPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsGraphicsPkg/MsGraphicsPkg.dec
+
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  BmpSupportLib
+  DebugLib
+  DisplayDeviceStateLib
+  DxeServicesLib
+  MemoryAllocationLib
+  PcdLib
+  PrintLib
+  UefiBootServicesTableLib
+  UefiLib
+
+[Guids]
+
+[Protocols]
+  gEdkiiBootLogo2ProtocolGuid                   # PROTOCOL SOMETIMES_CONSUMES
+  gEfiGraphicsOutputProtocolGuid                # PROTOCOL SOMETIMES_CONSUMES
+
+
+[FeaturePcd]
+
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdConOutColumn
+  gEfiMdeModulePkgTokenSpaceGuid.PcdConOutRow
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution
+  gMsvmPkgTokenSpaceGuid.PcdLogoFile
+  gMsvmPkgTokenSpaceGuid.PcdPostBackgroundColor
+  gMsvmPkgTokenSpaceGuid.PcdPostBackgroundColoringSkipCount

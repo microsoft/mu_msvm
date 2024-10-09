@@ -1,0 +1,45 @@
+## @file
+#  Platform BDS customizations library.
+#
+#  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MsPlatBdsLib
+  FILE_GUID                      = 776856C3-576C-45DC-BBFE-6FA319F9262C
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MsPlatBdsLib|DXE_DRIVER
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 IPF EBC
+#
+
+[Sources]
+  BdsPlatform.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  DebugLib
+  BootEventLogLib
+
+[Pcd]
+
+[Protocols]
+
+[Guids]
+  gEfiEventExitBootServicesGuid       # CONSUMES
+  gEfiEndOfDxeEventGroupGuid          # CONSUMES

@@ -1,0 +1,37 @@
+## @file
+#  Event Log Library instance.
+#  Provides wrapper for Event log protocol access and
+#  specialized wrappers for specific event log channels such as the boot log.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = MsvmEventLogLib
+  FILE_GUID                      = 7E0E3784-5385-4624-9E24-D27995F045E8
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = EventLogLib|DXE_CORE DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER
+  CONSTRUCTOR                    = EventLogConstructor
+
+[Sources]
+  EventLogLib.c
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DevicePathLib
+  MemoryAllocationLib
+  PcdLib
+  UefiBootServicesTableLib
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Protocols]
+  gEfiEventLogProtocolGuid      ## CONSUMES

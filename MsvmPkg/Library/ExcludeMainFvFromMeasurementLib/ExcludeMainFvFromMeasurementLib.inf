@@ -1,0 +1,41 @@
+## @file
+# Library to inform Tcg2Pei not to measure FvMain.
+# Some legacy Hyper-V versions require this
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+
+[Defines]
+INF_VERSION = 0x00010017
+BASE_NAME = ExcludeMainFvFromMeasurementLib
+FILE_GUID = f6262462-bffa-495b-86c3-34548c2c1a6b
+VERSION_STRING = 1.0
+MODULE_TYPE = PEIM
+LIBRARY_CLASS = NULL|PEIM
+CONSTRUCTOR = ExcludeMainFvFromMeasurementLibConstructor
+
+[Packages]
+MdePkg/MdePkg.dec
+MsvmPkg/MsvmPkg.dec
+SecurityPkg/SecurityPkg.dec
+
+[Sources]
+ExcludeMainFvFromMeasurementLib.c
+
+[LibraryClasses]
+DebugLib
+PcdLib
+PeiServicesLib
+
+[FixedPcd]
+gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress
+gMsvmPkgTokenSpaceGuid.PcdFvSize
+
+[Pcd]
+gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements  #CONSUMES
+
+[Ppis]
+gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid

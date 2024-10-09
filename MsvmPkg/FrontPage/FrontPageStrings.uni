@@ -1,0 +1,150 @@
+// *++
+// Strings for Hyper-V FrontPage
+//
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+// --*/
+
+#langdef   en-US " English "
+
+#langdef   en    " Standard English "
+
+#string STR_FRONT_PAGE_TITLE      #language en-US  "Microsoft Hyper-V UEFI"
+
+////////////////////////////////////////////////////////////////////////////////////
+// Master Frame Menu Strings
+//
+#string STR_MF_MENU_TITLE         #language en-US    "Settings"
+
+#string STR_MF_MENU_OP_SECURITY   #language en-US    "Security"
+
+#string STR_MF_MENU_OP_DEVICES    #language en-US    "Devices"
+
+#string STR_MF_MENU_OP_PCINFO     #language en-US    "PC information"
+
+#string STR_MF_MENU_OP_BOOTORDER  #language en-US    "Boot configuration"
+
+#string STR_MF_MENU_OP_SEMM       #language en-US    "Enterprise Management"
+
+#string STR_MF_MENU_OP_SETTIME    #language en-US    "Date and Time"
+
+#string STR_MF_MENU_OP_ABOUT      #language en-US    "About"
+
+#string STR_MF_MENU_OP_EXIT       #language en-US    "Exit"
+
+#string STR_MF_MENU_OP_BOOT_SUMMARY       #language en-US    "Boot Summary"
+
+////////////////////////////////////////////////////////////////////////////////////
+// Generic Strings
+//
+#string STR_NULL_STRING             #language en-US  ""
+
+#string STR_GENERIC_TEXT_NONE       #language en-US  "None"
+
+#string STR_GENERIC_TEXT_OK         #language en-US  "Ok"
+
+#string STR_GENERIC_TEXT_CANCEL     #language en-US  "Cancel"
+
+#string STR_GENERIC_TEXT_ON         #language en-US  "On"
+
+#string STR_GENERIC_TEXT_OFF        #language en-US  "Off"
+
+#string STR_GENERIC_TEXT_CONTINUE   #language en-US  "Continue"
+
+#string STR_GENERIC_TEXT_RECOMMEND  #language en-US  "recommended"
+
+#string STR_MISSING_STRING          #language en-US  "Missing String"
+
+#string STR_RESTRICTED_STRING       #language en-US "\fc!Red!Some settings are managed by your organization."
+
+/////////////////////////////////////////////////////////////////////////////
+// Form ID 5: About
+//
+#string STR_FP_ABOUT_HEADER         #language en-US  "\fh!48!Regulatory information"
+
+/////////////////////////////////////////////////////////////////////////////
+// Form ID 6: Exit
+//
+#string STR_FP_EXIT_HEADER          #language en-US  "\fh!48!Exit settings and restart your Virtual Machine"
+
+#string STR_FP_EXIT_DESCRIPTION_OLD #language en-US  "\fh!28!All changes to the settings on this PC have been saved. Restart your PC to exit settings."
+
+#string STR_FP_EXIT_DESCRIPTION     #language en-US  "\fh!28!Restart your Virtual Machine to exit settings."
+
+#string STR_FP_RESTART_NOW_BUTTON   #language en-US  "Restart now"
+
+/////////////////////////////////////////////////////////////////////////////
+// Form ID 7: Boot Summary
+//
+#string STR_BOOT_SUMMARY_MENU_TITLE                   #language en-US  "Boot Summary Menu"
+#string STR_BOOT_SUMMARY_HEADER                       #language en-US  "Virtual Machine Boot Summary"
+#string STR_BOOT_SUMMARY_DEVICE_1                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_2                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_3                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_4                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_5                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_6                     #language en-US  ""
+#string STR_BOOT_SUMMARY_DEVICE_7                     #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_1                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_2                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_3                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_4                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_5                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_6                      #language en-US  ""
+#string STR_BOOT_SUMMARY_ERROR_7                      #language en-US  ""
+
+//
+// String mappings for BOOT_DEVICE_STATUS
+//
+#string STR_DEVSTATUS_BOOT_PENDING                    #language en-US  "Boot Pending"
+#string STR_DEVSTATUS_BOOT_NO_FILESYSTEM              #language en-US  "No UEFI-compatible file system was found."
+#string STR_DEVSTATUS_BOOT_NO_LOADER                  #language en-US  "No x64-based UEFI boot loader was found."
+#string STR_DEVSTATUS_BOOT_IMAGE_INVALID              #language en-US  "The PE/COFF image is not an x64-based UEFI application"
+#string STR_DEVSTATUS_BOOT_LOADER_FAILED_FORMAT_OLD   #language en-US  "The boot loader failed - %r."
+#string STR_DEVSTATUS_BOOT_LOADER_FAILED_FORMAT       #language en-US  "The boot loader failed."
+#string STR_DEVSTATUS_BOOT_NO_OS_LOADED               #language en-US  "The boot loader did not load an operating system."
+#string STR_DEVSTATUS_BOOT_OS_LOADED                  #language en-US  "The operating system loaded."
+#string STR_DEVSTATUS_BOOT_NO_DEVICES                 #language en-US  "No boot devices were found."
+#string STR_DEVSTATUS_BOOT_IMAGE_LOAD_ERROR           #language en-US  "The image failed to load."
+#string STR_DEVSTATUS_IMAGE_VERIFY_FAILED             #language en-US  "Image verification failed."
+#string STR_DEVSTATUS_IMAGE_POLICY_DENIED             #language en-US  "Image execution was denied by Secure Boot policy."
+#string STR_DEVSTATUS_IMAGE_HASH_DENIED               #language en-US  "The image's hash was denied (DBX)."
+#string STR_DEVSTATUS_IMAGE_CERT_DENIED               #language en-US  "The image's certificate was denied (DBX)."
+#string STR_DEVSTATUS_IMAGE_INVALID                   #language en-US  "The PE/COFF image is invalid."
+#string STR_DEVSTATUS_IMAGE_UNSIGNED_HASH_NOT_FOUND   #language en-US  "The unsigned image's hash is not allowed (DB)"
+#string STR_DEVSTATUS_IMAGE_SIGNED_HASH_NOT_FOUND     #language en-US  "The signed image's hash is not allowed (DB)"
+#string STR_DEVSTATUS_IMAGE_HASH_CERT_NOT_FOUND       #language en-US  "The image's hash and certificate are not allowed (DB)."
+#string STR_DEVSTATUS_NET_MEDIA_DISCONNECT            #language en-US  "The network media is disconnected."
+#string STR_DEVSTATUS_NET_DHCP_FAILED                 #language en-US  "DHCP failed."
+#string STR_DEVSTATUS_NET_NO_RESPONSE                 #language en-US  "The remote system did not respond."
+#string STR_DEVSTATUS_NET_BUFFER_TOO_SMALL            #language en-US  "The boot image buffer was too small."
+#string STR_DEVSTATUS_NET_DEVICE_ERROR                #language en-US  "There was a network device failure."
+#string STR_DEVSTATUS_NET_NO_RESOURCES                #language en-US  "Failed to allocate network I/O buffers."
+#string STR_DEVSTATUS_NET_SERVER_TIMEOUT              #language en-US  "There was a server timeout."
+#string STR_DEVSTATUS_NET_CANCELLED                   #language en-US  "The network boot was cancelled."
+#string STR_DEVSTATUS_NET_ICMP_ERROR                  #language en-US  "There was an ICMP error."
+#string STR_DEVSTATUS_NET_TFTP_ERROR                  #language en-US  "There was a TFTP error."
+#string STR_DEVSTATUS_NET_NO_BOOT_FILE                #language en-US  "A boot image was not found."
+#string STR_DEVSTATUS_NET_UNEXPECTED_FAILURE          #language en-US  "There was an unexpected network error."
+#string STR_DEVSTATUS_UNKNOWN_STATUS_FORMAT_OLD       #language en-US  "There was an unknown failure 0x%x."
+#string STR_DEVSTATUS_UNKNOWN_STATUS_FORMAT           #language en-US  "There was an unknown failure."
+
+//
+// Boot device friendly name format strings.
+//
+#string STR_SCSI_DEVICE_FORMAT         #language en-US  "SCSI Device (%d,%d)"
+#string STR_SCSI_DISK_FORMAT           #language en-US  "SCSI Disk   (%d,%d)"
+#string STR_SCSI_DVD_FORMAT            #language en-US  "SCSI DVD    (%d,%d)"
+#string STR_NET_DEVICE_FORMAT          #language en-US  "Network Adapter (%02x%02x%02x%02x%02x%02x)"
+#string STR_UNKNOWN_DEVICE             #language en-US  "Unknown Device"
+
+//
+// Boot diagnostic console strings
+//
+#string STR_BOOT_SUMMARY               #language en-US  "Virtual Machine Boot Summary\n\n"
+#string STR_BOOT_NEXT_ENTRY            #language en-US  "\n\nPress a key to try the next boot entry..."
+#string STR_BOOT_RETRY_OLD             #language en-US  "\n\nNo operating system was loaded. Press a key to retry the boot sequence...\nNote: Configuration changes may require the virtual machine to be reset."
+#string STR_BOOT_RETRY                 #language en-US  "No operating system was loaded. Your virtual machine may be configured incorrectly."
+#string STR_BOOT_RETRY2                #language en-US  "Exit and re-configure your VM or click restart to retry the current boot sequence again."
+#string STR_BOOT_LOST_EVENT_FORMAT_OLD #language en-US  "Warning: %d Boot Device Events were lost."
+#string STR_BOOT_LOST_EVENT_FORMAT     #language en-US  "Warning: Some Boot Device Events were lost or not displayed."

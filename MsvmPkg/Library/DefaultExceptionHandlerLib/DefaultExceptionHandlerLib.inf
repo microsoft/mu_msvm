@@ -1,0 +1,48 @@
+#/** @file
+#
+#  Copyright (c) 2008, Apple Inc. All rights reserved.<BR>
+#  Copyright (c) 2011 - 2013, ARM Ltd. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#
+#**/
+
+#Override : 00000002 | ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf | 30b6121f4945d40c36f8d11260700195 | 2024-09-27T22-03-43 | 4a8c4779a7f6b91ed32581ace0ab7a54e56e0019
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = DefaultExceptionHandlerLib
+  FILE_GUID                      = EACDB354-DF1A-4AF9-A171-499737ED818F
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = DefaultExceptionHandlerLib|DXE_CORE DXE_DRIVER
+
+[Sources.common]
+  DefaultExceptionHandlerUefi.c
+
+[Sources.ARM]
+  Arm/DefaultExceptionHandler.c
+
+[Sources.AARCH64]
+  AArch64/DefaultExceptionHandler.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  MsvmPkg/MsvmPkg.dec       // MS_HYP_CHANGE
+
+[LibraryClasses]
+  UefiLib
+  BaseLib
+  CrashLib                  // MS_HYP_CHANGE
+  PrintLib
+  DebugLib
+  PeCoffGetEntryPointLib
+  ArmDisassemblerLib
+  SerialPortLib
+  UefiBootServicesTableLib
+
+[Guids]
+  gEfiDebugImageInfoTableGuid

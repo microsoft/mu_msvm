@@ -1,0 +1,65 @@
+## @file
+# Tpm2 intialization hooks specific to the MSFT0101 virtual TPM device.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+
+[Defines]
+  INF_VERSION         = 0x00010017
+  BASE_NAME           = Tcg2PreInitLibDxe
+  FILE_GUID           = B88E201F-38D0-4D2C-A6E1-B6ED99ED808E
+  VERSION_STRING      = 1.0
+  MODULE_TYPE         = DXE_DRIVER
+  LIBRARY_CLASS       = NULL|DXE_DRIVER
+  CONSTRUCTOR         = MsvmTpm2InitLibConstructorDxe
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 AARCH64
+#
+
+
+[Sources]
+  Tpm2Acpi.c
+  Tcg2PreInitLibDxe.c
+
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  PcdLib
+  Tpm2DeviceLib
+  UefiBootServicesTableLib
+
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  SecurityPkg/SecurityPkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiDefaultOemId      ## CONSUMES
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress         ## CONSUMES
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmInstanceGuid        ## CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled        ## CONSUMES
+
+
+[Guids]
+  gEfiTpmDeviceInstanceNoneGuid                           ## CONSUMES
+  gEfiTpmDeviceInstanceTpm12Guid                          ## CONSUMES
+
+
+[Protocols]
+  gEfiAcpiTableProtocolGuid                               ## CONSUMES
+
+
+[Depex]
+  gEfiAcpiTableProtocolGuid

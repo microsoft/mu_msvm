@@ -1,0 +1,34 @@
+## @file
+#  Support routines for GHCB-based calls.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = GhcbLib
+    FILE_GUID                      = 50c4ccb1-a610-47d6-ae29-9e8368091796
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = GhcbLib|DXE_DRIVER UEFI_DRIVER DXE_RUNTIME_DRIVER
+
+[Sources]
+    DxeGhcbLibSupport.c
+
+[Sources.X64]
+    X64/GhcbCall.c
+    X64/SvmSnp.asm | MSFT
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses.X64]
+    PcdLib
+    UefiBootServicesTableLib
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask

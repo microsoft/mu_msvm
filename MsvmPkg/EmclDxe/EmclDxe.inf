@@ -1,0 +1,50 @@
+## @file
+#  EMCL (EFI VmBus client library) DXE driver.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = EmclDxe
+    FILE_GUID                      = 45386216-9A17-46AE-AD49-423112FBFFB8
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+    ENTRY_POINT                    = EmclDriverInitialize
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    PcdLib
+    UefiBootServicesTableLib
+    UefiLib
+    BaseLib
+    CrashLib
+    DebugLib
+    UefiDriverEntryPoint
+    MemoryAllocationLib
+    DebugLib
+    IsolationLib
+
+[Sources]
+    Emcl.c
+    RingBufferWrapper.c
+
+[Protocols]
+    gEfiEmclProtocolGuid                #PRODUCES
+    gEfiEmclV2ProtocolGuid              #PRODUCES
+    gEfiEmclTagProtocolGuid             #PRODUCES
+    gEfiVmbusProtocolGuid               #CONSUMES
+    gEfiHvIvmProtocolGuid               #CONSUMES
+
+[Depex]
+    TRUE
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                    ## SOMETIMES_CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask     ## SOMETIMES_CONSUMES
+

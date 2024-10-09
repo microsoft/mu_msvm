@@ -1,0 +1,45 @@
+#/** @file
+#
+#  Component description file for PL011SerialPortLib module
+#
+#  Copyright (c) 2011-2016, ARM Ltd. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+#Override : 00000002 | ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf | 444621e3ec61c11d66caf1d7d44c50e9 | 2024-10-04T16-30-42 | 4846544a82b36eb5e82b842cf332f8d8821d862e
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = KdPL011SerialPortLib
+  FILE_GUID                      = 4da0fbb5-2901-4736-96da-a20ad2dd1dc0
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = SerialPortLib
+
+[Sources.common]
+  KdPL011SerialPortLib.c
+
+[LibraryClasses]
+  PL011UartClockLib
+  PL011UartLib
+  PcdLib
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+
+[Pcd]
+  # gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase    ## MS_HYP_CHANGE
+
+[FixedPcd]
+  gMsvmPkgTokenSpaceGuid.PcdCom1RegisterBase                ## MS_HYP_CHANGE
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultDataBits
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultParity
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultStopBits
+  gArmPlatformTokenSpaceGuid.PL011UartClkInHz

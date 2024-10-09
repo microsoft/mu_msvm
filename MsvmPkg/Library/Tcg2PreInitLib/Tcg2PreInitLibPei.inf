@@ -1,0 +1,56 @@
+## @file
+# Tpm2 intialization hooks specific to the MSFT0101 virtual TPM device.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+
+[Defines]
+  INF_VERSION         = 0x00010017
+  BASE_NAME           = Tcg2PreInitLibPei
+  FILE_GUID           = B0C518E2-BB65-424E-93E2-D9D28783722B
+  VERSION_STRING      = 1.0
+  MODULE_TYPE         = PEIM
+  LIBRARY_CLASS       = NULL|PEIM
+  CONSTRUCTOR         = MsvmTpm2InitLibConstructorPei
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 AARCH64
+#
+
+
+[Sources]
+  Tcg2PreInitLibPei.c
+
+
+[LibraryClasses]
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  PcdLib
+  PeiServicesLib
+  Tpm2DeviceLib
+
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SecurityPkg/SecurityPkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+
+[Guids]
+  gEfiTpmDeviceInstanceNoneGuid                          ## SOMETIMES_CONSUMES
+
+
+[Pcd]
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress        ## CONSUMES
+  gEfiSecurityPkgTokenSpaceGuid.PcdTpmInstanceGuid       ## CONSUMES # SOMETIMES_PRODUCES
+  gMsvmPkgTokenSpaceGuid.PcdTpmEnabled                   ## CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled       ## CONSUMES
+
+[Depex]
+  gEfiPeiMasterBootModePpiGuid                           ## This is published by PlatformPei, so this ensures that all config is done first.

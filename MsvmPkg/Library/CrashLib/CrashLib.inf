@@ -1,0 +1,42 @@
+## @file
+#  Library for crash dump generation and failing fast.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = CrashLib
+  FILE_GUID                      = E7658760-B25A-4723-8F93-FA99EE7539F0
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = CrashLib
+
+[Sources]
+  FailFast.c
+
+[Sources.X64]
+  X64/Crash.c
+  X64/FailFast.asm
+
+[Sources.AARCH64]
+  AArch64/Crash.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Packages.AARCH64]
+  ArmPkg/ArmPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  PrintLib
+
+[LibraryClasses.AARCH64]
+  ArmSmcLib
+  HvHypercallLib

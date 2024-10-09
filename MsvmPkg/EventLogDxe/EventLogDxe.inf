@@ -1,0 +1,81 @@
+## @file
+#  Eventlog Runtime Dxe driver
+#  Produces the Event Log and Status Code Runtime protocols.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = EventLogDxe
+  FILE_GUID                      = 25C0E0C2-E18D-42A0-AA05-E8B080054152
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = EventLogDxeEntry
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 EBC
+#
+#
+
+[Sources]
+  EfiHandleTable.c
+  EfiRing.c
+  EventLogDxe.h
+  EventLogDxe.c
+  EventLogger.c
+  StatusCode.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  BiosDeviceLib
+  BootEventLogLib                 # MS_CHANGE
+  DevicePathLib                   # MS_CHANGE
+  DebugLib
+  HobLib
+  IoLib
+  IsolationLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Guids]
+  gEfiVmbusChannelDevicePathGuid                ## CONSUMES
+  gMemoryStatusCodeRecordGuid                   ## CONSUMES ## HOB
+  gStatusCodeEventChannelGuid                   ## CONSUMES
+  gSyntheticNetworkClassGuid                    ## CONSUMES
+
+[Protocols]
+  gEfiEventLogProtocolGuid                      ## PRODUCES
+  gEfiFirmwareVolume2ProtocolGuid               ## CONSUMES
+  gEfiHvIvmProtocolGuid                         ## CONSUMES
+  gEfiHvProtocolGuid                            ## CONSUMES
+  gEfiRscHandlerProtocolGuid                    ## CONSUMES
+  gEfiStatusCodeRuntimeProtocolGuid             ## PRODUCES
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile
+  gEfiMdeModulePkgTokenSpaceGuid.PcdProgressCodeOsLoaderLoad                ## SOMETIMES_CONSUMES
+  gEfiMdeModulePkgTokenSpaceGuid.PcdProgressCodeOsLoaderStart               ## SOMETIMES_CONSUMES
+  gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeReplayIn
+  gMsvmPkgTokenSpaceGuid.PcdEventLogMaxChannels
+  gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+  gMsvmPkgTokenSpaceGuid.PcdStatusCodeEventLogSize
+
+[Depex]
+  gEfiRscHandlerProtocolGuid

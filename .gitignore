@@ -396,3 +396,10 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# MU
+/BuildConfig.conf
+*.bak
+/Build
+/Conf
+*_extdep/

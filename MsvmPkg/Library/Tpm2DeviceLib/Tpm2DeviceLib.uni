@@ -1,0 +1,13 @@
+/** @file
+  This is an implementation of Tpm2DeviceLib that is specific to the MSFT0101
+  virtual TPM.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+
+**/
+
+#string STR_MODULE_ABSTRACT             #language en-US "Provides function interfaces to communicate with TPM 2.0 device"
+
+#string STR_MODULE_DESCRIPTION          #language en-US "This library helps to use TPM 2.0 device API on the MSFT0101 virtual TPM."
+
