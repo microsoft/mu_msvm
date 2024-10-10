@@ -1,18 +1,33 @@
 # MsvmPkg
 
+## Building
+
+Follow the basic instructions for PlatformBuild [here](https://microsoft.github.io/mu/CodeDevelopment/compile/).
+
+By default, the tools generate a DEBUG build.  To build RELEASE:
+```powershell
+stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
+```
+
+To build AARCH64:
+```powershell
+stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
+```
+
 ## Loading private UEFI binaries
+Loading
 Type the following command to a powershell window, which allows loading UEFI via a file (MSVM.fd) in `C:\Windows\System32`:
 
 ```powershell
 Set-ItemProperty "HKLM:/Software/Microsoft/Windows NT/CurrentVersion/Virtualization" -Name "AllowFirmwareLoadFromFile" -Value 1 -Type DWORD | Out-Null
 ```
 
-Next, after running a successful build, copy the MSVM.fd binary from the FV folder (e.g. `{root}\Build\MsvmX64\DEBUG_VS2022\FV\MSVM.fd`) to `C:\Windows\System32`. Your standard generation 2 VMs will now use this firmware when booting.
+Next, after running a successful build, copy the MSVM.fd binary from the FV folder (e.g. `{root}\Build\MsvmX64\DEBUG_VS2022\FV\MSVM.fd`) to `C:\Windows\System32`.  Your standard generation 2 VMs will now use this firmware when booting.
 
 
 
 ## Connecting to the debugger
-MsvmPkg uses the MU Feature Debugger, whose full documentation can be found [here](https://github.com/microsoft/mu_feature_debugger/blob/HEAD/DebuggerFeaturePkg/Readme.md?plain=1). 
+MsvmPkg uses the MU Feature Debugger, whose full documentation can be found [here](https://github.com/microsoft/mu_feature_debugger/blob/HEAD/DebuggerFeaturePkg/Readme.md?plain=1).
 
 For these instructions, it is assumed that Windbg is already installed onto the system. WinDbg documentation can be found [here](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/).
 
@@ -33,7 +48,7 @@ Set-VMComPort -VmName "myvm" -Number 1 -Path \\.\pipe\port1 -DebuggerMode On
 
 
 ### Install Python and related packages
-The MU Feature Debugger repository contains a `ComToTcpServer.py` script to support COM and named pipe based transports to forward traffic between a serial device and a TCP server. 
+The MU Feature Debugger repository contains a `ComToTcpServer.py` script to support COM and named pipe based transports to forward traffic between a serial device and a TCP server.
 
 - First, install the latest version of python for your platform
 - Next, in a command window or terminal, run `pip install pyserial` and `pip install pywin32`. This gives access to the Windows COM and named pipe devices
@@ -87,7 +102,7 @@ With all the initial setup in place, follow along each time you make changes to 
 8. You can resolve the loaded binaries by using `!uefiext.findmodule` and `uefiext.findall` commands
 9. You can use the UI buttons on top of Windbg or the command window to go, break in, step over/into etc. now.
 
-More debugging configurations and connection scenarios can be found in the official MU Feature Debugger documentation linked at the top of this section. 
+More debugging configurations and connection scenarios can be found in the official MU Feature Debugger documentation linked at the top of this section.
 
 
 
@@ -107,7 +122,7 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py BLD_*_DEBUGLIB_SERIAL=1
 
 
 ### Connecting
-Hyper-V comes with a command line utility program `hvc`. In order to see advanced logger output through COM2, run this command: 
+Hyper-V comes with a command line utility program `hvc`. In order to see advanced logger output through COM2, run this command:
 
 ```powershell
 hvc serial -rcp 2 <VM-name>

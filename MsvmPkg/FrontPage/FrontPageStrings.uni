@@ -9,7 +9,7 @@
 
 #langdef   en    " Standard English "
 
-#string STR_FRONT_PAGE_TITLE      #language en-US  "Microsoft Hyper-V UEFI"
+#string STR_FRONT_PAGE_TITLE      #language en-US  "Project MU"
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Master Frame Menu Strings
