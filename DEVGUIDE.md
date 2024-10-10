@@ -14,16 +14,16 @@ To build AARCH64:
 stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 ```
 
-## Loading private UEFI binaries
-Loading
-Type the following command to a powershell window, which allows loading UEFI via a file (MSVM.fd) in `C:\Windows\System32`:
+## Loading private UEFI binaries in Hyper-V
+The following steps are supported in Windows 11 24H2 (or Windows Server 2025) builds and newer.
+
+Type the following command to a powershell window, which allows loading via a file (MSVM.fd) in `C:\Windows\System32`:
 
 ```powershell
 Set-ItemProperty "HKLM:/Software/Microsoft/Windows NT/CurrentVersion/Virtualization" -Name "AllowFirmwareLoadFromFile" -Value 1 -Type DWORD | Out-Null
 ```
 
-Next, after running a successful build, copy the MSVM.fd binary from the FV folder (e.g. `{root}\Build\MsvmX64\DEBUG_VS2022\FV\MSVM.fd`) to `C:\Windows\System32`.  Your standard generation 2 VMs will now use this firmware when booting.
-
+Next, after running a successful build, copy the MSVM.fd binary from the build FV folder (e.g. `{root}\Build\MsvmX64\DEBUG_VS2022\FV\MSVM.fd`) to `C:\Windows\System32`.  Your standard generation 2 VMs will now use this firmware when booting.
 
 
 ## Connecting to the debugger
