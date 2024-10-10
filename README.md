@@ -7,7 +7,7 @@ This repository is built on top of Project Mu.  Please see Project Mu for detail
 
 ## Developer Guide
 
-See the [developer guide](DEVGUID.md) and in particular the getting started section.
+See the [developer guide](DEVGUIDE.md) and in particular the getting started section.
 
 ## Contributing
 
