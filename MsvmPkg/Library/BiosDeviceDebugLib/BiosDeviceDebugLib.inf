@@ -1,0 +1,35 @@
+## @file
+#  Instance of Debug Library that intercepts to the Hyper-V BiosDevice.
+#  It uses Print Library to produce formatted output strings.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = BiosDeviceDebugLib
+    FILE_GUID                      = 156a30e1-eefb-404d-9b28-2103ca42a6ee
+    MODULE_TYPE                    = BASE
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = DebugLib
+
+[Sources]
+    DebugLib.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    DebugPrintErrorLevelLib
+    IoLib
+    PcdLib
+    PrintLib
+
+[Pcd]
+gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel  ## CONSUMES
+gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress

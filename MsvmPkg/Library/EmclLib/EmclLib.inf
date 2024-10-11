@@ -1,0 +1,28 @@
+## @file
+#  Library for EMCL (EFI VmBus client library).
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = EmclLib
+    FILE_GUID                      = 00ACE03A-E7F0-4D3E-A68A-77E3AABB5D86
+    MODULE_TYPE                    = BASE
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = EmclLib
+
+[Sources]
+    EmclLib.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[Protocols]
+    gEfiEmclProtocolGuid                #PRODUCES
+    gEfiEmclTagProtocolGuid             #PRODUCES
+    gInternalEventServicesProtocolGuid  #CONSUMES

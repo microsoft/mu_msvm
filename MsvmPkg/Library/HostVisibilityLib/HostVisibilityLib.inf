@@ -1,0 +1,32 @@
+## @file
+#  Host visibility library.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = HostVisibilityLib
+    FILE_GUID                      = 50c4ccb1-a610-47d6-ae29-9e8368091795
+    MODULE_TYPE                    = BASE
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = HostVisibilityLib
+
+[Sources]
+    HostVisibilityLib.c
+
+[Sources.X64]
+    X64/Snp.asm
+    X64/Tdx.asm
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses.X64]
+    PcdLib
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary

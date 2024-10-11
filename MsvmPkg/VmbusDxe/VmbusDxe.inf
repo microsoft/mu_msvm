@@ -1,0 +1,64 @@
+## @file
+#  Provides an implementation of the VmBus channel and root driver.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = VmbusDxe
+    FILE_GUID                      = A6683912-5C39-43CB-9BE8-2A1BC903ABC8
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+
+    ENTRY_POINT                    = VmbusDriverInitialize
+
+
+[Sources]
+    VmbusChannel.c
+    VmbusRoot.c
+
+[Packages]
+    MdeModulePkg/MdeModulePkg.dec
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    CrashLib
+    DebugLib
+    DevicePathLib
+    IsolationLib
+    MemoryAllocationLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiLib
+
+[Guids]
+    gEfiEventExitBootServicesGuid
+    gEfiVmbusChannelDevicePathGuid
+    gMsvmVmbusClientGuid
+
+[Protocols]
+    gEfiHvProtocolGuid                  ## CONSUMES
+    gEfiHvIvmProtocolGuid               ## CONSUMES
+    gEfiDevicePathProtocolGuid          ## PRODUCES
+    gEfiVmbusRootProtocolGuid           ## PRODUCES
+    gEfiVmbusProtocolGuid               ## PRODUCES
+    gEfiVmbusLegacyProtocolGuid         ## PRODUCES
+    gEfiVmbusLegacyProtocolIvmGuid      ## PRODUCES
+    gInternalEventServicesProtocolGuid  ## CONSUMES
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector                               ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdVmbusSintIndex                                ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated                         ## SOMETIMES_CONSUMES
+
+[Depex]
+    gEfiHvProtocolGuid

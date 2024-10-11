@@ -1,0 +1,38 @@
+## @file
+#  Provides wrapper Boot Event Log entries using EFI_EVENTLOG_PROTOCOL
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = MsvmBootEventLogLib
+  FILE_GUID                      = 6170063C-1FB6-4960-8353-BB8413E952B2
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = BootEventLogLib|DXE_CORE DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER
+  CONSTRUCTOR                    = BootEventLogConstructor
+
+[Sources]
+  BootEventLogLibNull.c
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  EventLogLib
+  MemoryAllocationLib
+  PcdLib
+  UefiBootServicesTableLib
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Guids]
+  gBootEventChannelGuid         ## CONSUMES ## GUID
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdBootEventLogSize

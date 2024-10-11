@@ -1,0 +1,71 @@
+## @file
+#   Provides an implementation of the EFI_HV_PROTOCOL protocol, which provides
+#   UEFI access to the Hyper-V hypervisor.
+#
+#   Copyright (c) Microsoft Corporation.
+#   SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = EfiHvDxe
+    FILE_GUID                      = CA585647-54A9-4879-A8CD-45A769246680
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+
+    ENTRY_POINT                    = EfiHvInitialize
+
+
+[Sources]
+    EfiHv.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[Packages.X64]
+    UefiCpuPkg/UefiCpuPkg.dec
+
+[Packages.AARCH64]
+    EmbeddedPkg/EmbeddedPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    CrashLib
+    DebugLib
+    HvHypercallLib
+    IsolationLib
+    MemoryAllocationLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+
+[LibraryClasses.X64]
+    GhcbLib
+    HostVisibilityLib
+    LocalApicLib
+
+[Guids]
+    gEfiEventExitBootServicesGuid                                               ## CONSUMES
+
+[Protocols]
+    gEfiHvProtocolGuid                                                          ## PRODUCES
+    gEfiHvIvmProtocolGuid                                                       ## PRODUCES
+
+[Protocols.X64]
+    gEfiCpuArchProtocolGuid                                                     ## CONSUMES
+
+[Protocols.AARCH64]
+    gHardwareInterruptProtocolGuid                                              ## CONSUMES
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSvsmCallingArea                                   ## SOMETIMES_CONSUMES
+
+[Depex.X64]
+    gEfiCpuArchProtocolGuid
+
+[Depex.AARCH64]
+    gHardwareInterruptProtocolGuid
+

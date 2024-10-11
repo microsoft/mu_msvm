@@ -1,0 +1,71 @@
+## @file
+#  Component description file for PlatformAcpiTables module.
+#
+#  ACPI table data and ASL sources required to boot the platform.
+#
+#  Copyright (c) 2008 - 2010, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = PlatformAcpiTables
+    FILE_GUID                      = 7E374E25-8E01-4FEE-87F2-390C23C606CD
+    MODULE_TYPE                    = USER_DEFINED
+    VERSION_STRING                 = 1.0
+
+[Sources]
+    Dsdt.asl
+    Fadt.aslc
+    Oem0.aslc
+    Spcr.aslc
+    Wdat.aslc
+
+[Sources.AARCH64]
+    Dbg2.aslc
+    Gtdt.aslc
+
+[Sources.X64]
+    Facs.aslc
+    Waet.aslc
+
+[Pcd]
+    gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdBatteryBase               ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom1RegisterBase          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom1Vector                ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCom2Vector                ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdPmemRegisterBase          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcIdleBase              ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdVmbusVector               ## CONSUMES
+
+[Pcd.AARCH64]
+    gMsvmPkgTokenSpaceGuid.PcdBatteryEventVector        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdGenCountEventVector       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdPmemEventVector           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcIdleEventVector       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV     ## CONSUMES
+
+[Pcd.X64]
+    gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdRtcVector                 ## CONSUMES
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    SecurityPkg/SecurityPkg.dec
+
+[Packages.AARCH64]
+    ArmPkg/ArmPkg.dec
+
+[Packages.X64]
+    PcAtChipsetPkg/PcAtChipsetPkg.dec
+    UefiCpuPkg/UefiCpuPkg.dec
+

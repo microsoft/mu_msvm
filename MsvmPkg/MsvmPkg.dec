@@ -1,0 +1,365 @@
+## @file
+#  EFI/Framework Microsoft Virtual Machine Firmware (MSVM) platform
+#
+#  Copyright (C) Microsoft.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = MsvmPkg
+  PACKAGE_GUID                   = 23bcd6f9-699e-48b0-a204-833367da0f1a
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include
+
+[Guids]
+  gMsvmPkgTokenSpaceGuid          = {0x140121ab, 0x5f7a, 0x439e, {0x86, 0x29, 0x98, 0x29, 0xb2, 0xfd, 0x26, 0x76}}
+  gEfiVmbusChannelDevicePathGuid  = {0x9b17e5a2, 0x0891, 0x42dd, {0xb6, 0x53, 0x80, 0xb5, 0xc2, 0x28, 0x09, 0xba}}
+  gMsvmDebuggerEnabledGuid        = {0x4f586432, 0x4cca, 0x4458, {0xa5, 0xec, 0xba, 0xb7, 0xf7, 0xb3, 0x4e, 0x09}}
+  gMsvmDebuggerKdnetBinaryGuid    = {0xf9472c03, 0x9083, 0x435f, {0xb1, 0x83, 0xda, 0x04, 0x81, 0x0a, 0x7b, 0xdf}}
+  gBootEventChannelGuid           = {0x8cc6713b, 0x360d, 0x4406, {0x92, 0x68, 0xf6, 0xb0, 0xcf, 0xdf, 0xca, 0x91}}
+  gStatusCodeEventChannelGuid     = {0x98F65442, 0xBEC2, 0x4351, {0xAC, 0x3A, 0x51, 0x1B, 0x51, 0xFF, 0x32, 0x84}}
+  # {B24FD789-0ADF-46B6-B385-7003E83654D2}
+  gMsEventMasterFrameNotifyGroupGuid    = { 0xb24fd789, 0xadf, 0x46b6, { 0xb3, 0x85, 0x70, 0x3, 0xe8, 0x36, 0x54, 0xd2 } }
+  #
+  # Guid for FrontPage NV variable
+  #
+  gFrontPageNVVarGuid             = {0x7f98efe9, 0x50aa, 0x4598, { 0xb7, 0xc1, 0xcb, 0x72, 0xe1, 0xcc, 0x52, 0x24 }}
+
+  gMsvmVmbusClientGuid            = {0x18dd3964, 0x3e8a, 0x4e42, {0x86, 0xfa, 0xc8, 0xe6, 0xb1, 0x91, 0xee, 0x0e}}
+  #
+  # VmBus channel IDs
+  #
+  gSynthetic3dVideoClassGuid      = {0x113560ea, 0x48cd, 0x4bd1, {0x88, 0x28, 0xfc, 0xec, 0x44, 0xe2, 0xb5, 0xd5}}
+  gSyntheticKeyboardClassGuid     = {0xf912ad6d, 0x2b17, 0x48ea, {0xbd, 0x65, 0xf9, 0x27, 0xa6, 0x1c, 0x76, 0x84}}
+  gSyntheticNetworkClassGuid      = {0xf8615163, 0xdf3e, 0x46c5, {0x91, 0x3f, 0xf2, 0xd2, 0xf9, 0x65, 0xed, 0x0e}}
+  gSyntheticStorageClassGuid      = {0xba6163d9, 0x04a1, 0x4d29, {0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f}}
+  gSyntheticVideoClassGuid        = {0xda0a7802, 0xe377, 0x4aac, {0x8e, 0x77, 0x05, 0x58, 0xeb, 0x10, 0x73, 0xf8}}
+  gSyntheticVmbfsClassGuid        = {0xc376c1c3, 0xd276, 0x48d2, {0x90, 0xa9, 0xc0, 0x47, 0x48, 0x07, 0x2c, 0x60}}
+  gSyntheticVpciClassGuid         = {0x44c4f61d, 0x4444, 0x4400, {0x9d, 0x52, 0x80, 0x2e, 0x27, 0xed, 0xe1, 0x9f}}
+
+[Ppis]
+
+[Protocols]
+  gEfiHvProtocolGuid              = {0xa261a0f1, 0xaa53, 0x4c83, {0x94, 0xda, 0x12, 0x0c, 0xdf, 0x6d, 0x8c, 0x8d}}
+  gEfiHvIvmProtocolGuid           = {0xc40a31b5, 0x3899, 0x4f76, {0xbf, 0x7e, 0x32, 0x95, 0x83, 0x3f, 0xee, 0xe7}}
+  gEfiVmbusRootProtocolGuid       = {0x63d25797, 0x59eb, 0x4125, {0xa3, 0x4e, 0xb2, 0xb4, 0xa8, 0xe1, 0x58, 0x7e}}
+  gEfiVmbusLegacyProtocolGuid     = {0x59e6efc9, 0x9695, 0x470a, {0x9d, 0x87, 0x02, 0x61, 0xd8, 0x45, 0x1d, 0xd8}}
+  gEfiVmbusLegacyProtocolIvmGuid  = {0x8e03933f, 0x8048, 0x4a87, {0x81, 0x47, 0x7f, 0x05, 0xc3, 0x38, 0x28, 0x5d}}
+  gEfiVmbusProtocolGuid           = {0x998629a6, 0xbbd0, 0x476b, {0x81, 0xef, 0x05, 0x99, 0x41, 0xe9, 0xe6, 0xf9}}
+  gEfiEmclProtocolGuid            = {0x64f8b69a, 0x2fe8, 0x475d, {0x8d, 0xba, 0x46, 0x38, 0xc6, 0xc8, 0xa5, 0xae}}
+  gEfiEmclV2ProtocolGuid          = {0xca3386c8, 0x5907, 0x4be4, {0x8d, 0xa7, 0x02, 0x89, 0x5b, 0x2e, 0xa0, 0x69}}
+  gEfiEmclTagProtocolGuid         = {0xd84ec320, 0x6d36, 0x4bdb, {0x8d, 0x4c, 0x8a, 0x02, 0x05, 0x9c, 0x33, 0xe1}}
+  gEfiSecureBootCryptProtocolGuid = {0x04e5c836, 0xff76, 0x4eb9, {0x8d, 0xe8, 0xf7, 0xf7, 0xa9, 0x21, 0xfa, 0xb6}}
+  gEfiRngProtocolGuid             = {0x3152bca5, 0xeade, 0x433d, {0x86, 0x2e, 0xc0, 0x1c, 0xdc, 0x29, 0x1f, 0x44}}
+  gEfiEventLogProtocolGuid        = {0xe916bdda, 0x6c85, 0x45a0, {0x91, 0x79, 0xb4, 0x18, 0xd0, 0x3d, 0x71, 0x45}}
+  gMsvmConsoleProtocolGuid        = {0x2bc3e21d, 0x16ae, 0x4745, {0x92, 0x10, 0x2f, 0xba, 0xa7, 0x4a, 0x28, 0x3e}}
+  mMsGopOverrideProtocolGuid      = {0xBE8EE323, 0x184C, 0x4E24, {0x8E, 0x18, 0x2E, 0x6D, 0xAD, 0xD7, 0x01, 0x60}}
+
+[PcdsFixedAtBuild]
+  gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress|0x0|UINT64|0x0
+  gMsvmPkgTokenSpaceGuid.PcdFdSize|0x0|UINT32|0x1
+  gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|0x0|UINT64|0x2
+  gMsvmPkgTokenSpaceGuid.PcdFvSize|0x0|UINT32|0x3
+  gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress|0x0|UINT64|0x4
+  gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize|0x0|UINT32|0x5
+  gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|0x0|UINT64|0x6
+  gMsvmPkgTokenSpaceGuid.PcdDxeFvSize|0x0|UINT32|0x7
+
+  # Synthetic Timer Configuration
+  gMsvmPkgTokenSpaceGuid.PcdSynicTimerSintIndex|0x1|UINT8|0x2000
+  gMsvmPkgTokenSpaceGuid.PcdSynicTimerTimerIndex|0x0|UINT8|0x2001
+  gMsvmPkgTokenSpaceGuid.PcdSynicTimerVector|0x40|UINT8|0x2002
+  gMsvmPkgTokenSpaceGuid.PcdSynicTimerDefaultPeriod|100000|UINT64|0x2003 # 1/100 of a second in 100 nanosecond units
+
+  # Vmbus Driver Configuration
+  gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector|0x41|UINT8|0x3000
+  gMsvmPkgTokenSpaceGuid.PcdVmbusSintIndex|0x2|UINT8|0x3001
+  gMsvmPkgTokenSpaceGuid.PcdVmbusVector|0x5|UINT8|0x3002
+
+  gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiTableStorageFile|{ 0x25, 0x4e, 0x37, 0x7e, 0x01, 0x8e, 0xee, 0x4f, 0x87, 0xf2, 0x39, 0xc, 0x23, 0xc6, 0x6, 0xcd }|VOID*|0x30000016
+
+  # maximum number of event channels.
+  gMsvmPkgTokenSpaceGuid.PcdEventLogMaxChannels|8|UINT32|0x4000
+
+  # size in bytes of the Boot event log (must be a power of 2)
+  gMsvmPkgTokenSpaceGuid.PcdBootEventLogSize|8192|UINT32|0x4001
+
+  # size in bytes of the Status Code event log (must be a power of 2)
+  gMsvmPkgTokenSpaceGuid.PcdStatusCodeEventLogSize|8192|UINT32|0x4002
+
+  # video mode number used by the platform console for diagnostic summary output.
+  gMsvmPkgTokenSpaceGuid.PcdPlatformConsoleMode|3|UINT16|0x4003
+
+  # video mode number used by the platform console when booting.
+  gMsvmPkgTokenSpaceGuid.PcdPlatformBootConsoleMode|0|UINT16|0x4004
+
+  # size of the platform string print buffer in Unicode (UTF-16) characters
+  gMsvmPkgTokenSpaceGuid.PcdPlatformStringBufferSize|512|UINT32|0x4005
+
+  # Base addresses of memory mapped devices in MMIO space.
+  # The first three are defined by other package PCDs.
+  #   gUefiCpuPkgTokenSpaceGuid.PcdCpuLocalApicBaseAddress is 0xFEE00000
+  #   gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress is 0xFED40000
+  #   gPcAtChipsetPkgTokenSpaceGuid.PcdIoApicBaseAddress is 0xFEC00000
+
+  # Virtual Battery Device
+  gMsvmPkgTokenSpaceGuid.PcdBatteryBase|0xFED3F000|UINT32|0x5000
+  gMsvmPkgTokenSpaceGuid.PcdBatteryEventVector|36|UINT8|0x5001
+
+  # BIOS Device
+  gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress|0xEFFED000|UINT32|0x5002
+
+  # Generation Counter
+  gMsvmPkgTokenSpaceGuid.PcdGenCountEventVector|35|UINT8|0x5003
+
+  # UARTs
+  gMsvmPkgTokenSpaceGuid.PcdCom1RegisterBase|0xEFFEC000|UINT32|0x5004
+  gMsvmPkgTokenSpaceGuid.PcdCom1Vector|33|UINT8|0x5005
+  gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase|0xEFFEB000|UINT32|0x5006
+  gMsvmPkgTokenSpaceGuid.PcdCom2Vector|34|UINT8|0x5008
+
+  # RTC (clock)
+  gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase|0x70|UINT32|0x5009
+  gMsvmPkgTokenSpaceGuid.PcdRtcVector|8|UINT8|0x500A
+
+  # PMEM (nvdimm) device
+  gMsvmPkgTokenSpaceGuid.PcdPmemRegisterBase|0xEFFE9000|UINT32|0x500B
+  gMsvmPkgTokenSpaceGuid.PcdPmemEventVector|37|UINT8|0x500C
+
+  # Virtual Processor Aggregator Device
+  gMsvmPkgTokenSpaceGuid.PcdProcIdleBase|0xEFFE8000|UINT32|0x500D
+  gMsvmPkgTokenSpaceGuid.PcdProcIdleEventVector|38|UINT8|0x500E
+
+  # GTDT for AArch64
+  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV|19|UINT32|0x500F
+  gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV|20|UINT32|0x5010
+  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV|21|UINT32|0x5011
+
+  # Feature Debugger Custom Settings
+  gMsvmPkgTokenSpaceGuid.PcdFeatureDebuggerPortUartBase|0x0|UINT64|0x5012
+
+  ##
+  # POST background color (default: black).
+  #
+  gMsvmPkgTokenSpaceGuid.PcdPostBackgroundColor|0x0|UINT32|0x40000186
+
+  ##
+  # POST background coloring skip counter's initial/default value.
+  # Background is colored in DXE only when this counter reaches 0
+  # Default is 1, meaning background will not be colored on first invocation of Logo rendering library in DXE
+  #
+  gMsvmPkgTokenSpaceGuid.PcdPostBackgroundColoringSkipCount|0x01|UINT8|0x40000187
+
+  ## FFS filename to find the default BMP Logo file.
+  # @Prompt FFS Name of Boot Logo File
+  gMsvmPkgTokenSpaceGuid.PcdLogoFile |{ 0x99, 0x8b, 0xB2, 0x7B, 0xBB, 0x61, 0xD5, 0x11, 0x9A, 0x5D, 0x00, 0x90, 0x27, 0x3F, 0xC1, 0x4D }|VOID*|0x40000128
+
+  ## FFS filename to find the FP Title Logo BMP file.
+  # {AFDAEAB5-3F81-4E93-8EE3-228434BA283D}
+  gMsvmPkgTokenSpaceGuid.PcdFrontPageLogoFile |{ 0xb5, 0xea, 0xda, 0xaf, 0x81, 0x3f, 0x93, 0x4e, 0x8e, 0xe3, 0x22, 0x84, 0x34, 0xba, 0x28, 0x3d }|VOID*|0x4000000B
+
+  ## FFS filename to find the No Boot BMP file.
+  # {f1e7a352-46ae-4912-af92-36ab51781d8e}
+  gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile |{ 0x52, 0xa3, 0xe7, 0xf1, 0xae, 0x46, 0x12, 0x49, 0x92, 0xaf, 0x36, 0xab, 0x51, 0x78, 0x1d, 0x8e }|VOID*|0x4000000E
+
+# Dynamic PCDs used to pass config data between PEI and DXE
+# used in lieu of ConfigLib
+[PcdsDynamic]
+  # UEFI_CONFIG_STRUCTURE_COUNT
+  gMsvmPkgTokenSpaceGuid.PcdConfigBlobSize|0x0|UINT32|0x6000
+
+  # UEFI_CONFIG_BIOS_INFORMATION
+  gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap|0x0|BOOLEAN|0x6001
+
+  # UEFI_CONFIG_MADT
+  gMsvmPkgTokenSpaceGuid.PcdMadtPtr|0x0|UINT64|0x6042
+  gMsvmPkgTokenSpaceGuid.PcdMadtSize|0x0|UINT32|0x6043
+
+  # UEFI_CONFIG_SRAT
+  gMsvmPkgTokenSpaceGuid.PcdSratPtr|0x0|UINT64|0x6002
+  gMsvmPkgTokenSpaceGuid.PcdSratSize|0x0|UINT32|0x6003
+
+  # UEFI_CONFIG_SLIT
+  gMsvmPkgTokenSpaceGuid.PcdSlitPtr|0x0|UINT64|0x605A
+  gMsvmPkgTokenSpaceGuid.PcdSlitSize|0x0|UINT32|0x605B
+
+  #UEFI_CONFIG_PPTT
+  gMsvmPkgTokenSpaceGuid.PcdPpttPtr|0x0|UINT64|0x605F
+  gMsvmPkgTokenSpaceGuid.PcdPpttSize|0x0|UINT32|0x6060
+
+  # UEFI_CONFIG_HMAT
+  gMsvmPkgTokenSpaceGuid.PcdHmatPtr|0x0|UINT64|0x606E
+  gMsvmPkgTokenSpaceGuid.PcdHmatSize|0x0|UINT32|0x606F
+
+  # UEFI_CONFIG_MEMORY_MAP
+  gMsvmPkgTokenSpaceGuid.PcdMemoryMapPtr|0x0|UINT64|0x6004
+  gMsvmPkgTokenSpaceGuid.PcdMemoryMapSize|0x0|UINT32|0x6005
+
+  # UEFI_CONFIG_ENTROPY
+  # Points to the actual entropy array, not the containing config structure
+  gMsvmPkgTokenSpaceGuid.PcdEntropyPtr|0x0|UINT64|0x6006
+
+  # UEFI_CONFIG_BIOS_GUID
+  # Points to the actual GUID, not the containing config structure
+  gMsvmPkgTokenSpaceGuid.PcdBiosGuidPtr|0x0|UINT64|0x6007
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_SERIAL_NUMBER
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberStr|0x0|UINT64|0x6008
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberSize|0x0|UINT32|0x6009
+
+  # UEFI_CONFIG_SMBIOS_BASE_SERIAL_NUMBER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberStr|0x0|UINT64|0x600A
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberSize|0x0|UINT32|0x600B
+
+  # UEFI_CONFIG_SMBIOS_CHASSIS_SERIAL_NUMBER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberStr|0x0|UINT64|0x600C
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberSize|0x0|UINT32|0x600D
+
+  # UEFI_CONFIG_SMBIOS_CHASSIS_ASSET_TAG
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagStr|0x0|UINT64|0x600E
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagSize|0x0|UINT32|0x600F
+
+  # UEFI_CONFIG_SMBIOS_BIOS_LOCK_STRING
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringStr|0x0|UINT64|0x6010
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringSize|0x0|UINT32|0x6011
+
+  # UEFI_CONFIG_SMBIOS_3_1_PROCESSOR_INFORMATION
+  # Defaults are set to Unknown unless otherwise noted
+  # Processor Type defaults to Central Processor type (CPU)
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorType|0x3|UINT8|0x6012
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorID|0x0|UINT64|0x6013
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVoltage|0x0|UINT8|0x6014
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorExternalClock|0x0|UINT16|0x6015
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorMaxSpeed|0x0|UINT16|0x6016
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCurrentSpeed|0x0|UINT16|0x6017
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorStatus|0x0|UINT8|0x6018
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorUpgrade|0x1|UINT8|0x6019
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCharacteristics|0x0|UINT16|0x601A
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorFamily2|0x2|UINT16|0x601B
+
+  # UEFI_CONFIG_SMBIOS_SOCKET_DESIGNATION
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationStr|0x0|UINT64|0x601C
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationSize|0x0|UINT32|0x601D
+
+  # UEFI_CONFIG_SMBIOS_PROCESSOR_MANUFACTURER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerStr|0x0|UINT64|0x601E
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerSize|0x0|UINT32|0x601F
+
+  # UEFI_CONFIG_SMBIOS_PROCESSOR_VERSION
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionStr|0x0|UINT64|0x6020
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionSize|0x0|UINT32|0x6021
+
+  # UEFI_CONFIG_SMBIOS_PROCESSOR_SERIAL_NUMBER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberStr|0x0|UINT64|0x6022
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberSize|0x0|UINT32|0x6023
+
+  # UEFI_CONFIG_SMBIOS_PROCESSOR_ASSET_TAG
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagStr|0x0|UINT64|0x6024
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagSize|0x0|UINT32|0x6025
+  # UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberStr|0x0|UINT64|0x6026
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberSize|0x0|UINT32|0x6027
+
+  # UEFI_CONFIG_FLAGS
+  gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled|FALSE|BOOLEAN|0x6028
+  gMsvmPkgTokenSpaceGuid.PcdPauseAfterBootFailure|FALSE|BOOLEAN|0x6029
+  gMsvmPkgTokenSpaceGuid.PcdPxeIpV6|FALSE|BOOLEAN|0x602A
+  gMsvmPkgTokenSpaceGuid.PcdDebuggerEnabled|FALSE|BOOLEAN|0x602B
+  gMsvmPkgTokenSpaceGuid.PcdLoadOempTable|FALSE|BOOLEAN|0x602C
+  gMsvmPkgTokenSpaceGuid.PcdTpmEnabled|FALSE|BOOLEAN|0x602D
+  gMsvmPkgTokenSpaceGuid.PcdHibernateEnabled|FALSE|BOOLEAN|0x602E
+  gMsvmPkgTokenSpaceGuid.PcdConsoleMode|0x0|UINT8|0x602F
+  gMsvmPkgTokenSpaceGuid.PcdMemoryAttributesTableEnabled|FALSE|BOOLEAN|0x6030
+  gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled|FALSE|BOOLEAN|0x6031
+  gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled|FALSE|BOOLEAN|0x6039
+  gMsvmPkgTokenSpaceGuid.PcdIsVmbfsBoot|FALSE|BOOLEAN|0x603D
+  gMsvmPkgTokenSpaceGuid.PcdDisableFrontpage|FALSE|BOOLEAN|0x6041
+  gMsvmPkgTokenSpaceGuid.PcdDefaultBootAttemptPxe|FALSE|BOOLEAN|0x6044
+  gMsvmPkgTokenSpaceGuid.PcdDefaultBootAlwaysAttempt|FALSE|BOOLEAN|0x6045
+  gMsvmPkgTokenSpaceGuid.PcdLowPowerS0IdleEnabled|FALSE|BOOLEAN|0x6046
+  gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled|FALSE|BOOLEAN|0x6047
+  gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled|FALSE|BOOLEAN|0x6048
+  gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated|FALSE|BOOLEAN|0x605C
+  gMsvmPkgTokenSpaceGuid.PcdMediaPresentEnabledByDefault|FALSE|BOOLEAN|0x6059
+  gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled|FALSE|BOOLEAN|0x6062
+  gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE|BOOLEAN|0x6064
+  gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE|BOOLEAN|0x6065
+
+  # UEFI_CONFIG_PROCESSOR_INFORMATION
+  gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0|UINT32|0x6032
+  gMsvmPkgTokenSpaceGuid.PcdProcessorsPerVirtualSocket|0x0|UINT32|0x6033
+  gMsvmPkgTokenSpaceGuid.PcdThreadsPerProcessor|0x0|UINT32|0x6040
+
+  # UEFI_CONFIG_MMIO_DESCRIPTION
+  # Currently only two mmio holes, low gap and high gap but we could
+  # do more in the future.
+  gMsvmPkgTokenSpaceGuid.PcdLowMmioGapBasePageNumber|0x0|UINT64|0x6034
+  gMsvmPkgTokenSpaceGuid.PcdLowMmioGapSizeInPages|0x0|UINT64|0x6035
+  gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber|0x0|UINT64|0x6036
+  gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages|0x0|UINT64|0x6037
+
+  # UEFI_CONFIG_ACPI_TABLE
+  gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress|0x0|UINT64|0x603A
+  gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr|0x0|UINT64|0x603B
+  gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize|0x0|UINT32|0x603C
+
+  gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements|FALSE|BOOLEAN|0x603E
+
+  # UEFI_CONFIG_NVDIMM_COUNT
+  gMsvmPkgTokenSpaceGuid.PcdNvdimmCount|0x0|UINT16|0x603F
+
+  # UEFI_CONFIG_VPCI_INSTANCE_FILTER_GUID
+  gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr|0x0|UINT64|0x6049
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_MANUFACTURER
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerStr|0x0|UINT64|0x604A
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerSize|0x0|UINT32|0x604B
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_PRODUCT_NAME
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameStr|0x0|UINT64|0x604C
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameSize|0x0|UINT32|0x604D
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_VERSION
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionStr|0x0|UINT64|0x604E
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionSize|0x0|UINT32|0x604F
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_SKU_NUMBER
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberStr|0x0|UINT64|0x6050
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberSize|0x0|UINT32|0x6051
+
+  # UEFI_CONFIG_SMBIOS_SYSTEM_FAMILY
+  # Points to a null terminated string of the specified size
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilyStr|0x0|UINT64|0x6052
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilySize|0x0|UINT32|0x6053
+
+  # UEFI_CONFIG_SMBIOS_MEMORY_DEVICE_SERIAL_NUMBER
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberStr|0x0|UINT64|0x6054
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberSize|0x0|UINT32|0x6055
+
+  # Isolation configuration
+  gMsvmPkgTokenSpaceGuid.PcdIsolationArchitecture|0x0|UINT32|0x6056
+  gMsvmPkgTokenSpaceGuid.PcdIsolationParavisorPresent|FALSE|BOOLEAN|0x6057
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary|0x0|UINT64|0x6058
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask|0x0|UINT64|0x6061
+  gMsvmPkgTokenSpaceGuid.PcdSvsmCallingArea|0x0|UINT64|0x6063
+
+  # UEFI_CONFIG_AMD_ASPT
+  gMsvmPkgTokenSpaceGuid.PcdAsptPtr|0x0|UINT64|0x605D
+  gMsvmPkgTokenSpaceGuid.PcdAsptSize|0x0|UINT32|0x605E
+
+  # UEFI_CONFIG_MCFG
+  gMsvmPkgTokenSpaceGuid.PcdMcfgPtr|0x0|UINT64|0x606A
+  gMsvmPkgTokenSpaceGuid.PcdMcfgSize|0x0|UINT32|0x606B
+
+  # UEFI_CONFIG_SSDT
+  gMsvmPkgTokenSpaceGuid.PcdSsdtPtr|0x0|UINT64|0x606C
+  gMsvmPkgTokenSpaceGuid.PcdSsdtSize|0x0|UINT32|0x606D

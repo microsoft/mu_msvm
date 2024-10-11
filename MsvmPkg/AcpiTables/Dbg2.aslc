@@ -1,0 +1,85 @@
+/** @file
+  The DBG2 Port Table information that exposes the PL011 device as a serial
+  debug device for Windows.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+
+**/
+
+#include <Base.h>
+#include <AcpiTables.h>
+#include <IndustryStandard/DebugPort2Table.h>
+
+#define VM_ACPI_PL011_DEVICE_NAME_SPACE_STRING "\\_SB.VMOD.UAR1"
+
+#pragma pack(1)
+
+typedef struct {
+    EFI_ACPI_DBG2_DEBUG_DEVICE_INFORMATION_STRUCT PL011;
+    EFI_ACPI_6_2_GENERIC_ADDRESS_STRUCTURE PL011Addr;
+    UINT32 AddressSize;
+    UINT8  NameSpaceString[32];
+} VM_ACPI_DEBUG_PORT_2_DDI_PL011;
+
+typedef struct {
+    EFI_ACPI_DEBUG_PORT_2_DESCRIPTION_TABLE Table;
+    VM_ACPI_DEBUG_PORT_2_DDI_PL011 PL011Dev;
+} VM_ACPI_DEBUG_PORT_2_IMPL;
+
+#pragma pack()
+
+#define VM_ACPI_DBG2_DDI_BASE_ADDRESS_REGISTER_OFFSET sizeof(EFI_ACPI_DBG2_DEBUG_DEVICE_INFORMATION_STRUCT)
+#define VM_ACPI_DBG2_DDI_ADDRESS_SIZE_OFFSET VM_ACPI_DBG2_DDI_BASE_ADDRESS_REGISTER_OFFSET + sizeof(EFI_ACPI_6_2_GENERIC_ADDRESS_STRUCTURE)
+#define VM_ACPI_DBG2_NAMESPACE_STRING_OFFSET VM_ACPI_DBG2_DDI_ADDRESS_SIZE_OFFSET + sizeof(UINT32)
+
+VM_ACPI_DEBUG_PORT_2_IMPL DBG2 =
+{
+    {
+        STANDARD_HEADER(EFI_ACPI_6_2_DEBUG_PORT_2_TABLE_SIGNATURE,
+                        sizeof(VM_ACPI_DEBUG_PORT_2_IMPL),
+                        EFI_ACPI_DEBUG_PORT_2_TABLE_REVISION)
+        sizeof(EFI_ACPI_DEBUG_PORT_2_DESCRIPTION_TABLE),
+        1, // one debug device, UART
+    },
+
+    {
+        {
+            EFI_ACPI_DBG2_DEBUG_DEVICE_INFORMATION_STRUCT_REVISION,
+            sizeof(VM_ACPI_DEBUG_PORT_2_DDI_PL011),
+            1, // Number of Generic Address Registers
+            sizeof(VM_ACPI_PL011_DEVICE_NAME_SPACE_STRING), // Length of Namespace String
+            VM_ACPI_DBG2_NAMESPACE_STRING_OFFSET,//namespace str offset
+            0, // oem data length
+            0, // oem data offset
+            EFI_ACPI_DBG2_PORT_TYPE_SERIAL, // Port Type
+            EFI_ACPI_DBG2_PORT_SUBTYPE_SERIAL_ARM_PL011_UART, // Port Subtype
+            {
+                0,  // reserved 2 byte array
+                0
+            },
+            VM_ACPI_DBG2_DDI_BASE_ADDRESS_REGISTER_OFFSET, // Base addr register offset
+            VM_ACPI_DBG2_DDI_ADDRESS_SIZE_OFFSET // Addr size offset
+        },
+
+        //
+        // NOTE: For the PL011, Windows only looks at the memory type and address
+        // and ignores everything else in this GAS.
+        //
+        {
+            EFI_ACPI_6_2_SYSTEM_MEMORY,
+            32, // Register Bit Width
+            0, // Register Bit offset
+            EFI_ACPI_6_2_DWORD, // Access Size
+            0xEFFEC000 // addr of pl011 dev (COM1)
+        },
+        0x00001000, // Address size corresponding to above
+        VM_ACPI_PL011_DEVICE_NAME_SPACE_STRING
+    }
+};
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &DBG2;
+}

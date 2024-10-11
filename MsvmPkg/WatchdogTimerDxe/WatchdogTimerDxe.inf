@@ -1,0 +1,41 @@
+## @file
+#  Watchdog timer driver producing the Watchdog Timer Architectural Protocol.
+#
+#   Copyright (c) Microsoft Corporation.
+#   SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010016
+  BASE_NAME                      = WatchdogTimer
+  FILE_GUID                      = BD3C7586-B9A3-4332-9EEE-E9F02CF6A931
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = WatchdogInitialize
+
+[Sources]
+  WatchdogTimer.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  IsolationLib
+  ReportStatusCodeLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiRuntimeServicesTableLib
+  WatchdogTimerLib
+
+[Protocols]
+  gEfiWatchdogTimerArchProtocolGuid             ## PRODUCES
+
+[Guids]
+  gEfiEventExitBootServicesGuid                 ## CONSUMES
+
+[depex]
+  gEfiTimerArchProtocolGuid

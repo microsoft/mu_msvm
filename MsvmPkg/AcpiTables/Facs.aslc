@@ -1,0 +1,30 @@
+/** @file
+  Defines the FACS fixed ACPI table. This table is mandatory when
+  running with fixed ACPI hardware, as it provides storage for the global
+  lock.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+#include <Base.h>
+#include <AcpiTables.h>
+
+EFI_ACPI_6_2_FIRMWARE_ACPI_CONTROL_STRUCTURE FACS =
+{
+    EFI_ACPI_6_2_FIRMWARE_ACPI_CONTROL_STRUCTURE_SIGNATURE,
+    sizeof(EFI_ACPI_6_2_FIRMWARE_ACPI_CONTROL_STRUCTURE),
+    0, // HardwareSignature
+    0, // FirmwareWakingVector
+    0, // GlobalLock
+    0, // Flags
+    0, // XFirmwareWakingVector
+    EFI_ACPI_6_2_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION, // Version
+};
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &FACS;
+}
+

@@ -1,0 +1,105 @@
+## @file
+#  This module is responsible for creating the SMBIOS table.
+#  This driver will make a best effort to add all the SMBIOS v3.1 required
+#  structures. Failure is not fatal and may result in some of the required
+#  structures to not be installed.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = SmbiosPlatform
+    FILE_GUID                      = 12FCA5F5-7323-49A9-80FB-EE2CDD267569
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+    ENTRY_POINT                    = SmbiosPlatformEntryPoint
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64 IPF EBC
+#
+
+[Sources]
+    SmbiosPlatform.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseMemoryLib
+    ConfigLib
+    DebugLib
+    DxeServicesLib
+    IoLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiLib
+
+[Protocols]
+    gEfiSmbiosProtocolGuid                     ## CONSUMES
+
+[Guids]
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMemoryMapPtr                      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdMemoryMapSize                     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdBiosGuidPtr                       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerStr       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemManufacturerSize      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameStr        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemProductNameSize       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionStr            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemVersionSize           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberStr       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSerialNumberSize      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberStr          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemSKUNumberSize         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilyStr             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosSystemFamilySize            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberStr         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBaseSerialNumberSize        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberStr      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisSerialNumberSize     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagStr          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosChassisAssetTagSize         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringStr           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosBiosLockStringSize          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberStr ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosMemoryDeviceSerialNumberSize    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorType               ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorID                 ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVoltage            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorExternalClock      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorMaxSpeed           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCurrentSpeed       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorStatus             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorUpgrade            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorCharacteristics    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorFamily2            ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationStr   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSocketDesignationSize  ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerStr    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorManufacturerSize   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionStr         ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorVersionSize        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberStr    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorSerialNumberSize   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberStr      ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorPartNumberSize     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagStr        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosProcessorAssetTagSize       ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcessorCount                    ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdProcessorsPerVirtualSocket        ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdThreadsPerProcessor               ## CONSUMES
+
+[Depex]
+    gEfiSmbiosProtocolGuid
+
+

@@ -1,0 +1,290 @@
+/** @file
+  Defines the Fixed ACPI Description Table.
+
+  Copyright (c) Microsoft Corporation.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+#include <Base.h>
+#include <AcpiTables.h>
+
+#if defined(MDE_CPU_X64)
+
+#include <PowerManagementInterface.h>
+
+EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE FADT =
+{
+    STANDARD_HEADER(EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_SIGNATURE,
+                    sizeof(EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE),
+                    EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_REVISION)
+    0,                                      // 32 Bit Physical Ptr to FACS Table
+    0,                                      // 32 Bit Physical Ptr to DSDT
+    1,                                      // set to 1 for compatibility with ACPI 1.0
+    EFI_ACPI_6_2_PM_PROFILE_UNSPECIFIED,    // unspecified power management profile
+    9,                                      // system vector for SCI interrupt
+    0,                                      // SMI command port (not used in VM UEFI)
+    0,                                      // data to be written thence to generate software SMI to enable acpi
+    0,                                      //  "    "  "    "       "    "     "        "     "   " disable acpi
+    0,                                      //  "    "  "    "       "    " enter the S4BIOS state
+    0,                                      // SW SMI value to assume processor control responsibility
+    0,                                      // power mgt 1a event reg blk port
+    0,                                      // power mgt 1b event reg blk port
+    0,                                      // power mgt 1a ctrl reg blk port
+    0,                                      // power mgt 1b ctrl reg blk port
+    0,                                      // power mgt 2 ctrl reg blk port
+    0,                                      // power mgt timer ctrl reg blk port
+    0,                                      // general purpose event 0 reg blk port
+    0,                                      // general purpose event 1 reg blk port
+    4,                                      // pm1 evt length
+    2,                                      // pm1 cnt length
+    0,                                      // pm2 cnt length
+    4,                                      // pm tmr length
+    4,                                      // gpe0 blk length
+    0,                                      // gpe1 blk length
+    0,                                      // offset in gpe model where gpe1 events start
+    0,                                      // SW SMI value to indicate OS supports for _CST object and C States Changed Notification
+    101,                                    // worst case hw latency to enter/exit C2 state (> 100 == disable)
+    1001,                                   // worst case hw latency to enter/exit C3 state (> 1000 == disable)
+    0,                                      // cache flush size (KB)
+    0,                                      // min. cache line size (bytes)
+    0,                                      // duty offset -- bit index for start of throttle enable value
+    0,                                      // duty width -- width (in bits) of throttle enable value
+    0xd,                                    // index to day-of-month alarm in RTC CMOS RAM
+    0,                                      // index to month-of-year alarm in RTC CMOS RAM
+    0,                                      // index to century in RTC CMOS RAM
+    EFI_ACPI_6_2_VGA_NOT_PRESENT,           // IA-PC Boot Architecture Flags
+    0,                                      // reserved
+    (EFI_ACPI_6_2_WBINVD |                  // Flags
+     EFI_ACPI_6_2_PROC_C1 |
+     EFI_ACPI_6_2_PWR_BUTTON |
+     EFI_ACPI_6_2_SLP_BUTTON |
+     EFI_ACPI_6_2_TMR_VAL_EXT |
+     EFI_ACPI_6_2_RESET_REG_SUP |
+     EFI_ACPI_6_2_USE_PLATFORM_CLOCK ),
+    {                                       // Reset register
+        EFI_ACPI_6_2_SYSTEM_IO,
+        8,
+        0,
+        EFI_ACPI_6_2_BYTE,
+        PowerMgmtDefaultBaseRegister + PowerMgmtResetRegister
+    },
+    PowerMgmtResetValue,                        // Value to write to reset register
+    0, // ArmBootArch
+    EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_MINOR_REVISION, // Minor version
+    0, // XFirmwareCtrl
+    0, // XDsdt
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // X_PM1a_EVT_BLK - Windows if it detects FADT ACPI 5.0 or greater always uses the extended fields, ignoring address in legacy fields...
+        EFI_ACPI_6_2_QWORD * 8, // However, Windows still requires the size fields to be present, even though the GAS structure has the size information as well
+        0,
+        EFI_ACPI_6_2_QWORD,
+        PowerMgmtDefaultBaseRegister + PowerMgmtStatusRegOffset
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1b_EVT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // X_PM1a_CNT_BLK
+        EFI_ACPI_6_2_WORD * 8,
+        0,
+        EFI_ACPI_6_2_WORD,
+        PowerMgmtDefaultBaseRegister + PowerMgmtControlRegOffset
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1b_CNT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM2_CNT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // X_PM_TMR_BLK
+        EFI_ACPI_6_2_QWORD * 8,
+        0,
+        EFI_ACPI_6_2_QWORD,
+        PowerMgmtDefaultBaseRegister + PowerMgmtTimerRegOffset
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // X_GPE0_BLK
+        EFI_ACPI_6_2_QWORD * 8,
+        0,
+        EFI_ACPI_6_2_QWORD,
+        PowerMgmtDefaultBaseRegister + PowerMgmtGenPurposeStatusRegOffset
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_GPE1_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // SLEEP_CONTROL_REG
+        EFI_ACPI_6_2_BYTE * 8,
+        0,
+        EFI_ACPI_6_2_BYTE,
+        PowerMgmtDefaultBaseRegister + PowerMgmtControlRegOffset + 1 // Maps to upper byte [15:8] of control reg
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_IO, // SLEEP_STATUS_REG
+        EFI_ACPI_6_2_BYTE * 8,
+        0,
+        EFI_ACPI_6_2_BYTE,
+        PowerMgmtDefaultBaseRegister + PowerMgmtStatusRegOffset + 1 // Maps to upper byte [15:8] of status reg
+    },
+    0 // Hypervisor Vendor Identity - Set via Facp.c
+};
+
+
+#elif defined(MDE_CPU_AARCH64)
+
+EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE FADT =
+{
+    STANDARD_HEADER(EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_SIGNATURE,
+                    sizeof(EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE),
+                    EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_REVISION)
+    0, // 32 bit addr to FACS
+    0, // 32 bit addr to DSDT
+    0, // Reserved
+    EFI_ACPI_6_2_PM_PROFILE_UNSPECIFIED, // Preferred PM Profile
+    0, // SCI_INT - Offset 46 - Fields at offsets 46-108 are ignored due to HARDWARE_REDUCED_ACPI
+    0, // SM_CMD
+    0, // ACPI_ENABLE
+    0, // ACPI_DISABLE
+    0, // S4BIOS_REQ
+    0, // PSTATE_CNT
+    0, // PM1a_EVT_BLK
+    0, // PM1b_EVT_BLK
+    0, // PM1a_CNT_BLK
+    0, // PM1b_CNT_BLK
+    0, // PM2_CNK_BLK
+    0, // PM_TMR_BLK
+    0, // GPE0_BLK
+    0, // GPE1_BLK
+    0, // PM1_EVT_LEN
+    0, // PM1_CNT_LEN
+    0, // PM2_CNT_LEN
+    0, // PM_TMR_LEN
+    0, // GPE0_BLK_LEN
+    0, // GPE1_BLK_LEN
+    0, // GPE1_BASE
+    0, // CST_CNT
+    0, // P_LVL2_LAT
+    0, // P_LV3_LAT
+    0, // FLUSH_SIZE
+    0, // FLUSH_STRIDE
+    0, // DUTY_OFFSET
+    0, // DUTY_WIDTH
+    0, // DAY_ALRM
+    0, // MON_ALRM
+    0, // CENTURY - Offset 108 - End of HARDWARE_REDUCED_ACPI ignore section
+    0, // IAPC_BOOT_ARCH
+    0, // Reserved
+    (EFI_ACPI_6_2_PWR_BUTTON | // FADT Flags
+     EFI_ACPI_6_2_SLP_BUTTON |
+     EFI_ACPI_6_2_HW_REDUCED_ACPI),
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // RESET_REG, no reset reg use PSCI
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    0, // RESET_VALUE, no reset reg, use PSCI
+    EFI_ACPI_6_2_ARM_PSCI_COMPLIANT, // ARM_BOOT_ARCH use PSCI, SMC as transport mechanism
+    EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_MINOR_REVISION, // FADT Minor Rev
+    0, // X_FIRMWARE_CTRL
+    0, // X_DSDT - updated by InstallAcpiTable
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1a_EVT_BLK - Offset 148 - Fields at offsets 148 - 232 are ignored due to HARDWARE_REDUCED_ACPI
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1b_EVT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1a_CNT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM1b_CNT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM2_CNT_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_PM_TMR_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_GPE0_BLK
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // X_GPE1_BLK - Offset 232
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // SLEEP_CONTROL_REG, no reg use PSCI
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    {
+        EFI_ACPI_6_2_SYSTEM_MEMORY, // SLEEP_STATUS_REG, no reg use PSCI
+        0,
+        0,
+        EFI_ACPI_6_2_UNDEFINED,
+        0
+    },
+    0 // Hypervisor Vendor Identity - Set via Facp.c
+};
+
+#else
+#error Unsupported Architecture
+#endif
+
+VOID*
+ReferenceAcpiTable()
+{
+    return (VOID*) &FADT;
+}

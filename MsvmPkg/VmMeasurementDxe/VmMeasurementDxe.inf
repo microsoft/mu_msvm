@@ -1,0 +1,42 @@
+## @file
+#  Measure VM specific data to TPM using PCR[06]
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = VmMeasurementDxe
+  MODULE_UNI_FILE                = VmMeasurementDxe.uni
+  FILE_GUID                      = 291055a3-734b-4203-89dc-306e64a5f85f
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = VmMeasurementEntry
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64
+#
+
+[Sources]
+  VmMeasurementDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  UefiDriverEntryPoint
+  UefiLib
+  TpmMeasurementLib
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdBiosGuidPtr   ## CONSUMES
+
+[Depex]
+  gEfiTcg2ProtocolGuid
