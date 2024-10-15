@@ -34,10 +34,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r pip_requirement_stable.txt
 
-      # Install Visual Studio Build Tools and NASM (without optional components)
+      # Install Visual Studio Build Tools and NASM (with ARM64 components)
       - name: Install Build Tools
         run: |
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.ARM64 --includeRecommended"
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.ARM64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM --includeRecommended --includeOptional"
           choco install nasm
 
       # Enable long paths in Git configuration (Windows)
