@@ -48,12 +48,17 @@ jobs:
       # Stuart Setup: Initialize the build environment
       - name: Stuart Setup
         run: |
-          stuart_setup -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022 -a ${{ matrix.arch }} -t ${{ matrix.target }}
+          stuart_setup -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022
+
+      # Stuart Update: Update the build environment
+      - name: Stuart Update
+        run: |
+          stuart_update -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022
 
       # Stuart Build: Perform the build using the specified architecture and target
       - name: Stuart Build
         run: |
-          stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022 -a ${{ matrix.arch }} -t ${{ matrix.target }}
+          stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022 TARGET=${{ matrix.target }} BUILD_ARCH=${{ matrix.arch }}
 
       # Upload the MSVM.fd build artifact, categorized by arch and target
       - name: Upload MSVM.fd Artifact
