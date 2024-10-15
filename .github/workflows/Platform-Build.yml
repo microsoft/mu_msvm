@@ -54,7 +54,7 @@ jobs:
 
       # Upload the MSVM.fd build artifact, categorized by arch and target
       - name: Upload MSVM.fd Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: msvm-fd-${{ matrix.arch }}-${{ matrix.target }}
           path: Build/MsvmPkg/OUTPUT/${{ matrix.arch }}-${{ matrix.target }}/MSVM.fd
