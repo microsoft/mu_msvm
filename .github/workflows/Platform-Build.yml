@@ -20,11 +20,11 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Set up Python 3.12
       - name: Set up Python 3.12
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: '3.12'
 
@@ -34,13 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r pip_requirement_stable.txt
 
-      # Install Visual Studio Build Tools and other dependencies (NASM, BaseTools)
+      # Install Visual Studio Build Tools and NASM
       - name: Install Build Tools
         run: |
           choco install visualstudio2022buildtools --include-optional
           choco install nasm
-          git clone https://github.com/tianocore/edk2-basetools.git BaseTools
-          cd BaseTools && python setup.py install && cd ..
 
       # Stuart Setup: Initialize the build environment
       - name: Stuart Setup
