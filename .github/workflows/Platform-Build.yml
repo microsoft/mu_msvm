@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         target: [DEBUG, RELEASE]
-        arch: [X64, ARM64]
+        arch: [X64, AARCH64]
 
     steps:
       # Checkout the repository
