@@ -37,7 +37,8 @@ jobs:
       # Install Visual Studio Build Tools and NASM
       - name: Install Build Tools
         run: |
-          choco install visualstudio2022buildtools --include-optional
+          # Install the full Visual Studio 2022 Build Tools, including VC++ components
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional"
           choco install nasm
 
       # Enable long paths in Git configuration (Windows)
@@ -64,5 +65,5 @@ jobs:
       - name: Upload MSVM.fd Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: msvm-fd-${{ matrix.arch }}-${{ matrix.target }}
-          path: Build/MsvmPkg/OUTPUT/${{ matrix.arch }}-${{ matrix.target }}/MSVM.fd
+          name: ${{ matrix.target }}-${{ matrix.arch }}
+          path: MsvmPkg/Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/FV/MSVM.fd
