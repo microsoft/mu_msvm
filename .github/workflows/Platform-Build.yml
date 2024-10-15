@@ -40,6 +40,11 @@ jobs:
           choco install visualstudio2022buildtools --include-optional
           choco install nasm
 
+      # Enable long paths in Git configuration (Windows)
+      - name: Enable Long Paths
+        run: |
+          git config --system core.longpaths true
+
       # Stuart Setup: Initialize the build environment
       - name: Stuart Setup
         run: |
