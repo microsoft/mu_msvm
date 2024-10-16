@@ -34,19 +34,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r pip_requirement_stable.txt
 
-      # Install Visual Studio Build Tools using Chocolatey (with specific components)
-      - name: Install Visual Studio Build Tools
-        run: |
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --add Microsoft.VisualStudio.Component.VC.Tools.ARM --add Microsoft.VisualStudio.Component.VC.Tools.ARM64"
-
-      # Install NASM
-      - name: Install NASM
-        run: choco install nasm
-
       # Enable long paths in Git configuration (Windows)
       - name: Enable Long Paths
         run: |
           git config --system core.longpaths true
+
+      # Check if required Visual Studio components are installed
+      - name: Find Visual Studio Installation with Required Components
+        shell: pwsh
+        run: |
+          $requiredComponents = @(
+            "Microsoft.VisualStudio.Component.VC.CoreBuildTools",
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "Microsoft.VisualStudio.Component.Windows11SDK.22621",
+            "Microsoft.VisualStudio.Component.VC.Tools.ARM",
+            "Microsoft.VisualStudio.Component.VC.Tools.ARM64"
+          )
+          $vsPath = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          if (-not $vsPath) { throw "Visual Studio is not installed." }
+
+          # Check for each required component
+          foreach ($component in $requiredComponents) {
+            $componentInstalled = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires $component -property installationPath
+            if (-not $componentInstalled) {
+              throw "Required component $component is missing. Please install the necessary components."
+            }
+          }
+
+          Write-Host "All required Visual Studio components are installed."
 
       # Stuart Setup: Initialize the build environment
       - name: Stuart Setup
