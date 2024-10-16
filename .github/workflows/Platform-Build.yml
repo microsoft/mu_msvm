@@ -82,4 +82,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}-${{ matrix.arch }}
-          path: MsvmPkg/Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/FV/MSVM.fd
+          path: Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/FV/MSVM.fd
