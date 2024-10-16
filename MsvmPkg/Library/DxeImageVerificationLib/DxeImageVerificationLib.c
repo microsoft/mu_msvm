@@ -1819,8 +1819,10 @@ DxeImageVerificationHandler (
   // Skip verification if SecureBoot is disabled but not AuditMode
   //
   if ((VarStatus == EFI_SUCCESS) &&
-      (VarAttr == (EFI_VARIABLE_BOOTSERVICE_ACCESS |
-                   EFI_VARIABLE_RUNTIME_ACCESS)) &&
+      // MS_HYP_CHANGE: Hyper-V stack originally added EFI_VARIABLE_NON_VOLATILE to attributes,
+      // so skip this check for compatibility
+      //(VarAttr == (EFI_VARIABLE_BOOTSERVICE_ACCESS |
+      //             EFI_VARIABLE_RUNTIME_ACCESS)) &&
       (SecureBoot == SECURE_BOOT_MODE_DISABLE))
   {
     return EFI_SUCCESS;
