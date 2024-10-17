@@ -780,7 +780,8 @@ typedef struct _UEFI_CONFIG_FLAGS
         UINT64 WatchdogEnabled : 1;
         UINT64 TpmLocalityRegsEnabled : 1;
         UINT64 Dhcp6DuidTypeLlt : 1;
-        UINT64 Reserved:37;
+        UINT64 CxlMemoryEnabled : 1;
+        UINT64 Reserved:36;
     } Flags;
 } UEFI_CONFIG_FLAGS;
 
