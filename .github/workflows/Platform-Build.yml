@@ -77,9 +77,12 @@ jobs:
         run: |
           stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=VS2022 TARGET=${{ matrix.target }} BUILD_ARCH=${{ matrix.arch }}
 
-      # Upload the MSVM.fd build artifact, categorized by arch and target
-      - name: Upload MSVM.fd Artifact
+      # Upload the MSVM.fd file, MAP/, and PDB/ directories directly as an artifact
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}-${{ matrix.arch }}
-          path: Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/FV/MSVM.fd
+          name: ${{ matrix.target }}-${{ matrix.arch }}-artifacts
+          path: |
+            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/FV/MSVM.fd
+            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/MAP/
+            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_VS2022/PDB/
