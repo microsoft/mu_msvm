@@ -113,11 +113,11 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
         from edk2toolext.invocables.edk2_setup import Edk2PlatformSetup
         from edk2toolext.invocables.edk2_platform_build import Edk2PlatformBuild
         print("Invoking Stuart")
-        print("     ) _     _")
-        print("    ( (^)-~-(^)")
-        print("__,-.\_( 0 0 )__,-.___")
-        print("  'W'   \   /   'W'")
-        print("         >o<")
+        print(r"     ) _     _")
+        print(r"    ( (^)-~-(^)")
+        print(r"__,-.\_( 0 0 )__,-.___")
+        print(r"  'W'   \   /   'W'")
+        print(r"         >o<")
         SCRIPT_PATH = os.path.relpath(__file__)
         parser = argparse.ArgumentParser(add_help=False)
         parse_group = parser.add_mutually_exclusive_group()
