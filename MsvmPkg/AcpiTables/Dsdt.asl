@@ -89,8 +89,6 @@ DefinitionBlock (
         Name(\_S4, Package(2){1, 0})
     }
 
-#if defined(_DSDT_ARM_)
-
     Scope(\_SB)
     {
         // ARM needs to use the strict check to determine if the hibernate state is present.
@@ -146,8 +144,6 @@ DefinitionBlock (
             }
         }
     }
-
-#endif
 
 
 
