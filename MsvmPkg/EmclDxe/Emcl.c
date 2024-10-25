@@ -298,18 +298,11 @@ Return Value:
 
     Context->IncomingPageCount = IncomingRingBufferPageCount + 1;
     Context->OutgoingPageCount = OutgoingRingBufferPageCount + 1;
-
-    //
-    // The ring buffer GPADL is allowed to use encrypted memory on a hardware
-    // isolated VM when the channel is marked as confidential. The flag will
-    // have no effect otherwise.
-    //
-
     status = Context->VmbusProtocol->PrepareGpadl(Context->VmbusProtocol,
                                                   Context->RingBufferPages,
                                                   pageCount * EFI_PAGE_SIZE,
                                                   (EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES |
-                                                   EFI_VMBUS_PREPARE_GPADL_FLAG_ALLOW_ENCRYPTED),
+                                                   EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER),
                                                   HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE,
                                                   &Context->RingBufferGpadl);
     if (EFI_ERROR(status))
@@ -778,7 +771,14 @@ Return Value:
         break;
 
     case VmbusPacketTypeDataUsingGpaDirect:
-        if (mUseBounceBuffer)
+
+        //
+        // Bounce buffering is used when the VM is isolated and the channel has
+        // not indicated it must use encrypted memory for GPA direct packets.
+        //
+
+        if (mUseBounceBuffer &&
+            (Context->VmbusProtocol->Flags & EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY) == 0)
         {
             pageCount = ADDRESS_AND_SIZE_TO_SPAN_PAGES(ExternalBuffers[0].Buffer,
                                                        ExternalBuffers[0].BufferSize);

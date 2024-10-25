@@ -11,21 +11,26 @@
 #define EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE  0x1
 
 //
+// Indicates that the channel is offered by the paravisor, and must use
+// encrypted memory for additional GPADLs and GPA direct packets.
+//
+
+#define EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY 0x2
+
+//
 // Zero all memory in the buffer used for the GPADL.
 //
 
 #define EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES      0x1
 
 //
-// Indicates that the GPADL buffer may be in encrypted memory on a hardware
-// isolated VM, if the channel is confidential. If the channel is not
-// confidential, or hardware isolation is not in use, the flag has no effect.
+// Indicates that the GPADL buffer is to be used for a ring buffer.
 //
 
-#define EFI_VMBUS_PREPARE_GPADL_FLAG_ALLOW_ENCRYPTED 0x2
+#define EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER 0x2
 #define EFI_VMBUS_PREPARE_GPADL_FLAGS \
     (EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES | \
-     EFI_VMBUS_PREPARE_GPADL_FLAG_ALLOW_ENCRYPTED)
+     EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER)
 
 typedef struct _EFI_VMBUS_PROTOCOL EFI_VMBUS_PROTOCOL;
 typedef struct _EFI_VMBUS_LEGACY_PROTOCOL EFI_VMBUS_LEGACY_PROTOCOL;

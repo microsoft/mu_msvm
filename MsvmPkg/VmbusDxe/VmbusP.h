@@ -194,10 +194,13 @@ typedef struct _VMBUS_CHANNEL_CONTEXT
 
     //
     // A confidential channel is a channel offered by the paravisor on a
-    // hardware-isolated VM, which means it can use encrypted memory for the
-    // ring buffer.
+    // hardware-isolated VM, which means it must use encrypted memory for the
+    // ring buffer and/or additional GPADLs and GPA direct.
     //
-    BOOLEAN Confidential;
+    // N.B. Whether or not confidential external memory is supported is
+    //      indicated in VmbusProtocol.Flags.
+    //
+    BOOLEAN ConfidentialRing;
 
 } VMBUS_CHANNEL_CONTEXT;
 
