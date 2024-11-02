@@ -2790,7 +2790,7 @@ DefinitionBlock (
 
     // CXL Root.
 
-    If(LGreater(NCFG, 0))
+    If(LGreater(CCFG, 0))
     {
         Device(\_SB.CXL)
         {
