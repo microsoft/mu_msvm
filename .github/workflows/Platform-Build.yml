@@ -79,7 +79,7 @@ jobs:
 
       # Upload the MSVM.fd file, MAP/, and PDB/ directories directly as an artifact
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-${{ matrix.arch }}-artifacts
           path: |
