@@ -675,15 +675,20 @@ Return Value:
     }
 
 #if defined (MDE_CPU_X64)
-    //
-    // Initialize the fixed MTRR for low memory.
-    // The variable MTRRs are set later in this function with a trigger to
-    // the BiosDevice.
-    //
-    // N.B. This call also has the effect of enabling MTRRs. The default
-    // MTRR type remains uncached.
-    //
-    MtrrSetMemoryAttribute(0, SIZE_512KB + SIZE_128KB, CacheWriteBack);
+
+
+    if (!PcdGetBool(PcdMtrrsInitializedAtLoad))
+    {
+        //
+        // Initialize the fixed MTRR for low memory.
+        // The variable MTRRs are set later in this function with a trigger to
+        // the BiosDevice.
+        //
+        // N.B. This call also has the effect of enabling MTRRs. The default
+        // MTRR type remains uncached.
+        //
+        MtrrSetMemoryAttribute(0, SIZE_512KB + SIZE_128KB, CacheWriteBack);
+    }
 #endif
 
     //
@@ -768,7 +773,8 @@ Return Value:
     //
     // Tell the BiosDevice to set up the variable MTRRs.
     //
-    if (!suppressBiosDevice && !hostEmulatorsWhenHardwareIsolated)
+    if (!PcdGetBool(PcdMtrrsInitializedAtLoad) &&
+        !suppressBiosDevice && !hostEmulatorsWhenHardwareIsolated)
     {
         //
         // Setting MTRRs for virtual processors is not supported for

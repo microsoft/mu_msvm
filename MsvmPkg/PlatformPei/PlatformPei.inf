@@ -185,6 +185,7 @@
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
+    gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
 
 [Pcd.AArch64]
     gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress
