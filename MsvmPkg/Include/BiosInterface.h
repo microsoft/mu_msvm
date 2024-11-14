@@ -552,6 +552,7 @@ enum UefiStructureType
     UefiConfigMcfg                           = 0x24,
     UefiConfigSsdt                           = 0x25,
     UefiConfigHmat                           = 0x26,
+    UefiConfigIort                           = 0x27,
 };
 
 //
@@ -863,6 +864,12 @@ typedef struct _UEFI_CONFIG_SSDT
     UEFI_CONFIG_HEADER Header;
     UINT8 Ssdt[];
 } UEFI_CONFIG_SSDT;
+
+typedef struct _UEFI_CONFIG_IORT
+{
+    UEFI_CONFIG_HEADER Header;
+    UINT8 Iort[];
+} UEFI_CONFIG_IORT;
 
 //
 // UEFI configuration information for direct parsing of IGVM parameters.

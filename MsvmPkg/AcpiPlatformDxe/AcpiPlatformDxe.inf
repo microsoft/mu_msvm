@@ -76,6 +76,8 @@
     gMsvmPkgTokenSpaceGuid.PcdMcfgSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSsdtPtr                           ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSsdtSize                          ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIortPtr                           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIortSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdNvdimmCount                       ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdPpttPtr                           ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdPpttSize                          ## CONSUMES

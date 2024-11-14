@@ -773,6 +773,10 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tSSDT table found.\n"));
             break;
 
+        case UefiConfigIort:
+            DEBUG((DEBUG_VERBOSE, "\tIORT table found.\n"));
+            break;
+
         default:
             DEBUG((DEBUG_VERBOSE, "\t!!! Unrecognized config structure type !!!\n"));
             break;
@@ -1054,6 +1058,7 @@ Return Value:
         0, //UefiConfigMcfg
         0, //UefiConfigSsdt
         0, //UefiConfigHmat
+        0, //UefiConfigIort
     };
 
     //
@@ -1603,6 +1608,21 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSsdtSize, ssdtHdr->Length));
                 break;
 
+            case UefiConfigIort:
+                UEFI_CONFIG_IORT *iortStructure = (UEFI_CONFIG_IORT*) header;
+                EFI_ACPI_DESCRIPTION_HEADER *iortHdr = (EFI_ACPI_DESCRIPTION_HEADER*) iortStructure->Iort;
+
+                if (iortStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
+                    iortHdr->Signature != EFI_ACPI_6_2_IO_REMAPPING_TABLE_SIGNATURE ||
+                    iortHdr->Length > (iortStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
+                {
+                    DEBUG((DEBUG_ERROR, "*** Malformed IORT\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
+                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
+                break;
         }
 
         calculatedConfigSize += header->Length;

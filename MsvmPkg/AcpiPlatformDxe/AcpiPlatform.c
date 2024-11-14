@@ -805,6 +805,63 @@ Return Value:
     return status;
 }
 
+
+EFI_STATUS
+AcpiInstallIortTable(
+    EFI_ACPI_TABLE_PROTOCOL *AcpiTable
+    )
+/*++
+
+Routine Description:
+
+    Retrieves the IORT table from the worker process and installs it.
+
+Arguments:
+
+    AcpiTable - A pointer to the ACPI table protocol.
+
+Return Value:
+
+    EFI_STATUS.
+
+--*/
+{
+    EFI_STATUS status;
+    EFI_ACPI_DESCRIPTION_HEADER *table;
+    UINTN tableHandle;
+    UINT32 tableSize;
+
+    //
+    // Get the table from the config blob parsed in PEI. It may not be present.
+    //
+    tableSize = PcdGet32(PcdIortSize);
+
+    if (tableSize == 0)
+    {
+        return EFI_SUCCESS;
+    }
+
+    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdIortPtr);
+
+    if (table == NULL)
+    {
+        return EFI_NOT_FOUND;
+    }
+
+    ASSERT(table->Length == tableSize);
+
+    //
+    // Install it into the published tables.
+    //
+    status = AcpiTable->InstallAcpiTable(AcpiTable,
+                                         table,
+                                         table->Length,
+                                         &tableHandle);
+
+    return status;
+}
+
+
 EFI_STATUS
 EFIAPI
 AcpiPlatformInitializeAcpiTables(
@@ -998,6 +1055,15 @@ Return Value:
     // Add the SSDT table if present.
     //
     status = AcpiInstallSsdtTable(acpiTable);
+    if (EFI_ERROR(status))
+    {
+        goto Cleanup;
+    }
+
+    //
+    // Install the IORT table if present
+    //
+    status = AcpiInstallIortTable(acpiTable);
     if (EFI_ERROR(status))
     {
         goto Cleanup;

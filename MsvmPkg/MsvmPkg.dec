@@ -365,3 +365,7 @@
   # UEFI_CONFIG_SSDT
   gMsvmPkgTokenSpaceGuid.PcdSsdtPtr|0x0|UINT64|0x606C
   gMsvmPkgTokenSpaceGuid.PcdSsdtSize|0x0|UINT32|0x606D
+
+  # UEFI_CONFIG_IORT
+  gMsvmPkgTokenSpaceGuid.PcdIortPtr|0x0|UINT64|0x6070
+  gMsvmPkgTokenSpaceGuid.PcdIortSize|0x0|UINT32|0x6071
