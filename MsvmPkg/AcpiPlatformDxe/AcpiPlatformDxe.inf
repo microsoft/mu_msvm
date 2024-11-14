@@ -81,6 +81,7 @@
     gMsvmPkgTokenSpaceGuid.PcdPpttSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcessorCount                    ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdCxlMemoryEnabled                  ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled                  ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSlitPtr                           ## CONSUMES

@@ -61,6 +61,7 @@ DefinitionBlock (
         BCFG,8,         // Virtual Battery enabled/disabled
         SGXE,8,         // SGX Memory enabled/disabled
         PADE,8,         // Processor Aggregator Device enabled/disabled
+        CCFG,8,         // CXL memory support enabled/disabled
         NCNT,16,        // NVDIMM count
     }
 
@@ -2782,6 +2783,89 @@ DefinitionBlock (
                     if (LNotEqual(And(Local4, 0x2), 0)) { Notify (\_SB.NVDR, 0x81) }
                     // Clear the event register.
                     Store (Local4, \_SB.NVDR.NEV4)
+                }
+            }
+        }
+    }
+
+    // CXL Root.
+
+    If(LGreater(CCFG, 0))
+    {
+        Device(\_SB.CXL)
+        {
+            Name (_HID, "ACPI0017")
+            Name (_STA, 0xF)
+
+            // _DSM Device Specific Method. See ACPI spec 3.1, section 9.1.1 for details.
+            // Arg0: UUID Unique function identifier
+            // Arg1: Integer Revision Level
+            // Arg2: Integer Function Index (0 = Return Supported Functions)
+            // Arg3: Package Parameters
+            Method (_DSM, 4, Serialized, 0, UnknownObj, {BuffObj, IntObj, IntObj, PkgObj})
+            {
+                Switch (ToBuffer(Arg0))
+                {
+                    Case (ToUUID("f365f9a6-a7de-4071-a66a-b40c0b4f8e52"))
+                    {
+                        Switch (ToInteger(Arg1))
+                        {
+                            Case (1)
+                            {
+                                Switch (ToInteger(Arg2))
+                                {
+
+                                    Case (0)
+                                    {
+                                        // Function 0 for _DSM methods always returns a bitfield
+                                        // indicating which function indexes are supported, starting
+                                        // with zero. We support indexes 0 and 1.
+                                        return (Buffer() {0x3})
+                                    }
+                                    Case (1)
+                                    {
+                                        // Function index 1 is used to retrieve information on the
+                                        // supported QTG IDs that the platform supports, as well
+                                        // as which QTG ID(s) are recommended for a given set of
+                                        // memory device performance characteristics.
+                                        //
+                                        // Arg3: The memory device performance characteristics, in
+                                        //     the format Package() {ReadLatency, WriteLatency, ReadBandwidth, WriteBandwidth}
+                                        //     All performance metrics are expressed as IntObj
+                                        //
+                                        // Return: Package() {MaxQtgId, Package(){RecommendedQtgId1, RecommendedQtgId2, ...}}
+                                        //
+                                        // Refer to CXL spec 3.1, section 9.18.3.1 for more details.
+                                        //
+
+                                        // Currently always return a dummy result until a vDEV is
+                                        // implemented that can get better results from the host.
+                                        // Always set max ID to 1, and recommend the caller use that.
+
+                                        return (Package() {1, Package() {1}})
+                                    }
+                                    Default
+                                    {
+                                        // An invalid function index was supplied, indicating a bug
+                                        // in the caller.
+                                        BreakPoint
+                                    }
+                                }
+                            }
+                            Default
+                            {
+                                // We don't support this revision level, return a buffer with bit
+                                // 0 set to 0 indicating no functions supported.
+                                Return (Buffer(){0})
+                            }
+                        }
+                    }
+                    Default
+                    {
+                        // This is not a UUID we support, return a buffer with bit 0 set to 0
+                        // indicating no functions supported.
+                        return(Buffer(){0})
+                    }
                 }
             }
         }

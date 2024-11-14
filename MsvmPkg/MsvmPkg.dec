@@ -284,6 +284,7 @@
   gMsvmPkgTokenSpaceGuid.PcdLowPowerS0IdleEnabled|FALSE|BOOLEAN|0x6046
   gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled|FALSE|BOOLEAN|0x6047
   gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled|FALSE|BOOLEAN|0x6048
+  gMsvmPkgTokenSpaceGuid.PcdCxlMemoryEnabled|FALSE|BOOLEAN|0x6066
   gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated|FALSE|BOOLEAN|0x605C
   gMsvmPkgTokenSpaceGuid.PcdMediaPresentEnabledByDefault|FALSE|BOOLEAN|0x6059
   gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled|FALSE|BOOLEAN|0x6062

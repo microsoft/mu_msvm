@@ -642,6 +642,7 @@
   gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdCxlMemoryEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdIsVmbfsBoot|FALSE
   gMsvmPkgTokenSpaceGuid.PcdDisableFrontpage|FALSE
   gMsvmPkgTokenSpaceGuid.PcdMediaPresentEnabledByDefault|FALSE

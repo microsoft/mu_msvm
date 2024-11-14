@@ -724,6 +724,7 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tLowPowerS0IdleEnabled: %u\n", flags->Flags.LowPowerS0IdleEnabled));
             DEBUG((DEBUG_VERBOSE, "\tVpciBootEnabled: %u\n", flags->Flags.VpciBootEnabled));
             DEBUG((DEBUG_VERBOSE, "\tProcIdleEnabled: %u\n", flags->Flags.ProcIdleEnabled));
+            DEBUG((DEBUG_VERBOSE, "\tCxlMemoryEnabled: %u\n", flags->Flags.CxlMemoryEnabled));
             DEBUG((DEBUG_VERBOSE, "\tDisableSha384Pcr: %u\n", flags->Flags.DisableSha384Pcr));
             DEBUG((DEBUG_VERBOSE, "\tMediaPresentEnabledByDefault: %u\n", flags->Flags.MediaPresentEnabledByDefault));
             DEBUG((DEBUG_VERBOSE, "\tMemoryProtectionMode: %u\n", flags->Flags.MemoryProtectionMode));
@@ -885,6 +886,7 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdLowPowerS0IdleEnabled, (UINT8)ConfigFlags->Flags.LowPowerS0IdleEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVpciBootEnabled, (UINT8)ConfigFlags->Flags.VpciBootEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdProcIdleEnabled, (UINT8) ConfigFlags->Flags.ProcIdleEnabled));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdCxlMemoryEnabled, (UINT8) ConfigFlags->Flags.CxlMemoryEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdEnableIMCWhenIsolated, (UINT8) ConfigFlags->Flags.EnableIMCWhenIsolated));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMediaPresentEnabledByDefault, (UINT8) ConfigFlags->Flags.MediaPresentEnabledByDefault));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdWatchdogEnabled, (UINT8) ConfigFlags->Flags.WatchdogEnabled));
