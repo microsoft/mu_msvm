@@ -131,9 +131,12 @@ typedef struct _VMBUS_CHANNEL_MESSAGE_HEADER
 //
 
 #define VMBUS_OFFER_FLAG_ENUMERATE_DEVICE_INTERFACE     0x1
-// This flag indicates that the channel is offered by the paravisor, and may
+// This flag indicates that the channel is offered by the paravisor, and must
 // use encrypted memory for the channel ring buffer.
-#define VMBUS_OFFER_FLAG_CONFIDENTIAL_CHANNEL           0x2
+#define VMBUS_OFFER_FLAG_CONFIDENTIAL_RING_BUFFER       0x2
+// This flag indicates that the channel is offered by the paravisor, and must
+// use encrypted memory for GPA direct packets and additional GPADLs.
+#define VMBUS_OFFER_FLAG_CONFIDENTIAL_EXTERNAL_MEMORY   0x4
 #define VMBUS_OFFER_FLAG_NAMED_PIPE_MODE                0x10
 #define VMBUS_OFFER_FLAG_TLNPI_PROVIDER                 0x2000
 

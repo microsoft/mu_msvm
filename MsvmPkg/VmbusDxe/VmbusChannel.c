@@ -83,6 +83,7 @@ Return Value:
 {
     VMBUS_CHANNEL_CONTEXT *channelContext;
     EFI_VMBUS_GPADL *gpadl;
+    BOOLEAN isRing;
     EFI_STATUS status;
     BOOLEAN zeroPages;
 
@@ -138,13 +139,14 @@ Return Value:
     //
     // Make the entire buffer visible to the host if required.
     //
-    // N.B. On a hardware-isolated VM, the buffer can only be encrypted if the
-    //      channel is confidential and the caller specified that the GPADL can
-    //      be encrypted.
+    // N.B. On a hardware-isolated VM, whether or not the buffer needs to be
+    //      host-visible is determined by the purpose of the GPADL and the
+    //      channel's confidentiality flags.
     //
+    isRing = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER) != 0;
     if (IsIsolated() &&
-        ((Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_ALLOW_ENCRYPTED) == 0 ||
-         !channelContext->Confidential))
+        ((isRing && !channelContext->ConfidentialRing) ||
+         (!isRing && (channelContext->VmbusProtocol.Flags & EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY) == 0)))
     {
         status = mHvIvm->MakeAddressRangeHostVisible(mHvIvm,
                                                      MapFlags,
@@ -1034,12 +1036,21 @@ Return Value:
         ChannelContext->LegacyVmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE;
     }
 
-    if (VmbusRootSupportsFeatureFlag(RootContext, VMBUS_FEATURE_FLAG_CONFIDENTIAL_CHANNELS) &&
-        (Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_CHANNEL) != 0)
+    if (VmbusRootSupportsFeatureFlag(RootContext, VMBUS_FEATURE_FLAG_CONFIDENTIAL_CHANNELS))
     {
-        DEBUG((EFI_D_INFO, "--- %a: channel is confidential - {%g}-{%g}-%u\n", __FUNCTION__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
-        ChannelContext->Confidential = TRUE;
+        if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_RING_BUFFER) != 0)
+        {
+            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential ring buffer - {%g}-{%g}-%u\n", __FUNCTION__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+            ChannelContext->ConfidentialRing = TRUE;
+        }
+
+        if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_EXTERNAL_MEMORY) != 0)
+        {
+            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential external memory - {%g}-{%g}-%u\n", __FUNCTION__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+            ChannelContext->VmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY;
+        }
     }
+
 }
 
 
