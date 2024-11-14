@@ -183,6 +183,7 @@
   WatchdogTimerLib|MsvmPkg/Library/WatchdogTimerLib/WatchdogTimerLib.inf
   ResetSystemLib|MdeModulePkg/Library/PeiResetSystemLib/PeiResetSystemLib.inf
   NULL|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
+  MtrrLib|MsvmPkg/Library/LegacyMtrrLib/MtrrLib.inf
 
 #
 # Library instance overrides just for PEI CORE

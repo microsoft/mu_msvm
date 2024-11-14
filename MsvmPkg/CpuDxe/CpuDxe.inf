@@ -113,6 +113,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdTdxSharedBitMask                    ## CONSUMES
   gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress                    ## MS_HYP_CHANGE CONSUMES
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount                              ## MS_HYP_CHANGE CONSUMES
+  gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad                      ## MS_HYP_CHANGE CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuStackSwitchExceptionList              ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuKnownGoodStackSize                    ## CONSUMES
 
