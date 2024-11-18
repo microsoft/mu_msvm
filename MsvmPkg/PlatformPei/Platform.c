@@ -676,7 +676,6 @@ Return Value:
 
 #if defined (MDE_CPU_X64)
 
-
     if (!PcdGetBool(PcdMtrrsInitializedAtLoad))
     {
         //
