@@ -782,7 +782,8 @@ typedef struct _UEFI_CONFIG_FLAGS
         UINT64 TpmLocalityRegsEnabled : 1;
         UINT64 Dhcp6DuidTypeLlt : 1;
         UINT64 CxlMemoryEnabled : 1;
-        UINT64 Reserved:36;
+        UINT64 MtrrsInitializedAtLoad : 1;
+        UINT64 Reserved:35;
     } Flags;
 } UEFI_CONFIG_FLAGS;
 

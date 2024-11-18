@@ -760,6 +760,10 @@ RefreshMemoryAttributesFromMtrr (
   // PcdMtrrsInitializedAtLoad will be set iff the virtualization stack has correctly
   // initialized MTRRs before UEFI runs
   //
+  // N.B. this below upstream logic can only be enabled when OpenVMM sets MTRRs in an
+  //   architecturally-correct way (not with Hyper-V compatibility).  Until then,
+  //   also fall back to Hyper-V specific code that can deal with the peculiar MTRRs.
+  /*
   if (PcdGetBool(PcdMtrrsInitializedAtLoad))
   {
     RETURN_STATUS                    ReturnStatus;
@@ -786,6 +790,7 @@ RefreshMemoryAttributesFromMtrr (
   }
   else
   {
+  */
     UINTN                            SubIndex;
     UINT64                           RegValue;
     EFI_PHYSICAL_ADDRESS             BaseAddress;
@@ -940,7 +945,7 @@ RefreshMemoryAttributesFromMtrr (
       Length,
       Attributes
       );
-  }
+  //}
   // MS_HYP_CHANGE END
 
   //
