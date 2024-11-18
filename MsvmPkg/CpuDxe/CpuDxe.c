@@ -764,7 +764,7 @@ RefreshMemoryAttributesFromMtrr (
   //   architecturally-correct way (not with Hyper-V compatibility).  Until then,
   //   also fall back to Hyper-V specific code that can deal with the peculiar MTRRs.
   /*
-  if (!PcdGetBool(PcdMtrrsInitializedAtLoad))
+  if (PcdGetBool(PcdMtrrsInitializedAtLoad))
   {
     RETURN_STATUS                    ReturnStatus;
     MTRR_MEMORY_RANGE                *Ranges;
