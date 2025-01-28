@@ -508,8 +508,6 @@ Return Value:
     // pass, create HOBs for memory regions.
     //
     rangeV5 = NULL;
-    UINT32 hobCount = 0;
-    UINT32 spCount = 0;
     for (pass = 0; pass < 2; pass += 1)
     {
         ASSERT(memMap != NULL);
@@ -603,6 +601,16 @@ Return Value:
                 }
 
                 //
+                // Only regular memory should be used for PEI memory.
+                //
+                if ((rangeFlags & VM_MEMORY_RANGE_FLAG_PLATFORM_RESERVED) ||
+                    (rangeFlags & VM_MEMORY_RANGE_FLAG_PERSISTENT_MEMORY) ||
+                    (rangeFlags & VM_MEMORY_RANGE_FLAG_SPECIFIC_PURPOSE))
+                {
+                    continue;
+                }
+
+                //
                 // Capture the largest sized block as a candidate for PEI
                 // allocations.
                 //
@@ -611,7 +619,6 @@ Return Value:
                     peiBase = rangeBase;
                     peiLength = rangeLength;
                 }
-                hobCount++;
             }
             else
             {
@@ -629,7 +636,6 @@ Return Value:
                 else if (rangeFlags & VM_MEMORY_RANGE_FLAG_SPECIFIC_PURPOSE)
                 {
                     HobAddSpecificPurposeMemoryRange(rangeBase, rangeLength);
-                    spCount++;
                 }
                 else
                 {
