@@ -96,53 +96,26 @@ DefinitionBlock (
 
         Method(_DSM, 4, NotSerialized)
         {
-            // DSM UUID
-            switch(ToBuffer(Arg0))
+            // Comparing DSM UUID to ACPI DSM UUID for S4 toggle (STRICT_S4_CHECK_DSM_UUID)
+            If (LEqual(Arg0, ToUUID ("713E539D-E06E-4AE9-A75D-21EB34112B7E")))
             {
-                // ACPI DSM UUID for S4 toggle (STRICT_S4_CHECK_DSM_UUID)
-                case(ToUUID("713E539D-E06E-4AE9-A75D-21EB34112B7E"))
+                 // Function 0: Query function, return based on revision
+                If (LEqual(ToInteger(Arg2), 0))
                 {
-                    // DSM Function
-                    switch(ToInteger(Arg2))
+                    // Revision 0: Function 1 supported
+                    If (LEqual(ToInteger(Arg1), 0))
                     {
-                        // Function 0: Query function, return based on revision
-                        case(0)
-                        {
-                            // DSM Revision
-                            switch(ToInteger(Arg1))
-                            {
-                                // Revision 0: Function 1 supported
-                                case(0)
-                                {
-                                    Return (Buffer () {0x03})
-                                }
-
-                                default
-                                {
-                                    // no functions supported
-                                    Return (Buffer () {0x00})
-                                }
-                            }
-                        }
-
-                        // Function 1 : Strict S4 enforcement toggle function
-                        case(1)
-                        {
-                            // 0x1 == Opt into strict S4 enforcement
-                            Return(0x0001)
-                        }
-                        default
-                        {
-                            // Functions 2+: not supported
-                        }
+                        Return (Buffer () {0x03})
                     }
                 }
-                default
-                {
-                    // No other GUIDs supported
-                    Return (Buffer () {0x00})
+
+                // Function 1 : Strict S4 enforcement toggle function
+                If (LEqual(ToInteger(Arg2), 1))
+                { 
+                    Return(0x0001)
                 }
             }
+            Return (Buffer () {0x00})
         }
     }
 
