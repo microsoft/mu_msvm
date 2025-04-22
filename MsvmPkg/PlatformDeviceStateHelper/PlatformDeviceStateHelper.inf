@@ -18,10 +18,13 @@ ENTRY_POINT         = PlatformDeviceStateHelperInit
   PlatformDeviceStateHelper.c
 
 [LibraryClasses]
+  AdvancedLoggerLib
   BaseLib
+  BiosDeviceLib
   CrashLib
   DebugLib
   DeviceStateLib
+  HobLib
   IsolationLib
   MemoryAllocationLib
   UefiDriverEntryPoint
@@ -32,9 +35,11 @@ ENTRY_POINT         = PlatformDeviceStateHelperInit
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MsCorePkg/MsCorePkg.dec
+  AdvLoggerPkg/AdvLoggerPkg.dec
 
 [Guids]
-  gEfiGlobalVariableGuid                                  ## CONSUMES
+  gAdvancedLoggerHobGuid                                  ## CONSUMES
+  gEfiGlobalVariableGuid                                  ## CONSUMES   
 
 [Depex]
   gEfiVariableArchProtocolGuid AND

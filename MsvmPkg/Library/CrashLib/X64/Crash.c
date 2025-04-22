@@ -7,9 +7,11 @@
 
 #include <Uefi.h>
 #include <Library/BaseLib.h>
+#include <Library/BiosDeviceLib.h>
 #include <Library/DebugLib.h>
 #include <Hv/HvGuestCpuid.h>
 #include <Hv/HvGuestMsr.h>
+#include <BiosInterface.h>
 
 #include "CrashLibConstants.h"
 
@@ -104,4 +106,10 @@ ReportCrash(
 
     AsmWriteMsr64(HvSyntheticMsrCrashCtl, writeCrashCtlReg.AsUINT64);
     DEBUG((EFI_D_INFO, "ReportCrash successful.\n"));
+
+    //
+    // Tell the host to collect EFI diagnostics.
+    //
+    DEBUG((EFI_D_INFO, "Signaling BIOS device to collect EFI diagnostics...\n"));
+    WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
 }

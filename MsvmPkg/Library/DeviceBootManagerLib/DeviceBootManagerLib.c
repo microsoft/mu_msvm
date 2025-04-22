@@ -12,6 +12,7 @@
 #include <Protocol/SimpleFileSystem.h>
 
 #include <Library/BaseMemoryLib.h>
+#include <Library/BiosDeviceLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DeviceBootManagerLib.h>
 #include <Library/DevicePathLib.h>
@@ -25,6 +26,7 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <BiosInterface.h>
 
 #include <VirtualDeviceId.h>
 
@@ -676,6 +678,12 @@ DeviceBootManagerUnableToBoot (
             // }
         }
     }
+
+    //
+    // Tell the host to collect EFI diagnostics.
+    //
+    DEBUG((EFI_D_INFO, "Signaling BIOS device to collect EFI diagnostics...\n"));
+    WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
 
     //
     // BootManagerMenu doesn't contain the correct information when return status is EFI_NOT_FOUND.

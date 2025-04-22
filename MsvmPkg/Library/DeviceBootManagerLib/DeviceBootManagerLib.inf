@@ -35,6 +35,7 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
 
 [LibraryClasses]
   BaseMemoryLib
+  BiosDeviceLib
   DebugLib
   DevicePathLib
   DxeServicesTableLib
