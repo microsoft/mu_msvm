@@ -89,6 +89,11 @@ enum
     //
     BiosConfigMemoryMapSize             = 0x2A,
     //
+    // EFI Diagnostics (set by UEFI firmware)
+    //
+    BiosConfigSetEfiDiagnosticsGpa      = 0x2B,
+    BiosConfigProcessEfiDiagnostics     = 0x2C,
+    //
     // Event Logging (Windows 8.1 MQ/M0)
     //
     BiosConfigEventLogFlush             = 0x30,

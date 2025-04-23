@@ -20,6 +20,7 @@
 #include <Library/HobLib.h>
 #include <Library/IoLib.h>
 #include <Library/DeviceStateLib.h>
+#include <AdvancedLoggerInternal.h>
 
 #if defined(MDE_CPU_AARCH64)
 #include <Mmu.h>
@@ -40,6 +41,7 @@
 #error Unsupported Architecture
 #endif
 
+extern EFI_GUID gAdvancedLoggerHobGuid;
 
 #if defined(MDE_CPU_X64)
 
@@ -902,8 +904,51 @@ Return Value:
 {
     PLATFORM_INIT_CONTEXT context;
     EFI_STATUS status;
-
+    ADVANCED_LOGGER_PTR *advancedLoggerPtr;
+    EFI_HOB_GUID_TYPE *guidHob;
+    
     DEBUG((DEBUG_VERBOSE, ">>> *** Platform PEIM InitializePlatform@%p\n", InitializePlatform));
+
+    //
+    // Set the GPA of the advanced logger info header for the host.
+    //
+    // NOTE: In PEI, MsvmPkg configures the Advanced Logger to write its in-memory  
+    // log to a temporary buffer before transitioning to DXE. Thus, we write the GPA
+    // again in PlatformDeviceStateHelperInit() in PlatformDeviceStateHelper.c.
+    //
+    // NOTE: Casting the GPA to a UINT32 is safe because the advanced logger's
+    // in-memory buffer will always be below the 4GB boundary. See InitializeMemoryMap()
+    // in Platform.c for more details. 
+    //
+    guidHob = GetFirstGuidHob(&gAdvancedLoggerHobGuid);
+    if (guidHob == NULL) 
+    {
+        DEBUG((DEBUG_ERROR, "%a: Advanced Logger HOB not found. Setting GPA to 0.\n", __FUNCTION__));
+        WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
+    } 
+    else 
+    {
+        // Get and validate the Advanced Logger pointer.
+        advancedLoggerPtr = (ADVANCED_LOGGER_PTR *)GET_GUID_HOB_DATA (guidHob);
+        if (advancedLoggerPtr == NULL) 
+        {
+            DEBUG((DEBUG_ERROR, "%a: Advanced Logger Ptr is NULL. Setting GPA to 0.\n", __FUNCTION__));
+            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
+        } 
+        else if (advancedLoggerPtr->LogBuffer >= MAX_UINT32)
+        {
+            DEBUG((DEBUG_ERROR, "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n", __FUNCTION__, advancedLoggerPtr->LogBuffer));
+            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
+        } 
+        else 
+        {
+            // Get the Advanced Logger info header and set the proper GPA.
+            ADVANCED_LOGGER_INFO* advancedLoggerInfo = (ADVANCED_LOGGER_INFO *)advancedLoggerPtr->LogBuffer;
+            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer address 0x%016llx\n", __FUNCTION__, advancedLoggerPtr->LogBuffer));
+            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer size 0x%08x\n", __FUNCTION__, advancedLoggerInfo->LogBufferSize));
+            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, (UINT32)(advancedLoggerPtr->LogBuffer));
+        }
+    }
 
     ZeroMem(&context, sizeof(context));
 
