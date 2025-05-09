@@ -1,7 +1,7 @@
 /** @file
   Header file for MEDIA_SANITIZE_PROTOCOL interface.
 
-  Copyright (c) Microsoft Corporation.
+  Copyright (c) Microsoft Corporation.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/

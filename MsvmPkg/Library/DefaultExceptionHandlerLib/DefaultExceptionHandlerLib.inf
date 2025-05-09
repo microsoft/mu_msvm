@@ -9,7 +9,7 @@
 #
 #**/
 
-#Override : 00000002 | ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf | 30b6121f4945d40c36f8d11260700195 | 2024-09-27T22-03-43 | 4a8c4779a7f6b91ed32581ace0ab7a54e56e0019
+#Override : 00000002 | ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf | 96fee854bb34f7b8d099bdf5679984a3 | 2025-05-02T00-01-31 | 1abd9da5b6f5c85089b20eae81285d978709c9bc
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -40,7 +40,6 @@
   PrintLib
   DebugLib
   PeCoffGetEntryPointLib
-  ArmDisassemblerLib
   SerialPortLib
   UefiBootServicesTableLib
 

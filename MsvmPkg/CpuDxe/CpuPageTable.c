@@ -14,10 +14,10 @@
 #include <Library/SerialPortLib.h>
 #include <Library/SynchronizationLib.h>
 #include <Library/PrintLib.h>
-#include <Library/PanicLib.h>  // MU_CHANGE
 #include <Protocol/SmmBase2.h>
 #include <Register/Intel/Cpuid.h>
 #include <Register/Intel/Msr.h>
+#include <Library/PanicLib.h>  // MU_CHANGE
 
 #include "CpuDxe.h"
 #include "CpuPageTable.h"
@@ -839,7 +839,6 @@ ConvertMemoryPageAttributes (
 
       Status = SplitPage (PageEntry, PageAttribute, SplitAttribute, AllocatePagesFunc);
       if (RETURN_ERROR (Status)) {
-        Status = RETURN_UNSUPPORTED;
         goto Done;
       }
 
@@ -1447,19 +1446,18 @@ InitializePageTableLib (
   return;
 }
 
-// TCBZ3519 MU_CHANGE START
-
 /**
   This function set given attributes of the memory region specified by
   BaseAddress and Length.
   The valid Attributes is EFI_MEMORY_RP, EFI_MEMORY_XP, and EFI_MEMORY_RO.
 
-  @param[in]  This              The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
-  @param[in]  BaseAddress       The physical address that is the start address of
-                                a memory region.
-  @param[in]  Length            The size in bytes of the memory region.
-  @param[in]  Attributes        The bit mask of attributes to set for the memory
-                                region.
+  @param  This              The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
+  @param  BaseAddress       The physical address that is the start address of
+                            a memory region.
+  @param  Length            The size in bytes of the memory region.
+  @param  Attributes        The bit mask of attributes to set for the memory
+                            region.
+
   @retval EFI_SUCCESS           The attributes were set for the memory region.
   @retval EFI_INVALID_PARAMETER Length is zero.
                                 Attributes specified an illegal combination of
@@ -1472,7 +1470,7 @@ InitializePageTableLib (
                                 BaseAddress and Length.
   @retval EFI_OUT_OF_RESOURCES  Requested attributes cannot be applied due to lack of
                                 system resources.
-  @retval EFI_ACCESS_DENIED         Attributes for the requested memory region are
+  @retval EFI_ACCESS_DENIED     Attributes for the requested memory region are
                                 controlled by system firmware and cannot be updated
                                 via the protocol.
 **/
@@ -1489,7 +1487,7 @@ EfiSetMemoryAttributes (
   BOOLEAN        IsModified;
   BOOLEAN        IsSplitted;
 
-  DEBUG ((DEBUG_INFO, "%a: 0x%lx - 0x%lx (0x%lx)\n", __func__, BaseAddress, Length, Attributes));
+  DEBUG ((DEBUG_VERBOSE, "%a: 0x%lx - 0x%lx (0x%lx)\n", __func__, BaseAddress, Length, Attributes));
 
   if (Attributes == 0) {
     DEBUG ((DEBUG_ERROR, "%a: Error - Attributes == 0\n", __func__));
@@ -1502,7 +1500,7 @@ EfiSetMemoryAttributes (
   }
 
   if (Length == 0) {
-    DEBUG ((DEBUG_ERROR, "Length is 0!\n"));
+    DEBUG ((DEBUG_ERROR, "%a: Length is 0!\n", __func__));
     return RETURN_INVALID_PARAMETER;
   }
 
@@ -1529,13 +1527,13 @@ EfiSetMemoryAttributes (
   This function clears given attributes of the memory region specified by
   BaseAddress and Length.
   The valid Attributes is EFI_MEMORY_RP, EFI_MEMORY_XP, and EFI_MEMORY_RO.
+  @param  This              The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
+  @param  BaseAddress       The physical address that is the start address of
+                            a memory region.
+  @param  Length            The size in bytes of the memory region.
+  @param  Attributes        The bit mask of attributes to clear for the memory
+                            region.
 
-  @param[in]  This              The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
-  @param[in]  BaseAddress       The physical address that is the start address of
-                                a memory region.
-  @param[in]  Length            The size in bytes of the memory region.
-  @param[in]  Attributes        The bit mask of attributes to clear for the memory
-                                region.
   @retval EFI_SUCCESS           The attributes were cleared for the memory region.
   @retval EFI_INVALID_PARAMETER Length is zero.
                                 Attributes specified an illegal combination of
@@ -1565,7 +1563,7 @@ EfiClearMemoryAttributes (
   BOOLEAN        IsModified;
   BOOLEAN        IsSplitted;
 
-  DEBUG ((DEBUG_INFO, "%a: 0x%lx - 0x%lx (0x%lx)\n", __func__, BaseAddress, Length, Attributes));
+  DEBUG ((DEBUG_VERBOSE, "%a: 0x%lx - 0x%lx (0x%lx)\n", __func__, BaseAddress, Length, Attributes));
 
   if (Attributes == 0) {
     DEBUG ((DEBUG_ERROR, "%a: Error - Attributes == 0\n", __func__));
@@ -1578,7 +1576,7 @@ EfiClearMemoryAttributes (
   }
 
   if (Length == 0) {
-    DEBUG ((DEBUG_ERROR, "Length is 0!\n"));
+    DEBUG ((DEBUG_ERROR, "%a: Length is 0!\n", __func__));
     return RETURN_INVALID_PARAMETER;
   }
 
@@ -1606,11 +1604,11 @@ EfiClearMemoryAttributes (
   BaseAddress and Length. If different attributes are got from different part
   of the memory region, EFI_NO_MAPPING will be returned.
 
-  @param[in]  This              The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
-  @param[in]  BaseAddress       The physical address that is the start address of
-                                a memory region.
-  @param[in]  Length            The size in bytes of the memory region.
-  @param[in]  Attributes        Pointer to attributes returned.
+  @param  This                The EFI_MEMORY_ATTRIBUTE_PROTOCOL instance.
+  @param  BaseAddress         The physical address that is the start address of
+                              a memory region.
+  @param  Length              The size in bytes of the memory region.
+  @param  Attributes          Pointer to attributes returned.
 
   @retval EFI_SUCCESS           The attributes got for the memory region.
   @retval EFI_INVALID_PARAMETER Length is zero.
@@ -1638,28 +1636,25 @@ EfiGetMemoryAttributes (
   INT64                          Size;
   UINT64                         AddressEncMask;
 
-  // MU_CHANGE START: Change debug verbosity
-  // DEBUG ((DEBUG_INFO, "%a: 0x%lx - 0x%lx\n", __func__, BaseAddress, Length));
   DEBUG ((DEBUG_VERBOSE, "%a: 0x%lx - 0x%lx\n", __func__, BaseAddress, Length));
-  // MU_CHANGE END
 
-  if ((BaseAddress & (EFI_PAGE_SIZE - 1)) != 0) {
-    DEBUG ((DEBUG_ERROR, "BaseAddress(0x%lx) is not aligned!\n", BaseAddress));
+  if (!IS_ALIGNED (BaseAddress, EFI_PAGE_SIZE)) {
+    DEBUG ((DEBUG_ERROR, "%a: BaseAddress(0x%lx) is not aligned!\n", __func__, BaseAddress));
     return EFI_UNSUPPORTED;
   }
 
-  if ((Length & (EFI_PAGE_SIZE - 1)) != 0) {
-    DEBUG ((DEBUG_ERROR, "Length(0x%lx) is not aligned!\n", Length));
+  if (!IS_ALIGNED (Length, EFI_PAGE_SIZE)) {
+    DEBUG ((DEBUG_ERROR, "%a: Length(0x%lx) is not aligned!\n", __func__, Length));
     return EFI_UNSUPPORTED;
   }
 
   if (Length == 0) {
-    DEBUG ((DEBUG_ERROR, "Length is 0!\n"));
+    DEBUG ((DEBUG_ERROR, "%a: Length is 0!\n", __func__));
     return RETURN_INVALID_PARAMETER;
   }
 
   if (Attributes == NULL) {
-    DEBUG ((DEBUG_ERROR, "Attributes is NULL\n"));
+    DEBUG ((DEBUG_ERROR, "%a: Attributes is NULL\n", __func__));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1713,10 +1708,7 @@ EfiGetMemoryAttributes (
     MemAttr = *Attributes;
   } while (Size > 0);
 
-  // MU_CHANGE START: Change debug verbosity
-  // DEBUG ((DEBUG_INFO, "%a: Attributes is 0x%lx\n", __func__, *Attributes));
   DEBUG ((DEBUG_VERBOSE, "%a: Attributes is 0x%lx\n", __func__, *Attributes));
-  // MU_CHANG END
 
   return EFI_SUCCESS;
 }
@@ -1854,19 +1846,23 @@ MEMORY_PROTECTION_NONSTOP_MODE_PROTOCOL  mMemoryNonstopModeProtocol = {
   ClearPageFault,
   ResetPageAttributes
 };
+// MU_CHANGE END
 
 /**
-  Install Memory Attribute Protocol.
+  Install Efi Memory Attribute Protocol.
+
+  @param Handle A pointer to the EFI_HANDLE on which the interface is to be installed
+
 **/
 VOID
 InstallEfiMemoryAttributeProtocol (
-  VOID
+  IN EFI_HANDLE  Handle
   )
 {
   EFI_STATUS  Status;
 
   Status = gBS->InstallMultipleProtocolInterfaces (
-                  &mCpuHandle,
+                  &Handle,
                   &gEfiMemoryAttributeProtocolGuid,
                   &mMemoryAttributeProtocol,
                   NULL
@@ -1874,22 +1870,22 @@ InstallEfiMemoryAttributeProtocol (
   ASSERT_EFI_ERROR (Status);
 }
 
-// TCBZ3519 MU_CHANGE END
-
 // MU_CHANGE START
 
 /**
   Install Memory Protection Nonstop Protocol.
+
+  @param Handle A pointer to the EFI_HANDLE on which the interface is to be installed
 **/
 VOID
 InstallMemoryProtectionNonstopModeProtocol (
-  VOID
+  IN EFI_HANDLE  Handle
   )
 {
   EFI_STATUS  Status;
 
   Status = gBS->InstallMultipleProtocolInterfaces (
-                  &mCpuHandle,
+                  &Handle,
                   &gMemoryProtectionNonstopModeProtocolGuid,
                   &mMemoryNonstopModeProtocol,
                   NULL

@@ -437,7 +437,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
     RAW BIN                |.bin
   }
 
-[Rule.Common.SEC.RESET_VECTOR]
+[Rule.Common.USER_DEFINED.RESET_VECTOR]
   FILE RAW = $(NAMED_GUID) {
     RAW BIN   |.bin
   }

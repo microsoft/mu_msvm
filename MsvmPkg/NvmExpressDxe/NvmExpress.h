@@ -4,7 +4,7 @@
 
   (C) Copyright 2016 Hewlett Packard Enterprise Development LP<BR>
   Copyright (c) 2013 - 2019, Intel Corporation. All rights reserved.<BR>
-  Copyright (c) Microsoft Corporation.
+  Copyright (c) Microsoft Corporation.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -30,7 +30,7 @@
 #include <Protocol/DriverSupportedEfiVersion.h>
 #include <Protocol/StorageSecurityCommand.h>
 #include <Protocol/ResetNotification.h>
-#include <Protocol/MediaSanitize.h> // MU_CHANGE - Add Media Sanitize
+#include <Protocol/MediaSanitize.h>
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -47,7 +47,7 @@
 #include <Library/ReportStatusCodeLib.h>
 // MU_CHANGE END -- UEFI_890
 
-#include <Guid/NVMeEventGroup.h> // MU_CHANGE: Add NVMe Long Delay Time Events
+#include <Guid/NVMeEventGroup.h>
 
 typedef struct _NVME_CONTROLLER_PRIVATE_DATA  NVME_CONTROLLER_PRIVATE_DATA;
 typedef struct _NVME_DEVICE_PRIVATE_DATA      NVME_DEVICE_PRIVATE_DATA;
@@ -56,7 +56,7 @@ typedef struct _NVME_DEVICE_PRIVATE_DATA      NVME_DEVICE_PRIVATE_DATA;
 #include "NvmExpressBounce.h"   // MS_HYP_CHANGE
 #include "NvmExpressDiskInfo.h"
 #include "NvmExpressHci.h"
-#include "NvmExpressMediaSanitize.h" // MU_CHANGE - Add Media Sanitize
+#include "NvmExpressMediaSanitize.h"
 
 extern EFI_DRIVER_BINDING_PROTOCOL                gNvmExpressDriverBinding;
 extern EFI_COMPONENT_NAME_PROTOCOL                gNvmExpressComponentName;
@@ -85,7 +85,6 @@ extern EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL  gNvmExpressDriverSupportedEfiV
 
 #define NVME_MAX_QUEUES  3                              // Number of queues supported by the driver
 
-// MU_CHANGE Start - Add Media Sanitize
 //
 // FormatNVM Admin Command LBA Format (LBAF) Mask
 //
@@ -109,7 +108,6 @@ extern EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL  gNvmExpressDriverSupportedEfiV
 #define NVME_CQE_SC_INVALID_FIELD_IN_CMD                 0x02
 
 #define NVME_ALL_NAMESPACES  0xFFFFFFFF
-// MU_CHANGE End - Add Media Sanitize
 
 // MU_CHANGE [BEGIN] - Support alternative hardware queue sizes in NVME driver
 
@@ -255,7 +253,7 @@ struct _NVME_DEVICE_PRIVATE_DATA {
   EFI_DISK_INFO_PROTOCOL                   DiskInfo;
   EFI_STORAGE_SECURITY_COMMAND_PROTOCOL    StorageSecurity;
 
-  MEDIA_SANITIZE_PROTOCOL                  MediaSanitize; // MU_CHANGE - Add Media Sanitize
+  MEDIA_SANITIZE_PROTOCOL                  MediaSanitize;
 
   LIST_ENTRY                               AsyncQueue;
 
@@ -298,14 +296,12 @@ struct _NVME_DEVICE_PRIVATE_DATA {
       NVME_DEVICE_PRIVATE_DATA_SIGNATURE                 \
       )
 
-// MU_CHANGE Start - Add Media Sanitize
 #define NVME_DEVICE_PRIVATE_DATA_FROM_MEDIA_SANITIZE(a) \
   CR (a,                                                \
       NVME_DEVICE_PRIVATE_DATA,                         \
       MediaSanitize,                                    \
       NVME_DEVICE_PRIVATE_DATA_SIGNATURE                \
       )
-// MU_CHANGE Start - Add Media Sanitize
 
 //
 // Nvme block I/O 2 request.

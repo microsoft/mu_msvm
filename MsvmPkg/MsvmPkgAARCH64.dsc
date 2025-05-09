@@ -66,13 +66,11 @@
 [LibraryClasses]
   AdvancedLoggerAccessLib|AdvLoggerPkg/Library/AdvancedLoggerAccessLib/AdvancedLoggerAccessLib.inf
   AdvancedLoggerHdwPortLib|AdvLoggerPkg/Library/AdvancedLoggerHdwPortLib/AdvancedLoggerHdwPortLib.inf
-  ArmDisassemblerLib|ArmPkg/Library/ArmDisassemblerLib/ArmDisassemblerLib.inf
-  ArmGicArchLib|ArmPkg/Library/ArmGicArchLib/ArmGicArchLib.inf
-  ArmGicLib|ArmPkg/Drivers/ArmGic/ArmGicLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
+  ArmMonitorLib|ArmPkg/Library/ArmMonitorLib/ArmMonitorLib.inf
   ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
-  ArmTrngLib|MsvmPkg/Library/MsvmArmTrngLibNull/BaseArmTrngLibNull.inf
+  ArmTrngLib|MdePkg/Library/BaseArmTrngLibNull/BaseArmTrngLibNull.inf
   AssertLib|AdvLoggerPkg/Library/AssertLib/AssertLib.inf
   BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
   BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
@@ -92,7 +90,7 @@
   FdtLib|EmbeddedPkg/Library/FdtLib/FdtLib.inf
   FltUsedLib|MdePkg/Library/FltUsedLib/FltUsedLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
-  HwResetSystemLib|ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
+  HwResetSystemLib|ArmPkg/Library/ArmPsciResetSystemLib/ArmPsciResetSystemLib.inf
   ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsicArmVirt.inf
   IsolationLib|MsvmPkg/Library/IsolationLib/IsolationLib.inf
@@ -100,6 +98,7 @@
   MmuLib|ArmPkg/Library/MmuLib/BaseMmuLib.inf
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
+  OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   PanicLib|MdePkg/Library/BasePanicLibNull/BasePanicLibNull.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   PeCoffExtraActionLib|MdePkg/Library/BasePeCoffExtraActionLibNull/BasePeCoffExtraActionLibNull.inf
@@ -112,6 +111,7 @@
   ResetUtilityLib|MdeModulePkg/Library/ResetUtilityLib/ResetUtilityLib.inf
   SortLib|MdeModulePkg/Library/BaseSortLib/BaseSortLib.inf
   StackCheckFailureHookLib|MdePkg/Library/StackCheckFailureHookLibNull/StackCheckFailureHookLibNull.inf
+  StackCheckLib|MdePkg/Library/StackCheckLib/StackCheckLib.inf
   SecurityLockAuditLib|MdeModulePkg/Library/SecurityLockAuditDebugMessageLib/SecurityLockAuditDebugMessageLib.inf ##MSCHANGE
   SerialPortLib|MdePkg/Library/BaseSerialPortLibNull/BaseSerialPortLibNull.inf
   SynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
@@ -176,6 +176,7 @@
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
   PeiServicesLib|MdePkg/Library/PeiServicesLib/PeiServicesLib.inf
   PeiServicesTablePointerLib|ArmPkg/Library/PeiServicesTablePointerLib/PeiServicesTablePointerLib.inf
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
 
 #
 # Library instance overrides just for SEC
@@ -262,7 +263,6 @@
   MemoryAllocationLib|MdeModulePkg/Library/DxeCoreMemoryAllocationLib/DxeCoreMemoryAllocationLib.inf
   HvHypercallLib|MsvmPkg/Library/HvHypercallLib/HvHypercallLib.inf
 ##MSChange Begin
-  MemoryBinOverrideLib|MdeModulePkg/Library/MemoryBinOverrideLibNull/MemoryBinOverrideLibNull.inf
 [LibraryClasses.common.DXE_DRIVER]
   ResetSystemLib|MdeModulePkg/Library/DxeResetSystemLib/DxeResetSystemLib.inf
   HashLib|SecurityPkg/Library/HashLibBaseCryptoRouter/HashLibBaseCryptoRouterDxe.inf
@@ -380,7 +380,7 @@
   gMsvmPkgTokenSpaceGuid.PcdProcIdleEventVector|38           # SPI
 
   # Networking
-  gEfiNetworkPkgTokenSpaceGuid.PcdEnforceSecureRngAlgorithms|FALSE    #Opt out of secure RNG until ARM64 has a way of doing TRNG.
+  gEfiMdePkgTokenSpaceGuid.PcdEnforceSecureRngAlgorithms|FALSE    #Opt out of secure RNG until ARM64 has a way of doing TRNG.
 
   # GTDT for AArch64. Currently these aren't exposed to guests, and 0 is a valid
   # value to configure. Linux will attempt to configure them, so assign valid
@@ -736,8 +736,7 @@
   # DXE Phase modules
   #
   ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-  ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
-
+  ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
   FatPkg/EnhancedFatDxe/Fat.inf
 
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf

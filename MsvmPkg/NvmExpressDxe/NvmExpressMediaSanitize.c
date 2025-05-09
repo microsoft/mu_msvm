@@ -8,7 +8,7 @@
 
   Implementation based off NVMe spec revision 1.4c.
 
-  Copyright (c) Microsoft Corporation.
+  Copyright (c) Microsoft Corporation.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -65,13 +65,15 @@ NvmExpressFormatNvm (
   UINT32                                    Lbads;
   UINT32                                    NewFlbas;
   UINT32                                    LbaFmtIdx;
-  EFI_STATUS                                Status    = EFI_NOT_STARTED;
-  UINT32                                    LbaFormat = 0;
+  EFI_STATUS                                Status;
+  UINT32                                    LbaFormat;
   UINT16                                    StatusField;
   UINT16                                    Sct;
   UINT16                                    Sc;
 
-  Device = NVME_DEVICE_PRIVATE_DATA_FROM_BLOCK_IO (This);
+  Status    = EFI_NOT_STARTED;
+  LbaFormat = 0;
+  Device    = NVME_DEVICE_PRIVATE_DATA_FROM_BLOCK_IO (This);
 
   ZeroMem (&CommandPacket, sizeof (EFI_NVM_EXPRESS_PASS_THRU_COMMAND_PACKET));
   ZeroMem (&Command, sizeof (EFI_NVM_EXPRESS_COMMAND));
@@ -103,7 +105,7 @@ NvmExpressFormatNvm (
   // Current supported LBA format size in Identify Namespace LBA Format Table, indexed by
   // FLBAS (bits 3:0).
   //
-  LbaFormat           = (!Flbas ? Device->NamespaceData.Flbas : Flbas);
+  LbaFormat           = (Flbas == 0 ? Device->NamespaceData.Flbas : Flbas);
   FormatNvmCdw10.Lbaf = LbaFormat & NVME_LBA_FORMATNVM_LBAF_MASK;
   CopyMem (&CommandPacket.NvmeCmd->Cdw10, &FormatNvmCdw10, sizeof (NVME_ADMIN_FORMAT_NVM));
 
@@ -127,14 +129,14 @@ NvmExpressFormatNvm (
     Sc  = (StatusField & NVME_CQE_STATUS_FIELD_SC_MASK) >> NVME_CQE_STATUS_FIELD_SC_OFFSET;
     Sct = (StatusField & NVME_CQE_STATUS_FIELD_SCT_MASK) >> NVME_CQE_STATUS_FIELD_SCT_OFFSET;
 
-    DEBUG ((DEBUG_ERROR, "%a: NVMe FormatNVM admin command failed SCT = 0x%x, SC = 0x%x\n", __FUNCTION__, Sct, Sc));
+    DEBUG ((DEBUG_ERROR, "%a: NVMe FormatNVM admin command failed SCT = 0x%x, SC = 0x%x\n", __func__, Sct, Sc));
   } else {
     //
     // Update Block IO and Media Protocols only if Flbas parameter was not NULL.
     // Call Identify Namespace again and update all protocols fields and local
     // cached copies of fields related to block size.
     //
-    if (Flbas) {
+    if (Flbas != 0) {
       NewNamespaceData = AllocateZeroPool (sizeof (NVME_ADMIN_NAMESPACE_DATA));
       if (NewNamespaceData == NULL) {
         Status = EFI_OUT_OF_RESOURCES;
@@ -251,7 +253,7 @@ NvmExpressSanitize (
     Sc  = (StatusField & NVME_CQE_STATUS_FIELD_SC_MASK) >> NVME_CQE_STATUS_FIELD_SC_OFFSET;
     Sct = (StatusField & NVME_CQE_STATUS_FIELD_SCT_MASK) >> NVME_CQE_STATUS_FIELD_SCT_OFFSET;
 
-    DEBUG ((DEBUG_ERROR, "%a: NVMe Sanitize admin command failed SCT = 0x%x, SC = 0x%x\n", __FUNCTION__, Sct, Sc));
+    DEBUG ((DEBUG_ERROR, "%a: NVMe Sanitize admin command failed SCT = 0x%x, SC = 0x%x\n", __func__, Sct, Sc));
 
     //
     // Check for an error status code of "Invalid Command Opcode" in case
@@ -358,6 +360,8 @@ NvmExpressMediaClear (
     return EFI_INVALID_PARAMETER;
   }
 
+  Status = EFI_SUCCESS;
+
   //
   // Per NIST 800-88r1, one or more pass of writes may be alteratively used.
   //
@@ -445,17 +449,17 @@ NvmExpressMediaPurge (
   // action is selected, then default to no action and let the NVMe SSD handle
   // the no-op sanitize action (as there may be other contingencies).
   //
-  if ((PurgeAction & PURGE_ACTION_OVERWRITE) && (SaniCap.Ows)) {
+  if (((PurgeAction & PURGE_ACTION_OVERWRITE) == PURGE_ACTION_OVERWRITE) && (SaniCap.Ows)) {
     SanitizeAction = SANITIZE_ACTION_OVERWRITE;
-  } else if ((PurgeAction & PURGE_ACTION_BLOCK_ERASE) && (SaniCap.Bes)) {
+  } else if (((PurgeAction & PURGE_ACTION_BLOCK_ERASE) == PURGE_ACTION_BLOCK_ERASE) && (SaniCap.Bes)) {
     SanitizeAction = SANITIZE_ACTION_BLOCK_ERASE;
-  } else if ((PurgeAction & PURGE_ACTION_CRYPTO_ERASE) && (SaniCap.Ces)) {
+  } else if (((PurgeAction & PURGE_ACTION_CRYPTO_ERASE) == PURGE_ACTION_CRYPTO_ERASE) && (SaniCap.Ces)) {
     SanitizeAction = SANITIZE_ACTION_CRYPTO_ERASE;
   } else {
     SanitizeAction = SANITIZE_ACTION_NO_ACTION;
   }
 
-  if (PurgeAction & PURGE_ACTION_NO_DEALLOCATE) {
+  if ((PurgeAction & PURGE_ACTION_NO_DEALLOCATE) == PURGE_ACTION_NO_DEALLOCATE) {
     NoDeallocate = NVME_NO_DEALLOCATE_AFTER_SANITZE;
   }
 

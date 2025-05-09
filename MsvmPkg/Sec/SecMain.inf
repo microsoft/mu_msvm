@@ -48,6 +48,7 @@
   BaseMemoryLib
   DebugAgentLib
   DebugLib
+  StackCheckLib
 
 [LibraryClasses.X64]
   CpuLib
