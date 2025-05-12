@@ -27,25 +27,17 @@ ResetAfterCrash(
 {
     DEBUG((DEBUG_INFO, "Initiating crash reset...\n"));
 
-    // Is SYSTEM_RESET2 supported?
+    // The Microsoft hypervisor does not advertise support for SystemReset2
+    // Directly call PSCI without checking for feature support.
     UINTN advancedReset = ARM_SMC_ID_PSCI_SYSTEM_RESET2_AARCH64;
-    UINTN psciReturn = ArmCallSmc1(ARM_SMC_ID_PSCI_FEATURES, &advancedReset, NULL, NULL);
-    if (psciReturn == ARM_SMC_PSCI_RET_SUCCESS)
-    {
-        UINTN resetType = 0x80000002;   // TODO: Proposed machine check reset
-        UINTN cookie = ErrorCode;
+    UINTN resetType = HV_ARM64_SYSTEM_RESET2_FIRMWARE_CRASH;
+    UINTN cookie = ErrorCode;
 
-        // Send PSCI SYSTEM_RESET2 command.  This should not return on success.
-        DEBUG ((DEBUG_INFO, "Issuing PSCI_SYSTEM_RESET2...\n"));
-        psciReturn = ArmCallSmc0(advancedReset, &resetType, &cookie, NULL);
+    // Send PSCI SYSTEM_RESET2 command.  This should not return on success.
+    DEBUG ((DEBUG_INFO, "Issuing PSCI_SYSTEM_RESET2...\n"));
+    UINTN psciReturn = ArmCallSmc0(advancedReset, &resetType, &cookie, NULL);
 
-        DEBUG ((DEBUG_INFO, "PSCI_SYSTEM_RESET2 not successful. %x\n", psciReturn));
-    }
-    else
-    {
-        DEBUG ((DEBUG_INFO, "PSCI_SYSTEM_RESET2 not supported by platform. %x\n", psciReturn));
-    }
-
+    DEBUG ((DEBUG_INFO, "PSCI_SYSTEM_RESET2 not successful. %x\n", psciReturn));
     DEBUG ((DEBUG_INFO, "Issuing PSCI_SYSTEM_RESET...\n"));
     ArmCallSmc0(ARM_SMC_ID_PSCI_SYSTEM_RESET, NULL, NULL, NULL);
 }

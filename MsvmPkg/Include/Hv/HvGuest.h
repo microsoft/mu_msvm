@@ -45,6 +45,11 @@ typedef UINT64 HV_GPA_PAGE_NUMBER, *PHV_GPA_PAGE_NUMBER;
 //
 #define HV_ARM64_ENABLE_SRE             2
 
+//
+// Vendor-specific reset types
+//
+#define HV_ARM64_SYSTEM_RESET2_FIRMWARE_CRASH 0x80000001
+
 #elif defined(MDE_CPU_X64)
 
 #define HV_X64_PAGE_SIZE                4096
