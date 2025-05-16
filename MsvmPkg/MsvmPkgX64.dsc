@@ -91,6 +91,7 @@
   MtrrLib|UefiCpuPkg/Library/MtrrLib/MtrrLib.inf
   MpInitLib|UefiCpuPkg/Library/MpInitLibUp/MpInitLibUp.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
+  OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   PanicLib|MdePkg/Library/BasePanicLibNull/BasePanicLibNull.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   PCUartLib|MsvmPkg/Library/PCUart/PCUart.inf
@@ -103,6 +104,7 @@
   SecurityLockAuditLib|MdeModulePkg/Library/SecurityLockAuditDebugMessageLib/SecurityLockAuditDebugMessageLib.inf ##MSCHANGE
   SerialPortLib|MdePkg/Library/BaseSerialPortLibNull/BaseSerialPortLibNull.inf
   StackCheckFailureHookLib|MdePkg/Library/StackCheckFailureHookLibNull/StackCheckFailureHookLibNull.inf
+  StackCheckLib|MdePkg/Library/StackCheckLib/StackCheckLib.inf
   SynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
   TimerLib|MsvmPkg/Library/HvTimerLib/HvTimerLib.inf
   SortLib|MdeModulePkg/Library/BaseSortLib/BaseSortLib.inf
@@ -164,6 +166,7 @@
   MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
   PeiServicesLib|MdePkg/Library/PeiServicesLib/PeiServicesLib.inf
   PeiServicesTablePointerLib|MdePkg/Library/PeiServicesTablePointerLibIdt/PeiServicesTablePointerLibIdt.inf
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
 
 #
 # Library instance overrides just for SEC
@@ -182,7 +185,6 @@
   PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
   WatchdogTimerLib|MsvmPkg/Library/WatchdogTimerLib/WatchdogTimerLib.inf
   ResetSystemLib|MdeModulePkg/Library/PeiResetSystemLib/PeiResetSystemLib.inf
-  NULL|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
   MtrrLib|MsvmPkg/Library/LegacyMtrrLib/MtrrLib.inf
 
 #
@@ -246,10 +248,6 @@
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
   UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
   WatchdogTimerLib|MsvmPkg/Library/WatchdogTimerLib/WatchdogTimerLib.inf
-  #
-  # Provide StackCookie support lib so that we can link to /GS exports
-  #
-  NULL|MdePkg/Library/StackCheckLib/StackCheckLibStaticInit.inf
 
 #
 # Library instances overrides for just DXE CORE
@@ -260,7 +258,6 @@
   HobLib|MdePkg/Library/DxeCoreHobLib/DxeCoreHobLib.inf
   MemoryAllocationLib|MdeModulePkg/Library/DxeCoreMemoryAllocationLib/DxeCoreMemoryAllocationLib.inf
 ##MSChange Begin
-  MemoryBinOverrideLib|MdeModulePkg/Library/MemoryBinOverrideLibNull/MemoryBinOverrideLibNull.inf
 [LibraryClasses.common.DXE_DRIVER]
   ResetSystemLib|MdeModulePkg/Library/DxeResetSystemLib/DxeResetSystemLib.inf
   HashLib|SecurityPkg/Library/HashLibBaseCryptoRouter/HashLibBaseCryptoRouterDxe.inf
@@ -732,10 +729,7 @@
   #
   # SEC Phase modules
   #
-  MsvmPkg/Sec/SecMain.inf {
-    <LibraryClasses>
-      NULL|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
-  }
+  MsvmPkg/Sec/SecMain.inf
   UefiCpuPkg/ResetVector/Vtf0/Vtf0.inf
 
   #

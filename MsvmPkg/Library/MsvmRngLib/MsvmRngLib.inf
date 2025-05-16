@@ -14,7 +14,7 @@
 #
 ##
 
-#Override : 00000002 | MdePkg/Library/BaseRngLib/BaseRngLib.inf | 37c64f26382798e13243e768535d16b3 | 2024-10-03T17-42-35 | c59d3eaa5c33d8f515a018072b467d7f196ed84d
+#Override : 00000002 | MdePkg/Library/BaseRngLib/BaseRngLib.inf | 25292aa2b81b68d6f02724e856b48649 | 2025-05-15T22-56-02 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -53,6 +53,10 @@
 [Guids.Ia32, Guids.X64]
   gEfiRngAlgorithmSp80090Ctr256Guid
 
+[Sources.RISCV64]
+  Riscv/Rng.c
+  Riscv/Seed.S               | GCC
+
 [Packages]
   MdePkg/MdePkg.dec
   MsvmPkg/MsvmPkg.dec     ## MS_HYP_CHANGE
@@ -66,3 +70,7 @@
   CrashLib                ## MS_HYP_CHANGE
   DebugLib
   IsolationLib            ## MS_HYP_CHANGE
+
+[Pcd.RISCV64]
+  # Does the CPU support the Zkr extension (for the `Seed` CSR)
+  gEfiMdePkgTokenSpaceGuid.PcdRiscVFeatureOverride           ## CONSUMES

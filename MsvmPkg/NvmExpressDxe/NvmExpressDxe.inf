@@ -5,12 +5,12 @@
 #  NVM Express specification.
 #
 #  Copyright (c) 2013 - 2019, Intel Corporation. All rights reserved.<BR>
-#  Copyright (c) Microsoft Corporation.
+#  Copyright (c) Microsoft Corporation.<BR>
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
 
-#Override : 00000002 | MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf | e3c5531fb7174699039e79b682faf092 | 2024-09-27T20-38-58 | f77e9e031e954b294b0d282e9f46ec526f811de6
+#Override : 00000002 | MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf | 450637d4b1bdd1044691a7b78f8d90ff | 2025-05-15T22-59-46 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -43,18 +43,16 @@
   NvmExpressHci.c
   NvmExpressHci.h
   NvmExpressPassthru.c
-  NvmExpressMediaSanitize.c # MU_CHANGE - Add Media Sanitize
-  NvmExpressMediaSanitize.h # MU_CHANGE - Add Madia Sanitize
+  NvmExpressMediaSanitize.c
+  NvmExpressMediaSanitize.h
 
-## MU_CHANGE Start: Add NVMe Long Delay Time Events
 [Guids]
   gNVMeEnableStartEventGroupGuid
   gNVMeEnableCompleteEventGroupGuid
-## MU_CHANGE End: Add NVMe Long Delay Time Events
 
 [Packages]
   MdePkg/MdePkg.dec
-  MdeModulePkg/MdeModulePkg.dec ## MU_CHANGE Add NVMe Long Delay Time Events
+  MdeModulePkg/MdeModulePkg.dec
   MsvmPkg/MsvmPkg.dec               ## MS_HYP_CHANGE
 
 [LibraryClasses]
@@ -81,7 +79,7 @@
   gEfiDiskInfoProtocolGuid                    ## BY_START
   gEfiStorageSecurityCommandProtocolGuid      ## BY_START
   gEfiDriverSupportedEfiVersionProtocolGuid   ## PRODUCES
-  gMediaSanitizeProtocolGuid                  ## PRODUCES # MU_CHANGE - Add Media Sanitize
+  gMediaSanitizeProtocolGuid                  ## PRODUCES
   gEfiResetNotificationProtocolGuid           ## CONSUMES
   gEfiHvIvmProtocolGuid                       ## CONSUMES ## MS_HYP_CHANGE
 
@@ -92,7 +90,6 @@
   ## MU_CHANGE [END]
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                ## MS_HYP_CHANGE
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask ## MS_HYP_CHANGE
-
 
 # [Event]
 # EVENT_TYPE_RELATIVE_TIMER ## SOMETIMES_CONSUMES

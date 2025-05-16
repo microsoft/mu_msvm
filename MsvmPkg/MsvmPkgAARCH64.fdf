@@ -149,7 +149,7 @@ READ_LOCK_STATUS   = TRUE
 APRIORI DXE {
   INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
   INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-  INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
+  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
   INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
   INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   INF MsvmPkg/EventLogDxe/EventLogDxe.inf
@@ -159,7 +159,7 @@ APRIORI DXE {
 }
 
 INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
+INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf

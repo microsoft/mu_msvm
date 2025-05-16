@@ -145,7 +145,7 @@ SerialWriteBanner ENDP
 // Simple Exception handlers as workaround for hang issue on macoma
 //
 
-    AREA    |.vectors|,ALIGN=12,CODE
+    AREA    |.vectors|,ALIGN=3,CODE
 
     ALIGN 2048
 

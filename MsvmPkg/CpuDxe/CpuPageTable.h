@@ -10,7 +10,7 @@
 #define _PAGE_TABLE_LIB_H_
 
 #include <IndustryStandard/PeImage.h>
-#include <Protocol/MemoryAttribute.h>             // TCBZ3519 MU_CHANGE
+#include <Protocol/MemoryAttribute.h>
 #include <Protocol/MemoryProtectionNonstopMode.h> // MU_CHANGE
 
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PSE              BIT0
@@ -155,26 +155,27 @@ GetPagingDetails (
   OUT UINT32                              **Attributes        OPTIONAL
   );
 
-// TCBZ3519 MU_CHANGE START
-
 /**
-  Install Memory Attribute Protocol.
+  Install Efi Memory Attribute Protocol.
+
+  @param Handle A pointer to the EFI_HANDLE on which the interface is to be installed
+
 **/
 VOID
 InstallEfiMemoryAttributeProtocol (
-  VOID
+  IN EFI_HANDLE  Handle
   );
-
-// TCBZ3519 MU_CHANGE END
 
 // MU_CHANGE START
 
 /**
- Install the Memory Protection Nonstop Protocol
+  Install Memory Protection Nonstop Protocol.
+
+  @param Handle A pointer to the EFI_HANDLE on which the interface is to be installed
 **/
 VOID
 InstallMemoryProtectionNonstopModeProtocol (
-  VOID
+  IN EFI_HANDLE  Handle
   );
 
 // MU_CHANGE END

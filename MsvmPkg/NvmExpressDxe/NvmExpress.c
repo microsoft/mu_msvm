@@ -3,7 +3,7 @@
   NVM Express specification.
 
   Copyright (c) 2013 - 2017, Intel Corporation. All rights reserved.<BR>
-  Copyright (c) Microsoft Corporation.
+  Copyright (c) Microsoft Corporation.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -183,7 +183,6 @@ EnumerateNvmeDevNamespace (
     Device->BlockIo2.FlushBlocksEx = NvmeBlockIoFlushBlocksEx;
     InitializeListHead (&Device->AsyncQueue);
 
-    // MU_CHANGE Start - Add Media Sanitize
     //
     // Create Media Sanitize Protocol instance
     //
@@ -203,7 +202,6 @@ EnumerateNvmeDevNamespace (
       &(Device->Controller->ControllerData->Sanicap),
       sizeof (Device->MediaSanitize.SanitizeCapabilities)
       );
-    // MU_CHANGE End - Add Media Sanitize
 
     //
     // Create StorageSecurityProtocol Instance
@@ -265,6 +263,8 @@ EnumerateNvmeDevNamespace (
                     &Device->BlockIo2,
                     &gEfiDiskInfoProtocolGuid,
                     &Device->DiskInfo,
+                    &gMediaSanitizeProtocolGuid,
+                    &Device->MediaSanitize,
                     NULL
                     );
 
@@ -293,6 +293,8 @@ EnumerateNvmeDevNamespace (
                &Device->BlockIo2,
                &gEfiDiskInfoProtocolGuid,
                &Device->DiskInfo,
+               &gMediaSanitizeProtocolGuid,
+               &Device->MediaSanitize,
                NULL
                );
         goto Exit;
@@ -312,9 +314,9 @@ EnumerateNvmeDevNamespace (
     // Dump NvmExpress Identify Namespace Data
     //
     DEBUG ((DEBUG_INFO, " == NVME IDENTIFY NAMESPACE [%d] DATA ==\n", NamespaceId));
-    DEBUG ((DEBUG_INFO, "    NSZE        : 0x%x\n", NamespaceData->Nsze));
-    DEBUG ((DEBUG_INFO, "    NCAP        : 0x%x\n", NamespaceData->Ncap));
-    DEBUG ((DEBUG_INFO, "    NUSE        : 0x%x\n", NamespaceData->Nuse));
+    DEBUG ((DEBUG_INFO, "    NSZE        : 0x%lx\n", NamespaceData->Nsze));
+    DEBUG ((DEBUG_INFO, "    NCAP        : 0x%lx\n", NamespaceData->Ncap));
+    DEBUG ((DEBUG_INFO, "    NUSE        : 0x%lx\n", NamespaceData->Nuse));
     DEBUG ((DEBUG_INFO, "    LBAF0.LBADS : 0x%x\n", (NamespaceData->LbaFormat[0].Lbads)));
 
     //
@@ -324,7 +326,7 @@ EnumerateNvmeDevNamespace (
     Sn[20] = 0;
     CopyMem (Mn, Private->ControllerData->Mn, sizeof (Private->ControllerData->Mn));
     Mn[40] = 0;
-    UnicodeSPrintAsciiFormat (Device->ModelName, sizeof (Device->ModelName), "%a-%a-%x", Sn, Mn, NamespaceData->Eui64);
+    UnicodeSPrintAsciiFormat (Device->ModelName, sizeof (Device->ModelName), "%a-%a-%lx", Sn, Mn, NamespaceData->Eui64);
 
     AddUnicodeString2 (
       "eng",
@@ -492,6 +494,8 @@ UnregisterNvmeNamespace (
                   &Device->BlockIo2,
                   &gEfiDiskInfoProtocolGuid,
                   &Device->DiskInfo,
+                  &gMediaSanitizeProtocolGuid,
+                  &Device->MediaSanitize,
                   NULL
                   );
 

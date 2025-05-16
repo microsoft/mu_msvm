@@ -35,11 +35,9 @@ SnpNotifyExitBootServices (
   // PxeShutdown (Snp);
   PxeStop (Snp);
 
-  // MU_CHANGE [BEGIN] - Shutdown SnpDxe in BeforeExitBootServices
   // Since BeforeExitBootServices is run on each call, close event
   // to prevent reentry.
   gBS->CloseEvent (Event);
-  // MU_CHANGE [END]
 }
 
 
@@ -700,7 +698,7 @@ Return Value:
                         TPL_CALLBACK,
                         SnpNotifyExitBootServices,
                         snpDriver,
-                        &gEfiEventBeforeExitBootServicesGuid,   // MU_CHANGE - Shutdown SnpDxe in BeforeExitBootServices
+                        &gEfiEventBeforeExitBootServicesGuid,
                         &snpDriver->ExitBootServicesEvent
                         );
 
