@@ -39,8 +39,6 @@ _ModuleEntryPoint PROC
 
     blr     x4                          // jump to C code with 3 args (x0,x1,x2)
 
-    ret                                 // REMOVE LATER
-
 _ModuleEntryPoint ENDP
 
 HvInvokeDebugger PROC
