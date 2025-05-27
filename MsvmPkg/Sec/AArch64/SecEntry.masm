@@ -14,7 +14,7 @@
 
 StartupAddr
     DCQ     SecStartupWithStack
-    
+
 TransitionIdtAddr
     DCQ     TransitionIdt
 
