@@ -12,184 +12,248 @@
     EXPORT  SetGuestOsId
     IMPORT  SecStartupWithStack
 
-    ALIGN   8
+    ALIGN 8
 StartupAddr
     DCQ     SecStartupWithStack
-
-    ALIGN   8
+    
+    ALIGN 8
 TransitionIdtAddr
     DCQ     TransitionIdt
 
 _ModuleEntryPoint PROC
 
-    ldr     x4, TransitionIdtAddr
-    msr     vbar_el1, x4
+    // Loader sets register state that become inputs to this function
+    //  x0 - Firmware Volume Base Address
+    //  x1 - Stack Base Address
 
-    // bl SerialWriteBanner
+    ldr     x4, TransitionIdtAddr       // setup simple, default exception handlers
+    msr     vbar_el1, x4                // as workaround to hang issue on macoma
 
-    mov     sp, x1
-    ldr     x2, [x0, #8]
-    ldr     x4, StartupAddr
-    blr     x4
-    ret
+    // bl SerialWriteBanner             // print banner to COM2
+
+    mov     sp, x1                      // Establish stack - leave x1 as second arg to C code
+
+    ldr     x2, [x0, #8]                // Get PEI Core entry from second entry in FV reset vector
+
+    ldr     x4, StartupAddr             // Get address of C code
+
+    blr     x4                          // jump to C code with 3 args (x0,x1,x2)
+
+    ret                                 // REMOVE LATER
 
 _ModuleEntryPoint ENDP
 
 HvInvokeDebugger PROC
-    mov     x2, x0
-    mov     x1, 0x1
-    ldr     x0, =0x000000000001000A
+
+    // *untested*
+
+    mov     x2, x0                      // supplemental Code: from caller in x0
+    mov     x1, 0x1                     // reason: HV_DEBUG_INVOKE_REASON_CLOCK_WATCHDOG
+    ldr     x0, =0x000000000001000A     // hypercall input - IsFast = 1, CallCode = 0A
     hvc     #1
-    and     x0, x0, #0xFFFF
+    and     x0, x0, #0xFFFF             // isolate result code
     ret
+
 HvInvokeDebugger ENDP
 
 SetGuestOsId PROC
-    ldr     x0, =0x0000000100010051
-    ldr     x1, =0xFFFFFFFFFFFFFFFF
-    ldr     x2, =0x00000000FFFFFFFE
-    ldr     x3, =0x0000000000090002
-    mov     x4, #0
-    mov     x5, #0x0001000000000000
-    mov     x6, #0
+
+    ldr     x0, =0x0000000100010051     // hypercall input (rep 1 argument, fast, HvCallSetVpRegisters)
+    ldr     x1, =0xFFFFFFFFFFFFFFFF     // partition id (self)
+    ldr     x2, =0x00000000FFFFFFFE     // pad + vp index (-2 == self)
+    ldr     x3, =0x0000000000090002     // pad + RegisterName == HvRegisterGuestOsId
+    mov     x4, #0                      // pad
+    mov     x5, #0x0001000000000000     // RegisterValue.Low == HvGuestOsVendorMicrosoft | HvGuestOsMicrosoftUndefined
+    mov     x6, #0                      // RegisterValue.High
     hvc     #1
-    and     x0, x0, #0xFFFF
+    and     x0, x0, #0xFFFF             // isolate result
     ret
+
 SetGuestOsId ENDP
 
+//
+// SerialWriteBanner
+//
+// Writes "SECMAIN @ ELn" where n is the current EL.
+//
 SerialWriteBanner PROC
+
+    // writes a
+
     ldr     x9, =0x00000000EFFEB000
-    mov     w10, #0x1B
+    mov     w10, #0x1B  // ESC
     strb    w10, [x9]
-    mov     w10, #0x63
+    mov     w10, #0x63  // 'c'
     strb    w10, [x9]
-    mov     w10, #0x1B
+    mov     w10, #0x1B  // ESC
     strb    w10, [x9]
-    mov     w10, #0x5B
+    mov     w10, #0x5B  // '['
     strb    w10, [x9]
-    mov     w10, #0x33
+    mov     w10, #0x33  // '3'
     strb    w10, [x9]
-    mov     w10, #0x4A
+    mov     w10, #0x4A  // 'J'
     strb    w10, [x9]
-    mov     w10, #0x53
+    mov     w10, #0x53  // 'S'
     strb    w10, [x9]
-    mov     w10, #0x45
+    mov     w10, #0x45  // 'E'
     strb    w10, [x9]
-    mov     w10, #0x43
+    mov     w10, #0x43  // 'C'
     strb    w10, [x9]
-    mov     w10, #0x4D
+    mov     w10, #0x4D  // 'M'
     strb    w10, [x9]
-    mov     w10, #0x41
+    mov     w10, #0x41  // 'A'
     strb    w10, [x9]
-    mov     w10, #0x49
+    mov     w10, #0x49  // 'I'
     strb    w10, [x9]
-    mov     w10, #0x4E
+    mov     w10, #0x4E  // 'N'
     strb    w10, [x9]
-    mov     w10, #0x20
+    mov     w10, #0x20  // ' '
     strb    w10, [x9]
-    mov     w10, #0x40
+    mov     w10, #0x40  // '@'
     strb    w10, [x9]
-    mov     w10, #0x20
+    mov     w10, #0x20  // ' '
     strb    w10, [x9]
-    mov     w10, #0x45
+    mov     w10, #0x45  // 'E'
     strb    w10, [x9]
-    mov     w10, #0x4C
+    mov     w10, #0x4C  // 'L'
     strb    w10, [x9]
 
+    // TODO: What's the constant for ARM64_CurrentEL format?
+    // mrs     x8, #ARM64_CurrentEL
     cmp     x8, #0x8
     bgt     %f3
     beq     %f2
     cbnz    x8, %f1
 5
-    bne     %b5
+    bne     %b5         // shouldn't get here
 1
-    mov     w10, #0x31
+    mov     w10, #0x31  // '1'
     b       %f4
 2
-    mov     w10, #0x32
+    mov     w10, #0x32  // '2'
     b       %f4
 3
-    mov     w10, #0x33
+    mov     w10, #0x33  // '3'
     b       %f4
 4
     strb    w10, [x9]
-    mov     w10, #0x0D
+    mov     w10, #0x0D  // '\r'
     strb    w10, [x9]
-    mov     w10, #0x0A
+    mov     w10, #0x0A  // '\n'
     strb    w10, [x9]
     ret
+
 SerialWriteBanner ENDP
 
-    AREA    |.vectors|,ALIGN=6,CODE,READONLY  ; 64-byte alignment to match linker /ALIGN
+//
+// Simple Exception handlers as workaround for hang issue on macoma
+//
+
+    AREA    |.vectors|,ALIGN=6,CODE
+
+    ALIGN 64
 
 TransitionIdt
 
+// Current EL with SP_EL0, Synchronous
 TransitionIdtKernelSp0ExceptionHandler
     b   TransitionIdtKernelSp0ExceptionHandler
+
     ALIGN 64
 
+// Current EL with SP_EL0, IRQ/vIRQ
 TransitionIdtKernelSp0InterruptHandler
     b   TransitionIdtKernelSp0InterruptHandler
+
     ALIGN 64
 
+// Current EL with SP_EL0, FIQ/vFIQ
 TransitionIdtKernelSp0FiqHandler
-    b   TransitionIdtKernelSp0FiqHandler
+    b TransitionIdtKernelSp0FiqHandler
+
     ALIGN 64
 
+// Current EL with SP_EL0, SError/VSError
 TransitionIdtKernelSp0SystemErrorHandler
     b   TransitionIdtKernelSp0SystemErrorHandler
+
     ALIGN 64
 
+// Current EL with SP_ELx, Synchronous
 TransitionIdtKernelExceptionHandler
     b   TransitionIdtKernelExceptionHandler
+
     ALIGN 64
 
+// Current EL with SP_ELx, IRQ/vIRQ
 TransitionIdtKernelInterruptHandler
     b   TransitionIdtKernelInterruptHandler
+
     ALIGN 64
 
+// Current EL with SP_ELx, FIQ/vFIQ
 TransitionIdtKernelFiqHandler
     b   TransitionIdtKernelFiqHandler
+
     ALIGN 64
 
+// Current EL with SP_ELx, SError/VSError
 TransitionIdtKernelSystemErrorHandler
     b   TransitionIdtKernelSystemErrorHandler
+
     ALIGN 64
 
+// Lower EL using AArch64, Synchronous
 TransitionIdtUserExceptionHandler
-    b   TransitionIdtUserExceptionHandler
+    b   TransitionIdtUserExceptionHandler// We're not implementing EL0
+
     ALIGN 64
 
+// Lower EL using AArch64, IRQ/vIRQ
 TransitionIdtUserInterruptHandler
-    b   TransitionIdtUserInterruptHandler
+    b   TransitionIdtUserInterruptHandler// We're not implementing EL0
+
     ALIGN 64
 
+// Lower EL using AArch64, FIQ/vFIQ
 TransitionIdtUserFiqHandler
-    b   TransitionIdtUserFiqHandler
+    b   TransitionIdtUserFiqHandler // We're not implementing EL0
+
     ALIGN 64
 
+// Lower EL using AArch64, SError/VSError
 TransitionIdtUserSystemErrorHandler
-    b   TransitionIdtUserSystemErrorHandler
+    b   TransitionIdtUserSystemErrorHandler // We're not implementing EL0
+
     ALIGN 64
 
+// Lower EL using AArch32, Synchronous
 TransitionIdtUser32ExceptionHandler
     b   TransitionIdtUser32ExceptionHandler
+
     ALIGN 64
 
+// Lower EL using AArch32, IRQ/vIRQ
 TransitionIdtUser32InterruptHandler
     b   TransitionIdtUser32InterruptHandler
+
     ALIGN 64
 
+// Lower EL using AArch32, FIQ/vFIQ
 TransitionIdtUser32FiqHandler
     b   TransitionIdtUser32FiqHandler
+
     ALIGN 64
 
+// Lower EL using AArch32, SError/VSError
 TransitionIdtUser32SystemErrorHandler
     b   TransitionIdtUser32SystemErrorHandler
+
     ALIGN 64
 
 TransitionIdtEnd
 
+// Assert that the vector table has the right size
     ASSERT TransitionIdtEnd - TransitionIdt == 1024
 
 TransitionIdtUnexpectedException
