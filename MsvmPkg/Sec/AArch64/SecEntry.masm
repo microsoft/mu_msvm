@@ -12,11 +12,9 @@
     EXPORT  SetGuestOsId
     IMPORT  SecStartupWithStack
 
-    ALIGN 8
 StartupAddr
     DCQ     SecStartupWithStack
     
-    ALIGN 8
 TransitionIdtAddr
     DCQ     TransitionIdt
 
