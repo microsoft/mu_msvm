@@ -192,6 +192,7 @@
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
+    gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter
 
 [Pcd.AArch64]
     gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress

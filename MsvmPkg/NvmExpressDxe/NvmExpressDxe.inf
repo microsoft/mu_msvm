@@ -90,6 +90,7 @@
   ## MU_CHANGE [END]
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                ## MS_HYP_CHANGE
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask ## MS_HYP_CHANGE
+  gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter                       ## MS_HYP_CHANGE
 
 # [Event]
 # EVENT_TYPE_RELATIVE_TIMER ## SOMETIMES_CONSUMES
