@@ -369,16 +369,21 @@ Exit:
   Discover all Nvm Express device namespaces, and create child handles for them with BlockIo
   and DiskInfo protocol instances.
 
-  @param[in] Private         The pointer to the NVME_CONTROLLER_PRIVATE_DATA data structure.
+  // MS_HYP_CHANGE [BEGIN]: Filter namespaces
+  @param[in] Private          The pointer to the NVME_CONTROLLER_PRIVATE_DATA data structure.
+  @param[in] FilteringEnabled If TRUE, only discover the first namespace. If FALSE, discover all namespaces.
 
-  @retval EFI_SUCCESS        All the namespaces in the device are successfully enumerated.
-  @return Others             Some error occurs when enumerating the namespaces.
+  @retval EFI_SUCCESS         All the namespaces in the device are successfully enumerated.
+  @return Others              Some error occurs when enumerating the namespaces.
 
 **/
 EFI_STATUS
 DiscoverAllNamespaces (
-  IN NVME_CONTROLLER_PRIVATE_DATA  *Private
+  IN NVME_CONTROLLER_PRIVATE_DATA  *Private,
+  IN BOOLEAN                       FilteringEnabled
   )
+// MS_HYP_CHANGE [End]: Filter namespaces
+
 {
   EFI_STATUS                          Status;
   UINT32                              NamespaceId;
@@ -387,7 +392,8 @@ DiscoverAllNamespaces (
   NamespaceId = 0xFFFFFFFF;
   Passthru    = &Private->Passthru;
 
-  while (TRUE) {
+  // MS_HYP_CHANGE: Filter namespaces
+  do {
     Status = Passthru->GetNextNamespace (
                          Passthru,
                          (UINT32 *)&NamespaceId
@@ -405,7 +411,7 @@ DiscoverAllNamespaces (
     if (EFI_ERROR (Status)) {
       continue;
     }
-  }
+  } while (!FilteringEnabled); // MS_HYP_CHANGE: Filter namespaces
 
   return EFI_SUCCESS;
 }
@@ -697,23 +703,32 @@ ProcessAsyncTaskList (
 
         if (AsyncRequest->Packet->NvmeCmd->Cdw0.Opcode & BIT1) {
           if (AsyncRequest->TransferBouncePageList != NULL) {
-            NvmExpressCopyBouncePagesToExternalBuffer (AsyncRequest->Packet->TransferBuffer,
-                                                       AsyncRequest->Packet->TransferLength,
-                                                       AsyncRequest->TransferBouncePageList,
-                                                       FALSE);
-            NvmExpressReleaseBouncePages (Private,
-                                          AsyncRequest->TransferBouncePageList);
+            NvmExpressCopyBouncePagesToExternalBuffer (
+              AsyncRequest->Packet->TransferBuffer,
+              AsyncRequest->Packet->TransferLength,
+              AsyncRequest->TransferBouncePageList,
+              FALSE
+              );
+            NvmExpressReleaseBouncePages (
+              Private,
+              AsyncRequest->TransferBouncePageList
+              );
           }
 
           if (AsyncRequest->MetadataBouncePageList != NULL) {
-            NvmExpressCopyBouncePagesToExternalBuffer (AsyncRequest->Packet->MetadataBuffer,
-                                                       AsyncRequest->Packet->MetadataLength,
-                                                       AsyncRequest->MetadataBouncePageList,
-                                                       FALSE);
-            NvmExpressReleaseBouncePages (Private,
-                                          AsyncRequest->MetadataBouncePageList);
+            NvmExpressCopyBouncePagesToExternalBuffer (
+              AsyncRequest->Packet->MetadataBuffer,
+              AsyncRequest->Packet->MetadataLength,
+              AsyncRequest->MetadataBouncePageList,
+              FALSE
+              );
+            NvmExpressReleaseBouncePages (
+              Private,
+              AsyncRequest->MetadataBouncePageList
+              );
           }
         }
+
         // MS_HYP_CHANGE END
 
         //
@@ -733,10 +748,10 @@ ProcessAsyncTaskList (
 
         if (AsyncRequest->PrpListHost != NULL) {
           // MS_HYP_CHANGE BEGIN
-          if (IsIsolated())
-          {
-            NvmExpressMakeAddressRangePrivate(&AsyncRequest->PrpListHostVisibilityContext, AsyncRequest->PrpListHost);
+          if (IsIsolated ()) {
+            NvmExpressMakeAddressRangePrivate (&AsyncRequest->PrpListHostVisibilityContext, AsyncRequest->PrpListHost);
           }
+
           // MS_HYP_CHANGE END
 
           PciIo->FreeBuffer (
@@ -993,6 +1008,8 @@ NvmExpressDriverBindingStart (
   EFI_PHYSICAL_ADDRESS                MappedAddr;
   UINTN                               Bytes;
   EFI_NVM_EXPRESS_PASS_THRU_PROTOCOL  *Passthru;
+  BOOLEAN                             FilteringEnabled; // MS_HYP_CHANGE: Filter namespaces
+
   // MU_CHANGE - Support alternative hardware queue sizes in NVME driver
   UINTN  QueuePageCount = PcdGetBool (PcdSupportAlternativeQueueSize) ?
                           NVME_ALTERNATIVE_TOTAL_QUEUE_BUFFER_IN_PAGES : 6;
@@ -1108,16 +1125,18 @@ NvmExpressDriverBindingStart (
     }
 
     // MS_HYP_CHANGE BEGIN
-    if (IsIsolated()) {
-      Status = NvmExpressMakeAddressRangeShared(&Private->QueueVisibilityContext,
-                                                Private->Buffer,
-                                                (UINT32)QueuePageCount * EFI_PAGE_SIZE
-                                                );
+    if (IsIsolated ()) {
+      Status = NvmExpressMakeAddressRangeShared (
+                 &Private->QueueVisibilityContext,
+                 Private->Buffer,
+                 (UINT32)QueuePageCount * EFI_PAGE_SIZE
+                 );
 
-      if (EFI_ERROR(Status)) {
+      if (EFI_ERROR (Status)) {
         goto Exit;
       }
     }
+
     // MS_HYP_CHANGE END
 
     // MU_CHANGE - Support alternative hardware queue sizes in NVME driver
@@ -1137,12 +1156,13 @@ NvmExpressDriverBindingStart (
     }
 
     // MS_HYP_CHANGE BEGIN
-    if (IsIsolated()) {
+    if (IsIsolated ()) {
       //
       // Canonicalize  the VA.
       //
-      Private->Buffer = NvmExpressGetSharedVa(Private->Buffer);
+      Private->Buffer = NvmExpressGetSharedVa (Private->Buffer);
     }
+
     // MS_HYP_CHANGE END
 
     Private->BufferPciAddr = (UINT8 *)(UINTN)MappedAddr;
@@ -1167,13 +1187,14 @@ NvmExpressDriverBindingStart (
     // Allocate bounce block for isolated VMs
     //
 
-    if (NvmExpressIsBounceActive()) {
-      InitializeListHead(&Private->BounceBlockListHead);
-      Status = NvmExpressAllocateBounceBlock(Private, NVME_BOUNCE_BLOCK_SIZE);
+    if (NvmExpressIsBounceActive ()) {
+      InitializeListHead (&Private->BounceBlockListHead);
+      Status = NvmExpressAllocateBounceBlock (Private, NVME_BOUNCE_BLOCK_SIZE);
       if (EFI_ERROR (Status)) {
         goto Exit;
       }
     }
+
     // MS_HYP_CHANGE END
 
     Status = NvmeControllerInit (Private);
@@ -1231,13 +1252,18 @@ NvmExpressDriverBindingStart (
     Private = NVME_CONTROLLER_PRIVATE_DATA_FROM_PASS_THRU (Passthru);
   }
 
+  FilteringEnabled = PcdGetBool (PcdNvmeNamespaceFilter); // MS_HYP_CHANGE: Filter namespaces
+
   if (RemainingDevicePath == NULL) {
     //
     // Enumerate all NVME namespaces in the controller
     //
+    // MS_HYP_CHANGE [BEGIN]: Filter namespaces
     Status = DiscoverAllNamespaces (
-               Private
+               Private,
+               FilteringEnabled
                );
+    // MS_HYP_CHANGE [END]: Filter namespaces
   } else if (!IsDevicePathEnd (RemainingDevicePath)) {
     //
     // Enumerate the specified NVME namespace
@@ -1249,10 +1275,17 @@ NvmExpressDriverBindingStart (
                                  );
 
     if (!EFI_ERROR (Status)) {
-      Status = EnumerateNvmeDevNamespace (
-                 Private,
-                 NamespaceId
-                 );
+      // MS_HYP_CHANGE [BEGIN]: Filter namespaces
+      if (!FilteringEnabled ||
+          (NamespaceId == NVME_FIRST_NSID))
+      {
+        Status = EnumerateNvmeDevNamespace (
+                   Private,
+                   NamespaceId
+                   );
+      }
+
+      // MS_HYP_CHANGE [END]: Filter namespaces
     }
   }
 
@@ -1392,15 +1425,16 @@ NvmExpressDriverBindingStop (
 
       if (Private->Buffer != NULL) {
         // MS_HYP_CHANGE BEGIN
-        if (IsIsolated()) {
-          NvmExpressMakeAddressRangePrivate(&Private->QueueVisibilityContext, Private->Buffer);
+        if (IsIsolated ()) {
+          NvmExpressMakeAddressRangePrivate (&Private->QueueVisibilityContext, Private->Buffer);
         }
+
         // MS_HYP_CHANGE END
         // MU_CHANGE - Support alternative hardware queue sizes in NVME driver
         Private->PciIo->FreeBuffer (Private->PciIo, QueuePageCount, Private->Buffer);
       }
 
-      NvmExpressFreeAllBounceBlocks(Private); // MS_HYP_CHANGE
+      NvmExpressFreeAllBounceBlocks (Private);   // MS_HYP_CHANGE
       FreePool (Private->ControllerData);
       FreePool (Private);
     }
@@ -1603,11 +1637,11 @@ NvmExpressDriverEntry (
   ASSERT_EFI_ERROR (Status);
 
   // MS_HYP_CHANGE BEGIN
-  if (NvmExpressIsBounceActive())
-  {
-    Status = NvmExpressInitializeBounce();
+  if (NvmExpressIsBounceActive ()) {
+    Status = NvmExpressInitializeBounce ();
     ASSERT_EFI_ERROR (Status);
   }
+
   // MS_HYP_CHANGE END
 
   return Status;
