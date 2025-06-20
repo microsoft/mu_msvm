@@ -535,6 +535,7 @@ AcpiInstallNfitTable(
     // Get the size of the NFIT
     //
     nfitSize = GetNfitSize();
+    DEBUG((EFI_D_ERROR, "%a: NFIT size: 0x%x\n", __FUNCTION__, nfitSize));
 
     //
     // Size of 0 means no NFIT
@@ -543,6 +544,7 @@ AcpiInstallNfitTable(
     //
     if (nfitSize == 0)
     {
+        DEBUG((EFI_D_ERROR, "%a: NFIT size is 0, no nfit\n", __FUNCTION__));
         return EFI_SUCCESS;
     }
 
@@ -555,6 +557,7 @@ AcpiInstallNfitTable(
     table = (void*) buffer;
     if (EFI_ERROR(status))
     {
+        DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for NFIT table.\n", __FUNCTION__));
         table = NULL;
         goto Cleanup;
     }
@@ -562,6 +565,7 @@ AcpiInstallNfitTable(
     //
     // Notify the vPMEM vdev to populate the NFIT table
     //
+    DEBUG((EFI_D_ERROR, "%a: Calling GetNfit to populate the NFIT table.\n", __FUNCTION__));
     GetNfit((UINT64)table);
 
     //
@@ -571,6 +575,8 @@ AcpiInstallNfitTable(
                                          table,
                                          table->Length,
                                          &tableHandle);
+    DEBUG((EFI_D_ERROR, "%a: NFIT table installed at 0x%p, status: %r\n",
+           __FUNCTION__, table, status));                                         
 
     //
     // Cleanup memory allocated for the NFIT table
