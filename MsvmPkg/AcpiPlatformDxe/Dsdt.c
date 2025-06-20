@@ -94,6 +94,7 @@ Return Value:
 
     if (EFI_ERROR(status))
     {
+        DEBUG((DEBUG_ERROR, "%a: Failed to allocate memory for DSDT AML data.\n", __FUNCTION__));
         dataPages = 0;
         goto Cleanup;
     }
@@ -133,6 +134,7 @@ Return Value:
     data->OempEnabled = PcdGetBool(PcdLoadOempTable);
     data->HibernateEnabled = PcdGetBool(PcdHibernateEnabled);
     data->PmemEnabled = mHardwareIsolatedNoParavisor ? 0 : (GetNfitSize() > 0);
+    DEBUG((DEBUG_ERROR, "%a: PmemEnabled %d\n", __FUNCTION__, data->PmemEnabled));
     data->VirtualBatteryEnabled = PcdGetBool(PcdVirtualBatteryEnabled);
     data->SgxMemoryEnabled = PcdGetBool(PcdSgxMemoryEnabled);
     data->ProcIdleEnabled = PcdGetBool(PcdProcIdleEnabled);
@@ -157,13 +159,17 @@ Return Value:
     // Allocate space for the NVDIMM IO Buffer if VPMEM is enabled.
     //
     if (data->PmemEnabled) {
+        DEBUG((DEBUG_VERBOSE, "%a: Allocating NVDIMM IO Buffer\n", __FUNCTION__));
         nvdimmBuffer = (EFI_PHYSICAL_ADDRESS)(UINT32)-1;
+        DEBUG((DEBUG_VERBOSE, "%a: NVDIMM IO Buffer size: 0x%x pages\n", __FUNCTION__, 
+               EFI_SIZE_TO_PAGES(NVDIMM_IO_BUFFER_SIZE)));
         status = gBS->AllocatePages(AllocateMaxAddress,
                                     EfiRuntimeServicesData,
                                     EFI_SIZE_TO_PAGES(NVDIMM_IO_BUFFER_SIZE),
                                     &nvdimmBuffer);
         if (EFI_ERROR(status))
         {
+            DEBUG((DEBUG_ERROR, "%a: Failed to allocate memory for NVDIMM IO Buffer.\n", __FUNCTION__));
             nvdimmBuffer = 0;
             goto Cleanup;
         }
@@ -174,6 +180,8 @@ Return Value:
 
     data->NvdimmBufferAddress = (UINT32)nvdimmBuffer;
     *AmlDataAddress = (UINT32)dataPages;
+    DEBUG((DEBUG_ERROR, "%a: AmlDataAddress: 0x%x\n", __FUNCTION__, *AmlDataAddress));
+    DEBUG((DEBUG_ERROR, "%a: NvdimmBufferAddress: 0x%x\n", __FUNCTION__, data->NvdimmBufferAddress));
     status = EFI_SUCCESS;
 
 Cleanup:
