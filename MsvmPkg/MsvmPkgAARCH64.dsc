@@ -43,6 +43,9 @@
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
   MSFT:*_*_AARCH64_DLINK_FLAGS = /ALIGN:0x10000
 
+[BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
+  MSFT:*_*_*_DLINK_FLAGS = /ALIGN:4096 /FILEALIGN:4096
+
 ################################################################################
 #
 # SKU Identification section - list of all SKU IDs supported by this Platform.
