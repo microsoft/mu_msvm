@@ -982,8 +982,12 @@ Return Value:
 
     //
     // Set the boot mode and installs the boot mode tag PPI.
-    //
-    status = PeiServicesSetBootMode(BOOT_WITH_FULL_CONFIGURATION);
+    // For virtualized hosts we assume no configuration changes so that
+    // BDS does not report "THIS BOOT MODE IS UNSUPPORTED" for
+    // BOOT_WITH_FULL_CONFIGURATION. On bare-metal platforms that need
+    // full hardware reconfiguration or memory retraining, consider
+    // setting BOOT_WITH_FULL_CONFIGURATION instead.
+    status = PeiServicesSetBootMode(BOOT_ASSUMING_NO_CONFIGURATION_CHANGES);
     ASSERT_EFI_ERROR(status);
 
     status = PeiServicesInstallPpi(MsvmBootModePpiDescriptor);

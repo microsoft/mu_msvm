@@ -482,7 +482,7 @@ DeviceBootManagerBeforeConsole (
         }
     }
     else {
-        DEBUG((DEBUG_ERROR, "Handle for Hyper-V keyboard device not found\n"));
+        DEBUG((DEBUG_WARN, "Handle for Hyper-V keyboard device not found\n"));
     }
 
     if (ConsoleOut != NULL) {
@@ -503,7 +503,7 @@ DeviceBootManagerBeforeConsole (
         }
     }
     else {
-        DEBUG((DEBUG_ERROR, "Handle for Hyper-V video device not found\n"));
+        DEBUG((DEBUG_WARN, "Handle for Hyper-V video device not found\n"));
     }
 
     *PlatformConsoles = (BDS_CONSOLE_CONNECT_ENTRY *)&gPlatformConsoles;
@@ -542,7 +542,7 @@ DeviceBootManagerAfterConsole (
                             &HandleBuffer );
 
     for (Index = 0; Index < HandleCount; Index++) {
-        DEBUG((DEBUG_ERROR, "Connecting controller for handle %d \n", Index));
+        DEBUG((DEBUG_INFO, "Connecting controller for handle %d \n", Index));
         gBS->ConnectController(HandleBuffer[Index], NULL, NULL, TRUE);
     }
 
