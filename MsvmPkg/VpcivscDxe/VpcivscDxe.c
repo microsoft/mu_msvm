@@ -20,6 +20,9 @@
 
 #include <IsolationTypes.h>
 
+#define AZIHSM_VENDOR_ID 0x1414
+#define AZIHSM_DEVICE_ID 0xC003
+
 EFI_DRIVER_BINDING_PROTOCOL gVpcivscDriverBinding =
 {
     VpcivscDriverBindingSupported,
@@ -79,7 +82,9 @@ VPCIVSC_CONTEXT gVpcivscContextTemplate =
     NULL, // VPCI_DEVICE_DESCRIPTION *Devices
     0, // DeviceCount
     NULL, // VPCI_DEVICE_CONTEXT *NvmeDevices
-    0 // NvmeDeviceCount
+    0, // NvmeDeviceCount
+    NULL, // VPCI_DEVICE_CONTEXT *AziHsmDevices
+    0, // AziHsmDeviceCount
 };
 
 // Packet completion structure used during packet completion callback
@@ -155,6 +160,27 @@ IsNvmeDevice(
 
     return FALSE;
 }
+
+/// \brief      Checks if a given device is an Azure Integrated HSM device or not.
+///
+/// \param[in]  Device  The device to check
+///
+/// \return     True if Azure Integrated HSM device, False otherwise.
+///
+BOOLEAN
+IsAziHsmDevice(
+    CONST PVPCI_DEVICE_DESCRIPTION Device
+    )
+{
+    if (Device->IDs.VendorID == AZIHSM_VENDOR_ID &&  // Microsoft Vendor ID
+        Device->IDs.DeviceID == AZIHSM_DEVICE_ID)     // Azure Integrated HSM Device ID
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 
 /// \brief      The callback function called by EMCL when a packet is received
 ///             on the channel.
@@ -575,7 +601,7 @@ VpciChannelFdoD0Entry(
         DEBUG((DEBUG_ERROR, "vpci vsp returned some failure %x\n", packetResponse.NtStatus));
         status = EFI_DEVICE_ERROR;
     }
-
+    
     return status;
 }
 
@@ -646,7 +672,6 @@ VpciParseAndAllocateBars(
     )
 {
     UINTN index = 0;
-    UINTN mappedIndex = 0;
 
     while (index < PCI_MAX_BAR)
     {
@@ -685,7 +710,7 @@ VpciParseAndAllocateBars(
         // Total BAR Size is calculated by taking all bits and inverting + 1
         UINT64 barSize = ~(((UINT64)(Context->RawBars[index + 1].AsUINT32) << 32) | (Context->RawBars[index].Memory.Address << 4)) + 1;
 
-        DEBUG((DEBUG_VPCI_INFO, "Allocating bar %x with size 0x%llx\n", mappedIndex, barSize));
+        DEBUG((DEBUG_VPCI_INFO, "Allocating bar %x with size 0x%llx\n", index, barSize));
 
         // Align up bar size to nearest page because we only allocate mmio in terms of pages.
         UINT64 barSizeInPages = ALIGN_UP(barSize, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
@@ -700,13 +725,11 @@ VpciParseAndAllocateBars(
         }
 
         // Update the information in the device context.
-        Context->MappedBars[mappedIndex].MappedAddress = barAddress;
-        Context->MappedBars[mappedIndex].Size = barSize;
-        Context->MappedBars[mappedIndex].Is64Bit = TRUE;
-        Context->MappedBars[mappedIndex].BarIndex = (UINT8)index;
+        Context->MappedBars[index].MappedAddress = barAddress;
+        Context->MappedBars[index].Size = barSize;
+        Context->MappedBars[index].Is64Bit = TRUE;
 
         index += 2;
-        mappedIndex++;
     }
 
     return EFI_SUCCESS;
@@ -796,8 +819,8 @@ VpciChannelPdoSendAssignedResourcesMessage(
             continue;
         }
 
-        UINT8 rawBarIndex = Context->MappedBars[i].BarIndex;
-
+        UINT8 rawBarIndex = (UINT8) i;
+        
         ASSERT(rawBarIndex < PCI_MAX_BAR);
 
         PCM_PARTIAL_RESOURCE_DESCRIPTOR descriptor = &assignedResourcesPacket.MmioResources[rawBarIndex];
@@ -926,6 +949,7 @@ InitializeVpciDeviceContext(
     // Initialize the slot information, setup the context pointer
     DeviceContext->Slot.u.AsULONG = DeviceDescription->Slot;
     DeviceContext->VpcivscContext = VscContext;
+    DeviceContext->DeviceDescription = DeviceDescription;
 }
 
 /// \brief      Create an EFI handle with device path for the given device
@@ -1016,6 +1040,11 @@ VpscivscDestroyContext(
     if (Context->NvmeDevices != NULL)
     {
         FreePool(Context->NvmeDevices);
+    }
+
+    if (Context->AziHsmDevices != NULL)
+    {
+        FreePool(Context->AziHsmDevices);
     }
 
     if (Context->Devices != NULL)
@@ -1285,44 +1314,90 @@ VpcivscDriverBindingStart (
         if (IsNvmeDevice(&instance->Devices[i]))
         {
             instance->NvmeDeviceCount++;
+        } 
+        else if (IsAziHsmDevice(&instance->Devices[i])) 
+        {
+            instance->AziHsmDeviceCount++;
         }
     }
 
-    DEBUG((DEBUG_VPCI_INFO, "channel has %x nvme devices\n", instance->NvmeDeviceCount));
+    DEBUG((DEBUG_VPCI_INFO, "channel has 0x%x nvme devices and 0x%x AziHsmDevices\n",
+        instance->NvmeDeviceCount,
+        instance->AziHsmDeviceCount));
 
-    // If no NVMe devices, we just leave the channel open so subsequent calls to
+    // If no NVMe/AziHsm devices, we just leave the channel open so subsequent calls to
     // DriverStart on this driver will stop early.
-    if (instance->NvmeDeviceCount == 0)
+    if ( (instance->NvmeDeviceCount == 0) && 
+         (instance->AziHsmDeviceCount == 0))
     {
-        DEBUG((DEBUG_ERROR, "no nvme devices, driver leaving channel open and returning\n"));
+        DEBUG((DEBUG_ERROR, "no NVME/AziHsm devices, driver leaving channel open and returning\n"));
         status = EFI_SUCCESS;
         driverStarted = TRUE;
         goto Cleanup;
     }
 
-    // Allocate the array of NVMe device contexts. Each device should copy from
-    // the template.
-    instance->NvmeDevices = AllocateZeroPool(sizeof(VPCI_DEVICE_CONTEXT) * instance->NvmeDeviceCount);
-
-    if (instance->NvmeDevices == NULL)
+    if (instance->NvmeDeviceCount) 
     {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Cleanup;
+        // Allocate the array of NVMe device contexts. Each device should copy from
+        // the template.
+        instance->NvmeDevices = AllocateZeroPool(sizeof(VPCI_DEVICE_CONTEXT) * instance->NvmeDeviceCount);
+
+        if (instance->NvmeDevices == NULL)
+        {
+            status = EFI_OUT_OF_RESOURCES;
+            goto Cleanup;
+        }
+    }
+
+    // Allocate the array of Azure Integrated HSM device contexts if needed
+    if (instance->AziHsmDeviceCount)
+    {
+        instance->AziHsmDevices = AllocateZeroPool(sizeof(VPCI_DEVICE_CONTEXT) * instance->AziHsmDeviceCount);
+
+        if (instance->AziHsmDevices == NULL)
+        {
+            status = EFI_OUT_OF_RESOURCES;
+            goto Cleanup;
+        }
     }
 
     // Look thru the child devices, and for each NVME device
-    UINT32 nvmeDeviceIndex = 0;
+    UINT32 nvmeDeviceIndex = 0, aziHsmDeviceIndex = 0;
     for (UINT32 i = 0; i < instance->DeviceCount; i++)
     {
-        if (!IsNvmeDevice(&instance->Devices[i]))
+        if ( (!IsNvmeDevice(&instance->Devices[i])) && 
+             (!IsAziHsmDevice(&instance->Devices[i])))
         {
             // Don't care about this device, skip.
             continue;
         }
 
-        // Initialize a new device context
-        ASSERT(nvmeDeviceIndex < instance->NvmeDeviceCount);
-        PVPCI_DEVICE_CONTEXT deviceContext = &instance->NvmeDevices[nvmeDeviceIndex++];
+        if (instance->NvmeDeviceCount)
+            ASSERT(nvmeDeviceIndex <= instance->NvmeDeviceCount);
+
+        if (instance->AziHsmDeviceCount) 
+            ASSERT(aziHsmDeviceIndex <= instance->AziHsmDeviceCount);
+
+        // Avoid Accessing Invalid Memory     
+        if (nvmeDeviceIndex >= instance->NvmeDeviceCount && IsNvmeDevice(&instance->Devices[i])) 
+        {
+            DEBUG((DEBUG_ERROR, "NvmeDeviceIndex out of bounds!\n"));
+            status = EFI_DEVICE_ERROR;
+            goto Cleanup;
+        }
+
+        // Avoid Accessing Invalid Memory     
+        if (aziHsmDeviceIndex >= instance->AziHsmDeviceCount && IsAziHsmDevice(&instance->Devices[i])) 
+        {
+            DEBUG((DEBUG_ERROR, "AziHsmDeviceIndex out of bounds!\n"));
+            status = EFI_DEVICE_ERROR;
+            goto Cleanup;
+        }
+
+        PVPCI_DEVICE_CONTEXT deviceContext = 
+            IsNvmeDevice(&instance->Devices[i]) ?
+            &instance->NvmeDevices[nvmeDeviceIndex++] :
+            &instance->AziHsmDevices[aziHsmDeviceIndex++];
 
         InitializeVpciDeviceContext(instance,
             &instance->Devices[i],
@@ -1386,8 +1461,13 @@ VpcivscDriverBindingStart (
     }
 
     ASSERT(nvmeDeviceIndex == instance->NvmeDeviceCount);
+    ASSERT(aziHsmDeviceIndex == instance->AziHsmDeviceCount);
 
     driverStarted = TRUE;
+
+    DEBUG((DEBUG_ERROR, "AziHsmDeviceCnt:%d NvmeDevCnt=%d\n",
+        instance->AziHsmDeviceCount, 
+        instance->NvmeDeviceCount));
 
 Cleanup:
     if (!driverStarted)
@@ -1413,6 +1493,14 @@ Cleanup:
                 for (UINTN i = 0; i < instance->NvmeDeviceCount; i++)
                 {
                     VpcivscDestroyDevice(&instance->NvmeDevices[i]);
+                }
+            }
+
+            if (instance->AziHsmDevices != NULL)
+            {
+                for (UINTN i = 0; i < instance->AziHsmDeviceCount; i++)
+                {
+                    VpcivscDestroyDevice(&instance->AziHsmDevices[i]);
                 }
             }
 
@@ -1483,7 +1571,7 @@ VpcivscDriverBindingStop (
         // If child devices, tear down all children devices
         //      For each child device, send d0 exit packet
         //      Then send ReleaseResources
-        ASSERT(NumberOfChildren == vscContext->NvmeDeviceCount);
+        ASSERT(NumberOfChildren == (vscContext->NvmeDeviceCount + vscContext->AziHsmDeviceCount));
 
         for (UINTN i = 0; i < NumberOfChildren; i++)
         {

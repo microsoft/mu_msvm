@@ -29,7 +29,6 @@ typedef struct _VPCI_BAR_INFORMATION
     UINT64 MappedAddress; // The address where this bar was allocated and mapped
     UINT64 Size; // The size of this bar
     BOOLEAN Is64Bit; // The type of bar, 32 bit or 64 bit
-    UINT8 BarIndex; // The index into the RawBars array for where this bar starts
 } VPCI_BAR_INFORMATION, *PVPCI_BAR_INFORMATION;
 
 // Context structure for each VPCI device
@@ -50,6 +49,8 @@ typedef struct _VPCI_DEVICE_CONTEXT
     VPCIVSC_CONTEXT *VpcivscContext;
     PCI_SLOT_NUMBER Slot;
 
+    // Pointer to the original device description from the VSP
+    CONST VPCI_DEVICE_DESCRIPTION *DeviceDescription;
 } VPCI_DEVICE_CONTEXT, *PVPCI_DEVICE_CONTEXT;
 
 #define VPCI_DEVICE_CONTEXT_SIGNATURE SIGNATURE_32('v', 'p', 'c', 'd')
@@ -74,9 +75,15 @@ typedef struct _VPCIVSC_CONTEXT
     VPCI_DEVICE_DESCRIPTION *Devices;
     UINT32 DeviceCount;
 
-    // We only really care about NVMe devices.
+    // We only really care about NVMe devices + AziHsm Device
+    // AziHsm Devices have Base/Sub Class different From Nvme
     VPCI_DEVICE_CONTEXT *NvmeDevices;
     UINT32 NvmeDeviceCount;
+
+    // Azure Integrated HSM devices for config space access only.
+    VPCI_DEVICE_CONTEXT *AziHsmDevices;
+    UINT32 AziHsmDeviceCount;
+    
 } VPCIVSC_CONTEXT, *PVPCIVSC_CONTEXT;
 
 #define VPCIVSC_DRIVER_VERSION 0x1
@@ -139,6 +146,12 @@ VpcivscComponentNameGetControllerName(
     IN  EFI_HANDLE ChildHandle OPTIONAL,
     IN  CHAR8 *Language,
     OUT CHAR16 **ControllerName
+    );
+
+    // Device detection functions
+BOOLEAN
+IsAziHsmDevice(
+    CONST PVPCI_DEVICE_DESCRIPTION Device
     );
 
 // EMCL functions, VSC protocol functions
