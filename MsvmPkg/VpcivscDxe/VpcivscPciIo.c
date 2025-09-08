@@ -269,7 +269,7 @@ VpcivscPciIoMemRead(
             ASSERT(FALSE);
             //fallthru
         case EfiPciIoWidthUint64:
-            MmioReadBuffer64(startAddress, Count * 4, Buffer);
+            MmioReadBuffer64(startAddress, Count * 8, Buffer);
             break;
 
         default:
@@ -377,7 +377,7 @@ VpcivscPciIoMemWrite(
             ASSERT(FALSE);
             //fallthru
         case EfiPciIoWidthUint64:
-            MmioWriteBuffer64(startAddress, Count * 4, Buffer);
+            MmioWriteBuffer64(startAddress, Count * 8, Buffer);
             break;
 
         default:
@@ -462,10 +462,8 @@ VpcivscPciIoConfigRead(
 
     context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO(This);
 
-    // TODO:     The device would need to have a VPCI_DEVICE_DESCRIPTION for if
-    //           we ever want to support more than just NVMe. But we don't,
-    //           so just return the spec values for an NVMe device.
-
+    // Get the actual device description for returning real device IDs
+    CONST VPCI_DEVICE_DESCRIPTION *deviceDesc = context->DeviceDescription;
     switch (Offset)
     {
         case PCI_CLASSCODE_OFFSET:
@@ -476,9 +474,9 @@ VpcivscPciIoConfigRead(
             }
 
             UINT8* classCode = (UINT8*) Buffer;
-            classCode[0] = 0x2; //ProgIf
-            classCode[1] = 0x8; //SubClass
-            classCode[2] = 0x1; //BaseClass
+            classCode[0] = deviceDesc->IDs.ProgIf;
+            classCode[1] = deviceDesc->IDs.SubClass;
+            classCode[2] = deviceDesc->IDs.BaseClass;
             break;
         case PCI_VENDOR_ID_OFFSET:
             // PCI_VENDOR_ID_OFFSET and PCI_DEVICE_ID_OFFSET can be read together with a count of 2 at offset PCI_VENDOR_ID_OFFSET
@@ -489,11 +487,11 @@ VpcivscPciIoConfigRead(
             }
 
             UINT16* id = (UINT16*) Buffer;
-            id[0] = DEFAULT_PCI_VENDOR_ID;
+            id[0] = deviceDesc->IDs.VendorID;
             if (Count == 2)
             {
                 // Read the PCI_DEVICE_ID_OFFSET too
-                id[1] = DEFAULT_PCI_DEVICE_ID;
+                id[1] = deviceDesc->IDs.DeviceID;
             }
             break;
         case PCI_DEVICE_ID_OFFSET:
@@ -503,7 +501,7 @@ VpcivscPciIoConfigRead(
                 return EFI_DEVICE_ERROR;
             }
             UINT16* deviceId = (UINT16*) Buffer;
-            *deviceId = DEFAULT_PCI_DEVICE_ID;
+            *deviceId = deviceDesc->IDs.DeviceID;
             break;
         default:
             ASSERT(FALSE);
