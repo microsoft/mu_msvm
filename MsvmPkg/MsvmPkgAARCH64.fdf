@@ -244,6 +244,7 @@ INF NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf
 INF SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf
 INF SecurityPkg/Tcg/MemoryOverwriteControl/TcgMor.inf
 INF SecurityPkg/Tcg/Tcg2Dxe/Tcg2Dxe.inf
+INF SecurityPkg/Tcg/Tcg2PlatformDxe/Tcg2PlatformDxe.inf
 
 # UI Theme Protocol.
 INF  MsGraphicsPkg/MsUiTheme/Dxe/MsUiThemeProtocol.inf
