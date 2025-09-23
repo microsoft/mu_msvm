@@ -713,7 +713,7 @@ VpciParseAndAllocateBars(
         DEBUG((DEBUG_VPCI_INFO, "Allocating bar %x with size 0x%llx\n", index, barSize));
 
         // Align up bar size to nearest page because we only allocate mmio in terms of pages.
-        UINT64 barSizeInPages = ALIGN_UP(barSize, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+        UINT64 barSizeInPages = ALIGN_VALUE(barSize, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
 
         // Allocate the bar from the high mmio gap.
         UINT64 barAddress = (UINT64) AllocateMmioPages(barSizeInPages);
