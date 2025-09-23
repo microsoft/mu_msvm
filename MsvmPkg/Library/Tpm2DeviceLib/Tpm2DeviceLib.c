@@ -11,10 +11,13 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/Tpm2DeviceLib.h>
+// MS_HYP_CHANGE BEGIN
 #include <Library/TimerLib.h>
 #include <Library/IoLib.h>
 #include <Library/PcdLib.h>
+// MS_HYP_CHANGE END
 #include <IndustryStandard/Tpm20.h>
+// MS_HYP_CHANGE BEGIN
 #include <IndustryStandard/Tpm2Acpi.h>
 
 #include <Library/Tpm2DebugLib.h>
@@ -167,6 +170,7 @@ Return Value:
 
     if (mTpm2ControlArea == NULL)
     {
+        DEBUG((DEBUG_ERROR, "%a: Tpm2ControlArea is NULL!\n", __FUNCTION__));
         status = EFI_NOT_READY;
         goto Cleanup;
     }
@@ -174,6 +178,7 @@ Return Value:
     if (mTpm2ControlArea->Start != 0)
     {
         // pending command.
+        DEBUG((DEBUG_ERROR, "%a: Previous command still pending!\n", __FUNCTION__));
         status = EFI_NOT_READY;
         goto Cleanup;
     }
@@ -181,6 +186,7 @@ Return Value:
     if (mTpm2ControlArea->Status != 0)
     {
         // device in error state.
+        DEBUG((DEBUG_ERROR, "%a: Device in error state!\n", __FUNCTION__));
         status = EFI_DEVICE_ERROR;
         goto Cleanup;
     }
@@ -188,14 +194,13 @@ Return Value:
     // Check if command fits into command buffer.
     if (mTpm2ControlArea->CommandBufferSize < InputParameterBlockSize)
     {
+        DEBUG((DEBUG_ERROR, "%a: Command buffer too small!\n", __FUNCTION__));
         status = EFI_INVALID_PARAMETER;
         goto Cleanup;
     }
 
     DEBUG_CODE (
-      // MS_CHANGE [BEGIN]
       DumpTpmInputBlock( InputParameterBlockSize, InputParameterBlock );
-      // MS_CHANGE [END]
     );
 
     // Copy command to command buffer.
@@ -232,9 +237,7 @@ Return Value:
         CopyMem(OutputParameterBlock, mResponseBuffer, outputParameterSize);
 
         DEBUG_CODE (
-          // MS_CHANGE [BEGIN]
           DumpTpmOutputBlock( OutputParameterBlockSize, OutputParameterBlock );
-          // MS_CHANGE [END]
         );
 
         goto Cleanup;
@@ -247,6 +250,7 @@ Cleanup:
 
     return status;
 }
+// MS_HYP_CHANGE END
 
 /**
   This service enables the sending of commands to the TPM2.
@@ -269,6 +273,7 @@ Tpm2SubmitCommand (
   IN UINT8             *OutputParameterBlock
   )
 {
+    // MS_HYP_CHANGE BEGIN
     EFI_STATUS                status = EFI_SUCCESS;
     UINT32                    outputParameterBlockSize = (*OutputParameterBlockSize);
     TPM2_RESPONSE_HEADER      *header;
@@ -300,6 +305,7 @@ Tpm2SubmitCommand (
 Cleanup:
 
     return status;
+    // MS_HYP_CHANGE END
 }
 
 /**
@@ -315,7 +321,9 @@ Tpm2RequestUseTpm (
   VOID
   )
 {
+    // MS_HYP_CHANGE BEGIN
     return EFI_SUCCESS;
+    // MS_HYP_CHANGE END
 }
 
 /**
@@ -333,6 +341,7 @@ Tpm2RegisterTpm2DeviceLib (
   IN TPM2_DEVICE_INTERFACE   *Tpm2Device
   )
 {
+    // MS_HYP_CHANGE BEGIN
     mTpm2ControlArea = (FTPM_CONTROL_AREA*)Tpm2Device;
 
     DEBUG((DEBUG_VERBOSE, __FUNCTION__" - TpmBaseAddress == 0x%016lX\n", mTpm2ControlArea));
@@ -360,4 +369,5 @@ Tpm2RegisterTpm2DeviceLib (
     DEBUG((DEBUG_VERBOSE, __FUNCTION__" - TPM MMIO Space at 0x%016lX, Command=0x%016lX, Response=0x%016lX, Size=0x%08X\n", mTpm2ControlArea, mCommandBuffer, mResponseBuffer, mResponseSize));
 
     return EFI_SUCCESS;
+    // MS_HYP_CHANGE END
 }

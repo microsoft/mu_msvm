@@ -7,6 +7,8 @@
 #
 ##
 
+#Override : 00000002 | SecurityPkg/Library/Tpm2DeviceLibTcg2/Tpm2DeviceLibTcg2.inf | 578ea45b40640f53e4ff9a6d9cbab60b | 2025-09-23T22-30-23 | b18d13dc01fde292cb97fb5631095d1b9252358b
+
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = Tpm2DeviceLib

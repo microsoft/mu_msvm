@@ -473,6 +473,9 @@
   # Base addresses of memory mapped devices in MMIO space.
   gEfiSecurityPkgTokenSpaceGuid.PcdTpmBaseAddress|0xFED40000
 
+  # Disable TPM platform hierarchy by default
+  gEfiSecurityPkgTokenSpaceGuid.PcdRandomizePlatformHierarchy|FALSE
+
   # Disable front page auto power off
   gMsGraphicsPkgTokenSpaceGuid.PcdPowerOffDelay|0xffffffff
 
@@ -847,8 +850,6 @@
   }
 
   # TPM related components
-  # TODO: Currently the PH is locked by the hypervisor.
-  #       If this ever changes, will need a driver to lock the PH.
 
   SecurityPkg/Tcg/MemoryOverwriteControl/TcgMor.inf
 
@@ -869,6 +870,22 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha1/HashInstanceLibSha1.inf
       NULL|MsvmPkg/Library/Tcg2PreInitLib/Tcg2PreInitLibPei.inf
   }
+
+  SecurityPkg/Tcg/Tcg2PlatformDxe/Tcg2PlatformDxe.inf {
+    <LibraryClasses>
+      Tpm2DeviceLib|MsvmPkg/Library/Tpm2DeviceLib/Tpm2DeviceLib.inf
+      TpmPlatformHierarchyLib|SecurityPkg/Library/PeiDxeTpmPlatformHierarchyLib/PeiDxeTpmPlatformHierarchyLib.inf
+      NULL|MsvmPkg/Library/Tcg2PreInitLib/Tcg2PreInitLibDxe.inf
+  }
+
+!if $(LEGACY_DEBUGGER) == 1
+  MsKdDebugPkg2/KdDxe/KdDxe.inf {
+    <LibraryClasses>
+      PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
+      SerialPortLib|MsvmPkg/Library/KdPL011SerialPortLib/KdPL011SerialPortLib.inf
+      SourceDebugEnabledLib|MsvmPkg/Library/SourceDebugEnabled/SourceDebugEnabledLib.inf
+  }
+!endif
 
   # UI Theme Protocol
   MsGraphicsPkg/MsUiTheme/Dxe/MsUiThemeProtocol.inf
