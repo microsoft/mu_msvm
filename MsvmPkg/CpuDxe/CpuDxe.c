@@ -234,7 +234,6 @@ CpuRegisterInterruptHandler (
   return RegisterCpuInterruptHandler (InterruptType, InterruptHandler);
 }
 
-
 /**
   Returns a timer value from one of the CPU's internal timers. There is no
   inherent time interval between ticks but is a function of the CPU frequency.
@@ -278,10 +277,12 @@ CpuGetTimerValue (
   *TimerValue = AsmReadTsc ();
 
   if (TimerPeriod != NULL) {
+      // MS_HYP_CHANGE BEGIN
       //
       // BugBug: Hard coded. Don't know how to do this generically
       //
-      *TimerPeriod = 1000000000;  // MS_HYP_CHANGE
+      *TimerPeriod = 1000000000;
+      // MS_HYP_CHANGE END
   }
 
   return EFI_SUCCESS;
@@ -339,7 +340,11 @@ CpuSetMemoryAttributes (
 {
   RETURN_STATUS             Status;
   MTRR_MEMORY_CACHE_TYPE    CacheType;
-  // MS_HYP_CHANGE
+  // MS_HYP_CHANGE BEGIN
+  // EFI_STATUS                MpStatus;
+  // EFI_MP_SERVICES_PROTOCOL  *MpService;
+  // MTRR_SETTINGS             MtrrSettings;
+  // MS_HYP_CHANGE END
   UINT64                    CacheAttributes;
   UINT64                    MemoryAttributes;
   MTRR_MEMORY_CACHE_TYPE    CurrentCacheType;
@@ -378,7 +383,11 @@ CpuSetMemoryAttributes (
   }
 
   if (CacheAttributes != 0) {
-    // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    // if (!IsMtrrSupported ()) {
+    //   return EFI_UNSUPPORTED;
+    // }
+    // MS_HYP_CHANGE END
 
     switch (CacheAttributes) {
       case EFI_MEMORY_UC:
@@ -413,7 +422,7 @@ CpuSetMemoryAttributes (
     // writeback attributes.  If the cache type is writeback, then ignore any
     // attribute changes.
     //
-    CurrentCacheType = MtrrGetMemoryAttribute(BaseAddress);
+    CurrentCacheType = MtrrGetMemoryAttribute (BaseAddress);
 
     if (!mStrictIsolation && (CacheType != CacheWriteBack) && (CurrentCacheType != CacheType)) {
 
@@ -430,8 +439,31 @@ CpuSetMemoryAttributes (
                  Length,
                  CacheType
                  );
-
-      // MS_HYP_CHANGE
+      // MS_HYP_CHANGE BEGIN
+      // if (!RETURN_ERROR (Status)) {
+      //   MpStatus = gBS->LocateProtocol (
+      //                     &gEfiMpServiceProtocolGuid,
+      //                     NULL,
+      //                     (VOID **)&MpService
+      //                     );
+      //   //
+      //   // Synchronize the update with all APs
+      //   //
+      //   if (!EFI_ERROR (MpStatus)) {
+      //     MtrrGetAllMtrrs (&MtrrSettings);
+      //     MpStatus = MpService->StartupAllAPs (
+      //                             MpService,          // This
+      //                             SetMtrrsFromBuffer, // Procedure
+      //                             FALSE,              // SingleThread
+      //                             NULL,               // WaitEvent
+      //                             0,                  // TimeoutInMicrosecsond
+      //                             &MtrrSettings,      // ProcedureArgument
+      //                             NULL                // FailedCpuList
+      //                             );
+      //     ASSERT (MpStatus == EFI_SUCCESS || MpStatus == EFI_NOT_STARTED);
+      //   }
+      // }
+      // MS_HYP_CHANGE END
 
       if (EFI_ERROR (Status)) {
         return Status;
@@ -629,6 +661,7 @@ SetGcdMemorySpaceAttributes (
 
   return EFI_SUCCESS;
 }
+// MS_HYP_CHANGE BEGIN
 
 UINT64      mValidMtrrAddressMask;
 UINT64      mValidMtrrBitsMask;
@@ -717,6 +750,7 @@ InitializeMtrrMask (
   mValidMtrrBitsMask    = LShiftU64 (1, PhysicalAddressBits) - 1;
   mValidMtrrAddressMask = mValidMtrrBitsMask & 0xfffffffffffff000ULL;
 }
+// MS_HYP_CHANGE END
 
 /**
   Refreshes the GCD Memory Space attributes according to MTRRs.
@@ -1008,7 +1042,7 @@ VOID
 InitInterruptDescriptorTable (
   VOID
   )
-{
+{ 
   EFI_STATUS                Status;
   EFI_VECTOR_HANDOFF_INFO   *VectorInfoList;
   EFI_VECTOR_HANDOFF_INFO   *VectorInfo;
@@ -1170,7 +1204,6 @@ EndOfDxeCallback (
 
 #endif
 
-// MS_HYP_CHANGE END
 
 /**
   Callback function for idle events.
@@ -1468,14 +1501,16 @@ InitializeCpu (
   // Setup IDT pointer, IDT and interrupt entry points
   //
   InitInterruptDescriptorTable ();
-
+  
+  // MS_HYP_CHANGE BEGIN
   //
   // Enable the local APIC for Virtual Wire Mode.
   //
   if (!mStrictIsolation)
   {
-    ProgramVirtualWireMode ();  // MS_HYP_CHANGE
+    ProgramVirtualWireMode ();
   }
+  // MS_HYP_CHANGE END
 
   //
   // Install CPU Architectural Protocol
@@ -1565,9 +1600,10 @@ InitializeCpu (
   //}
 
   // MU_CHANGE END
-  // MS_HYP_CHANGE END
+  
 
 Cleanup:
+  // MS_HYP_CHANGE END
 
   return Status;
 }
