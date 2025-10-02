@@ -128,8 +128,9 @@ IsInSmm (
   VOID
   )
 {
-  // MS_HYP_CHANGE
+  // MS_HYP_CHANGE BEGIN
   return FALSE;
+  // MS_HYP_CHANGE END
 }
 
 /**

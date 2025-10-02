@@ -10,6 +10,7 @@
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
+// MS_HYP_CHANGE #include <Library/UefiBootServicesTableLib.h>
 #include <Library/Tpm2DeviceLib.h>
 // MS_HYP_CHANGE BEGIN
 #include <Library/TimerLib.h>
@@ -20,7 +21,6 @@
 // MS_HYP_CHANGE BEGIN
 #include <IndustryStandard/Tpm2Acpi.h>
 
-#include <Library/Tpm2DebugLib.h>
 #include <TpmInterface.h>               // Definitions specific to Hyper-V VDev.
 
 #pragma pack(push,1)
@@ -199,10 +199,6 @@ Return Value:
         goto Cleanup;
     }
 
-    DEBUG_CODE (
-      DumpTpmInputBlock( InputParameterBlockSize, InputParameterBlock );
-    );
-
     // Copy command to command buffer.
     CopyMem(mCommandBuffer, InputParameterBlock, InputParameterBlockSize);
 
@@ -235,10 +231,6 @@ Return Value:
         }
 
         CopyMem(OutputParameterBlock, mResponseBuffer, outputParameterSize);
-
-        DEBUG_CODE (
-          DumpTpmOutputBlock( OutputParameterBlockSize, OutputParameterBlock );
-        );
 
         goto Cleanup;
     }
