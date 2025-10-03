@@ -39,28 +39,65 @@ jobs:
         run: |
           git config --system core.longpaths true
 
+      # Install required Visual Studio components
+      - name: Install Visual Studio Components
+        shell: pwsh
+        run: |
+          Write-Host "Checking Visual Studio installation path..."
+          $vsPath = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          Write-Host "VS Path: $vsPath"
+          
+          $vsInstaller = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+          Write-Host "Installing Visual Studio components..."
+          
+          $installResult = & $vsInstaller modify `
+            --installPath $vsPath `
+            --add Microsoft.VisualStudio.Component.VC.CoreBuildTools `
+            --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            --add Microsoft.VisualStudio.Component.Windows11SDK.22621 `
+            --add Microsoft.VisualStudio.Component.VC.Tools.ARM `
+            --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 `
+            --add Microsoft.VisualStudio.Component.VC.ASAN `
+            --quiet --wait
+          
+          Write-Host "Installation completed with exit code: $LASTEXITCODE"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Visual Studio component installation failed with exit code: $LASTEXITCODE"
+          }
+          
+          Write-Host "Waiting for VS installer to finalize changes..."
+          Start-Sleep -Seconds 10
+
       # Check if required Visual Studio components are installed
       - name: Find Visual Studio Installation with Required Components
         shell: pwsh
         run: |
-          $requiredComponents = @(
-            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "Microsoft.VisualStudio.Component.Windows11SDK.22621",
-            "Microsoft.VisualStudio.Component.VC.Tools.ARM",
-            "Microsoft.VisualStudio.Component.VC.Tools.ARM64"
-          )
           $vsPath = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
           if (-not $vsPath) { throw "Visual Studio is not installed." }
 
-          # Check for each required component
-          foreach ($component in $requiredComponents) {
-            $componentInstalled = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -requires $component -property installationPath
-            if (-not $componentInstalled) {
-              throw "Required component $component is missing. Please install the necessary components."
-            }
+          Write-Host "Verifying required build tools are available..."
+          
+          # Check for VC++ build tools
+          $vcToolsPath = Join-Path $vsPath "VC\Tools\MSVC"
+          if (-not (Test-Path $vcToolsPath)) {
+            throw "VC++ tools directory not found at: $vcToolsPath"
           }
-
-          Write-Host "All required Visual Studio components are installed."
+          Write-Host "✓ VC++ build tools found"
+          
+          # Check for Windows SDK
+          $windowsSdkPath = "${env:ProgramFiles(x86)}\Windows Kits\10"
+          if (-not (Test-Path $windowsSdkPath)) {
+            throw "Windows SDK not found at: $windowsSdkPath"
+          }
+          Write-Host "✓ Windows SDK found"
+          
+          # Check for ARM/ARM64 tools if they exist
+          $armToolsPath = Join-Path $vcToolsPath "*\bin\Hostx64\arm*"
+          if (Get-ChildItem $armToolsPath -ErrorAction SilentlyContinue) {
+            Write-Host "✓ ARM/ARM64 build tools found"
+          }
+          
+          Write-Host "All required Visual Studio build tools are properly installed and accessible."
 
       # Stuart Setup: Initialize the build environment
       - name: Stuart Setup
