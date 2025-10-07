@@ -991,6 +991,11 @@ VmbusRootHotAddAllocation(
 
     context = (VMBUS_ROOT_CONTEXT*)Context;
     hvMessage = mHv->GetSintMessage(mHv, FixedPcdGet8(PcdVmbusSintIndex), context->Confidential);
+    if (hvMessage == NULL)
+    {
+        DEBUG((EFI_D_ERROR, "--- %a: failed to get hot message\n", __FUNCTION__));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+    }
 
     hotMessage = AllocatePool(sizeof(*hotMessage));
     if (hotMessage == NULL)
@@ -1003,11 +1008,21 @@ VmbusRootHotAddAllocation(
 
     hotMessage->Message.Size = hvMessage->Header.PayloadSize;
 
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(hotMessage->Message.Size == sizeof(hotMessage->Message.OfferChannel));
-
     CopyMem(hotMessage->Message.Data,
             hvMessage->Payload,
-            hotMessage->Message.Size);
+            sizeof(hotMessage->Message.OfferChannel));
+            
+    if (hotMessage->Message.Header.MessageType != ChannelMessageOfferChannel ||
+        hotMessage->Message.Size != sizeof(hotMessage->Message.OfferChannel) ||
+        hotMessage->Message.OfferChannel.ChildRelId >= VMBUS_MAX_CHANNELS)
+    {
+        DEBUG((EFI_D_ERROR, "--- %a: invalid offer message: %#x (size %d), rel ID %d",
+            __FUNCTION__,
+            hotMessage->Message.Header.MessageType,
+            hotMessage->Message.Size,
+            hotMessage->Message.OfferChannel.ChildRelId));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+    }
 
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(hotMessage->Message.Header.MessageType == ChannelMessageOfferChannel);
 
