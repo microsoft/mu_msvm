@@ -59,6 +59,7 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
   gSyntheticKeyboardClassGuid       ## CONSUMES
   gSyntheticVideoClassGuid          ## CONSUMES
   gSynthetic3dVideoClassGuid        ## CONSUMES
+  gMsvmUnableToBootEventGuid        ## PRODUCES
 
 [FeaturePcd]
 

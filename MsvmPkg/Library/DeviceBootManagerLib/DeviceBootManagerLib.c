@@ -28,6 +28,7 @@
 #include <Library/UefiLib.h>
 #include <BiosInterface.h>
 
+#include <Guid/UnableToBootEvent.h>
 #include <VirtualDeviceId.h>
 
 //
@@ -677,6 +678,15 @@ DeviceBootManagerUnableToBoot (
             //     DEBUG((DEBUG_ERROR, "%a Unable to set console mode - %r\n", __FUNCTION__, Status));
             // }
         }
+    }
+
+    //
+    // Signal the Unable To Boot event to notify listeners
+    //
+    DEBUG ((DEBUG_INFO, "Signaling Unable To Boot event\n"));
+    Status = EfiEventGroupSignal (&gMsvmUnableToBootEventGuid);
+    if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "Failed to signal Unable To Boot event: %r\n", Status));
     }
 
     //
