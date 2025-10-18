@@ -819,10 +819,11 @@
 
   MsvmPkg/AcpiPlatformDxe/AcpiPlatformDxe.inf
   MsvmPkg/AcpiTables/AcpiTables.inf
+  MsvmPkg/AziHsmDxe/AziHsmDxe.inf
   MsvmPkg/EfiHvDxe/EfiHvDxe.inf
   MsvmPkg/EmclDxe/EmclDxe.inf
   MsvmPkg/EventLogDxe/EventLogDxe.inf
-  MsvmPkg/MsvmPcAtRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
+    MsvmPkg/MsvmPcAtRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
   MsvmPkg/NetvscDxe/NetvscDxe.inf
   MsvmPkg/NvmExpressDxe/NvmExpressDxe.inf
   MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
