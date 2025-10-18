@@ -1,0 +1,93 @@
+## @file
+#  Azure Integrated HSM Module
+#
+#  Azure Integrated HSM Dxe driver is a security module 
+#  to manage keys and perform cryptographic operations
+#  against the keys
+#
+#  Copyright (c) Microsoft Corporation.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = AziHsmDxe
+  MODULE_UNI_FILE                = AziHsmDxe.uni
+  FILE_GUID                      = D6EF4590-79C3-40CA-9B2A-F49F56C6D4A2
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AziHsmDriverEntry
+  UNLOAD_IMAGE                   = AziHsmDriverUnload
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = X64 AARCH64
+#
+
+[Sources]
+  AziHsmDxe.c
+  AziHsmDxe.h
+  AziHsmPci.c
+  AziHsmPci.h
+  AziHsmHci.c
+  AziHsmHci.h
+  AziHsmQueue.c
+  AziHsmQueue.h
+  AziHsmDma.c
+  AziHsmDma.h
+  AziHsmMbor.c
+  AziHsmMbor.h
+  AziHsmDdi.c
+  AziHsmDdi.h
+  AziHsmAdmin.c
+  AziHsmAdmin.h
+  AziHsmCp.h
+  AziHsmCp.c
+  AziHsmBKS3.c
+  AziHsmBKS3.h
+  AziHsmDdiApi.c
+  AziHsmDdiApi.h
+
+  
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  SecurityPkg/SecurityPkg.dec
+  CryptoPkg/CryptoPkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  BaseLib
+  DebugLib
+  DevicePathLib
+  IsolationLib
+  MemoryAllocationLib
+  TpmMeasurementLib
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  PrintLib
+  Tpm2CommandLib
+  Tpm2DeviceLib
+  BaseCryptLib
+
+
+[Protocols]
+  gEfiPciIoProtocolGuid
+  gEfiDevicePathProtocolGuid
+  gEfiDriverSupportedEfiVersionProtocolGuid
+  gMsvmAziHsmProtocolGuid
+
+[Guids]
+  gMsvmUnableToBootEventGuid
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+  gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+
+[UserExtensions.TianoCore."ExtraFiles"]
+  AziHsmDxe.uni

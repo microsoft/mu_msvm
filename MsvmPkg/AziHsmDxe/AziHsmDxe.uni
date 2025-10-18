@@ -1,0 +1,17 @@
+// /** @file
+// Azure Integrated HSM Module
+//
+// Azure Integrated HSM Dxe driver is a security module 
+// to manage keys and perform cryptographic operations
+// against the keys
+//
+// Copyright (c) Microsoft Corporation.<BR>
+//
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+// **/
+
+
+#string STR_MODULE_ABSTRACT             #language en-US "Azure Integrated HSM Module"
+
+#string STR_MODULE_DESCRIPTION          #language en-US "HsmDxe driver is a security module to manage keys and perform cryptographic operations against the keys"

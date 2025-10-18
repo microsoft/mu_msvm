@@ -199,6 +199,7 @@ INF MsGraphicsPkg/DisplayEngineDxe/DisplayEngineDxe.inf
 
 INF MsvmPkg/AcpiPlatformDxe/AcpiPlatformDxe.inf
 INF RuleOverride=ACPITABLE MsvmPkg/AcpiTables/AcpiTables.inf
+INF MsvmPkg/AziHsmDxe/AziHsmDxe.inf
 INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
 INF MsvmPkg/EmclDxe/EmclDxe.inf
 INF MsvmPkg/EventLogDxe/EventLogDxe.inf
