@@ -26,7 +26,7 @@
 # Defines for the pre-built BaseCryptLib
 #
   PEI_CRYPTO_SERVICES           = TINY_SHA
-  DXE_CRYPTO_SERVICES           = STANDARD
+  DXE_CRYPTO_SERVICES           = ALL
   PEI_CRYPTO_ARCH               = AARCH64
   DXE_CRYPTO_ARCH               = AARCH64
 

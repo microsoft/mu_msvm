@@ -1969,7 +1969,7 @@ AzihsmDecodeSetSealedBks3Resp (
   // Success - response decoding completed
   DEBUG ((
     DEBUG_INFO,
-    "AziHsmDdi: SetSealedBks3 response successfully decoded, boolean result: %s\n",
+    "AziHsmDdi: SetSealedBks3 response successfully decoded, boolean result: %a\n",
     *Response ? "TRUE" : "FALSE"
     ));
 
@@ -2084,7 +2084,7 @@ AzihsmDecodeGetSealedBks3Resp (
     if (DecodedSize != NULL) {
       *DecodedSize = 0;
     }
-
+    DEBUG((DEBUG_ERROR, "AziHsm: GetSealedResponse decode failed , invalid params\n"));
     return EFI_INVALID_PARAMETER;
   }
 

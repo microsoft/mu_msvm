@@ -20,12 +20,12 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/PrintLib.h>
 #include <Library/Tpm2CommandLib.h>
 #include <Library/Tpm2DeviceLib.h>
 #include <Library/TpmMeasurementLib.h>
 #include <IndustryStandard/UefiTcgPlatform.h>
 #include <IndustryStandard/Tpm20.h>
+#include <Library/PrintLib.h>
 #include "AziHsmDxe.h"
 
 //
@@ -38,6 +38,7 @@
 #define AZIHSM_PRIMARY_KEY_USER_DATA_MAX_LEN  64
 #define AZIHSM_TCG_PCR_INDEX                  6   // PCR index for Azure Integrated HSM measurements
 #define AZIHSM_TCG_EVENT_TYPE                 EV_COMPACT_HASH
+#define AZIHSM_TCG_EVENT_MAX_SIZE             128
 #define AZIHSM_GUID_SIZE                      16  // Size of GUID in bytes
 #define AZIHSM_DERIVED_KEY_SIZE               AZIHSM_DEFAULT_KEY_LENGTH
 #define AZIHSM_PCI_IDENTIFIER_MAX_LEN         32  // Max length of PCI Identifier (serial number) in bytes
@@ -83,8 +84,7 @@ typedef struct {
 // Azure Integrated HSM Device Context for TCG Logging
 //
 typedef struct _AZIHSM_TCG_CONTEXT {
-  UINT32    Signature;
-  UINT8     UniqueGuid[AZIHSM_GUID_SIZE];
+  UINT8     Guid[AZIHSM_GUID_SIZE];
 } AZIHSM_TCG_CONTEXT;
 
 //
@@ -110,17 +110,17 @@ typedef struct {
 
   This function implements the secret derivation from TPM using:
   1. Create Primary KeyedHash based on platform hierarchy
-  2. HMAC KDF Derivation
+  2. HMAC with KDF Input to generate the PRK
 
-  @param[in, out] DerivedKey Pointer to the structure to hold the derived key material.
+  @param[in, out] TpmPlatformHierarchySecret  Pointer to the structure to hold the derived secret.
 
-  @retval EFI_SUCCESS  The key derivation workflow completed successfully.
-  @retval Others       An error occurred during the workflow.
+  @retval EFI_SUCCESS                         The key derivation workflow completed successfully.
+  @retval Others                              An error occurred during the workflow.
 **/
 EFI_STATUS
 EFIAPI
-AziHsmDeriveSecretFromTpm (
-  IN OUT AZIHSM_DERIVED_KEY  *DerivedKey
+AziHsmGetTpmPlatformSecret (
+  IN OUT AZIHSM_DERIVED_KEY  *TpmPlatformHierarchySecret
   );
 
 /**
@@ -140,49 +140,64 @@ AziHsmMeasureGuidEvent (
   Function to seal a data buffer using Null Hierarchy
 
   @param[in]  DataBuffer  Pointer to the data buffer to seal
-  @param[out] SealedBlob  Pointer to the buffer to hold the sealed blob
+  @param[out] SealedBuffer  Pointer to the buffer to hold the sealed blob
 
   @retval EFI_SUCCESS  The sealing operation completed successfully
   @retval Others       An error occurred during the sealing operation
 **/
 EFI_STATUS
-AziHsmSealToNullHierarchy (
+AziHsmSealToTpmNullHierarchy (
   IN  AZIHSM_BUFFER  *DataBuffer,
-  OUT AZIHSM_BUFFER  *SealedBlob
+  OUT AZIHSM_BUFFER  *SealedBuffer
   );
 
 /**
   Function to unseal a data buffer using Null Hierarchy
 
-  @param[in]  SealedBlob    Pointer to the sealed blob to unseal
-  @param[out] UnsealedBlob  Pointer to the buffer to hold the unsealed data
+  @param[in]  SealedBuffer    Pointer to the sealed blob to unseal
+  @param[out] UnsealedBuffer  Pointer to the buffer to hold the unsealed data
 
   @retval EFI_SUCCESS  The unsealing operation completed successfully
   @retval Others       An error occurred during the unsealing operation
 **/
 EFI_STATUS
-AziHsmUnsealNullHierarchy (
-  IN  AZIHSM_BUFFER  *SealedBlob,
-  OUT AZIHSM_BUFFER  *UnsealedBlob
+AziHsmUnsealUsingTpmNullHierarchy (
+  IN  AZIHSM_BUFFER  *SealedBuffer,
+  OUT AZIHSM_BUFFER  *UnsealedBuffer
   );
 
 /**
-  Given the Manticore PCI Identifier(serial number) and the Unsealed blob, use manual KDF to derive the BKS3 key
+  Given the HSM PCI Identifier(serial number) and the Unsealed buffer, use manual KDF to derive the BKS3 key
 
-  @param[in]  UnsealedBlob         Pointer to the unsealed blob containing necessary data.
-  @param[in]  PciIdentifier        Pointer to the PCI Identifier (serial number).
-  @param[in]  PciIdentifierLength  Length of the PCI Identifier in bytes.
-  @param[out] DerivedKey           Pointer to the structure to hold the derived key material.
+  @param[in]  TpmPlatformSecret   Pointer to the unsealed buffer containing necessary data.
+  @param[in]  Id                  Pointer to the PCI Identifier (serial number).
+  @param[in]  IdLength            Length of the PCI Identifier in bytes.
+  @param[out] BKS3Key             Pointer to the structure to hold the derived key material.
 
   @retval EFI_SUCCESS  The key derivation completed successfully.
   @retval Others       An error occurred during the key derivation.
 **/
 EFI_STATUS
-AziHsmDeriveSecretFromBlob (
-  IN  AZIHSM_BUFFER       *UnsealedBlob,
-  IN  UINT8               *PciIdentifier,
-  IN  UINTN               PciIdentifierLength,
-  OUT AZIHSM_DERIVED_KEY  *DerivedKey
+AziHsmDeriveBKS3fromId (
+  IN  AZIHSM_BUFFER       *TpmPlatformSecret,
+  IN  UINT8               *Id,
+  IN  UINTN               IdLength,
+  OUT AZIHSM_DERIVED_KEY  *BKS3Key
+  );
+
+/**
+  Function to get random bytes from the TPM
+
+  @param[in]  BytesRequested  Number of random bytes to request
+  @param[out] OutputBuffer    Pointer to the buffer to hold the random bytes
+
+  @retval EFI_SUCCESS         The operation completed successfully
+  @retval Others              An error occurred during the operation
+**/
+EFI_STATUS
+AziHsmTpmGetRandom (
+  IN  UINT16  BytesRequested,
+  OUT UINT8   *OutputBuffer
   );
 
 #endif // __AZIHSMBKS3_H__

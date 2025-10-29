@@ -8,9 +8,7 @@
 
 #include "AziHsmBKS3.h"
 #include <Library/TpmMeasurementLib.h>
-#include <Library/PrintLib.h>
 #include <Library/BaseCryptLib.h>
-#include <Library/PcdLib.h>
 
 //
 // Forward declarations for internal helper functions
@@ -36,17 +34,6 @@ InternalTpm2HMAC (
 
 STATIC
 EFI_STATUS
-InternalTpmHkdfExpand (
-  IN  TPM_HANDLE        PrimaryHandle,
-  IN  TPM2B_MAX_BUFFER  *KdfInput,
-  IN  UINT8             *Info,
-  IN  UINTN             InfoSize,
-  OUT UINT8             *DerivedKey,
-  IN  UINTN             DerivedKeySize
-  );
-
-STATIC
-EFI_STATUS
 ManualHkdfSha256Expand (
   IN  UINT8  *PRK,
   IN  UINTN  PRKSize,
@@ -55,6 +42,13 @@ ManualHkdfSha256Expand (
   OUT UINT8  *DerivedKey,
   IN  UINTN  DerivedKeySize
   );
+
+STATIC
+VOID
+AziHsmTpmCleanup (
+  IN UINT32  *PrimaryHandle
+);
+
 
 //
 // ============================================================================
@@ -111,6 +105,13 @@ typedef struct {
   UINT8                  SessionAttributes; // 0
   UINT16                 HmacSize;          // 0
 } TPM2_UNSEAL_CMD;
+
+typedef struct {
+  UINT16  Tag;
+  UINT32  Size;
+  UINT32  CommandCode;
+  UINT16  RequestedBytes;
+} TPM2_GET_RANDOM_CMD;
 
 #pragma pack()
 
@@ -539,7 +540,7 @@ InternalTpm2HMAC (
   UINT8                 *RspPtr   = NULL;
 
   if ((Buffer == NULL) || (OutHMAC == NULL) || (Buffer->size == 0) || (Buffer->size > MAX_DIGEST_BUFFER)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: InternalTpm2HMAC invalid parameter\n"));
+    DEBUG ((DEBUG_ERROR, "AziHsm: InternalTpm2HMAC - Invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
 
@@ -640,106 +641,6 @@ Cleanup:
   ZeroMem (&SendBuffer, sizeof (SendBuffer));
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
   return Status;
-}
-
-/**
-  Derive key material using HKDF-Expand with TPM-based PRK.
-
-  This function implements RFC 5869 HKDF-Expand using a TPM primary key handle
-  to generate the pseudo-random key (PRK) via HMAC, then performs HKDF-Expand
-  to derive the final key material.
-
-  @param[in]  PrimaryHandle    TPM handle of the primary key for PRK generation.
-  @param[in]  KdfInput         Input material for PRK generation (salt/context).
-  @param[in]  Info             Application-specific context information.
-  @param[in]  InfoSize         Size of the context information in bytes.
-  @param[out] DerivedKey       Buffer to receive the derived key material.
-  @param[in]  DerivedKeySize   Size of the derived key material to generate.
-
-  @retval EFI_SUCCESS          Key derivation completed successfully.
-  @retval EFI_INVALID_PARAMETER Invalid input parameters.
-  @retval EFI_DEVICE_ERROR     TPM operation failed or Crypto library operation failed.
-**/
-STATIC
-EFI_STATUS
-InternalTpmHkdfExpand (
-  IN  TPM_HANDLE        PrimaryHandle,
-  IN  TPM2B_MAX_BUFFER  *KdfInput,
-  IN  UINT8             *Info,
-  IN  UINTN             InfoSize,
-  OUT UINT8             *DerivedKey,
-  IN  UINTN             DerivedKeySize
-  )
-{
-  EFI_STATUS    Status;
-  TPM2B_DIGEST  HmacResult;
-  UINT8  PRK[SHA256_DIGEST_SIZE]; // For SHA-256
-
-
-  /**
-   * DerivedKeySize > 255 * 32: HKDF limit L ≤ 255 * HashLen (HashLen=32 for SHA-256).
-   * Because block index is a single octet (T(1)..T(n)), you can’t produce more than 255 blocks.
-   */
-  if ((KdfInput == NULL) || (DerivedKey == NULL) ||
-      (DerivedKeySize == 0) || (DerivedKeySize > MAX_HKDF_BLOCKS * SHA256_DIGEST_SIZE) ||
-      (Info == NULL) || (InfoSize > SHA256_DIGEST_SIZE))
-  {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: HKDF-Expand: Step 1 - PRK generation via TPM HMAC\n"));
-
-  //
-  // Step 1: PRK via TPM HMAC using the input material as HMAC data
-  //
-  ZeroMem (&HmacResult, sizeof (HmacResult));
-  ZeroMem (PRK, sizeof (PRK));
-
-  Status = InternalTpm2HMAC (
-             PrimaryHandle,
-             KdfInput,
-             TPM_ALG_SHA256,
-             &HmacResult
-             );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: HKDF-Expand: TPM HMAC for PRK generation failed\n"));
-    return Status;
-  }
-
-  // Copy TPM HMAC result to PRK buffer (should be 32 bytes for SHA-256)
-  if (HmacResult.size != sizeof (PRK)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: HKDF-Expand: PRK size mismatch\n"));
-    ZeroMem (&HmacResult, sizeof (HmacResult));
-    return EFI_DEVICE_ERROR;
-  }
-
-  CopyMem (PRK, HmacResult.buffer, HmacResult.size);
-
-  //
-  // Step 2: HKDF-Expand in software using CryptoPkg
-  //
-  Status = ManualHkdfSha256Expand (
-             PRK,                           // PRK from TPM
-             sizeof (PRK),                  // PRK size (32 bytes)
-             Info,                          // Context info
-             InfoSize,                      // Info size
-             DerivedKey,                    // Output buffer
-             DerivedKeySize                 // Output size
-             );
-
-  //
-  // Clear sensitive PRK material
-  //
-  ZeroMem (&HmacResult, sizeof (HmacResult));
-  ZeroMem (PRK, sizeof (PRK));
-
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: HKDF-Expand: Manual HKDF operation failed\n"));
-    return Status;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: HKDF-Expand: Key derivation completed successfully\n"));
-  return EFI_SUCCESS;
 }
 
 /**
@@ -917,7 +818,7 @@ AziHsmCreatePlatformPrimaryKeyedHash (
              &Handle
              );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Platform CreatePrimary failed. Status: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmCreatePlatformPrimaryKeyedHash - CreatePrimary failed. Status: %r\n", Status));
     goto Cleanup;
   }
 
@@ -935,53 +836,45 @@ AziHsmCreatePlatformPrimaryKeyedHash (
 
   This function implements the complete secret derivation process:
   1. Create Primary KeyedHash based on platform hierarchy
-  2. HMAC KDF Derivation
+  2. HMAC with KDF Input to generate the PRK
 
-  @param[in, out] DerivedKey Pointer to the structure to hold the derived key material.
+  @param[in, out] TpmPlatformHierarchySecret  Pointer to the structure to hold the derived secret.
 
-  @retval EFI_SUCCESS  The key derivation workflow completed successfully.
-  @retval Others       An error occurred during the workflow.
+  @retval EFI_SUCCESS                           The key derivation workflow completed successfully.
+  @retval Others                                An error occurred during the workflow.
 **/
 EFI_STATUS
 EFIAPI
-AziHsmDeriveSecretFromTpm (
-  IN OUT AZIHSM_DERIVED_KEY  *DerivedKey
+AziHsmGetTpmPlatformSecret (
+  IN OUT AZIHSM_DERIVED_KEY  *TpmPlatformHierarchySecret
   )
 {
   EFI_STATUS        Status;
-  TPM_HANDLE        PrimaryHandle;
+  TPM_HANDLE        PrimaryHandle = 0;
   TPM2B_MAX_BUFFER  KdfInput;
-  TPM2B_MAX_BUFFER  AppInfo;
+  TPM2B_DIGEST      HmacResult;
   CONST CHAR8       *WellKnownString           = AZIHSM_HASH_USER_INPUT;
   CHAR8             PrimaryKeyUserData[AZIHSM_PRIMARY_KEY_USER_DATA_MAX_LEN] = AZIHSM_PRIMARY_KEY_USER_DATA;
-  UINT16            PrimaryKeyUserDataLength   = (UINT16)AsciiStrLen (PrimaryKeyUserData);
+  UINT16            PrimaryKeyUserDataLength = 0;
+  
+  PrimaryKeyUserDataLength   = (UINT16)AsciiStrLen (PrimaryKeyUserData);
 
-  if (DerivedKey == NULL) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Invalid parameter\n"));
+  if (TpmPlatformHierarchySecret == NULL) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmGetTpmPlatformSecret - Invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
 
-  PrimaryHandle = 0;
-
-  //
   // Primary Key User Data to be input to primary key creation
-  //
   DEBUG ((DEBUG_INFO, "AziHsm: Creating Platform hierarchy primary\n"));
   Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, PrimaryKeyUserData, PrimaryKeyUserDataLength);
   AZIHSM_CHECK_RC (Status, "Primary (platform) creation failed\n");
 
-  //
   // Step 2: HMAC KDF Derivation
-  //
-
   ZeroMem (KdfInput.buffer, sizeof (KdfInput.buffer));
-  ZeroMem (AppInfo.buffer, sizeof (AppInfo.buffer));
-  ZeroMem (DerivedKey->KeyData, sizeof (DerivedKey->KeyData));
-  DerivedKey->KeySize = 0;
-
-  //
+  ZeroMem (&HmacResult, sizeof (HmacResult));
+  ZeroMem (TpmPlatformHierarchySecret, sizeof (*TpmPlatformHierarchySecret));
+  
   // Prepare HMAC input: Well-known string
-  //
   KdfInput.size = (UINT16)AsciiStrLen (WellKnownString);
   if (KdfInput.size > sizeof (KdfInput.buffer)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: KDF input string too long\n"));
@@ -991,42 +884,36 @@ AziHsmDeriveSecretFromTpm (
 
   CopyMem (KdfInput.buffer, WellKnownString, KdfInput.size);
 
-  AppInfo.size = (UINT16)AsciiStrLen (AZIHSM_APPLICATION_INFO);
-  if (AppInfo.size > sizeof (AppInfo.buffer)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Application info string too long\n"));
-    Status = EFI_INVALID_PARAMETER;
+  // Perform HMAC using the Primary KeyedHash using SHA-256 to derive the PRK of 32 bytes
+  Status = InternalTpm2HMAC (
+            PrimaryHandle,
+            &KdfInput,
+            TPM_ALG_SHA256,
+            &HmacResult
+            );
+
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: TPM HMAC for PRK generation failed\n"));
     goto Cleanup;
   }
 
-  CopyMem (AppInfo.buffer, AZIHSM_APPLICATION_INFO, AppInfo.size);
+  // Copy TPM HMAC result to DerivedKey buffer (should be 32 bytes for SHA-256)
+  if (HmacResult.size != SHA256_DIGEST_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: SHA256 HMAC result size is not 32 bytes\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Cleanup;
+  }
 
-  Status = InternalTpmHkdfExpand (
-             PrimaryHandle,
-             &KdfInput,
-             (UINT8 *)AppInfo.buffer,
-             AppInfo.size,
-             DerivedKey->KeyData,
-             AZIHSM_DERIVED_KEY_SIZE
-             );
-
-  AZIHSM_CHECK_RC (Status, "Step 2: HKDF-Expand KDF failed");
-
-  DerivedKey->KeySize = AZIHSM_DERIVED_KEY_SIZE;
+  CopyMem (TpmPlatformHierarchySecret->KeyData, HmacResult.buffer, SHA256_DIGEST_SIZE);
+  TpmPlatformHierarchySecret->KeySize = SHA256_DIGEST_SIZE;
 
 Cleanup:
-  //
   // Clean up TPM handles
-  //
-
+  AziHsmTpmCleanup(&PrimaryHandle);
+  // Zero sensitive data
   ZeroMem (PrimaryKeyUserData, sizeof (PrimaryKeyUserData));
   ZeroMem (&KdfInput.buffer, sizeof (KdfInput.buffer));
-  ZeroMem (&AppInfo.buffer, sizeof (AppInfo.buffer));
-
-  if (PrimaryHandle != 0) {
-    DEBUG ((DEBUG_INFO, "AziHsm: Flushing TPM primary handle\n"));
-    Tpm2FlushContext (PrimaryHandle);
-    PrimaryHandle = 0;
-  }
+  ZeroMem (&HmacResult, sizeof (HmacResult));
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Key derivation workflow failed\n"));
@@ -1036,10 +923,10 @@ Cleanup:
 }
 
 /**
-   Given the Manticore PCI Identifier(serial number) and the Unsealed blob, use manual KDF to derive the BKS3 key
-  @param[in]  UnsealedBlob         Pointer to the unsealed blob containing necessary data.
-  @param[in]  PciIdentifier        Pointer to the PCI Identifier (serial number).
-  @param[in]  PciIdentifierLength  Length of the PCI Identifier in bytes.
+   Given the HSM PCI Identifier(serial number) and the Unsealed blob, use manual KDF to derive the BKS3 key
+  @param[in]  TpmPlatformSecret         Pointer to the unsealed blob containing necessary data.
+  @param[in]  Id        Pointer to the PCI Identifier (serial number).
+  @param[in]  IdLength  Length of the PCI Identifier in bytes.
   @param[out] DerivedKey           Pointer to the structure to hold the derived key material.
 
   @retval EFI_SUCCESS              The key derivation completed successfully.
@@ -1047,106 +934,61 @@ Cleanup:
  */
 
 EFI_STATUS
-AziHsmDeriveSecretFromBlob (
-  IN AZIHSM_BUFFER  *UnsealedBlob,
-  IN UINT8          *PciIdentifier,
-  IN UINTN          PciIdentifierLength,
-  OUT AZIHSM_DERIVED_KEY  *DerivedKey
+AziHsmDeriveBKS3fromId (
+  IN AZIHSM_BUFFER        *TpmPlatformSecret,
+  IN UINT8                *Id,
+  IN UINTN                IdLength,
+  OUT AZIHSM_DERIVED_KEY  *BKS3Key
   )
 {
   EFI_STATUS        Status;
-  UINT8             HmacResult[SHA256_DIGEST_SIZE];
-  UINT8             PciIdBuffer[AZIHSM_PCI_IDENTIFIER_MAX_LEN];
-  UINT8             InfoBuffer[AZIHSM_HKDF_MAX_INFO_LEN];
-  UINTN             InfoSize;
-  TPM2B_MAX_BUFFER  HmacInput;
-  BOOLEAN           HmacSuccess;
-  CONST CHAR8       *AppInfoString = AZIHSM_APPLICATION_INFO;
 
-  if ((UnsealedBlob == NULL) || (UnsealedBlob->Size == 0) ||
-      (DerivedKey == NULL) || (PciIdentifier == NULL) ||
-      (PciIdentifierLength == 0) || (PciIdentifierLength > AZIHSM_PCI_IDENTIFIER_MAX_LEN))
-  {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Invalid parameter\n"));
-    return EFI_INVALID_PARAMETER;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation from unsealed blob..\n"));
-
-  ZeroMem (HmacResult, sizeof (HmacResult));
-  ZeroMem (PciIdBuffer, sizeof (PciIdBuffer));
-  ZeroMem (InfoBuffer, sizeof (InfoBuffer));
-  ZeroMem (&HmacInput, sizeof (HmacInput));
-
-  //
-  // Convert PCI Identifier to byte array (big-endian)
-  //
-  WriteUnaligned32 ((UINT32 *)PciIdBuffer, SwapBytes32 (*(UINT32 *)PciIdentifier));
-
-  //
-  // Step 1: PRK via HMAC using the unsealed blob as key and PCI Identifier as data
-  //
-  HmacInput.size = (UINT16)PciIdentifierLength;
-  CopyMem (HmacInput.buffer, PciIdBuffer, PciIdentifierLength);
-
-  DEBUG ((DEBUG_INFO, "AziHsm: Step 1 - PRK generation via HMAC\n"));
-
-  // HmacSha256All returns BOOLEAN, not EFI_STATUS
-  HmacSuccess = HmacSha256All (
-             HmacInput.buffer,
-             HmacInput.size,
-             UnsealedBlob->Data,
-             UnsealedBlob->Size,
-             HmacResult
-             );
-  if (!HmacSuccess) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Step 1: HMAC for PRK generation failed\n"));
-    Status = EFI_DEVICE_ERROR;
-    goto Exit;
-  }
-
-  // Step 2: HKDF-Expand in software using CryptoPkg
-  InfoSize = (UINTN)AsciiStrLen (AppInfoString);
-  if (InfoSize > sizeof (InfoBuffer)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Application info string too long\n"));
+  if ((TpmPlatformSecret == NULL) || (BKS3Key == NULL) || (Id == NULL) ||
+      (IdLength == 0) || (IdLength > AZIHSM_PCI_IDENTIFIER_MAX_LEN)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmDeriveBKS3fromId - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
   }
 
-  CopyMem (InfoBuffer, AppInfoString, InfoSize);
-  DEBUG ((DEBUG_INFO, "AziHsm: Step 2 - HKDF-Expand\n"));
-
-  Status = ManualHkdfSha256Expand (
-             HmacResult,                   // PRK from HMAC
-             SHA256_DIGEST_SIZE,           // PRK size (32 bytes)
-             InfoBuffer,                   // Context info
-             InfoSize,                     // Info size
-             DerivedKey->KeyData,          // Output buffer
-             AZIHSM_DERIVED_KEY_SIZE       // Output size
-             );
-
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Step 2: HKDF-Expand failed\n"));
+  if ((TpmPlatformSecret->Size != SHA256_DIGEST_SIZE)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Unsealed blob size mismatch. Expected %u bytes, got %u bytes\n", SHA256_DIGEST_SIZE, TpmPlatformSecret->Size));
+    Status = EFI_INVALID_PARAMETER;
     goto Exit;
   }
 
-  DerivedKey->KeySize = AZIHSM_DERIVED_KEY_SIZE;
+  DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation from unsealed blob..\n"));
 
-  DEBUG ((DEBUG_INFO, "AziHsm: Step 2 - HKDF-Expand completed successfully\n"));
+  ZeroMem (BKS3Key, sizeof (*BKS3Key));
+
+  // HKDF-Expand in software using CryptoPkg
+
+  Status = ManualHkdfSha256Expand (
+             TpmPlatformSecret->Data,                   // PRK from HMAC
+             TpmPlatformSecret->Size,                    // PRK size (32 bytes)
+             Id,                         // Context info
+             IdLength,                  // Info size
+             BKS3Key->KeyData,                  // Output buffer
+             AZIHSM_DERIVED_KEY_SIZE               // Output size
+             );
+
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: HKDF-Expand failed\n"));
+    goto Exit;
+  }
+
+  BKS3Key->KeySize = AZIHSM_DERIVED_KEY_SIZE;
+
+  DEBUG ((DEBUG_INFO, "AziHsm: HKDF-Expand completed successfully\n"));
   Status = EFI_SUCCESS;
 
 Exit:
-  ZeroMem (HmacResult, sizeof (HmacResult));
-  ZeroMem (PciIdBuffer, sizeof (PciIdBuffer));
-  ZeroMem (InfoBuffer, sizeof (InfoBuffer));
-  ZeroMem (&HmacInput, sizeof (HmacInput));
   return Status;
 }
 
 /**
   Measure Azure Integrated HSM device unique GUID to TPM.
 
-  @param[in]  Context      Azure Integrated HSM TCG context
+  @param[in]  Context      Azure Integrated HSM TCG context which contains the GUID to be measured.
 
   @retval EFI_SUCCESS      Measurement completed successfully
   @retval Other            Error occurred during measurement
@@ -1157,24 +999,38 @@ AziHsmMeasureGuidEvent (
   )
 {
   EFI_STATUS  Status;
+  UINT8       EventDescription[AZIHSM_TCG_EVENT_MAX_SIZE];
+  UINT32      EventSize;
+
 
   if (Context == NULL) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: No valid context found, skipping measurement\n"));
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmMeasureGuidEvent - No valid context found, skipping measurement\n"));
     return EFI_INVALID_PARAMETER;
   }
 
-  // Measure the GUID to TPM PCR 6
+  // Build JSON string with format: {"azihsm-guid" : "<guid>"}
+  ZeroMem (EventDescription, sizeof (EventDescription));
+  EventSize = (UINT32)AsciiSPrint (
+                (CHAR8 *)EventDescription,
+                sizeof (EventDescription),
+                "{\"azihsm-guid\":\"%g\"}",
+                Context->Guid
+                );
+
+  // Measure the JSON string to TPM PCR 6
   Status = TpmMeasureAndLogData (
              AZIHSM_TCG_PCR_INDEX,
              AZIHSM_TCG_EVENT_TYPE,
-             Context,
-             sizeof (*Context),
-             Context,
-             sizeof (*Context)
+             EventDescription,
+             EventSize,
+             EventDescription,
+             EventSize
              );
 
+  ZeroMem(EventDescription, sizeof(EventDescription));
+
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Failed to measure Azure Integrated HSM GUID: %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmMeasureGuidEvent - Failed to measure AZIHSM GUID: %r\n", Status));
     return Status;
   }
 
@@ -1240,7 +1096,7 @@ AziHsmCreateNullAesPrimary (
   ZeroMem (&InSensitive, sizeof (InSensitive));
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [MIG] InternalTpm2CreatePrimary failed %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm:  InternalTpm2CreatePrimary failed %r\n", Status));
     // Note: when underlying library exposes raw RC, we could decode; currently Status only.
     return Status;
   }
@@ -1256,17 +1112,16 @@ AziHsmCreateNullAesPrimary (
  * @param[in] ParentHandle  The handle of the parent key.
  * @param[in] PlainBuffer    The buffer to seal.
  * @param[in] PlainSize      The size of the buffer to seal.
- * @param[out] SealedBlob  The sealed blob output.
+ * @param[out] SealedBuffer  The sealed blob output.
  */
 EFI_STATUS
 AziHsmTpmSealBuffer (
   IN  UINT32         ParentHandle,
   IN  CONST VOID     *PlainBuffer,
   IN  UINTN          PlainSize,
-  OUT AZIHSM_BUFFER  *SealedBlob
+  OUT AZIHSM_BUFFER  *SealedBuffer
   )
 {
-  UINTN  Capacity = 0;
   TPM2_CREATE_CMD  SendBuffer;
   UINT8            RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
   UINT32           RecvBufferSize;
@@ -1286,20 +1141,21 @@ AziHsmTpmSealBuffer (
   UINT8  *PrivStart = NULL;
   UINT16  OutPubBody = 0;
   UINT8  *PubLenPos = NULL;
-  UINTN  Needed = 0;
+  UINTN  SealedSecretSize = 0;
   UINT8  *Dst = NULL;
+  UINT16  PrivTotal;
+  UINT16  PubTotal;
 
 
   if ((ParentHandle == 0) || (PlainBuffer == NULL) || (PlainSize == 0) ||
-      (SealedBlob == NULL) || (SealedBlob->Data == NULL))
+      (SealedBuffer == NULL) || (SealedBuffer->Data == NULL))
   {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmTpmSealBuffer() Invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
 
-  Capacity = sizeof (SealedBlob->Data);
 
-  SealedBlob->Size = 0;
+  SealedBuffer->Size = 0;
 
   // Guard: TPM2B_SENSITIVE_CREATE data max to keep command small
   if (PlainSize > MAX_DIGEST_BUFFER) {
@@ -1397,13 +1253,13 @@ AziHsmTpmSealBuffer (
   SendBuffer.Header.paramSize = SwapBytes32 (TotalSize);
   DEBUG ((
     DEBUG_WARN,
-    "AziHsm: [MIG] Seal command size: %d bytes, data size: %d bytes\n",
+    "AziHsm:  Seal command size: %d bytes, data size: %d bytes\n",
     TotalSize,
     (UINT32)PlainSize
     ));
   DEBUG ((
     DEBUG_WARN,
-    "AziHsm: [MIG] Parent handle: 0x%X, command tag: 0x%X\n",
+    "AziHsm:  Parent handle: 0x%X, command tag: 0x%X\n",
     ParentHandle,
     SwapBytes16 (SendBuffer.Header.tag)
     ));
@@ -1413,7 +1269,7 @@ AziHsmTpmSealBuffer (
   Status         = Tpm2SubmitCommand (TotalSize, (UINT8 *)&SendBuffer, &RecvBufferSize, RecvBuffer);
 
   if (EFI_ERROR (Status) || (RecvBufferSize < sizeof (TPM2_RESPONSE_HEADER))) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [MIG] Seal submit failed st=%r resp=%u\n", Status, RecvBufferSize));
+    DEBUG ((DEBUG_ERROR, "AziHsm:  Seal submit failed st=%r resp=%u\n", Status, RecvBufferSize));
     Status = EFI_DEVICE_ERROR;
     goto Cleanup;
   }
@@ -1422,13 +1278,13 @@ AziHsmTpmSealBuffer (
   Responsecode    = SwapBytes32 (ResponseHeader->responseCode);
 
   if (Responsecode != TPM_RC_SUCCESS) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [MIG] Seal failed rc=0x%X\n", Responsecode));
+    DEBUG ((DEBUG_ERROR, "AziHsm:  Seal failed rc=0x%X\n", Responsecode));
     Status = EFI_DEVICE_ERROR;
     goto Cleanup;
   }
 
   if (RecvBufferSize < sizeof (TPM2_RESPONSE_HEADER) + sizeof (UINT32)) {
-    DEBUG ((DEBUG_ERROR, "Cmd does not contain sufficient bytes\n"));
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmTpmSealBuffer - Response does not contain sufficient bytes\n"));
     Status = EFI_DEVICE_ERROR;
     goto Cleanup;
   }
@@ -1443,7 +1299,7 @@ AziHsmTpmSealBuffer (
   if (ParamSize > (RecvBufferSize - sizeof (TPM2_RESPONSE_HEADER) - sizeof (ParamSize))) {
     DEBUG ((
       DEBUG_ERROR,
-      "AziHsm: Seal response paramSize overflow (%u > %u)\n",
+      "AziHsm: AziHsmTpmSealBuffer - Seal response paramSize overflow (%u > %u)\n",
       ParamSize,
       (UINT32)(RecvBufferSize - sizeof (TPM2_RESPONSE_HEADER) - sizeof (ParamSize))
       ));
@@ -1494,24 +1350,25 @@ AziHsmTpmSealBuffer (
 
   RspCursor += OutPubBody;
 
-  UINT16  PrivTotal = (UINT16)(OutPrivBody + sizeof (UINT16));
-  UINT16  PubTotal  = (UINT16)(OutPubBody + sizeof (UINT16));
+  PrivTotal = (UINT16)(OutPrivBody + sizeof (UINT16));
+  PubTotal  = (UINT16)(OutPubBody + sizeof (UINT16));
 
   // Required packed size: 2 + PrivTotal + 2 + PubTotal
-  Needed = sizeof (UINT16) + PrivTotal + sizeof (UINT16) + PubTotal;
+  SealedSecretSize = sizeof (UINT16) + PrivTotal + sizeof (UINT16) + PubTotal;
 
-  if (Needed > Capacity) {
+  // Check if we have enough buffer capacity to hold the sealed secret
+  if (SealedSecretSize > sizeof(SealedBuffer->Data)) {
     DEBUG ((
       DEBUG_ERROR,
-      "AziHsm: [MIG] Seal packed buffer too small need=%u cap=%u\n",
-      (UINT32)Needed,
-      (UINT32)Capacity
+      "AziHsm:  Seal packed buffer too small need=%u cap=%u\n",
+      (UINT32)SealedSecretSize,
+      (UINT32)sizeof(SealedBuffer->Data)
       ));
     Status = EFI_BUFFER_TOO_SMALL;
     goto Cleanup;
   }
 
-  Dst = SealedBlob->Data;
+  Dst = SealedBuffer->Data;
 
   // Copy Size fields + bodies
   CopyMem (Dst, &PrivTotal, sizeof (UINT16));
@@ -1525,7 +1382,7 @@ AziHsmTpmSealBuffer (
   CopyMem (Dst, PubLenPos, PubTotal);
   Dst += PubTotal;
 
-  SealedBlob->Size = (UINT16)(Dst - SealedBlob->Data);
+  SealedBuffer->Size = (UINT16)(Dst - SealedBuffer->Data);
   Status           = EFI_SUCCESS;
 
 Cleanup:
@@ -1539,14 +1396,23 @@ Cleanup:
   Cleanup the TPM resources.
   @param[in] PrimaryHandle  The handle of the primary key.
 */
+STATIC
 VOID
-AziHsmMigTpmCleanup (
-  IN UINT32  PrimaryHandle
+AziHsmTpmCleanup (
+  IN UINT32  *PrimaryHandle
   )
 {
-  if (PrimaryHandle != 0) {
-    Tpm2FlushContext (PrimaryHandle);
+  if (PrimaryHandle == NULL) {
+    return;
   }
+
+  // Flush primary handle if valid
+  if (*PrimaryHandle != 0) {
+    DEBUG ((DEBUG_INFO, "AziHsm: Flushing TPM primary handle\n"));
+    Tpm2FlushContext (*PrimaryHandle);
+    *PrimaryHandle = 0;
+  }
+
 }
 
 /*
@@ -1556,22 +1422,22 @@ AziHsmMigTpmCleanup (
   that we dont persist secrets across reboots.
 
   @param[in]  DataBuffer  Pointer to AZIHSM_BUFFER containing wrapped ephemeral key.
-  @param[out] SealedBlob   Pointer to AZIHSM_BUFFER to hold the sealed blob.
+  @param[out] SealedBuffer   Pointer to AZIHSM_BUFFER to hold the sealed blob.
 
   @retval EFI_SUCCESS              The sealing operation was successful.
   @retval EFI_INVALID_PARAMETER     One or more parameters are invalid.
   @retval EFI_DEVICE_ERROR         An error occurred while accessing the TPM.
   */
 EFI_STATUS
-AziHsmSealToNullHierarchy (
+AziHsmSealToTpmNullHierarchy (
   IN  AZIHSM_BUFFER  *DataBuffer,
-  OUT AZIHSM_BUFFER  *SealedBlob
+  OUT AZIHSM_BUFFER  *SealedBuffer
   )
 {
   EFI_STATUS  Status;
   UINT32      Primary = 0;
 
-  if ((DataBuffer == NULL) || (SealedBlob == NULL)) {
+  if ((DataBuffer == NULL) || (SealedBuffer == NULL)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: SealEphemeralNullHierarchy invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
@@ -1595,19 +1461,19 @@ AziHsmSealToNullHierarchy (
              Primary,
              DataBuffer->Data,
              DataBuffer->Size,
-             SealedBlob
+             SealedBuffer
              );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [MIG] SealEphemeralNullHierarchy failed %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: SealEphemeralNullHierarchy failed %r\n", Status));
     goto Exit;
   }
 
   /* Validate the sealed blob */
-  if ((SealedBlob->Size == 0) || (SealedBlob->Size > sizeof (SealedBlob->Data))) {
+  if ((SealedBuffer->Size == 0) || (SealedBuffer->Size > sizeof (SealedBuffer->Data))) {
     DEBUG ((
       DEBUG_ERROR,
-      "AziHsm: [MIG] SealEphemeralNullHierarchy produced malformed blob size size=%u\n",
-      SealedBlob->Size
+      "AziHsm:  SealEphemeralNullHierarchy produced malformed blob size size=%u\n",
+      SealedBuffer->Size
       ));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
@@ -1615,12 +1481,12 @@ AziHsmSealToNullHierarchy (
 
   Status = EFI_SUCCESS;
 Exit:
-  AziHsmMigTpmCleanup (Primary);
+  AziHsmTpmCleanup (&Primary);
   DEBUG ((
     DEBUG_INFO,
-    "AziHsm: [MIG] SealEphemeralNullHierarchy st=%r total=%u\n",
+    "AziHsm:  SealEphemeralNullHierarchy st=%r total=%u\n",
     Status,
-    (SealedBlob != NULL) ? SealedBlob->Size : 0
+    (SealedBuffer != NULL) ? SealedBuffer->Size : 0
     ));
   return Status;
 }
@@ -1629,7 +1495,7 @@ Exit:
   Load a sealed Buffer into a TPM and return the object handle
 
   @param[in] Primary         The handle of the primary key.
-  @param[in] SealedBlob      The sealed blob to load.
+  @param[in] SealedBuffer      The sealed blob to load.
   @param[out] ObjectHandle   The handle of the loaded sealed object.
 
   @retval EFI_SUCCESS              The load operation was successful.
@@ -1640,7 +1506,7 @@ Exit:
 EFI_STATUS
 AziHsmTpmLoadSealedBuffer(
   IN  UINT32         Primary,
-  IN  AZIHSM_BUFFER  *SealedBlob,
+  IN  AZIHSM_BUFFER  *SealedBuffer,
   OUT UINT32        *ObjectHandle
   ) {
 
@@ -1660,13 +1526,13 @@ AziHsmTpmLoadSealedBuffer(
   UINT32                Responsecode;
 
 
-  if (Primary == 0 || SealedBlob == NULL || ObjectHandle == NULL) {
+  if (Primary == 0 || SealedBuffer == NULL || ObjectHandle == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
   // Load the sealed buffer into the TPM
-  Cur = SealedBlob->Data;
-  End = SealedBlob->Data + SealedBlob->Size;
+  Cur = SealedBuffer->Data;
+  End = SealedBuffer->Data + SealedBuffer->Size;
 
   if (Cur + sizeof(UINT16) > End) {
     Status = EFI_COMPROMISED_DATA;
@@ -1797,25 +1663,25 @@ AziHsmTpmLoadSealedBuffer(
 
 
   Status = EFI_SUCCESS;
-  Exit:
+
+Exit:
   ZeroMem (SendBuffer, sizeof (SendBuffer));
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
   return Status;
 }
 
 
-/** 
+/**
  *
- *  Unseal a sealed buffer given a loaded object handle 
+ *  Unseal a sealed buffer given a loaded object handle
  *
- */
-
- EFI_STATUS
- AziHsmTpmUnsealBuffer(
+ **/
+EFI_STATUS
+AziHsmTpmUnsealBuffer (
   IN  UINT32         LoadedObjectHandle,
-  OUT AZIHSM_BUFFER  *UnsealedBlob
-  ) {
-
+  OUT AZIHSM_BUFFER  *UnsealedBuffer
+  )
+{
   EFI_STATUS  Status;
   TPM2_RESPONSE_HEADER  *ResponseHeader;
   UINT32                Responsecode;
@@ -1827,8 +1693,8 @@ AziHsmTpmLoadSealedBuffer(
   UINT32           TotalSize = 0;
   UINT32           ParamSize = 0;
 
-  if (LoadedObjectHandle == 0 || UnsealedBlob == NULL) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: UnsealBuffer invalid parameter\n"));
+  if (LoadedObjectHandle == 0 || UnsealedBuffer == NULL) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmTpmUnsealBuffer - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
   }
@@ -1900,16 +1766,16 @@ AziHsmTpmLoadSealedBuffer(
     goto Exit;
   }
 
-  UnsealedBlob->Size = OutDataSize;
+  UnsealedBuffer->Size = OutDataSize;
 
-  if (OutDataSize > sizeof (UnsealedBlob->Data)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Unseal outData buffer too small need=%u cap=%u\n", OutDataSize, (UINT32)sizeof (UnsealedBlob->Data)));
+  if (OutDataSize > sizeof (UnsealedBuffer->Data)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Unseal outData buffer too small need=%u cap=%u\n", OutDataSize, (UINT32)sizeof (UnsealedBuffer->Data)));
     Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
   }
 
   // Copy the unsealed data to caller buffer
-  CopyMem (UnsealedBlob->Data, RspCursor, OutDataSize);
+  CopyMem (UnsealedBuffer->Data, RspCursor, OutDataSize);
 
   Status = EFI_SUCCESS;
 
@@ -1922,26 +1788,27 @@ AziHsmTpmLoadSealedBuffer(
 /**
   Unseal a TPM Null Hierarchy sealed blob. This function unseals a sealed blob only tied to
   the current boot session since TPM Null hierarchy seed gets reset on a reboot.
- *
- * @param[in]  SealedBlob   Pointer to AZIHSM_BUFFER containing the sealed blob.
- * @param[out] UnsealedBlob Pointer to AZIHSM_BUFFER to hold the unsealed blob.
- *
- * @retval EFI_SUCCESS              The unsealing operation was successful.
- * @retval EFI_INVALID_PARAMETER     One or more parameters are invalid.
- * @retval EFI_DEVICE_ERROR         An error occurred while accessing the TPM.
- */
-EFI_STATUS
-AziHsmUnsealNullHierarchy(
-  IN AZIHSM_BUFFER *SealedBlob, 
-  OUT AZIHSM_BUFFER *UnsealedBlob
-) {
-  EFI_STATUS          Status;
-  UINT32              Primary      = 0;
-  UINT32              ObjectHandle = 0;
 
-  // Validate input args 
-  if (SealedBlob == NULL || UnsealedBlob == NULL) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmUnsealNullHierarchy invalid parameter\n"));
+  @param[in]  SealedBuffer    Pointer to AZIHSM_BUFFER containing the sealed blob.
+  @param[out] UnsealedBuffer  Pointer to AZIHSM_BUFFER to hold the unsealed blob.
+
+  @retval EFI_SUCCESS              The unsealing operation was successful.
+  @retval EFI_INVALID_PARAMETER    One or more parameters are invalid.
+  @retval EFI_DEVICE_ERROR         An error occurred while accessing the TPM.
+**/
+EFI_STATUS
+AziHsmUnsealUsingTpmNullHierarchy (
+  IN  AZIHSM_BUFFER  *SealedBuffer,
+  OUT AZIHSM_BUFFER  *UnsealedBuffer
+  )
+{
+  EFI_STATUS  Status;
+  UINT32      Primary       = 0;
+  UINT32      ObjectHandle  = 0;
+
+  // Validate input args
+  if ((SealedBuffer == NULL) || (UnsealedBuffer == NULL)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmUnsealUsingTpmNullHierarchy - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
   }
@@ -1954,13 +1821,13 @@ AziHsmUnsealNullHierarchy(
 
   // Unseal the buffer using the TPM Load and unseal
   // Load the sealed object
-  Status = AziHsmTpmLoadSealedBuffer(Primary, SealedBlob, &ObjectHandle);
-  if (EFI_ERROR(Status)) {
-    DEBUG((DEBUG_ERROR, "AziHsm: LoadSealedBuffer failed %r\n", Status));
+  Status = AziHsmTpmLoadSealedBuffer (Primary, SealedBuffer, &ObjectHandle);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: LoadSealedBuffer failed %r\n", Status));
     goto Exit;
-  } 
+  }
 
-  Status = AziHsmTpmUnsealBuffer (ObjectHandle, UnsealedBlob);
+  Status = AziHsmTpmUnsealBuffer (ObjectHandle, UnsealedBuffer);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: UnsealNullHierarchy failed %r\n", Status));
     goto Exit;
@@ -1968,8 +1835,73 @@ AziHsmUnsealNullHierarchy(
 
   Status = EFI_SUCCESS;
 
-  Exit:
-      AziHsmMigTpmCleanup (ObjectHandle);
-      AziHsmMigTpmCleanup (Primary);
-      return Status;
+Exit:
+  AziHsmTpmCleanup (&ObjectHandle);
+  AziHsmTpmCleanup (&Primary);
+  return Status;
+}
+
+/*
+Function to get Random bytes from the TPM.
+
+*/
+
+EFI_STATUS
+AziHsmTpmGetRandom (
+  IN  UINT16  BytesRequested,
+  OUT UINT8   *OutputBuffer
+  )
+{
+  EFI_STATUS Status;
+  TPM2_GET_RANDOM_CMD Cmd;
+  UINT8   Rsp[AZIHSM_TPM_RSP_BUFSIZE];
+  UINT32  RspSize;
+  TPM2_RESPONSE_HEADER *Hdr;
+  UINT8 *ResponsePtr;
+  UINT16 RandSize;
+
+  if ((BytesRequested == 0) || (OutputBuffer == NULL) || (BytesRequested > 64)) { // modest cap
+    return EFI_INVALID_PARAMETER;
+  }
+  // Build simple GetRandom command with a struct for clarity:
+  // tag(2) | size(4) | commandCode(4) | bytesRequested(2) = 12 bytes total
+
+  ZeroMem (&Cmd, sizeof (Cmd));
+  ZeroMem (Rsp, sizeof(Rsp));
+
+  Cmd.Tag            = SwapBytes16 (TPM_ST_NO_SESSIONS);
+  Cmd.Size           = SwapBytes32 ((UINT32)sizeof (Cmd));
+  Cmd.CommandCode    = SwapBytes32 (TPM_CC_GetRandom);
+  Cmd.RequestedBytes = SwapBytes16 (BytesRequested);
+
+  RspSize = sizeof (Rsp);
+  Status = Tpm2SubmitCommand (
+                        (UINT32)sizeof (Cmd),
+                        (UINT8 *)&Cmd,
+                        &RspSize,
+                        Rsp
+                        );
+  if (EFI_ERROR (Status) || (RspSize < sizeof (TPM2_RESPONSE_HEADER) + sizeof (UINT16))) {
+    return EFI_DEVICE_ERROR;
+  }
+
+  Hdr = (TPM2_RESPONSE_HEADER *)Rsp;
+  if (SwapBytes32 (Hdr->responseCode) != TPM_RC_SUCCESS) {
+    return EFI_DEVICE_ERROR;
+  }
+
+  // Response layout: header | parameterSize? (not for GetRandom) -> TPM2B_DIGEST randomBytes
+  // TPM2B_DIGEST: size(2) + buffer[size]
+  ResponsePtr = Rsp + sizeof (TPM2_RESPONSE_HEADER);
+  RandSize = SwapBytes16 (ReadUnaligned16 ((UINT16 *)ResponsePtr));
+  ResponsePtr += sizeof(UINT16);
+  if (RandSize == 0 || RandSize > BytesRequested || (ResponsePtr + RandSize) > (Rsp + RspSize)) {
+    return EFI_DEVICE_ERROR;
+  }
+  CopyMem (OutputBuffer, ResponsePtr, RandSize);
+  // If TPM returned fewer bytes, caller can call again (we treat short as error for simplicity)
+  if (RandSize != BytesRequested) {
+    return EFI_DEVICE_ERROR;
+  }
+  return EFI_SUCCESS;
 }

@@ -63,14 +63,11 @@
   BaseMemoryLib
   BaseLib
   DebugLib
-  DevicePathLib
-  IsolationLib
   MemoryAllocationLib
   TpmMeasurementLib
   UefiDriverEntryPoint
   UefiBootServicesTableLib
   UefiLib
-  PrintLib
   Tpm2CommandLib
   Tpm2DeviceLib
   BaseCryptLib

@@ -21,8 +21,6 @@
 #include <Library/UefiLib.h>
 #include <Guid/EventGroup.h>
 #include <Guid/UnableToBootEvent.h>
-#include <Protocol/ReportStatusCodeHandler.h>
-#include <Pi/PiStatusCode.h>
 
 STATIC EFI_EVENT  mAziHsmReadyToBootEvent = NULL;
 STATIC EFI_EVENT  mAziHsmUnableToBootEvent = NULL;
@@ -30,8 +28,32 @@ STATIC EFI_EVENT  mAziHsmUnableToBootEvent = NULL;
 //
 // Global Platform Sealed Key - shared across all HSM devices
 //
-STATIC BOOLEAN        mAziHsmPHSealedKeyInit = FALSE;
-STATIC AZIHSM_BUFFER  mAziHsmPHSealedKey     = { 0 };
+STATIC BOOLEAN        mAziHsmSealedPlatormSecretDerived = FALSE;
+STATIC AZIHSM_BUFFER  mAziHsmSealedPlatformSecret     = { 0 };
+
+// Forward declarations for internal helper functions
+
+STATIC
+EFI_STATUS
+AziHsmAes256CbcEncrypt (
+  IN  UINT8   *InputData,
+  IN  UINTN   InputDataSize,
+  OUT UINT8   *OutputData,
+  OUT UINTN   *OutputDataSize,
+  IN  UINT8   *Key,
+  IN  UINTN   KeySize,
+  IN  UINT8   *Iv,
+  IN  UINTN   IvSize
+);
+
+STATIC
+EFI_STATUS
+AziHsmPerformBks3SealingWorkflow (
+  IN  AZIHSM_CONTROLLER_STATE  *State,
+  IN  AZIHSM_DDI_API_REV       ApiRevisionMax,
+  IN  UINT8                    *HsmSerialData,
+  IN  UINTN                    HsmSerialDataLength
+);
 
 //
 // Function to cleanup sensitive data
@@ -81,7 +103,6 @@ EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL  gDriverSupportedEfiVersion = {
   .FirmwareVersion = 0x00010000
 };
 
-// AZIHSM_CONTROLLER_PRIVATE_DATA  *gPrivateData = NULL;
 
 /**
   Tests to see if this driver supports a given controller. If a child device is provided,
@@ -127,12 +148,13 @@ AziHsmBindingSupported (
                   );
 
   if (Status == EFI_ALREADY_STARTED) {
+    DEBUG((DEBUG_INFO, "AziHsmDxe: Controller already started, checking if supported\n"));
     Status = EFI_SUCCESS;
     goto Exit;
   }
 
   if (EFI_ERROR (Status)) {
-    // DEBUG ((DEBUG_ERROR, "AziHsm: Failed to open Device Path protocol. Status: %r\n", Status));
+   // No need to log here, as failure to open Device Path likely means unsupported device
     goto Exit;
   }
 
@@ -149,12 +171,13 @@ AziHsmBindingSupported (
                   );
 
   if (Status == EFI_ALREADY_STARTED) {
+    DEBUG((DEBUG_INFO, "AziHsmDxe: PCI I/O already started, checking if supported\n"));
     Status = EFI_SUCCESS;
     goto Exit;
   }
 
   if (EFI_ERROR (Status)) {
-    // DEBUG ((DEBUG_ERROR, "AziHsm: Failed to open PCI I/O protocol. Status: %r\n", Status));
+   // No need to log here, as failure to open PCI I/O likely means unsupported device
     goto Exit;
   }
 
@@ -172,7 +195,7 @@ AziHsmBindingSupported (
 
   if ((VendorId != AZIHSM_PCI_VENDOR_ID) || (DeviceId != AZIHSM_PCI_DEVICE_ID)) {
     Status = EFI_UNSUPPORTED;
-    // DEBUG ((DEBUG_WARN, "AziHsm: Unsupported device. VendorId: 0x%04x, DeviceId: 0x%04x\n", VendorId, DeviceId));
+    DEBUG ((DEBUG_WARN, "AziHsm: Unsupported device. VendorId: 0x%04x, DeviceId: 0x%04x\n", VendorId, DeviceId));
   } else {
     Status = EFI_SUCCESS;
     DEBUG ((DEBUG_INFO, "AziHsm: Device found. VendorId: 0x%04x, DeviceId: 0x%04x\n", VendorId, DeviceId));
@@ -214,7 +237,6 @@ AziHsmDriverBindingStart (
   AZIHSM_CONTROLLER_STATE   *State;
   AZI_HSM_CTRL_IDEN         HsmIdenData;
   BOOLEAN                   IsHsmIdValid = FALSE;
-  UINT8                     WrappedKey[AZIHSM_BUFFER_MAX_SIZE];
   AZIHSM_DDI_API_REV        ApiRevisionMin;
   AZIHSM_DDI_API_REV        ApiRevisionMax;
   AZIHSM_DERIVED_KEY        DerivedKey;
@@ -222,10 +244,9 @@ AziHsmDriverBindingStart (
 
   ZeroMem (&UnsealedKey, sizeof (UnsealedKey));
   ZeroMem (&DerivedKey, sizeof (DerivedKey));
-  ZeroMem (WrappedKey, AZIHSM_BUFFER_MAX_SIZE);
   ZeroMem ((VOID *)&HsmIdenData, sizeof (HsmIdenData));
-  ZeroMem ((VOID *)&ApiRevisionMin, sizeof (ApiRevisionMin));
-  ZeroMem ((VOID *)&ApiRevisionMax, sizeof (ApiRevisionMax));
+
+  DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStart called for Controller: %p\n", Controller));
 
   Status = gBS->OpenProtocol (
                   Controller,
@@ -295,7 +316,7 @@ AziHsmDriverBindingStart (
   Status = AziHsmInitHsm (State);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Hsm Initialization Failed Failed. Status: %r\n", Status));
-    goto CleanupAziHsmProtocol;
+    goto CleanupHci;
   }
 
   DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation workflow\n"));
@@ -303,7 +324,7 @@ AziHsmDriverBindingStart (
   Status = AziHsmAdminIdentifyCtrl (State, (UINT8 *)&HsmIdenData);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Identify Controller Failed. Status: %r\n", Status));
-    goto CleanupAziHsmProtocol;
+    goto CleanupHci;
   } else {
     //
     // Check if HSM serial number is all zeros
@@ -313,7 +334,7 @@ AziHsmDriverBindingStart (
     if (!IsHsmIdValid) {
       DEBUG ((DEBUG_ERROR, "AziHsm: Identify Controller Failed. Invalid HSM ID: All zeros\n"));
       Status = EFI_DEVICE_ERROR;
-      goto CleanupAziHsmProtocol;
+      goto CleanupHci;
     }
 
     DEBUG ((DEBUG_INFO, "AziHsm: Identify Controller Success. HSM Ctrl_Id: %d\n", HsmIdenData.Ctrl_Id));
@@ -322,54 +343,28 @@ AziHsmDriverBindingStart (
   //
   // Get API revision
   //
+  ApiRevisionMin = (AZIHSM_DDI_API_REV){ 0 };
+  ApiRevisionMax = (AZIHSM_DDI_API_REV){ 0 };
   Status         = AziHsmGetApiRevision (State, &ApiRevisionMin, &ApiRevisionMax);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get API revision: %r\n", Status));
-    goto CleanupAziHsmProtocol;
+    Status = EFI_UNSUPPORTED;
+    goto CleanupHci;
   }
 
-  if (mAziHsmPHSealedKeyInit) {
-    //
-    // Unseal the sealed blob using null hierarchy
-    //
-    Status = AziHsmUnsealNullHierarchy (&mAziHsmPHSealedKey, &UnsealedKey);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "AziHsm: Failed to unseal platform key sealed blob using null hierarchy: %r\n", Status));
-      goto CleanupAziHsmProtocol;
-    }
-
-    Status = AziHsmDeriveSecretFromBlob (&UnsealedKey, (UINT8 *)(HsmIdenData.Sn), sizeof (HsmIdenData.Sn), &DerivedKey);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "AziHsm: Failed to derive BKS3 key from unsealed blob: %r\n", Status));
-      goto CleanupAziHsmProtocol;
-    }
-  } else {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Platform hierarchy secret not available.\n"));
-    goto CleanupAziHsmProtocol;
-  }
-
-  UINT16  WrappedKeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
-
-  Status = AziHsmInitBks3 (
-             State,
-             ApiRevisionMax,
-             DerivedKey.KeyData,
-             sizeof (DerivedKey.KeyData),
-             WrappedKey,
-             &WrappedKeySize
-             );
-
-  //
-  // Call Manticore API to get wrapped key
-  //
+  // Perform complete BKS3 derivation and sealing workflow: Use HSM serial number as input
+  Status = AziHsmPerformBks3SealingWorkflow (State, ApiRevisionMax, (UINT8 *)(&HsmIdenData.Sn), sizeof (HsmIdenData.Sn));
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get wrapped key from Manticore\n"));
-    goto CleanupAziHsmProtocol;
+    DEBUG ((DEBUG_ERROR, "AziHsm: BKS3 derivation and sealing workflow failed. Status: %r\n", Status));
+    Status = EFI_UNSUPPORTED;
+    goto CleanupHci;
   }
 
-  DEBUG ((DEBUG_INFO, "AziHsm: Successfully retrieved wrapped key from Manticore\n"));
-
+  // Successfully started the controller
   goto Exit;
+
+CleanupHci:
+  AziHsmHciUninitialize (State);
 
 CleanupAziHsmProtocol:
   gBS->UninstallMultipleProtocolInterfaces (Controller, &gMsvmAziHsmProtocolGuid, &State->AziHsmProtocol, NULL);
@@ -384,10 +379,393 @@ CleanupParentDevicePath:
   gBS->CloseProtocol (Controller, &gEfiDevicePathProtocolGuid, This->DriverBindingHandle, Controller);
 
 Exit:
-  ZeroMem (WrappedKey, sizeof (WrappedKey));
-  ZeroMem (DerivedKey.KeyData, sizeof (DerivedKey.KeyData));
-  ZeroMem (&UnsealedKey, sizeof (UnsealedKey));
   DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStart completed. Status: %r\n", Status));
+  return Status;
+}
+
+/**
+  Performs the complete BKS3 workflow including key derivation, wrapped key generation, AES encryption and TPM sealing.
+
+  This function handles the complete workflow to derive and seal the BKS3 key:
+  1. Derives BKS3 key from TPM using AziHsmDeriveBKS3FromTpm
+  2. Calls AziHsmInitBks3 to get wrapped key from HSM using derived key
+  3. Generates random AES key and IV using TPM
+  4. Encrypts the wrapped key with AES-256-CBC
+  5. Seals the AES key/IV to TPM NULL hierarchy
+  6. Creates the final blob with sealed key data and encrypted wrapped key
+  7. Sends the sealed blob to the HSM via AziHsmSetSealedBks3
+  8. Securely clears all sensitive key material
+
+  @param[in]  State             Pointer to the AziHsm controller state
+  @param[in]  ApiRevisionMax    Maximum API revision supported by the HSM
+
+  @retval EFI_SUCCESS           BKS3 workflow completed successfully
+  @retval EFI_DEVICE_ERROR      TPM operations, key derivation or AES encryption failed
+  @retval EFI_OUT_OF_RESOURCES  Memory allocation failed
+  @retval EFI_BUFFER_TOO_SMALL  Buffer size insufficient for the operation
+  @retval Other                 Error returned by AziHsmDeriveBKS3FromTpm, AziHsmInitBks3, AziHsmSealToTpmNullHierarchy or AziHsmSetSealedBks3
+**/
+STATIC
+EFI_STATUS
+AziHsmPerformBks3SealingWorkflow (
+  IN  AZIHSM_CONTROLLER_STATE  *State,
+  IN  AZIHSM_DDI_API_REV       ApiRevisionMax,
+  IN  UINT8                    *HsmSerialData,
+  IN  UINTN                    HsmSerialDataLength
+)
+{
+  EFI_STATUS          Status = EFI_INVALID_PARAMETER;
+  AZIHSM_BUFFER       SealedBKS3Buffer;
+  AZIHSM_BUFFER       SealedAesSecret;
+  AZIHSM_BUFFER       TpmPlatformSecret;
+  UINT8               *InputData = NULL;
+  UINT8               *EncryptedData = NULL;
+  UINTN               PadValue = 0;
+  UINT8               Iv[AZIHSM_AES_IV_SIZE];
+  UINT8               Aes256Key[AZIHSM_AES256_KEY_SIZE];
+  UINTN               PaddedInputSize = 0;
+  UINTN               EncryptedDataSize = 0;
+  BOOLEAN             IsHSMSealSuccess = FALSE;
+  UINT8               WrappedBKS3[AZIHSM_BUFFER_MAX_SIZE];
+  UINT16              WrappedBKS3KeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
+  AZIHSM_DERIVED_KEY  BKS3Key;
+  AZIHSM_BUFFER       KeyIvBuffer;
+  AZIHSM_KEY_IV_RECORD KeyIvRecord;
+  UINT32              ExpectedSealedDataSize;
+  UINT8               HsmGuid[AZIHSM_HSM_GUID_MAX_SIZE];
+  UINT16              HsmGuidSize = AZIHSM_HSM_GUID_MAX_SIZE;
+  AZIHSM_TCG_CONTEXT  TcgContext;
+
+
+  if (State == NULL || HsmSerialData == NULL || HsmSerialDataLength == 0) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow() Invalid parameter\n"));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  ZeroMem (&SealedBKS3Buffer, sizeof (SealedBKS3Buffer));
+  ZeroMem (&SealedAesSecret, sizeof (SealedAesSecret));
+  ZeroMem (WrappedBKS3, AZIHSM_BUFFER_MAX_SIZE);
+  ZeroMem (&BKS3Key, sizeof (BKS3Key));
+  ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
+  ZeroMem (HsmGuid, sizeof (HsmGuid));
+  ZeroMem (&TcgContext, sizeof (TcgContext));
+
+  DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation workflow\n"));
+
+  if (!mAziHsmSealedPlatormSecretDerived) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Sealed Platform hierarchy secret not available.\n"));
+    Status = EFI_NOT_READY;
+    goto Exit;
+  }
+
+  // Unseal the sealed blob using null hierarchy (ensures we can only unseal in current boot session)
+  Status = AziHsmUnsealUsingTpmNullHierarchy (&mAziHsmSealedPlatformSecret, &TpmPlatformSecret);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to unseal platform key sealed blob using null hierarchy: %r\n", Status));
+    goto Exit;
+  }
+
+  Status = AziHsmDeriveBKS3fromId (&TpmPlatformSecret, (UINT8 *)(HsmSerialData), HsmSerialDataLength, &BKS3Key);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to derive BKS3 key from unsealed blob: %r\n", Status));
+    goto Exit;
+  }
+
+  // Call AziHsmInitBks3 to get wrapped key from HSM
+  Status = AziHsmInitBks3 (
+             State,
+             ApiRevisionMax,
+             BKS3Key.KeyData,
+             sizeof (BKS3Key.KeyData),
+             WrappedBKS3,
+             &WrappedBKS3KeySize,
+             HsmGuid,
+             &HsmGuidSize
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get wrapped key from HSM. Status: %r\n", Status));
+    goto Exit;
+  }
+
+  if (HsmGuidSize != AZIHSM_GUID_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: HSM GUID size is not as expected. Size: %d != %d\n", HsmGuidSize, AZIHSM_GUID_SIZE));
+    Status = EFI_DEVICE_ERROR;
+    goto Exit;
+  }
+
+  // Use TPM to get random AES key and IV
+  if (EFI_ERROR (AziHsmTpmGetRandom (sizeof (Aes256Key), Aes256Key))) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow - TPM GetRandom failed for key\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Exit;
+  }
+  if (EFI_ERROR (AziHsmTpmGetRandom (sizeof (Iv), Iv))) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow - TPM GetRandom failed for IV\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Exit;
+  }
+
+  // We need to add PKCS7 padding to ensure the data is block-aligned for AES encryption
+  if (WrappedBKS3KeySize % AES_BLOCK_SIZE != 0) {
+    PadValue = AES_BLOCK_SIZE - (WrappedBKS3KeySize % AES_BLOCK_SIZE);
+  }
+
+  PaddedInputSize = WrappedBKS3KeySize + PadValue;
+
+  InputData = AllocatePool (PaddedInputSize);
+  if (InputData == NULL) {
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
+
+  EncryptedData = AllocatePool (PaddedInputSize);
+  if (EncryptedData == NULL) {
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Cleanup;
+  }
+
+  CopyMem (InputData, WrappedBKS3, WrappedBKS3KeySize);
+  // SetMem signature: VOID *Buffer, UINTN Size, UINT8 Value
+  SetMem (InputData + WrappedBKS3KeySize, PadValue, (UINT8)PadValue);
+
+  // We encrypt the padded WrappedBKS3 with AES-256 CBC with the key/Iv we generated.
+  Status = AziHsmAes256CbcEncrypt (
+             InputData,
+             PaddedInputSize,
+             EncryptedData,
+             &EncryptedDataSize,
+             Aes256Key,
+             sizeof (Aes256Key),
+             Iv,
+             sizeof (Iv)
+             );
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC encryption failed : %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Now seal the AES key and IV to the TPM NULL hierarchy
+  // Create a Key/IV record structure to hold the key and IV
+  ZeroMem (&KeyIvRecord, sizeof (KeyIvRecord));
+ 
+  KeyIvRecord.KeySize = (UINT8)sizeof (KeyIvRecord.Key);
+  CopyMem (KeyIvRecord.Key, Aes256Key, sizeof (KeyIvRecord.Key));
+
+  KeyIvRecord.IvSize = (UINT8)sizeof (KeyIvRecord.Iv);
+  CopyMem (KeyIvRecord.Iv, Iv, sizeof (KeyIvRecord.Iv));
+
+  KeyIvRecord.KeyVersion = AZIHSM_AES_KEY_VERSION;
+  // RecordSize does not include the size of the RecordSize field itself
+  KeyIvRecord.RecordSize = sizeof(AZIHSM_KEY_IV_RECORD) - sizeof(UINT16);
+
+  
+  ZeroMem (&KeyIvBuffer, sizeof (KeyIvBuffer));
+  if (sizeof (KeyIvRecord) > sizeof (KeyIvBuffer.Data)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Key/IV record too large for AZIHSM_BUFFER\n"));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Cleanup;
+  }
+
+  CopyMem (KeyIvBuffer.Data, &KeyIvRecord, sizeof (KeyIvRecord));
+  KeyIvBuffer.Size = (UINT16)sizeof (KeyIvRecord);
+
+  Status = AziHsmSealToTpmNullHierarchy (&KeyIvBuffer, &SealedAesSecret);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get the sealed blob from TPM via AziHsmSealToTpmNullHierarchy. Status: %r\n", Status));
+    goto Cleanup;
+  }
+
+  if (SealedAesSecret.Size >= AZIHSM_BUFFER_MAX_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Size of sealedblob is greater than allocated buffer, %d > %d", SealedAesSecret.Size, AZIHSM_BUFFER_MAX_SIZE));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Cleanup;
+  }
+
+  ExpectedSealedDataSize = (sizeof (SealedAesSecret.Size) + SealedAesSecret.Size + sizeof (UINT32) + (UINT32)EncryptedDataSize);
+  // check if sealedblobsize+encrypted data size can fit in AZIHSM BUFFER
+  if (ExpectedSealedDataSize > AZIHSM_BUFFER_MAX_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob size plus encrypted data size exceeds buffer size : %d > %d\n", ExpectedSealedDataSize, AZIHSM_BUFFER_MAX_SIZE));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Cleanup;
+  }
+
+  DEBUG ((DEBUG_INFO, "AziHsm: Sealed blob size is : %u\n", SealedAesSecret.Size));
+
+  // Sealing of AES key to TPM is success, now prepare data for HSM sealing
+  // Copy size of SealedAesSecret to Wrapped data
+  SealedBKS3Buffer.Size = 0;
+  CopyMem (SealedBKS3Buffer.Data, (UINT8 *)&SealedAesSecret.Size, sizeof (SealedAesSecret.Size));
+  SealedBKS3Buffer.Size += (UINT16)sizeof (SealedAesSecret.Size);
+  // copy sealedblob data
+  CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], SealedAesSecret.Data, SealedAesSecret.Size);
+  SealedBKS3Buffer.Size += (UINT16)SealedAesSecret.Size;
+  // copy size of encrypted data size
+  CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], (UINT8 *)&EncryptedDataSize, sizeof (UINT32));
+  SealedBKS3Buffer.Size += (UINT32)sizeof (UINT32);
+
+  CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], EncryptedData, EncryptedDataSize);
+  SealedBKS3Buffer.Size += (UINT32)EncryptedDataSize;
+
+  // Check if we actually calculated correct size
+  if (ExpectedSealedDataSize != SealedBKS3Buffer.Size) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Expected SealBks3 Blob size is not matching with calculated blob size. Expected %d, Got %d\n", ExpectedSealedDataSize, SealedBKS3Buffer.Size));
+    Status = EFI_ABORTED;
+    goto Cleanup;
+  }
+
+  DEBUG ((DEBUG_INFO, "AziHsm: SetSealBKS3 Blob size : %d\n", SealedBKS3Buffer.Size));
+
+  Status = AziHsmSetSealedBks3 (State, ApiRevisionMax, SealedBKS3Buffer.Data, SealedBKS3Buffer.Size, &IsHSMSealSuccess);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to execute the HSM command. Status: %r\n", Status));
+    goto Cleanup;
+  }
+
+  if (!IsHSMSealSuccess) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to set the sealed BKS3 key to HSM.\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Cleanup;
+  }
+
+  // Measure HSM GUID to PCR 6
+  CopyMem (TcgContext.Guid, HsmGuid, HsmGuidSize);
+
+  Status = AziHsmMeasureGuidEvent(&TcgContext);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to measure HSM GUID to TPM PCR 6. Status: %r\n", Status));
+    goto Cleanup;
+  }
+
+  DEBUG ((DEBUG_INFO, "AziHsm: HSM BKS3 key sealed to the device successfully\n"));
+  Status = EFI_SUCCESS;
+
+Cleanup:
+  // Clean up allocated resources and zero memory for security
+  ZeroMem (&SealedBKS3Buffer, sizeof (SealedBKS3Buffer));
+  ZeroMem (&SealedAesSecret, sizeof (SealedAesSecret));
+  ZeroMem (Aes256Key, sizeof (Aes256Key));
+  ZeroMem (Iv, sizeof (Iv));
+  ZeroMem (WrappedBKS3, sizeof (WrappedBKS3));
+
+  if (EncryptedData != NULL) {
+    ZeroMem (EncryptedData, PaddedInputSize);
+    FreePool (EncryptedData);
+  }
+  if (InputData != NULL) {
+    ZeroMem (InputData, PaddedInputSize);
+    FreePool (InputData);
+  }
+
+Exit:
+  // Ensure derived key is always cleared before returning
+  ZeroMem (&BKS3Key, sizeof (BKS3Key));
+  ZeroMem (HsmGuid, sizeof (HsmGuid));
+  ZeroMem (&TcgContext, sizeof (TcgContext));
+  ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
+  return Status;
+}
+
+/**
+ * Perform AES256-CBC encryption on the input data given a Key and IV.
+ * 
+ * @param[in]   InputData       Pointer to the input data buffer to encrypt.
+ * @param[in]   InputDataSize   Size of the input data buffer in bytes (must be multiple of 16).
+ * @param[out]  OutputData      Pointer to the output buffer to receive the encrypted data.
+ * @param[out]  OutputDataSize  Pointer to the size of the output buffer in bytes.
+ * @param[in]   Key             Pointer to the encryption key.
+ * @param[in]   KeySize         Size of the encryption key in bytes (must be 32 for AES-256).
+ * @param[in]   Iv              Pointer to the initialization vector (IV).
+ * @param[in]   IvSize          Size of the IV in bytes (must be 16).
+ * 
+ * @retval EFI_SUCCESS              Encryption completed successfully.
+ * @retval EFI_INVALID_PARAMETER    Invalid input parameters.
+ * @retval EFI_OUT_OF_RESOURCES     Memory allocation failed.
+ * @retval EFI_DEVICE_ERROR         Cryptographic operation failed.
+ */
+STATIC
+EFI_STATUS
+AziHsmAes256CbcEncrypt (
+  IN  UINT8   *InputData,
+  IN  UINTN   InputDataSize,
+  OUT UINT8   *OutputData,
+  OUT UINTN   *OutputDataSize,
+  IN  UINT8   *Key,
+  IN  UINTN   KeySize,
+  IN  UINT8   *Iv,
+  IN  UINTN   IvSize
+)
+{
+  EFI_STATUS  Status;
+  UINTN       CtxSize;
+  VOID        *Ctx = NULL;
+  BOOLEAN     CryptoOk;
+
+  // Validate NULL parameters
+  if (InputData == NULL || OutputData == NULL || OutputDataSize == NULL || Key == NULL || Iv == NULL) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Invalid NULL parameter\n"));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Validate input data size
+  if (InputDataSize == 0) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Input data size is zero\n"));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (InputDataSize % AES_BLOCK_SIZE != 0) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Input data size %u not block-aligned (must be multiple of %u)\n", InputDataSize, AES_BLOCK_SIZE));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Validate key size
+  if (KeySize != AZIHSM_AES256_KEY_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Invalid key size %u, expected %u\n", KeySize, AZIHSM_AES256_KEY_SIZE));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Validate IV size
+  if (IvSize != AZIHSM_AES_IV_SIZE) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Invalid IV size %u, expected %u\n", IvSize, AZIHSM_AES_IV_SIZE));
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Allocate AES context
+  CtxSize = AesGetContextSize ();
+  Ctx     = AllocatePool (CtxSize);
+  if (Ctx == NULL) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Failed to allocate AES context\n"));
+    Status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
+  ZeroMem (Ctx, CtxSize);
+
+  // Initialize AES context
+  CryptoOk = AesInit (Ctx, Key, AZIHSM_AES256_KEY_BITS);
+  if (!CryptoOk) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmAes256CbcEncrypt - AesInit failed\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Exit;
+  }
+
+  // Perform CBC encryption
+  CryptoOk = AesCbcEncrypt (Ctx, InputData, InputDataSize, Iv, OutputData);
+  if (!CryptoOk) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmAes256CbcEncrypt - AesCbcEncrypt failed\n"));
+    Status = EFI_DEVICE_ERROR;
+    goto Exit;
+    goto Exit;
+  }
+
+  *OutputDataSize = InputDataSize;
+  Status = EFI_SUCCESS;
+
+Exit:
+  // Clean up sensitive AES context
+  if (Ctx != NULL) {
+    ZeroMem (Ctx, CtxSize);
+    FreePool (Ctx);
+  }
+
   return Status;
 }
 
@@ -482,7 +860,7 @@ Exit:
   // Clear sensitive data as backup cleanup trigger
   // This ensures cleanup happens if driver is stopped for any reason
   //
-  DEBUG ((DEBUG_WARN, "[AziHsm] DriverBindingStop - triggering sensitive data cleanup\n"));
+  DEBUG ((DEBUG_WARN, "AziHsm: DriverBindingStop - triggering sensitive data cleanup\n"));
   AziHsmCleanupSensitiveData ();
   DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStop completed. Status: %r\n", Status));
   return Status;
@@ -768,18 +1146,18 @@ AziHsmDriverEntry (
   )
 {
   EFI_STATUS          Status;
-  AZIHSM_DERIVED_KEY  TpmDerivedKey;
-  AZIHSM_BUFFER       TpmDerivedKeyBlob;
-  AZIHSM_BUFFER       SealedKeyBlob;
+  AZIHSM_DERIVED_KEY  TpmDerivedSecret;
+  AZIHSM_BUFFER       TpmDerivedSecretBlob;
+  AZIHSM_BUFFER       SealedSecretBlob;
 
-  ZeroMem (&TpmDerivedKey, sizeof (TpmDerivedKey));
-  ZeroMem (&TpmDerivedKeyBlob, sizeof (TpmDerivedKeyBlob));
-  ZeroMem (&SealedKeyBlob, sizeof (SealedKeyBlob));
+  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
+  ZeroMem (&TpmDerivedSecretBlob, sizeof (TpmDerivedSecretBlob));
+  ZeroMem (&SealedSecretBlob, sizeof (SealedSecretBlob));
 
   //
   // Derive BKS3 key from TPM using the workflow
   //
-  Status = AziHsmDeriveSecretFromTpm (&TpmDerivedKey);
+  Status = AziHsmGetTpmPlatformSecret (&TpmDerivedSecret);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_WARN, "AziHsm: BKS3 key derivation workflow failed: %r\n", Status));
     goto Exit;
@@ -788,18 +1166,19 @@ AziHsmDriverEntry (
   //
   // Seal the derived key to the null hierarchy for secure storage
   //
-  if (TpmDerivedKey.KeySize > sizeof (TpmDerivedKeyBlob.Data)) {
+  if (TpmDerivedSecret.KeySize > sizeof (TpmDerivedSecretBlob.Data)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Derived key size exceeds maximum buffer size of the TpmDerivedKeyBlob\n"));
     Status = EFI_BAD_BUFFER_SIZE;
     goto Exit;
   }
 
-  CopyMem (TpmDerivedKeyBlob.Data, TpmDerivedKey.KeyData, TpmDerivedKey.KeySize);
-  TpmDerivedKeyBlob.Size = (UINT32)TpmDerivedKey.KeySize;
+  CopyMem (TpmDerivedSecretBlob.Data, TpmDerivedSecret.KeyData, TpmDerivedSecret.KeySize);
+  TpmDerivedSecretBlob.Size = (UINT32)TpmDerivedSecret.KeySize;
 
   // Seal the derived key to the TPM null hierarchy(to ensure it is associated with current boot) and
   // does not persist across reboots
-  Status = AziHsmSealToNullHierarchy (&TpmDerivedKeyBlob, &SealedKeyBlob);
+  Status = AziHsmSealToTpmNullHierarchy (&TpmDerivedSecretBlob, &SealedSecretBlob);
+
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealing to null hierarchy failed: %r\n", Status));
     goto Exit;
@@ -808,9 +1187,9 @@ AziHsmDriverEntry (
   //
   // Store the sealed key globally for reuse across all HSM devices
   //
-  CopyMem (&(mAziHsmPHSealedKey.Data), &(SealedKeyBlob.Data), SealedKeyBlob.Size);
-  mAziHsmPHSealedKey.Size = SealedKeyBlob.Size;
-  mAziHsmPHSealedKeyInit  = TRUE;
+  CopyMem (&(mAziHsmSealedPlatformSecret.Data), &(SealedSecretBlob.Data), SealedSecretBlob.Size);
+  mAziHsmSealedPlatformSecret.Size = SealedSecretBlob.Size;
+  mAziHsmSealedPlatormSecretDerived  = TRUE;
 
   Status = EfiLibInstallDriverBindingComponentName2 (
              ImageHandle,
@@ -878,12 +1257,12 @@ AziHsmDriverEntry (
   goto Exit;
 
 Cleanup:
-  ZeroMem(&mAziHsmPHSealedKey, sizeof(mAziHsmPHSealedKey));
-  mAziHsmPHSealedKeyInit = FALSE;
+  ZeroMem(&mAziHsmSealedPlatformSecret, sizeof(mAziHsmSealedPlatformSecret));
+  mAziHsmSealedPlatormSecretDerived = FALSE;
 Exit:
-  ZeroMem (&TpmDerivedKey, sizeof (TpmDerivedKey));
-  ZeroMem (&TpmDerivedKeyBlob, sizeof (TpmDerivedKeyBlob));
-  ZeroMem (&SealedKeyBlob, sizeof (SealedKeyBlob));
+  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
+  ZeroMem (&TpmDerivedSecretBlob, sizeof (TpmDerivedSecretBlob));
+  ZeroMem (&SealedSecretBlob, sizeof (SealedSecretBlob));
 
   return Status;
 }
@@ -908,18 +1287,16 @@ AziHsmCleanupSensitiveData (
     return;
   }
 
-  DEBUG ((DEBUG_ERROR, "AziHsm: *** Starting sensitive data cleanup ***\n"));
+  DEBUG ((DEBUG_INFO, "AziHsm: *** Starting sensitive data cleanup ***\n"));
 
   //
   // Clear sensitive data from HSM before OS takes control
   //
-  if (mAziHsmPHSealedKeyInit) {
-    ZeroMem (&mAziHsmPHSealedKey, sizeof (AZIHSM_BUFFER));
-    mAziHsmPHSealedKeyInit = FALSE;
-    DEBUG ((DEBUG_ERROR, "AziHsm: Global Platform Hierarchy key cleared\n"));
-  }
+  ZeroMem (&mAziHsmSealedPlatformSecret, sizeof (AZIHSM_BUFFER));
+  mAziHsmSealedPlatormSecretDerived = FALSE;
+  DEBUG ((DEBUG_INFO, "AziHsm: Global Platform Hierarchy secret cleared\n"));
 
   mSensitiveDataCleared = TRUE;
-  DEBUG ((DEBUG_ERROR, "AziHsm: *** Sensitive data cleanup completed ***\n"));
+  DEBUG ((DEBUG_INFO, "AziHsm: *** Sensitive data cleanup completed ***\n"));
 }
 
