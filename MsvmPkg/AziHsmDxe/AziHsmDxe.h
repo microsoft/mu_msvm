@@ -15,9 +15,9 @@
 #include <Library/UefiLib.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiDriverEntryPoint.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/ReportStatusCodeLib.h>
+#include <Library/BaseCryptLib.h>  // For AES context and operations
+
 
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverSupportedEfiVersion.h>
@@ -31,11 +31,27 @@
 #define AZIHSM_PCI_VENDOR_ID         0x1414
 #define AZIHSM_PCI_DEVICE_ID         0xC003
 #define AZIHSM_CONTROLLER_SIGNATURE  SIGNATURE_32 ('A','H','S','M')
-
+#define AZIHSM_AES256_KEY_SIZE       32
+#define AZIHSM_AES256_KEY_BITS       256
+#define AZIHSM_AES_IV_SIZE           16
+#define AZIHSM_AES_KEY_VERSION       1
+#define AZIHSM_HSM_GUID_MAX_SIZE     32
 
 #define AZIHSM_CONTROLLER_STATE_FROM_PROTOCOL(a) \
   CR (a, AZIHSM_CONTROLLER_STATE, AziHsmProtocol, AZIHSM_CONTROLLER_SIGNATURE)
 
+
+// Marshal Key and IV into a compact struct to avoid manual offset math
+#pragma pack(push, 1)
+typedef struct {
+  UINT16 RecordSize;   // RecordSize does not include the size of the RecordSize field itself
+  UINT8  KeyVersion;
+  UINT8  KeySize;                              // length of Key[] in bytes
+  UINT8  Key[AZIHSM_AES256_KEY_SIZE];
+  UINT8  IvSize;                               // length of Iv[] in bytes
+  UINT8  Iv[AZIHSM_AES_IV_SIZE];
+} AZIHSM_KEY_IV_RECORD;
+#pragma pack(pop)
 
 /**
  * Structure to hold the state information for the Azure Integrated HSM controller.
