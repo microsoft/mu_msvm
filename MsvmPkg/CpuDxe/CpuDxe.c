@@ -266,6 +266,11 @@ CpuGetTimerValue (
   OUT UINT64                 *TimerPeriod OPTIONAL
   )
 {
+  // MS_HYP_CHANGE BEGIN
+  // UINT64  BeginValue;
+  // UINT64  EndValue;
+  // MS_HYP_CHANGE END
+  
   if (TimerValue == NULL) {
     return EFI_INVALID_PARAMETER;
   }

@@ -9,7 +9,7 @@
 #
 ##
 
-#Override : 00000002 | UefiCpuPkg/CpuDxe/CpuDxe.inf | 58cfda69cd0c9d98f2175cf2f2f24e49 | 2025-09-30T20-24-53 | 5810e37596c751529462f02e9681ea2177e9362d
+#Override : 00000002 | UefiCpuPkg/CpuDxe/CpuDxe.inf | 2677b20196e4acae3f3c017d3618ed5f | 2025-10-29T21-15-15 | 966acaa68dec4765e7ee122730f9b48cca1dfdac
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -91,6 +91,7 @@
   gEfiHvProtocolGuid                            ## MS_HYP_CHANGE CONSUMES
   gEfiMemoryAttributeProtocolGuid               ## PRODUCES
   gEfiMpServiceProtocolGuid                     ## PRODUCES
+  gEfiSmmBase2ProtocolGuid                      ## SOMETIMES_CONSUMES 
   gMemoryProtectionNonstopModeProtocolGuid      ## MU_CHANGE: PRODUCES
   gEdkiiGcdSyncCompleteProtocolGuid             ## MU_CHANGE: PRODUCES
 
