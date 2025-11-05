@@ -335,11 +335,18 @@
   # Advanced Logger Config
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerBase|0xFA000000   # Must be TemporaryRamBase
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|1     # Size is 4KB
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB  
 !if $(DEBUGLIB_SERIAL) == 1
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0xFFFFFFFF
+  !ifdef DEBUG_NOISY
+    # This enables verbose output
+    gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x804FEF4B
+  !else
+    # This default turns on errors and warnings
+    gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x80000002
+  !endif
 !else
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x0
+    # We do not want anything out of serial if the flag is not provided
+    gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel|0x0
 !endif
 
   # Feature Debugger Config
@@ -389,15 +396,16 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor|L"Microsoft"
 
   #
-  # The runtime state of these two Debug PCDs can be modified in the debugger by
+  # The runtime state of this PCD can be modified in the debugger by
   # modifying EfiBdDebugPrintGlobalMask and EfiBdDebugPrintComponentMask.
   #
-!ifdef DEBUG_NOISY
+  # We now expect the host bios device to parse the in-memory advanced logger 
+  # buffer to our tracing facilities
+  #
+  # NOTE: Additional debug levels may cause the in-memory advanced logger
+  # buffer to exceed its defined limit (see PcdAdvancedLoggerPages)
+  #
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x804FEF4B
-!else
-  # This default turns on errors and warnings
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000002
-!endif
 
 # Disable asserts when not building debug
 # NOTE: Technically this is a lie, since BdDebugLib doesn't use this. But keep
