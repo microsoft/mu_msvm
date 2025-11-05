@@ -33,9 +33,31 @@ Routine Description:
   DEBUG((DEBUG_INFO, __FUNCTION__"() - Measuring VM data to PCR[06]\n"));
 
   //
-  // Include the UUID in the event log, and hash the entire event log
+  // Measure the UUID
   //
   EventSize = (UINT32)AsciiSPrint(EventLog, sizeof(EventLog), "UUID: %g", (EFI_GUID *)PcdGet64(PcdBiosGuidPtr));
+
+  Status = TpmMeasureAndLogData (
+            6,
+            EV_COMPACT_HASH,
+            EventLog,
+            EventSize,
+            EventLog,
+            EventSize
+            );
+
+  DEBUG((DEBUG_INFO, __FUNCTION__"() - Logged %a (size=0x%x) status 0x%x\n", EventLog, EventSize, Status));
+
+  //
+  // Measure the architecture
+  //
+#if defined(MDE_CPU_X64)
+  EventSize = (UINT32)AsciiSPrint(EventLog, sizeof(EventLog), "{\"MachineArchitecture\": \"X64\"}");
+#elif defined(MDE_CPU_AARCH64)
+  EventSize = (UINT32)AsciiSPrint(EventLog, sizeof(EventLog), "{\"MachineArchitecture\": \"AARCH64\"}");
+#else
+  #error "Unknown architecture"
+#endif
 
   Status = TpmMeasureAndLogData (
             6,
