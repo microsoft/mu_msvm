@@ -39,7 +39,7 @@ AziHsmAes256CbcEncrypt (
   IN  UINT8   *InputData,
   IN  UINTN   InputDataSize,
   OUT UINT8   *OutputData,
-  OUT UINTN   *OutputDataSize,
+  OUT UINT16  *OutputDataSize,
   IN  UINT8   *Key,
   IN  UINTN   KeySize,
   IN  UINT8   *Iv,
@@ -424,7 +424,7 @@ AziHsmPerformBks3SealingWorkflow (
   UINT8               Iv[AZIHSM_AES_IV_SIZE];
   UINT8               Aes256Key[AZIHSM_AES256_KEY_SIZE];
   UINTN               PaddedInputSize = 0;
-  UINTN               EncryptedDataSize = 0;
+  UINT16               EncryptedDataSize = 0;
   BOOLEAN             IsHSMSealSuccess = FALSE;
   UINT8               WrappedBKS3[AZIHSM_BUFFER_MAX_SIZE];
   UINT16              WrappedBKS3KeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
@@ -506,10 +506,7 @@ AziHsmPerformBks3SealingWorkflow (
   }
 
   // We need to add PKCS7 padding to ensure the data is block-aligned for AES encryption
-  if (WrappedBKS3KeySize % AES_BLOCK_SIZE != 0) {
-    PadValue = AES_BLOCK_SIZE - (WrappedBKS3KeySize % AES_BLOCK_SIZE);
-  }
-
+  PadValue = AES_BLOCK_SIZE - (WrappedBKS3KeySize % AES_BLOCK_SIZE);
   PaddedInputSize = WrappedBKS3KeySize + PadValue;
 
   InputData = AllocatePool (PaddedInputSize);
@@ -581,7 +578,7 @@ AziHsmPerformBks3SealingWorkflow (
     goto Cleanup;
   }
 
-  ExpectedSealedDataSize = (sizeof (SealedAesSecret.Size) + SealedAesSecret.Size + sizeof (UINT32) + (UINT32)EncryptedDataSize);
+  ExpectedSealedDataSize = (sizeof (SealedAesSecret.Size) + SealedAesSecret.Size + sizeof (EncryptedDataSize) + (UINT32)EncryptedDataSize);
   // check if sealedblobsize+encrypted data size can fit in AZIHSM BUFFER
   if (ExpectedSealedDataSize > AZIHSM_BUFFER_MAX_SIZE) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob size plus encrypted data size exceeds buffer size : %d > %d\n", ExpectedSealedDataSize, AZIHSM_BUFFER_MAX_SIZE));
@@ -600,11 +597,11 @@ AziHsmPerformBks3SealingWorkflow (
   CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], SealedAesSecret.Data, SealedAesSecret.Size);
   SealedBKS3Buffer.Size += (UINT16)SealedAesSecret.Size;
   // copy size of encrypted data size
-  CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], (UINT8 *)&EncryptedDataSize, sizeof (UINT32));
-  SealedBKS3Buffer.Size += (UINT32)sizeof (UINT32);
+  CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], (UINT8 *)&EncryptedDataSize, sizeof (EncryptedDataSize));
+  SealedBKS3Buffer.Size += (UINT16)sizeof (EncryptedDataSize);
 
   CopyMem (&SealedBKS3Buffer.Data[SealedBKS3Buffer.Size], EncryptedData, EncryptedDataSize);
-  SealedBKS3Buffer.Size += (UINT32)EncryptedDataSize;
+  SealedBKS3Buffer.Size += EncryptedDataSize;
 
   // Check if we actually calculated correct size
   if (ExpectedSealedDataSize != SealedBKS3Buffer.Size) {
@@ -688,7 +685,7 @@ AziHsmAes256CbcEncrypt (
   IN  UINT8   *InputData,
   IN  UINTN   InputDataSize,
   OUT UINT8   *OutputData,
-  OUT UINTN   *OutputDataSize,
+  OUT UINT16  *OutputDataSize,
   IN  UINT8   *Key,
   IN  UINTN   KeySize,
   IN  UINT8   *Iv,
@@ -756,7 +753,7 @@ AziHsmAes256CbcEncrypt (
     goto Exit;
   }
 
-  *OutputDataSize = InputDataSize;
+  *OutputDataSize = (UINT16)InputDataSize;
   Status = EFI_SUCCESS;
 
 Exit:
@@ -1173,7 +1170,7 @@ AziHsmDriverEntry (
   }
 
   CopyMem (TpmDerivedSecretBlob.Data, TpmDerivedSecret.KeyData, TpmDerivedSecret.KeySize);
-  TpmDerivedSecretBlob.Size = (UINT32)TpmDerivedSecret.KeySize;
+  TpmDerivedSecretBlob.Size = (UINT16)TpmDerivedSecret.KeySize;
 
   // Seal the derived key to the TPM null hierarchy(to ensure it is associated with current boot) and
   // does not persist across reboots

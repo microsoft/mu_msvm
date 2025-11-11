@@ -658,34 +658,49 @@ Exit:
 
 /**
   Encodes a padded byte array into the buffer with MBOR marker and length.
+  Padding length is automatically calculated to ensure 4-byte alignment.
 
   @param[in, out] Encoder       Pointer to the encoder structure.
   @param[in]      Buffer        Pointer to the byte array to encode.
   @param[in]      Length        Number of bytes to encode.
-  @param[in]      PaddingLength Number of padding bytes (max 3).
 
   @retval EFI_SUCCESS           Bytes encoded successfully.
-  @retval EFI_INVALID_PARAMETER Encoder or Buffer is NULL, or PaddingLength > 3.
+  @retval EFI_INVALID_PARAMETER Encoder or Buffer is NULL.
   @retval EFI_BUFFER_TOO_SMALL  Not enough space in buffer.
 
   Usage: Use to encode MBOR padded bytes type. Padding bytes are zero.
+         Padding is automatically calculated for 4-byte alignment.
 **/
 EFI_STATUS
 AziHsmMborEncodePaddedBytes (
   IN OUT AZIHSM_MBOR_ENCODER  *Encoder,
   IN UINT8                    *Buffer,
-  IN UINT16                   Length,
-  IN UINT8                    PaddingLength
+  IN UINT16                   Length
   )
 {
-  EFI_STATUS  Status        = EFI_SUCCESS;
-  UINT8       Marker        = MBOR_BYTES_MARKER | (PaddingLength & MBOR_BYTES_PADDING_MASK);
+  EFI_STATUS  Status = EFI_SUCCESS;
+  UINT8       PaddingLength;
+  UINT8       Marker;
   UINT8       PadByte       = 0;
   UINT16      EncodedLength = ConvertToBigEndian16 (Length);
+  UINT32      CurrentTotalLength;
 
-  if ((Encoder == NULL) || (Buffer == NULL) || (PaddingLength > MBOR_BYTES_PADDING_MASK)) {
+  if ((Encoder == NULL) || (Buffer == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
+
+  // Calculate total length: Current position + Marker(1) + Length(2) 
+  CurrentTotalLength = Encoder->Position + sizeof (Marker) + sizeof (EncodedLength);
+  
+  // Calculate padding needed to make it 4-byte aligned
+  PaddingLength = (sizeof (UINT32) - (CurrentTotalLength % (sizeof (UINT32)))) % (sizeof (UINT32));
+  
+  // Ensure padding length fits in the 2-bit mask
+  if (PaddingLength > MBOR_BYTES_PADDING_MASK) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Marker = MBOR_BYTES_MARKER | (PaddingLength & MBOR_BYTES_PADDING_MASK);
 
   Status = AziHsmMborEncodeMarker (Encoder, Marker);
   if (EFI_ERROR (Status)) {
