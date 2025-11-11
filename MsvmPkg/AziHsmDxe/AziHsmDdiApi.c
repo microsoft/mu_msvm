@@ -414,7 +414,7 @@ AziHsmInitBks3 (
   DEBUG ((DEBUG_INFO, "AziHsmDdiApi: HSM InitBks3 Command completed successfully\n"));
 
   // Init decoder with received buffer
-  Status = AziHsmMborDecoderInit (&Decoder, OutBuffer.HostAddress, AZIHSM_DDI_DMA_BUFFER_SIZE);
+  Status = AziHsmMborDecoderInit (&Decoder, OutBuffer.HostAddress, (UINT16)ResponseSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize MBOR decoder: %r\n", Status));
     Status = EFI_PROTOCOL_ERROR;

@@ -1609,7 +1609,7 @@ AzihsmEncodeInitBks3Req (
   }
 
   // Encode actual BKS3 data
-  Status = AziHsmMborEncodeBytes (Encoder, Request->Bks3.Data, Request->Bks3.Length);
+  Status = AziHsmMborEncodePaddedBytes (Encoder, Request->Bks3.Data, Request->Bks3.Length);
   if (EFI_ERROR (Status)) {
     goto ExitFunction;
   }
@@ -1854,7 +1854,7 @@ AzihsmEncodeSetSealedBks3Req (
   }
 
   // Encode the actual BKS3 request data
-  Status = AziHsmMborEncodeBytes (Encoder, SealedBks3Request->SealedBks3.Data, SealedBks3Request->SealedBks3.Length);
+  Status = AziHsmMborEncodePaddedBytes (Encoder, SealedBks3Request->SealedBks3.Data, SealedBks3Request->SealedBks3.Length);
   if (EFI_ERROR (Status)) {
     goto ExitFunction;
   }

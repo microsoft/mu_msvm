@@ -77,7 +77,7 @@
 // Forward declared opaque types for TPM sealing outputs.
 typedef struct {
   UINT8     Data[AZIHSM_BUFFER_MAX_SIZE]; // Buffer
-  UINT32    Size;                         // Size of the buffer
+  UINT16    Size;                         // Size of the buffer
 } AZIHSM_BUFFER;
 
 //

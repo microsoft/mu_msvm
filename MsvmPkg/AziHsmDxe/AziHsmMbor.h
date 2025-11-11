@@ -203,24 +203,24 @@ AziHsmMborEncodeBytes (
 
 /**
   Encodes a padded byte array into the buffer with MBOR marker and length.
+  Padding length is automatically calculated to ensure 4-byte alignment.
 
   @param[in, out] Encoder       Pointer to the encoder structure.
   @param[in]      Buffer        Pointer to the byte array to encode.
   @param[in]      Length        Number of bytes to encode.
-  @param[in]      Padding       Number of padding bytes (max 3).
 
   @retval EFI_SUCCESS           Bytes encoded successfully.
-  @retval EFI_INVALID_PARAMETER Encoder or Buffer is NULL, or Padding > 3.
+  @retval EFI_INVALID_PARAMETER Encoder or Buffer is NULL.
   @retval EFI_BUFFER_TOO_SMALL  Not enough space in buffer.
 
   Usage: Use to encode MBOR padded bytes type. Padding bytes are zero.
+         Padding is automatically calculated for 4-byte alignment.
 **/
 EFI_STATUS
 AziHsmMborEncodePaddedBytes (
   IN OUT AZIHSM_MBOR_ENCODER  *Encoder,
   IN UINT8                    *Buffer,
-  IN UINT16                   Length,
-  IN UINT8                    Padding
+  IN UINT16                   Length
   );
 
 /**
