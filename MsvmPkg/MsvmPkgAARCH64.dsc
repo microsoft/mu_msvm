@@ -238,6 +238,7 @@
   FrameBufferMemDrawLib|MsGraphicsPkg/Library/FrameBufferMemDrawLib/FrameBufferMemDrawLibDxe.inf
   HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+  HttpLib|NetworkPkg/Library/DxeHttpLib/DxeHttpLib.inf
   IpIoLib|NetworkPkg/Library/DxeIpIoLib/DxeIpIoLib.inf
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
   MemoryTypeInformationChangeLib|MdeModulePkg/Library/MemoryTypeInformationChangeLibNull/MemoryTypeInformationChangeLibNull.inf
@@ -384,6 +385,9 @@
   # PMEM (NVDIMM)
   gMsvmPkgTokenSpaceGuid.PcdPmemRegisterBase|0xEFFE9000
   gMsvmPkgTokenSpaceGuid.PcdPmemEventVector|37              # SPI
+
+  # Networking
+  gEfiNetworkPkgTokenSpaceGuid.PcdAllowHttpConnections|TRUE
 
   # Processor Aggregator
   gMsvmPkgTokenSpaceGuid.PcdProcIdleBase|0xEFFE8000
@@ -814,13 +818,17 @@
   NetworkPkg/ArpDxe/ArpDxe.inf
   NetworkPkg/Dhcp4Dxe/Dhcp4Dxe.inf
   NetworkPkg/Dhcp6Dxe/Dhcp6Dxe.inf
+  NetworkPkg/DnsDxe/DnsDxe.inf
   NetworkPkg/DpcDxe/DpcDxe.inf
+  NetworkPkg/HttpDxe/HttpDxe.inf
+  NetworkPkg/HttpUtilitiesDxe/HttpUtilitiesDxe.inf
   NetworkPkg/Ip4Dxe/Ip4Dxe.inf
   NetworkPkg/Ip6Dxe/Ip6Dxe.inf
   NetworkPkg/MnpDxe/MnpDxe.inf
   NetworkPkg/Mtftp4Dxe/Mtftp4Dxe.inf
   NetworkPkg/Mtftp6Dxe/Mtftp6Dxe.inf
   NetworkPkg/TcpDxe/TcpDxe.inf
+  NetworkPkg/TlsDxe/TlsDxe.inf
   NetworkPkg/Udp4Dxe/Udp4Dxe.inf
   NetworkPkg/Udp6Dxe/Udp6Dxe.inf
   NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf
