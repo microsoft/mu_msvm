@@ -1748,6 +1748,7 @@ DxeImageVerificationHandler (
   BOOLEAN                       IsFound;
   UINT8                         HashAlg;
   BOOLEAN                       IsFoundInDatabase;
+  UINTN                         CachedVerificationFailure; // MS_HYP_CHANGE
 
   SignatureList     = NULL;
   SignatureListSize = 0;
@@ -1758,7 +1759,10 @@ DxeImageVerificationHandler (
   IsVerified        = FALSE;
   IsFound           = FALSE;
   IsFoundInDatabase = FALSE;
-  DxeImageVerificationStatusCodeReported = FALSE;    // MS_HYP_CHANGE
+  // MS_HYP_CHANGE BEGIN
+  CachedVerificationFailure = BootPending;
+  DxeImageVerificationStatusCodeReported = FALSE;
+  // MS_HYP_CHANGE END
 
   //
   // Check the image type and get policy setting.
@@ -1851,7 +1855,7 @@ DxeImageVerificationHandler (
     // The information can't be got from the invalid PeImage
     //
     DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: PeImage invalid. Cannot retrieve image information.\n"));
-    ReportDxeImageVerificationStatusCode(File, SecureBootInvalidImage);     // MS_HYP_CHANGE
+    CachedVerificationFailure = SecureBootInvalidImage;     // MS_HYP_CHANGE
     goto Failed;
   }
 
@@ -1875,7 +1879,7 @@ DxeImageVerificationHandler (
     // It is not a valid Pe/Coff file.
     //
     DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Not a valid PE/COFF image.\n"));
-    ReportDxeImageVerificationStatusCode(File, SecureBootInvalidImage);     // MS_HYP_CHANGE
+    CachedVerificationFailure = SecureBootInvalidImage;     // MS_HYP_CHANGE
     goto Failed;
   }
 
@@ -1928,7 +1932,7 @@ DxeImageVerificationHandler (
         // Image Hash is in forbidden database (DBX).
         //
         DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is forbidden by DBX.\n", mHashTypeStr));
-        ReportDxeImageVerificationStatusCode(File, SecureBootHashDenied);     // MS_HYP_CHANGE
+        CachedVerificationFailure = SecureBootHashDenied;     // MS_HYP_CHANGE
         goto Failed;
       }
 
@@ -1955,7 +1959,7 @@ DxeImageVerificationHandler (
     // Image Hash is not found in both forbidden and allowed database.
     //
     DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
-    ReportDxeImageVerificationStatusCode(File, SecureBootUnsignedHashNotInDb);     // MS_HYP_CHANGE
+    CachedVerificationFailure = SecureBootUnsignedHashNotInDb;     // MS_HYP_CHANGE
     goto Failed;
   }
 
@@ -2031,7 +2035,10 @@ DxeImageVerificationHandler (
     if (IsForbiddenByDbx (AuthData, AuthDataSize)) {
       Action     = EFI_IMAGE_EXECUTION_AUTH_SIG_FAILED;
       IsVerified = FALSE;
-      ReportDxeImageVerificationStatusCode(File, SecureBootCertDenied);     // MS_HYP_CHANGE
+      // MS_HYP_CHANGE BEGIN
+      CachedVerificationFailure = SecureBootCertDenied;
+      DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Certificate is forbidden by DBX.\n"));
+      // MS_HYP_CHANGE END
       break;
     }
 
@@ -2058,7 +2065,7 @@ DxeImageVerificationHandler (
       Action = EFI_IMAGE_EXECUTION_AUTH_SIG_FOUND;
       DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but %s hash of image is found in DBX.\n", mHashTypeStr));
       IsVerified = FALSE;
-      ReportDxeImageVerificationStatusCode(File, SecureBootHashDenied);     // MS_HYP_CHANGE
+      CachedVerificationFailure = SecureBootHashDenied;   // MS_HYP_CHANGE
       break;
     }
 
@@ -2075,7 +2082,7 @@ DxeImageVerificationHandler (
       } else {
         Action = EFI_IMAGE_EXECUTION_AUTH_SIG_NOT_FOUND;
         DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but signature is not allowed by DB and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
-        ReportDxeImageVerificationStatusCode(File, SecureBootSignedHashNotFound);     // MS_HYP_CHANGE
+        CachedVerificationFailure = SecureBootSignedHashNotFound;   // MS_HYP_CHANGE
       }
     }
   }
@@ -2113,10 +2120,20 @@ DxeImageVerificationHandler (
   // MS_HYP_CHANGE BEGIN
   else
   {
-  	ReportDxeImageVerificationStatusCode(File, SecureBootNeitherCertNorHashInDb);
+    CachedVerificationFailure = SecureBootNeitherCertNorHashInDb;
+    DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Neither certificate nor hash found in DB.\n"));
   }
   // MS_HYP_CHANGE END
 Failed:
+  // MS_HYP_CHANGE BEGIN
+  //
+  // Report the specific verification failure reason if we cached one
+  //
+  if (CachedVerificationFailure != BootPending) {
+    ReportDxeImageVerificationStatusCode(File, CachedVerificationFailure);
+  }
+  // MS_HYP_CHANGE END
+
   //
   // Policy decides to defer or reject the image; add its information in image
   // executable information table in either case.
