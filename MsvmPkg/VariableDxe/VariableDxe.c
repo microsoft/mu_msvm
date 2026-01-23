@@ -1533,6 +1533,11 @@ Returns:
     *MaximumVariableStorageSize = STORE_MAIN_SIZE;
 
     //
+    // RemainingVariableStorageSize starts at maximum and is decremented below.
+    //
+    *RemainingVariableStorageSize = STORE_MAIN_SIZE;
+
+    //
     // MaximumVariableSize is initially the name and data max sizes.
     //
     *MaximumVariableSize = EFI_MAX_VARIABLE_NAME_SIZE + EFI_MAX_VARIABLE_DATA_SIZE;
