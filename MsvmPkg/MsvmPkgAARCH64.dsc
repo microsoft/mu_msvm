@@ -362,6 +362,10 @@
   # use the next available, 18.
   gMsvmPkgTokenSpaceGuid.PcdVmbusVector|18
 
+  # Intercept SINT PPI for Linux L1VH.
+  # PPIs 19-21 are GIC timers, so use 22.
+  gMsvmPkgTokenSpaceGuid.PcdInterceptSintVector|22
+
   # BIOS Device
   gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress|0xEFFED000
 
@@ -421,7 +425,7 @@
   # The runtime state of this PCD can be modified in the debugger by
   # modifying EfiBdDebugPrintGlobalMask and EfiBdDebugPrintComponentMask.
   #
-  # We now expect the host bios device to parse the in-memory advanced logger 
+  # We now expect the host bios device to parse the in-memory advanced logger
   # buffer to our tracing facilities
   #
   # NOTE: Additional debug levels may cause the in-memory advanced logger
@@ -670,6 +674,7 @@
   gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE
   gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdHvSintEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0
