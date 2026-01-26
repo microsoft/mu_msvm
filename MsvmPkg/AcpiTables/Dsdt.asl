@@ -62,6 +62,7 @@ DefinitionBlock (
         SGXE,8,         // SGX Memory enabled/disabled
         PADE,8,         // Processor Aggregator Device enabled/disabled
         CCFG,8,         // CXL memory support enabled/disabled
+        SINT,8,         // HV SINT PPI device enabled
         NCNT,16,        // NVDIMM count
     }
 
@@ -111,7 +112,7 @@ DefinitionBlock (
 
                 // Function 1 : Strict S4 enforcement toggle function
                 If (LEqual(ToInteger(Arg2), 1))
-                { 
+                {
                     Return(0x0001)
                 }
             }
@@ -375,6 +376,34 @@ DefinitionBlock (
             }
         )
     }
+
+#if defined(_DSDT_ARM_)
+    // Intercept SINT =========================================================
+    // Exposes a PPI for Linux L1VH to use for hypervisor intercept SINTs.
+    // Only enabled when the loader sets the HvSintEnabled flag.
+
+    If(LGreater(SINT, 0))
+    {
+        Device(\_SB.VMOD.SINT)
+        {
+            Name(_HID, "MSFT1003")
+            Name(_UID, 0)
+            Name(_DDN, "Hyper-V SINTs")
+            Name(_CRS, ResourceTemplate()
+            {
+                Interrupt(ResourceConsumer, Edge, ActiveHigh, Exclusive)
+                    {FixedPcdGet8(PcdInterceptSintVector)}
+            })
+            // _STA: Return status bitmap
+            // Bit 0: Present, Bit 1: Enabled, Bit 3: Functioning
+            // Bit 2 NOT set: Do not show in UI (prevents "unknown device" in Device Manager)
+            Method(_STA, 0, NotSerialized)
+            {
+                Return (0x0B)
+            }
+        }
+    }
+#endif
 
     // TPM ====================================================================
 

@@ -51,6 +51,7 @@
     gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV     ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV       ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV     ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdInterceptSintVector       ## CONSUMES
 
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase           ## CONSUMES
