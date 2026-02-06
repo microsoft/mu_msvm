@@ -789,7 +789,8 @@ typedef struct _UEFI_CONFIG_FLAGS
         UINT64 CxlMemoryEnabled : 1;
         UINT64 MtrrsInitializedAtLoad : 1;
         UINT64 HvSintEnabled : 1;
-        UINT64 Reserved:34;
+        UINT64 AziHsmEnabled : 1;
+        UINT64 Reserved:33;
     } Flags;
 } UEFI_CONFIG_FLAGS;
 

@@ -15,6 +15,7 @@
 #include "AziHsmAdmin.h"
 
 #include <Library/DebugLib.h>
+#include <Library/PcdLib.h>
 
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverSupportedEfiVersion.h>
@@ -1146,6 +1147,14 @@ AziHsmDriverEntry (
   AZIHSM_DERIVED_KEY  TpmDerivedSecret;
   AZIHSM_BUFFER       TpmDerivedSecretBlob;
   AZIHSM_BUFFER       SealedSecretBlob;
+
+  //
+  // Check if AziHsm is enabled via PCD
+  //
+  if (!PcdGetBool (PcdAziHsmEnabled)) {
+    DEBUG ((DEBUG_INFO, "AziHsm: Driver disabled via PcdAziHsmEnabled\n"));
+    return EFI_SUCCESS;
+  }
 
   ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
   ZeroMem (&TpmDerivedSecretBlob, sizeof (TpmDerivedSecretBlob));
