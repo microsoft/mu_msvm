@@ -64,6 +64,7 @@
   BaseLib
   DebugLib
   MemoryAllocationLib
+  PcdLib
   TpmMeasurementLib
   UefiDriverEntryPoint
   UefiBootServicesTableLib
@@ -83,8 +84,12 @@
   gMsvmUnableToBootEventGuid
 
 [Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
 
 [UserExtensions.TianoCore."ExtraFiles"]
   AziHsmDxe.uni
+
+[Depex]
+  gEfiTcg2ProtocolGuid

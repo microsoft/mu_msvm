@@ -675,6 +675,7 @@
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE
   gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdHvSintEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0

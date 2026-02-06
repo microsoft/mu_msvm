@@ -303,6 +303,7 @@
   gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad|FALSE|BOOLEAN|0x6067
   gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter|FALSE|BOOLEAN|0x6068
   gMsvmPkgTokenSpaceGuid.PcdHvSintEnabled|FALSE|BOOLEAN|0x6069
+  gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled|FALSE|BOOLEAN|0x6072
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0|UINT32|0x6032
