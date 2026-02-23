@@ -17,40 +17,6 @@
 #include <Guid/DxePhaseVariables.h>
 
 /**
-  Quick helper function to see if ReadyToBoot has already been signalled.
-
-  @retval     TRUE    ReadyToBoot has been signalled.
-  @retval     FALSE   Otherwise...
-
-**/
-STATIC
-BOOLEAN
-IsPostReadyToBoot (
-  VOID
-  )
-{
-  EFI_STATUS        Status;
-  UINT32            Attributes;
-  PHASE_INDICATOR   Indicator;
-  UINTN             Size = sizeof( Indicator );
-  static BOOLEAN    Result, Initialized = FALSE;
-
-  if (!Initialized)
-  {
-    Status = gRT->GetVariable( READY_TO_BOOT_INDICATOR_VAR_NAME,
-                               &gMsDxePhaseVariablesGuid,
-                               &Attributes,
-                               &Size,
-                               &Indicator );
-    Result = (!EFI_ERROR( Status ) && Attributes == READY_TO_BOOT_INDICATOR_VAR_ATTR);
-    Initialized = TRUE;
-  }
-
-  return Result;
-} // IsPostReadyToBoot()
-
-
-/**
   This function allows a caller to extract the current configuration for one
   or more named elements from the target driver.
 

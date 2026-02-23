@@ -1092,7 +1092,6 @@ Returns:
     INT32 index;
     NVSP_MESSAGE message;
     EFI_STATUS status = EFI_SUCCESS;
-    static UINT32 counter;
 
     ZeroMem(&message, sizeof(NVSP_MESSAGE));
 
