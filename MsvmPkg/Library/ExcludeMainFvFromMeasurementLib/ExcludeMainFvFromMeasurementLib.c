@@ -12,37 +12,35 @@
 #include <Library/DebugLib.h>
 #include <Ppi/FirmwareVolumeInfoMeasurementExcluded.h>
 
-
+static
 EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_PPI exclude = {
-	1, //count
-	{
-		(EFI_PHYSICAL_ADDRESS) FixedPcdGet64(PcdFvBaseAddress),
-		(UINT64) FixedPcdGet32(PcdFvSize)
-	}
+    1, //count
+    {
+        (EFI_PHYSICAL_ADDRESS) FixedPcdGet64 (PcdFvBaseAddress),
+        (UINT64) FixedPcdGet32 (PcdFvSize)
+    }
 };
 
 STATIC EFI_PEI_PPI_DESCRIPTOR PpiList =
 {
-	EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
-	&gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid,
-	&exclude
+    EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+    &gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid,
+    &exclude
 };
-
 
 EFI_STATUS
 EFIAPI
 ExcludeMainFvFromMeasurementLibConstructor (
-  IN       EFI_PEI_FILE_HANDLE       FileHandle,
-  IN CONST EFI_PEI_SERVICES          **PeiServices
-  )
+    IN       EFI_PEI_FILE_HANDLE       FileHandle,
+    IN CONST EFI_PEI_SERVICES          **PeiServices
+    )
 {
-	EFI_STATUS Status;
-	Status = EFI_SUCCESS;
+    EFI_STATUS Status = EFI_SUCCESS;
 
-	if(PcdGetBool(PcdExcludeFvMainFromMeasurements))
-	{
-		Status = PeiServicesInstallPpi(&PpiList);
-		ASSERT_EFI_ERROR(Status);
-	}
-	return Status;;
+    if (PcdGetBool (PcdExcludeFvMainFromMeasurements))
+    {
+        Status = PeiServicesInstallPpi (&PpiList);
+        ASSERT_EFI_ERROR (Status);
+    }
+    return Status;
 }
