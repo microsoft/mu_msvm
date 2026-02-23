@@ -5,11 +5,9 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
-
+#include "DeclspecAlign.h"
 #include <Hv/HvGuest.h>
-
 #pragma warning(disable : 4201)
 
 //
@@ -306,7 +304,7 @@ typedef struct _HV_IOMMU_FAULT_MESSAGE_PAYLOAD
 // to be aligned. Therefore, this structure must be 16-byte aligned. The header
 // is 16B already.
 //
-typedef struct __declspec(align(16)) _HV_MESSAGE
+typedef struct DECLSPEC_ALIGN (16) _HV_MESSAGE
 {
     HV_MESSAGE_HEADER Header;
     union

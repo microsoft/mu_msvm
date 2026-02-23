@@ -267,7 +267,7 @@ BdInitInterruptDescriptorTable (
   IA32_DESCRIPTOR           OldIdtPtr;
   IA32_IDT_GATE_DESCRIPTOR  *OldIdt;
   UINTN                     OldIdtSize;
-  __declspec(align(16)) IA32_DESCRIPTOR IdtPtr;
+  DECLSPEC_ALIGN (16) IA32_DESCRIPTOR IdtPtr;
   UINTN                     Index;
   UINT16                    CurrentCs;
   VOID                      *IntHandler;

@@ -5,9 +5,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
-
+#include "DeclspecCacheAlign.h"
 #include <Vmbus/VmbusPacketFormat.h>
 
 #define EFI_RING_CORRUPT_ERROR              ENCODE_ERROR(0x00000102L)
@@ -46,7 +45,7 @@ typedef struct _PACKET_LIB_CONTEXT
     // Incoming loop mutable fields. Keep these on their own cache line.
     //
 
-    __declspec(align(64))
+    DECLSPEC_CACHEALIGN
     UINT32                  IncomingInCache;
     UINT32                  IncomingOut;
     UINT32                  EmptyRingBufferCount;
@@ -56,7 +55,7 @@ typedef struct _PACKET_LIB_CONTEXT
     // Outgoing loop mutable fields. Keep these on their own cache line.
     //
 
-    __declspec(align(64))
+    DECLSPEC_CACHEALIGN
     UINT32                  OutgoingIn;
     UINT32                  OutgoingOutCache;
     UINT32                  PendingSendSize;

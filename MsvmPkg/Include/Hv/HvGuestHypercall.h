@@ -5,17 +5,15 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
-
+#include "DeclspecAlign.h"
 #include <Hv/HvGuest.h>
-
 #pragma warning(disable : 4201)
 
 //
 // Define a 128bit type.
 //
-typedef union __declspec(align(16)) _HV_UINT128
+typedef union DECLSPEC_ALIGN (16) _HV_UINT128
 {
     struct
     {
@@ -32,7 +30,7 @@ typedef union __declspec(align(16)) _HV_UINT128
 // Define an alignment for structures passed via hypercall.
 //
 #define HV_CALL_ALIGNMENT   8
-#define HV_CALL_ATTRIBUTES __declspec(align(HV_CALL_ALIGNMENT))
+#define HV_CALL_ATTRIBUTES DECLSPEC_ALIGN (HV_CALL_ALIGNMENT)
 
 //
 // Address spaces presented by the guest.
