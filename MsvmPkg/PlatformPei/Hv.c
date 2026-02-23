@@ -51,21 +51,21 @@ Return Value:
     __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
     if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
     {
-        DEBUG((DEBUG_INFO, __FUNCTION__" - Hypervisor is not present \n"));
+        DEBUG((DEBUG_INFO, "%a - Hypervisor is not present \n", __FUNCTION__));
         return;
     }
 
     __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
     if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
     {
-        DEBUG((DEBUG_INFO, __FUNCTION__" - Hypervisor interface is not present \n"));
+        DEBUG((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __FUNCTION__));
         return;
     }
 
     __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
     if (!cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation)
     {
-        DEBUG((DEBUG_INFO, __FUNCTION__" - Isolation is not present \n"));
+        DEBUG((DEBUG_INFO, "%a - Isolation is not present \n", __FUNCTION__));
         return;
     }
 
