@@ -282,39 +282,6 @@ ReadStatusReg (
 }
 
 /**
- * Read the admin queue attributes.
- *
- * @param[in]  PciIo  Pointer to the PCI I/O protocol instance.
- * @param[out] AqaReg Pointer to the admin queue attributes register structure to fill.
- *
- * @retval EFI_SUCCESS           The admin queue attributes were read successfully.
- * @retval EFI_DEVICE_ERROR      An error occurred while reading the admin queue attributes.
- */
-STATIC EFI_STATUS
-ReadAqaReg (
-  IN EFI_PCI_IO_PROTOCOL   *PciIo,
-  OUT AZIHSM_CTRL_AQA_REG  *AqaReg
-  )
-{
-  EFI_STATUS  Status;
-
-  Status = PciIo->Mem.Read (
-                        PciIo,
-                        EfiPciIoWidthUint32,
-                        AZIHSM_CTRL_PCI_BAR_INDEX,
-                        AZIHSM_CTRL_AQA_REG_OFFSET,
-                        sizeof (AZIHSM_CTRL_AQA_REG) / sizeof (UINT32),
-                        AqaReg
-                        );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to read admin queue attributes. Status: %r\n", Status));
-    return Status;
-  }
-
-  return EFI_SUCCESS;
-}
-
-/**
  * Write the admin queue attributes.
  *
  * @param[in]  PciIo  Pointer to the PCI I/O protocol instance.
@@ -348,39 +315,6 @@ WriteAqaReg (
 }
 
 /**
- * Read the admin submission queue base address.
- *
- * @param[in]  PciIo  Pointer to the PCI I/O protocol instance.
- * @param[out] AsqReg Pointer to the admin submission queue base address register structure to fill.
- *
- * @retval EFI_SUCCESS           The admin submission queue base address was read successfully.
- * @retval EFI_DEVICE_ERROR      An error occurred while reading the admin submission queue base address.
- */
-STATIC EFI_STATUS
-ReadAsqReg (
-  IN EFI_PCI_IO_PROTOCOL   *PciIo,
-  OUT AZIHSM_CTRL_ASQ_REG  *AsqReg
-  )
-{
-  EFI_STATUS  Status;
-
-  Status = PciIo->Mem.Read (
-                        PciIo,
-                        EfiPciIoWidthUint64,
-                        AZIHSM_CTRL_PCI_BAR_INDEX,
-                        AZIHSM_CTRL_ASQ_REG_OFFSET,
-                        sizeof (AZIHSM_CTRL_ASQ_REG) / sizeof (UINT64),
-                        AsqReg
-                        );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to read admin submission queue base address. Status: %r\n", Status));
-    return Status;
-  }
-
-  return EFI_SUCCESS;
-}
-
-/**
  * Write the admin submission queue base address.
  *
  * @param[in]  PciIo  Pointer to the PCI I/O protocol instance.
@@ -407,39 +341,6 @@ WriteAsqReg (
                         );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to write admin submission queue base address. Status: %r\n", Status));
-    return Status;
-  }
-
-  return EFI_SUCCESS;
-}
-
-/**
- * Read the admin completion queue base address.
- *
- * @param[in]  PciIo  Pointer to the PCI I/O protocol instance.
- * @param[out] AcqReg Pointer to the admin completion queue base address register structure to fill.
- *
- * @retval EFI_SUCCESS           The admin completion queue base address was read successfully.
- * @retval EFI_DEVICE_ERROR      An error occurred while reading the admin completion queue base address.
- */
-STATIC EFI_STATUS
-ReadAcqReg (
-  IN EFI_PCI_IO_PROTOCOL   *PciIo,
-  OUT AZIHSM_CTRL_ACQ_REG  *AcqReg
-  )
-{
-  EFI_STATUS  Status;
-
-  Status = PciIo->Mem.Read (
-                        PciIo,
-                        EfiPciIoWidthUint64,
-                        AZIHSM_CTRL_PCI_BAR_INDEX,
-                        AZIHSM_CTRL_ACQ_REG_OFFSET,
-                        sizeof (AZIHSM_CTRL_ACQ_REG) / sizeof (UINT64),
-                        AcqReg
-                        );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to read admin completion queue base address. Status: %r\n", Status));
     return Status;
   }
 

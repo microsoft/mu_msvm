@@ -12,36 +12,6 @@
 #include "AziHsmAdmin.h"
 #include "AziHsmHci.h"
 
-STATIC
-VOID
-AziHsmDumpSqe (
-  AZIHSM_CP_SQE  *Sqe
-  )
-{
-  if (Sqe == NULL) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Invalid SQE pointer\n", __FUNCTION__));
-    return;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a]: Dumping SQE\n", __FUNCTION__));
-  DEBUG ((DEBUG_INFO, "  CmdId: %d\n", Sqe->CmdId));
-  DEBUG ((DEBUG_INFO, "  CmdSet: %d\n", Sqe->CmdSet));
-  DEBUG ((DEBUG_INFO, "  OpCode: %d\n", Sqe->OpCode));
-  DEBUG ((DEBUG_INFO, "  Psdt: %d\n", Sqe->Psdt));
-  DEBUG ((DEBUG_INFO, "  SrcLen: %d\n", Sqe->SrcLen));
-  DEBUG ((DEBUG_INFO, "  DstLen: %d\n", Sqe->DstLen));
-  DEBUG ((DEBUG_INFO, "  Src.Fst: 0x%x Src.Snd: 0x%x\n", Sqe->Src.Prp.Fst, Sqe->Src.Prp.Snd));
-  DEBUG ((DEBUG_INFO, "  Dst.Fst: 0x%x Dst.Snd: 0x%x\n", Sqe->Dst.Prp.Fst, Sqe->Dst.Prp.Snd));
-  DEBUG ((
-    DEBUG_INFO,
-    "  SessionFlags: OpCode[0x%x] InSessCmd[0x%x] ShortAppIdValid[0x%x] SafeToCloseSess[0x%x]\n",
-    Sqe->SqeData.SqeSessionData.SessionCtrlFlags.Opcode,
-    Sqe->SqeData.SqeSessionData.SessionCtrlFlags.InSessionCmd,
-    Sqe->SqeData.SqeSessionData.SessionCtrlFlags.ShortAppIdValid,
-    Sqe->SqeData.SqeSessionData.SessionCtrlFlags.SafeToCloseSession
-    ));
-}
-
 EFI_STATUS
 EFIAPI
 AziHsmInitHsm (

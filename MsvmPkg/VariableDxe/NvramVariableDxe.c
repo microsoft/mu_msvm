@@ -26,12 +26,6 @@
 #define WITHIN_4_GB_LL (0xFFFFFFFFLL)
 
 //
-// Events this driver handles
-//
-static EFI_EVENT mVirtualAddressChangeEvent          = NULL;
-
-
-//
 // Descriptor and Data buffers.
 //
 static EFI_PHYSICAL_ADDRESS        mNvramCommandDescriptorGpa   = 0;

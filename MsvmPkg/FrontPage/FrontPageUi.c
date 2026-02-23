@@ -32,6 +32,18 @@
 
 extern BOOLEAN                              mResetRequired;
 
+/**
+  Handle a request to reboot back into FrontPage.
+
+  @retval EFI_SUCCESS
+
+**/
+STATIC
+EFI_STATUS
+HandleRebootToFrontPage (
+  IN  EFI_IFR_TYPE_VALUE                     *Value,
+  OUT EFI_BROWSER_ACTION_REQUEST             *ActionRequest
+  );
 
 /**
   This function processes the results of changes in configuration.
