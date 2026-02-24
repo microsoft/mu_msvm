@@ -49,4 +49,4 @@ typedef struct _CM_PARTIAL_RESOURCE_DESCRIPTOR {
 
 #pragma pack()
 
-static_assert(sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR) == 0x14);
+STATIC_ASSERT(sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR) == 0x14, "");

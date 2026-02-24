@@ -81,7 +81,7 @@ typedef struct _AZIHSM_CP_SQE_ {
 
   AZIHSM_CP_CMD_SQE_SRC_DATA    SqeData;
 } AZIHSM_CP_SQE, *PAZIHSM_CP_SQE;
-static_assert ((sizeof (AZIHSM_CP_SQE) == AZIHSM_HSM_CP_SQE_SZ), "CP_SQE: Size Mismatch");
+STATIC_ASSERT ((sizeof (AZIHSM_CP_SQE) == AZIHSM_HSM_CP_SQE_SZ), "CP_SQE: Size Mismatch");
 
 /*
  * Control Processor Completion Queue Entry
@@ -121,7 +121,7 @@ typedef struct _AZIHSM_CP_CQE_ {
   } PhAndSts;
 } AZIHSM_CP_CQE, *PAZIHSM_CP_CQE;
 
-static_assert (sizeof (AZIHSM_CP_CQE) == AZIHSM_HSM_CMD_CQE_SIZE, "AZIHSM_CP_CQE Size Incompatible");
+STATIC_ASSERT (sizeof (AZIHSM_CP_CQE) == AZIHSM_HSM_CMD_CQE_SIZE, "AZIHSM_CP_CQE Size Incompatible");
 
 #pragma pack(pop)
 

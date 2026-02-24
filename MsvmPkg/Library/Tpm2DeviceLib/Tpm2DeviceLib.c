@@ -87,7 +87,7 @@ typedef struct _FTPM_CONTROL_AREA
 } FTPM_CONTROL_AREA;
 #pragma pack(pop)
 
-static_assert(sizeof(EFI_TPM2_ACPI_CONTROL_AREA) == sizeof(FTPM_CONTROL_AREA), "Invalid structure!");
+STATIC_ASSERT(sizeof(EFI_TPM2_ACPI_CONTROL_AREA) == sizeof(FTPM_CONTROL_AREA), "Invalid structure!");
 
 typedef union _LARGE_INTEGER {
     struct {

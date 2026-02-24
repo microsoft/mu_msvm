@@ -78,7 +78,7 @@ typedef struct
 //  Channel Id GUID must be the first field in the EVENT_CHANNEL
 //  as it is used as the object lookup key in the handle table.
 //
-static_assert(OFFSET_OF(EVENT_CHANNEL,Id) == 0);
+STATIC_ASSERT(OFFSET_OF(EVENT_CHANNEL,Id) == 0, "");
 
 //
 // Number of bytes to increase the enumeration bounce buffer by
