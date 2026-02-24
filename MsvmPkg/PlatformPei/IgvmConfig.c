@@ -385,7 +385,7 @@ Return Value:
     UEFI_CONFIG_FLAGS configFlags;
     UEFI_IGVM_PARAMETER_INFO *parameterInfo;
     UEFI_CONFIG_PROCESSOR_INFORMATION processorInfo;
-    VOID* secretsPage;
+    PSNP_SECRETS secretsPage;
     EFI_STATUS status;
     UINT64 svsmBase = 0;
     UINT64 svsmSize = 0;
@@ -406,6 +406,31 @@ Return Value:
     if (parameterInfo->UefiIgvmConfigurationFlags & UEFI_IGVM_CONFIGURATION_ENABLE_HOST_EMULATORS)
     {
         PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdHostEmulatorsWhenHardwareIsolated, TRUE));
+    }
+
+    {
+        //
+        // TODO: Find some way of avoiding hardcode of necessary host information
+        //
+        UINT32 i;
+        UINT8* azureAssetTag = (UINT8*)"7783-7084-3265-9085-8269-3286-77";
+        UINT8* freeParameterMemory = (UINT8*)(parameterInfo) + sizeof(UEFI_IGVM_PARAMETER_INFO);
+        UINT8* smbiosAssetTag = freeParameterMemory + sizeof(GUID);
+        UINT64* smbiosGuid = (UINT64*)freeParameterMemory;
+
+        // set BIOS GUID
+        smbiosGuid[0] = 0x7464782d7464782d;
+        smbiosGuid[1] = 0x7464782d7464782d;
+
+        // set chassis asset tag to 7783-7084-3265-9085-8269-3286-77
+        for (i = 0; i < 33; i++)
+        {
+            smbiosAssetTag[i] = azureAssetTag[i];
+        }
+
+        PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdBiosGuidPtr, (UINT64)smbiosGuid));
+        PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosChassisAssetTagStr, (UINT64)smbiosAssetTag));
+        PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosChassisAssetTagSize, 33));
     }
 
     //

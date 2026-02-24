@@ -17,16 +17,16 @@ HvDetectIsolation(
     VOID
     );
 
-VOID
-HvDetectSvsm(
-    IN  VOID    *SecretsPage,
-    OUT UINT64  *SvsmBase,
-    OUT UINT64  *SvsmSize
-    );
-
 typedef struct _SNP_SECRETS {
     UINT8   Reserved[0x140];
     UINT64  SvsmBase;
     UINT64  SvsmSize;
     UINT64  SvsmCallingArea;
 } SNP_SECRETS, *PSNP_SECRETS;
+
+VOID
+HvDetectSvsm(
+    IN  PSNP_SECRETS SecretsPage,
+    OUT UINT64  *SvsmBase,
+    OUT UINT64  *SvsmSize
+    );
