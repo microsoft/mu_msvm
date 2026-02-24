@@ -610,7 +610,7 @@ Return Value:
 
 --*/
 {
-    UINT32 msrIndex;
+    UINT32 msrIndex = 0;
 
     switch (RegisterName)
     {

@@ -387,8 +387,8 @@ Return Value:
     UEFI_CONFIG_PROCESSOR_INFORMATION processorInfo;
     VOID* secretsPage;
     EFI_STATUS status;
-    UINT64 svsmBase;
-    UINT64 svsmSize;
+    UINT64 svsmBase = 0;
+    UINT64 svsmSize = 0;
 
     //
     // Locate the parameter layout description at the base of the parameter
