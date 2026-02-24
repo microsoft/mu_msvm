@@ -545,7 +545,7 @@ PkCompleteRemoval(
     // Mark that an interrupt is expected if the ring is now empty.
     //
 
-    if ((UINT64)ReadNoFence((UINT32*)&control->In) == NewOut)
+    if ((UINT32)ReadNoFence((UINT32*)&control->In) == NewOut)
     {
         PkpExpectInterrupt(PkLibContext, TRUE);
     }
