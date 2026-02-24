@@ -866,7 +866,7 @@ AziHsmGetTpmPlatformSecret (
 
   // Primary Key User Data to be input to primary key creation
   DEBUG ((DEBUG_INFO, "AziHsm: Creating Platform hierarchy primary\n"));
-  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, PrimaryKeyUserData, PrimaryKeyUserDataLength);
+  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, (BYTE*)PrimaryKeyUserData, PrimaryKeyUserDataLength);
   AZIHSM_CHECK_RC (Status, "Primary (platform) creation failed\n");
 
   // Step 2: HMAC KDF Derivation

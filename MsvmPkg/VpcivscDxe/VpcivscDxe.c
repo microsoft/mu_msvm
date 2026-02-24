@@ -294,7 +294,7 @@ VpciChannelReceivePacketCallback(
 //
 // \return     EFI_SUCCESS
 //
-EFI_STATUS
+void
 VpciChannelSendCompletionCallback(
     IN  VOID *Context OPTIONAL,
     IN  VOID *Buffer,
@@ -322,8 +322,6 @@ VpciChannelSendCompletionCallback(
     }
 
     gBS->SignalEvent(completionContext->WaitForCompletion);
-
-    return EFI_SUCCESS;
 }
 
 /// \brief      Sends a synchronous packet to the VSP.
