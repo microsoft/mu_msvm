@@ -675,7 +675,6 @@
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE
   gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdHvSintEnabled|FALSE
-  gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0
@@ -894,7 +893,7 @@
       NULL|MsvmPkg/Library/Tcg2PreInitLib/Tcg2PreInitLibPei.inf
   }
 
-  SecurityPkg/Tcg/Tcg2PlatformDxe/Tcg2PlatformDxe.inf {
+  MsvmPkg/MsvmTcg2PlatformDxe/MsvmTcg2PlatformDxe.inf {
     <LibraryClasses>
       Tpm2DeviceLib|MsvmPkg/Library/Tpm2DeviceLib/Tpm2DeviceLib.inf
       TpmPlatformHierarchyLib|SecurityPkg/Library/PeiDxeTpmPlatformHierarchyLib/PeiDxeTpmPlatformHierarchyLib.inf

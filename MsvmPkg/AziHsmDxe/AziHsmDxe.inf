@@ -84,7 +84,6 @@
   gMsvmUnableToBootEventGuid
 
 [Pcd]
-  gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
 
