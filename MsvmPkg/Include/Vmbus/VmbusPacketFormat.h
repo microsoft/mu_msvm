@@ -57,7 +57,7 @@ typedef struct _VMRCB
 
 } VMRCB, *PVMRCB;
 
-static_assert(OFFSET_OF(VMRCB, FeatureBits) == 64);
+STATIC_ASSERT(OFFSET_OF(VMRCB, FeatureBits) == 64, "");
 
 //
 // This structure defines a range in guest physical space that can be made

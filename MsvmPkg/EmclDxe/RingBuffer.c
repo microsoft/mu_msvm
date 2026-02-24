@@ -838,7 +838,7 @@ PkGetReceiveBuffer(
     // offset is less than sizeof(UINT64), we don't have to worry about wrapping around the
     // end of the ring buffer. We assert here to keep the assertion with the relevant code.
     //
-    static_assert(OFFSET_OF(VMPACKET_DESCRIPTOR, Length8) < sizeof(UINT64), "");
+    STATIC_ASSERT(OFFSET_OF(VMPACKET_DESCRIPTOR, Length8) < sizeof(UINT64), "");
 
     //
     // Capture the length field and shift it to a byte count.

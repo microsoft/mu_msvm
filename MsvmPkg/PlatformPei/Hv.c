@@ -73,19 +73,19 @@ Return Value:
     switch (cpuidResult.MsHvIsolationConfiguration.IsolationType)
     {
     case HV_PARTITION_ISOLATION_TYPE_VBS:
-        static_assert(HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs);
+        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs, ""); }
         mIsolationType = UefiIsolationTypeVbs;
         break;
     case HV_PARTITION_ISOLATION_TYPE_SNP:
-        static_assert(HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp);
+        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp, ""); }
         mIsolationType = UefiIsolationTypeSnp;
         break;
     case HV_PARTITION_ISOLATION_TYPE_TDX:
-        static_assert(HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx);
+        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx, ""); }
         mIsolationType = UefiIsolationTypeTdx;
         break;
     case HV_PARTITION_ISOLATION_TYPE_NONE:
-        static_assert(HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone);
+        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone, ""); }
         return;
     default:
         ASSERT(FALSE);
