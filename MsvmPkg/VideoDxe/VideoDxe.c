@@ -618,7 +618,6 @@ Return Value:
     //
     switch (BltOperation)
     {
-
     case EfiBltVideoToBltBuffer:
         for (SrcY = SourceY, DstY = DestinationY;
              DstY < (Height + DestinationY);
@@ -676,6 +675,9 @@ Return Value:
                         (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
                     BytesPerLine);
         }
+        break;
+
+    case EfiGraphicsOutputBltOperationMax:
         break;
     }
 
