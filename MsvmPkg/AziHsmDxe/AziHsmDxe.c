@@ -15,22 +15,9 @@
 #include "AziHsmAdmin.h"
 
 #include <Library/DebugLib.h>
-#include <Library/PcdLib.h>
-
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverSupportedEfiVersion.h>
 #include <Library/UefiLib.h>
-#include <Guid/EventGroup.h>
-#include <Guid/UnableToBootEvent.h>
-
-STATIC EFI_EVENT  mAziHsmReadyToBootEvent = NULL;
-STATIC EFI_EVENT  mAziHsmUnableToBootEvent = NULL;
-
-//
-// Global Platform Sealed Key - shared across all HSM devices
-//
-STATIC BOOLEAN        mAziHsmSealedPlatormSecretDerived = FALSE;
-STATIC AZIHSM_BUFFER  mAziHsmSealedPlatformSecret     = { 0 };
 
 // Forward declarations for internal helper functions
 
@@ -55,15 +42,6 @@ AziHsmPerformBks3SealingWorkflow (
   IN  UINT8                    *HsmSerialData,
   IN  UINTN                    HsmSerialDataLength
 );
-
-//
-// Function to cleanup sensitive data
-//
-VOID
-EFIAPI
-AziHsmCleanupSensitiveData (
-  VOID
-  );
 
 //
 // Driver Binding Instance
@@ -240,15 +218,10 @@ AziHsmDriverBindingStart (
   BOOLEAN                   IsHsmIdValid = FALSE;
   AZIHSM_DDI_API_REV        ApiRevisionMin;
   AZIHSM_DDI_API_REV        ApiRevisionMax;
-  AZIHSM_DERIVED_KEY        DerivedKey;
-  AZIHSM_BUFFER             UnsealedKey;
 
-  ZeroMem (&UnsealedKey, sizeof (UnsealedKey));
-  ZeroMem (&DerivedKey, sizeof (DerivedKey));
   ZeroMem ((VOID *)&HsmIdenData, sizeof (HsmIdenData));
 
   DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStart called for Controller: %p\n", Controller));
-
   Status = gBS->OpenProtocol (
                   Controller,
                   &gEfiDevicePathProtocolGuid,
@@ -419,24 +392,24 @@ AziHsmPerformBks3SealingWorkflow (
   AZIHSM_BUFFER       SealedBKS3Buffer;
   AZIHSM_BUFFER       SealedAesSecret;
   AZIHSM_BUFFER       TpmPlatformSecret;
+  AZIHSM_DERIVED_KEY  TpmDerivedSecret;
   UINT8               *InputData = NULL;
   UINT8               *EncryptedData = NULL;
-  UINTN               PadValue = 0;
   UINT8               Iv[AZIHSM_AES_IV_SIZE];
   UINT8               Aes256Key[AZIHSM_AES256_KEY_SIZE];
   UINTN               PaddedInputSize = 0;
-  UINT16               EncryptedDataSize = 0;
   BOOLEAN             IsHSMSealSuccess = FALSE;
   UINT8               WrappedBKS3[AZIHSM_BUFFER_MAX_SIZE];
   UINT16              WrappedBKS3KeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
   AZIHSM_DERIVED_KEY  BKS3Key;
-  AZIHSM_BUFFER       KeyIvBuffer;
-  AZIHSM_KEY_IV_RECORD KeyIvRecord;
-  UINT32              ExpectedSealedDataSize;
   UINT8               HsmGuid[AZIHSM_HSM_GUID_MAX_SIZE];
   UINT16              HsmGuidSize = AZIHSM_HSM_GUID_MAX_SIZE;
   AZIHSM_TCG_CONTEXT  TcgContext;
-
+  UINTN               PadValue = 0;
+  UINT16              EncryptedDataSize = 0;
+  AZIHSM_BUFFER       KeyIvBuffer;
+  AZIHSM_KEY_IV_RECORD KeyIvRecord;
+  UINT32              ExpectedSealedDataSize;
 
   if (State == NULL || HsmSerialData == NULL || HsmSerialDataLength == 0) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow() Invalid parameter\n"));
@@ -448,23 +421,29 @@ AziHsmPerformBks3SealingWorkflow (
   ZeroMem (WrappedBKS3, AZIHSM_BUFFER_MAX_SIZE);
   ZeroMem (&BKS3Key, sizeof (BKS3Key));
   ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
+  ZeroMem (&TpmDerivedSecret, sizeof(TpmDerivedSecret));
   ZeroMem (HsmGuid, sizeof (HsmGuid));
   ZeroMem (&TcgContext, sizeof (TcgContext));
 
   DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation workflow\n"));
 
-  if (!mAziHsmSealedPlatormSecretDerived) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Sealed Platform hierarchy secret not available.\n"));
-    Status = EFI_NOT_READY;
+  Status = AziHsmGetTpmPlatformSecret (&TpmDerivedSecret);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: BKS3 key derivation workflow failed: %r\n", Status));
     goto Exit;
   }
 
-  // Unseal the sealed blob using null hierarchy (ensures we can only unseal in current boot session)
-  Status = AziHsmUnsealUsingTpmNullHierarchy (&mAziHsmSealedPlatformSecret, &TpmPlatformSecret);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to unseal platform key sealed blob using null hierarchy: %r\n", Status));
+  //
+  // Copy derived key into AZIHSM_BUFFER for use by AziHsmDeriveBKS3fromId
+  //
+  if (TpmDerivedSecret.KeySize > sizeof (TpmPlatformSecret.Data)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Derived key size exceeds buffer capacity\n"));
+    Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
   }
+
+  CopyMem (TpmPlatformSecret.Data, TpmDerivedSecret.KeyData, TpmDerivedSecret.KeySize);
+  TpmPlatformSecret.Size = (UINT16)TpmDerivedSecret.KeySize;
 
   Status = AziHsmDeriveBKS3fromId (&TpmPlatformSecret, (UINT8 *)(HsmSerialData), HsmSerialDataLength, &BKS3Key);
   if (EFI_ERROR (Status)) {
@@ -493,6 +472,7 @@ AziHsmPerformBks3SealingWorkflow (
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
+
 
   // Use TPM to get random AES key and IV
   if (EFI_ERROR (AziHsmTpmGetRandom (sizeof (Aes256Key), Aes256Key))) {
@@ -611,6 +591,7 @@ AziHsmPerformBks3SealingWorkflow (
     goto Cleanup;
   }
 
+
   DEBUG ((DEBUG_INFO, "AziHsm: SetSealBKS3 Blob size : %d\n", SealedBKS3Buffer.Size));
 
   Status = AziHsmSetSealedBks3 (State, ApiRevisionMax, SealedBKS3Buffer.Data, SealedBKS3Buffer.Size, &IsHSMSealSuccess);
@@ -660,6 +641,7 @@ Exit:
   ZeroMem (HsmGuid, sizeof (HsmGuid));
   ZeroMem (&TcgContext, sizeof (TcgContext));
   ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
+  ZeroMem (&TpmDerivedSecret, sizeof(TpmDerivedSecret));
   return Status;
 }
 
@@ -751,6 +733,12 @@ AziHsmAes256CbcEncrypt (
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmAes256CbcEncrypt - AesCbcEncrypt failed\n"));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
+  }
+  
+  // Ensure output data size does not exceed MAX_UINT16
+  if(InputDataSize > MAX_UINT16) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Encrypt: Input data size %u exceeds maximum output size %u\n", InputDataSize, MAX_UINT16));
+    Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
   }
 
@@ -854,13 +842,6 @@ AziHsmDriverBindingStop (
   }
 
 Exit:
-  //
-  // Clear sensitive data as backup cleanup trigger
-  // This ensures cleanup happens if driver is stopped for any reason
-  //
-  DEBUG ((DEBUG_WARN, "AziHsm: DriverBindingStop - triggering sensitive data cleanup\n"));
-  AziHsmCleanupSensitiveData ();
-  DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStop completed. Status: %r\n", Status));
   return Status;
 }
 
@@ -1079,54 +1060,7 @@ Exit:
   return Status;
 }
 
-/**
-  Ready to Boot event notification handler.
 
-  @param[in] Event    The event that triggered this notification
-  @param[in] Context  Context pointer (can be NULL)
-**/
-VOID
-EFIAPI
-AziHsmReadyToBootCallback (
-  IN EFI_EVENT  Event,
-  IN VOID       *Context
-  )
-{
-  DEBUG ((DEBUG_INFO, "AziHsm: Ready to Boot event triggered - clearing sensitive data\n"));
-
-  //
-  // Clear sensitive data when ready to boot
-  //
-  AziHsmCleanupSensitiveData ();
-
-  //
-  // Close the event after handling
-  //
-  gBS->CloseEvent (Event);
-}
-
-/**
-  Unable to Boot event notification handler.
-  This is called when the system is unable to find bootable devices/options.
-
-  @param[in] Event   The event that triggered this notification
-  @param[in] Context Context pointer (can be NULL)
-**/
-VOID
-EFIAPI
-AziHsmUnableToBootCallback (
-  IN EFI_EVENT  Event,
-  IN VOID       *Context
-  )
-{
-  DEBUG ((DEBUG_ERROR, "AziHsm: Unable to Boot event triggered - clearing sensitive data\n"));
-
-  // Clear sensitive data when unable to boot
-  AziHsmCleanupSensitiveData();
-  
-  // Close the event after handling
-  gBS->CloseEvent (Event);
-}
 /**
   The entry point for HSM driver, used to install HSM driver on the ImageHandle.
 
@@ -1144,58 +1078,6 @@ AziHsmDriverEntry (
   )
 {
   EFI_STATUS          Status;
-  AZIHSM_DERIVED_KEY  TpmDerivedSecret;
-  AZIHSM_BUFFER       TpmDerivedSecretBlob;
-  AZIHSM_BUFFER       SealedSecretBlob;
-
-  //
-  // Check if AziHsm is enabled via PCD
-  //
-  if (!PcdGetBool (PcdAziHsmEnabled)) {
-    DEBUG ((DEBUG_INFO, "AziHsm: Driver disabled via PcdAziHsmEnabled\n"));
-    return EFI_SUCCESS;
-  }
-
-  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
-  ZeroMem (&TpmDerivedSecretBlob, sizeof (TpmDerivedSecretBlob));
-  ZeroMem (&SealedSecretBlob, sizeof (SealedSecretBlob));
-
-  //
-  // Derive BKS3 key from TPM using the workflow
-  //
-  Status = AziHsmGetTpmPlatformSecret (&TpmDerivedSecret);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_WARN, "AziHsm: BKS3 key derivation workflow failed: %r\n", Status));
-    goto Exit;
-  }
-
-  //
-  // Seal the derived key to the null hierarchy for secure storage
-  //
-  if (TpmDerivedSecret.KeySize > sizeof (TpmDerivedSecretBlob.Data)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Derived key size exceeds maximum buffer size of the TpmDerivedKeyBlob\n"));
-    Status = EFI_BAD_BUFFER_SIZE;
-    goto Exit;
-  }
-
-  CopyMem (TpmDerivedSecretBlob.Data, TpmDerivedSecret.KeyData, TpmDerivedSecret.KeySize);
-  TpmDerivedSecretBlob.Size = (UINT16)TpmDerivedSecret.KeySize;
-
-  // Seal the derived key to the TPM null hierarchy(to ensure it is associated with current boot) and
-  // does not persist across reboots
-  Status = AziHsmSealToTpmNullHierarchy (&TpmDerivedSecretBlob, &SealedSecretBlob);
-
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Sealing to null hierarchy failed: %r\n", Status));
-    goto Exit;
-  }
-
-  //
-  // Store the sealed key globally for reuse across all HSM devices
-  //
-  CopyMem (&(mAziHsmSealedPlatformSecret.Data), &(SealedSecretBlob.Data), SealedSecretBlob.Size);
-  mAziHsmSealedPlatformSecret.Size = SealedSecretBlob.Size;
-  mAziHsmSealedPlatormSecretDerived  = TRUE;
 
   Status = EfiLibInstallDriverBindingComponentName2 (
              ImageHandle,
@@ -1207,7 +1089,7 @@ AziHsmDriverEntry (
              );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Install driver binding failed. Status: %r\n", Status));
-    goto Cleanup;
+    goto Exit;
   }
 
   // Install EFI Driver Supported EFI Version Protocol required for
@@ -1220,89 +1102,12 @@ AziHsmDriverEntry (
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Install Driver Supported EFI Version failed. Status: %r\n", Status));
-    goto Cleanup;
+    goto Exit;
   }
-
-  //
-  // Register for Ready to Boot event to clear sensitive data before OS launch
-  // This is the standard event that fires just before UEFI transfers control to OS
-  //
-  Status = EfiCreateEventReadyToBootEx (
-             TPL_CALLBACK,
-             AziHsmReadyToBootCallback,
-             NULL,
-             &mAziHsmReadyToBootEvent
-             );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to create Ready to Boot event: %r\n", Status));
-    goto Cleanup;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: Ready to Boot event registered successfully\n"));
-
-  //
-  // Register to unable to boot event to cleanup sensitive data
-  // This event is signaled when the system cannot find bootable devices/options
-  //
-  Status = gBS->CreateEventEx (
-                  EVT_NOTIFY_SIGNAL,
-                  TPL_CALLBACK,
-                  AziHsmUnableToBootCallback,
-                  NULL,
-                  &gMsvmUnableToBootEventGuid,
-                  &mAziHsmUnableToBootEvent
-                  );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Failed to create Unable to Boot event: %r\n", Status));
-    goto Cleanup;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: Unable to Boot event registered successfully\n"));
 
   DEBUG ((DEBUG_INFO, "AziHsm: Driver loaded successfully\n"));
-  goto Exit;
 
-Cleanup:
-  ZeroMem(&mAziHsmSealedPlatformSecret, sizeof(mAziHsmSealedPlatformSecret));
-  mAziHsmSealedPlatormSecretDerived = FALSE;
 Exit:
-  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
-  ZeroMem (&TpmDerivedSecretBlob, sizeof (TpmDerivedSecretBlob));
-  ZeroMem (&SealedSecretBlob, sizeof (SealedSecretBlob));
-
   return Status;
-}
-
-//
-// Flag to prevent multiple cleanup calls
-//
-STATIC BOOLEAN  mSensitiveDataCleared = FALSE;
-
-/**
-  Cleanup sensitive data from HSM and memory.
-  Called from multiple triggers to ensure cleanup happens regardless of boot outcome.
-**/
-VOID
-EFIAPI
-AziHsmCleanupSensitiveData (
-  VOID
-  )
-{
-  if (mSensitiveDataCleared) {
-    DEBUG ((DEBUG_INFO, "AziHsm: Sensitive data already cleared, skipping\n"));
-    return;
-  }
-
-  DEBUG ((DEBUG_INFO, "AziHsm: *** Starting sensitive data cleanup ***\n"));
-
-  //
-  // Clear sensitive data from HSM before OS takes control
-  //
-  ZeroMem (&mAziHsmSealedPlatformSecret, sizeof (AZIHSM_BUFFER));
-  mAziHsmSealedPlatormSecretDerived = FALSE;
-  DEBUG ((DEBUG_INFO, "AziHsm: Global Platform Hierarchy secret cleared\n"));
-
-  mSensitiveDataCleared = TRUE;
-  DEBUG ((DEBUG_INFO, "AziHsm: *** Sensitive data cleanup completed ***\n"));
 }
 

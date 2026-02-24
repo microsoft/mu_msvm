@@ -732,7 +732,6 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tTpmLocalityRegsEnabled: %u\n", flags->Flags.TpmLocalityRegsEnabled));
             DEBUG((DEBUG_VERBOSE, "\tMtrrsInitializedAtLoad: %u\n", flags->Flags.MtrrsInitializedAtLoad));
             DEBUG((DEBUG_VERBOSE, "\tHvSintEnabled: %u\n", flags->Flags.HvSintEnabled));
-            DEBUG((DEBUG_VERBOSE, "\tAziHsmEnabled: %u\n", flags->Flags.AziHsmEnabled));
             break;
 
         case UefiConfigProcessorInformation:
@@ -900,7 +899,6 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdHvSintEnabled, (UINT8) ConfigFlags->Flags.HvSintEnabled));
-    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdAziHsmEnabled, (UINT8) ConfigFlags->Flags.AziHsmEnabled));
 
     //
     // If memory protections are enabled, configure the value into the HOB.
