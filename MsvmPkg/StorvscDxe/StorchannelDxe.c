@@ -115,15 +115,15 @@ Return Value:
         goto Cleanup;
     }
 
-    status = Emcl->SetReceiveCallback(
-        (EFI_EMCL_PROTOCOL*)Emcl,
+    status = Emcl->Base.SetReceiveCallback(
+        &Emcl->Base,
         StorChannelReceivePacketCallback,
         context,
         TPL_STORVSC_CALLBACK
         );
 
-    status = Emcl->StartChannel(
-        (EFI_EMCL_PROTOCOL*)Emcl,
+    status = Emcl->Base.StartChannel(
+        &Emcl->Base,
         RING_INCOMING_PAGE_COUNT,
         RING_OUTGOING_PAGE_COUNT);
 
@@ -163,7 +163,6 @@ Cleanup:
     return status;
 }
 
-
 VOID
 StorChannelClose (
     IN  PSTORVSC_CHANNEL_CONTEXT ChannelContext
@@ -186,7 +185,7 @@ Return Value:
 {
     if (ChannelContext->Emcl != NULL)
     {
-        ChannelContext->Emcl->StopChannel((EFI_EMCL_PROTOCOL*)ChannelContext->Emcl);
+        ChannelContext->Emcl->Base.StopChannel(&ChannelContext->Emcl->Base);
     }
     FreePool(ChannelContext);
 }
@@ -563,7 +562,7 @@ Return Value:
     }
 
     status = ChannelContext->Emcl->SendPacketEx(
-        (EFI_EMCL_PROTOCOL*)ChannelContext->Emcl,
+        &ChannelContext->Emcl->Base,
         &packet,
         packetSize,
         buffers,
@@ -722,8 +721,8 @@ Return Value:
     //
     // Nothing to do here. Just complete the packet.
     //
-    context->Emcl->CompletePacket(
-        (EFI_EMCL_PROTOCOL*)context->Emcl,
+    context->Emcl->Base.CompletePacket(
+        &context->Emcl->Base,
         PacketContext,
         Buffer,
         BufferLength
@@ -787,7 +786,7 @@ Return Value:
     packetSize = ChannelContext->MaxPacketSize;
 
     status = EmclSendPacketSync(
-        (EFI_EMCL_PROTOCOL*)ChannelContext->Emcl,
+        &ChannelContext->Emcl->Base,
         Packet,
         packetSize,
         NULL,

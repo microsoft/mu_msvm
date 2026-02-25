@@ -186,12 +186,9 @@ EFI_STATUS
     IN OPTIONAL VOID                        *CompletionContext
     );
 
-#pragma warning(disable : 4201)
 struct _EFI_EMCL_V2_PROTOCOL {
-    EFI_EMCL_PROTOCOL;
-
+    EFI_EMCL_PROTOCOL Base;
     EFI_EMCL_SEND_PACKET_EX SendPacketEx;
 };
-#pragma warning(default : 4201)
 
 extern EFI_GUID gEfiEmclV2ProtocolGuid;

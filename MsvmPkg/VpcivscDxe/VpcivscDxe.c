@@ -278,7 +278,7 @@ VpciChannelReceivePacketCallback(
 
     // Complete the packet.
     DEBUG((DEBUG_VPCI_INFO, "Completing VPCI recv packet.\n"));
-    context->Emcl->CompletePacket((EFI_EMCL_PROTOCOL*) context->Emcl,
+    context->Emcl->Base.CompletePacket(&context->Emcl->Base,
         PacketContext,
         Buffer,
         BufferLength);
@@ -373,7 +373,7 @@ VpciChannelSendPacketSync(
         goto Cleanup;
     }
 
-    status = Context->Emcl->SendPacket((EFI_EMCL_PROTOCOL*)Context->Emcl,
+    status = Context->Emcl->Base.SendPacket(&Context->Emcl->Base,
         Packet,
         PacketLength,
         NULL,
@@ -432,7 +432,7 @@ VpciChannelOpen(
 {
     EFI_STATUS status = EFI_DEVICE_ERROR;
 
-    status = Context->Emcl->SetReceiveCallback((EFI_EMCL_PROTOCOL*)Context->Emcl,
+    status = Context->Emcl->Base.SetReceiveCallback(&Context->Emcl->Base,
         VpciChannelReceivePacketCallback,
         Context,
         TPL_VPCIVSC_CALLBACK
@@ -445,7 +445,7 @@ VpciChannelOpen(
         return status;
     }
 
-    status = Context->Emcl->StartChannel((EFI_EMCL_PROTOCOL*)Context->Emcl,
+    status = Context->Emcl->Base.StartChannel(&Context->Emcl->Base,
         RING_BUFFER_INCOMING_PAGE_COUNT,
         RING_BUFFER_OUTGOING_PAGE_COUNT);
 
@@ -464,7 +464,7 @@ VpciChannelClose(
     IN  PVPCIVSC_CONTEXT Context
     )
 {
-    Context->Emcl->StopChannel((EFI_EMCL_PROTOCOL*)Context->Emcl);
+    Context->Emcl->Base.StopChannel(&Context->Emcl->Base);
 }
 
 /// \brief      Negotiate the protocol with the VSP. See corresponding windows

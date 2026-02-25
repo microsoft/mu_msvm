@@ -2162,17 +2162,17 @@ Return Value:
 {
     ZeroMem(Context, sizeof(*Context));
     Context->Signature = EMCL_CONTEXT_SIGNATURE;
-    Context->EmclProtocol.StartChannel = EmclStartChannel;
-    Context->EmclProtocol.StopChannel = EmclStopChannel;
-    Context->EmclProtocol.SendPacket = EmclSendPacket;
-    Context->EmclProtocol.CompletePacket = EmclCompletePacket;
-    Context->EmclProtocol.SetReceiveCallback = EmclSetReceiveCallback;
-    Context->EmclProtocol.CreateGpadl = EmclCreateGpadl;
-    Context->EmclProtocol.DestroyGpadl = EmclDestroyGpadl;
-    Context->EmclProtocol.GetGpadlHandle = EmclGetGpadlHandle;
-    Context->EmclProtocol.GetGpadlBuffer = EmclGetGpadlBuffer;
-    Context->EmclProtocol.CreateGpaRange = EmclCreateGpaRange;
-    Context->EmclProtocol.DestroyGpaRange = EmclDestroyGpaRange;
+    Context->EmclProtocol.Base.StartChannel = EmclStartChannel;
+    Context->EmclProtocol.Base.StopChannel = EmclStopChannel;
+    Context->EmclProtocol.Base.SendPacket = EmclSendPacket;
+    Context->EmclProtocol.Base.CompletePacket = EmclCompletePacket;
+    Context->EmclProtocol.Base.SetReceiveCallback = EmclSetReceiveCallback;
+    Context->EmclProtocol.Base.CreateGpadl = EmclCreateGpadl;
+    Context->EmclProtocol.Base.DestroyGpadl = EmclDestroyGpadl;
+    Context->EmclProtocol.Base.GetGpadlHandle = EmclGetGpadlHandle;
+    Context->EmclProtocol.Base.GetGpadlBuffer = EmclGetGpadlBuffer;
+    Context->EmclProtocol.Base.CreateGpaRange = EmclCreateGpaRange;
+    Context->EmclProtocol.Base.DestroyGpaRange = EmclDestroyGpaRange;
     Context->EmclProtocol.SendPacketEx = EmclSendPacketEx;
     InitializeListHead(&Context->CompletionEntries);
     InitializeListHead(&Context->OutgoingQueue);
