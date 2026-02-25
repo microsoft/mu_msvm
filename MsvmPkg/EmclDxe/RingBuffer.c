@@ -5,14 +5,11 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include <Synchronization.h>
-
 #include "transportp.h"
+#include <stdint.h>
 
 #define MAXIMUM_EXPECTED_INTERRUPT_COUNT 64
-#define UINT32_MAX 0xffffffff
-
 
 VOID
 PkpExpectInterrupt(

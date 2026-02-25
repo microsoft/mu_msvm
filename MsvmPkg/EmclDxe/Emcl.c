@@ -5,10 +5,8 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include <PiDxe.h>
 #include <IsolationTypes.h>
-
 #include <Library/UefiLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -16,14 +14,12 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/DebugLib.h>
-
 #include <Protocol/Emcl.h>
 #include <Protocol/Vmbus.h>
 #include <Protocol/EfiHv.h>
-
 #include <Vmbus/VmbusPacketInterface.h>
-
 #include <Synchronization.h>
+#include <stdint.h>
 
 #define EMCL_DRIVER_VERSION 0x10
 
@@ -32,8 +28,6 @@
 
 #define VARIABLE_STRUCT_SIZE(_Type_,_Field_,_Size_) \
     ((OFFSET_OF(_Type_,_Field_)) + sizeof(*(((_Type_ *)0)->_Field_)) * (_Size_))
-
-#define UINT64_MAX       0xffffffffffffffff
 
 typedef struct _EMCL_BOUNCE_BLOCK
 {
