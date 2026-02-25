@@ -7,9 +7,7 @@
     Copyright (c) Microsoft Corporation.
     SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include <PiDxe.h>
-
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -20,6 +18,7 @@
 #include <Protocol/Smbios.h>
 #include <IndustryStandard/SmBios.h>
 #include <IndustryStandard/Acpi.h>
+#include <stddef.h>
 
 #define MAJOR_RELEASE_VERSION 4
 #define MINOR_RELEASE_VERSION 1
