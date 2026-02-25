@@ -557,109 +557,127 @@ DebugDumpUefiConfigStruct(
     switch(Header->Type)
     {
         case UefiConfigStructureCount:
+        {
             UEFI_CONFIG_STRUCTURE_COUNT *count = (UEFI_CONFIG_STRUCTURE_COUNT*) Header;
             DEBUG((DEBUG_VERBOSE, "\tTotalStructureCount: %u\n", count->TotalStructureCount));
             break;
-
+        }
         case UefiConfigBiosInformation:
+        {
             UEFI_CONFIG_BIOS_INFORMATION *biosInfo = (UEFI_CONFIG_BIOS_INFORMATION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tBiosSizePages: 0x%x\n\tLegacyMemoryMap:%u\n", biosInfo->BiosSizePages, biosInfo->Flags.LegacyMemoryMap));
             break;
-
+        }
         case UefiConfigMadt:
+        {
             UEFI_CONFIG_MADT * madt = (UEFI_CONFIG_MADT*)Header;
             DebugDumpMadt(madt->Madt);
             break;
-
+        }
         case UefiConfigSrat:
+        {
             UEFI_CONFIG_SRAT *srat = (UEFI_CONFIG_SRAT*) Header;
             DebugDumpSrat(srat->Srat);
             break;
-
+        }
         case UefiConfigSlit:
+        {
             UEFI_CONFIG_SLIT *slit = (UEFI_CONFIG_SLIT*)Header;
             DebugDumpSlit(slit->Slit);
             break;
-
+        }
         case UefiConfigPptt:
             DEBUG((DEBUG_VERBOSE, "\tPPTT table found.\n"));
             break;
-
         case UefiConfigHmat:
+        {
             UEFI_CONFIG_HMAT *hmat = (UEFI_CONFIG_HMAT*)Header;
             DebugDumpHmat(hmat->Hmat);
             break;
-
+        }
         case UefiConfigMemoryMap:
+        {
             UEFI_CONFIG_MEMORY_MAP *memMap = (UEFI_CONFIG_MEMORY_MAP*) Header;
             DebugDumpMemoryMap(memMap->MemoryMap, Header->Length - sizeof(UEFI_CONFIG_HEADER), PcdGetBool(PcdLegacyMemoryMap));
             break;
-
+        }
         case UefiConfigEntropy:
             DEBUG((DEBUG_VERBOSE, "\tEntropy table found.\n"));
             break;
-
         case UefiConfigBiosGuid:
+        {
             UEFI_CONFIG_BIOS_GUID *biosGuid = (UEFI_CONFIG_BIOS_GUID*) Header;
             DEBUG((DEBUG_VERBOSE, "\tBiosGuid: %g\n", (EFI_GUID*) biosGuid->BiosGuid));
             break;
-
+        }
         case UefiConfigSmbiosSystemManufacturer:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_MANUFACTURER *systemManufacturer = (UEFI_CONFIG_SMBIOS_SYSTEM_MANUFACTURER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System Manufacturer: %a\n", systemManufacturer->SystemManufacturer));
             break;
-
+        }
         case UefiConfigSmbiosSystemProductName:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_PRODUCT_NAME *systemProductName = (UEFI_CONFIG_SMBIOS_SYSTEM_PRODUCT_NAME*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System Product Name: %a\n", systemProductName->SystemProductName));
             break;
-
+        }
         case UefiConfigSmbiosSystemVersion:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_VERSION *systemVersion = (UEFI_CONFIG_SMBIOS_SYSTEM_VERSION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System Version: %a\n", systemVersion->SystemVersion));
             break;
-
+        }
         case UefiConfigSmbiosSystemSerialNumber:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_SERIAL_NUMBER *systemSerialNumber = (UEFI_CONFIG_SMBIOS_SYSTEM_SERIAL_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System Serial Number: %a\n", systemSerialNumber->SystemSerialNumber));
             break;
-
+        }
         case UefiConfigSmbiosSystemSKUNumber:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_SKU_NUMBER *systemSKUNumber = (UEFI_CONFIG_SMBIOS_SYSTEM_SKU_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System SKU Number: %a\n", systemSKUNumber->SystemSKUNumber));
             break;
-
+        }
         case UefiConfigSmbiosSystemFamily:
+        {
             UEFI_CONFIG_SMBIOS_SYSTEM_FAMILY *systemFamily = (UEFI_CONFIG_SMBIOS_SYSTEM_FAMILY*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios System Family: %a\n", systemFamily->SystemFamily));
             break;
-
+        }
         case UefiConfigSmbiosBaseSerialNumber:
+        {
             UEFI_CONFIG_SMBIOS_BASE_SERIAL_NUMBER *baseSerialNumber = (UEFI_CONFIG_SMBIOS_BASE_SERIAL_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Base Serial Number: %a\n", baseSerialNumber->BaseSerialNumber));
             break;
-
+        }
         case UefiConfigSmbiosChassisSerialNumber:
+        {
             UEFI_CONFIG_SMBIOS_CHASSIS_SERIAL_NUMBER *chassisSerialNumber = (UEFI_CONFIG_SMBIOS_CHASSIS_SERIAL_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Chassis Serial Number: %a\n", chassisSerialNumber->ChassisSerialNumber));
             break;
-
+        }
         case UefiConfigSmbiosChassisAssetTag:
+        {
             UEFI_CONFIG_SMBIOS_CHASSIS_ASSET_TAG *chassisAssetTag = (UEFI_CONFIG_SMBIOS_CHASSIS_ASSET_TAG*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Chassis Asset Tag: %a\n", chassisAssetTag->ChassisAssetTag));
             break;
-
+        }
         case UefiConfigSmbiosBiosLockString:
+        {
             UEFI_CONFIG_SMBIOS_BIOS_LOCK_STRING *biosLockString = (UEFI_CONFIG_SMBIOS_BIOS_LOCK_STRING*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Bios Lock String: %a\n", biosLockString->BiosLockString));
             break;
-
+        }
         case UefiConfigSmbiosMemoryDeviceSerialNumber:
+        {
             UEFI_CONFIG_SMBIOS_MEMORY_DEVICE_SERIAL_NUMBER *memoryDeviceSerialNumber = (UEFI_CONFIG_SMBIOS_MEMORY_DEVICE_SERIAL_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Memory Device Serial Number: %a\n", memoryDeviceSerialNumber->MemoryDeviceSerialNumber));
             break;
-
+        }
         case UefiConfigSmbios31ProcessorInformation:
+        {
             UEFI_CONFIG_SMBIOS_3_1_PROCESSOR_INFORMATION *procInfo = (UEFI_CONFIG_SMBIOS_3_1_PROCESSOR_INFORMATION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tProcessorType: %u\n", procInfo->ProcessorType));
             DEBUG((DEBUG_VERBOSE, "\tProcessorID: 0x%x\n", procInfo->ProcessorID));
@@ -672,38 +690,45 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tProcessorCharacteristics: 0x%x\n", procInfo->ProcessorCharacteristics));
             DEBUG((DEBUG_VERBOSE, "\tProcessorFamily2: %u\n", procInfo->ProcessorFamily2));
             break;
-
+        }
         case UefiConfigSmbiosSocketDesignation:
+        {
             UEFI_CONFIG_SMBIOS_SOCKET_DESIGNATION *socketDesignation = (UEFI_CONFIG_SMBIOS_SOCKET_DESIGNATION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Socket Designation: %a\n", socketDesignation->SocketDesignation));
             break;
-
+        }
         case UefiConfigSmbiosProcessorManufacturer:
+        {
             UEFI_CONFIG_SMBIOS_PROCESSOR_MANUFACTURER *processorManufacturer = (UEFI_CONFIG_SMBIOS_PROCESSOR_MANUFACTURER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Processor Manufacturer: %a\n", processorManufacturer->ProcessorManufacturer));
             break;
-
+        }
         case UefiConfigSmbiosProcessorVersion:
+        {
             UEFI_CONFIG_SMBIOS_PROCESSOR_VERSION *processorVersion = (UEFI_CONFIG_SMBIOS_PROCESSOR_VERSION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Processor Version: %a\n", processorVersion->ProcessorVersion));
             break;
-
+        }
         case UefiConfigSmbiosProcessorSerialNumber:
+        {
             UEFI_CONFIG_SMBIOS_PROCESSOR_SERIAL_NUMBER *processorSerialNumber = (UEFI_CONFIG_SMBIOS_PROCESSOR_SERIAL_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Processor Serial Number: %a\n", processorSerialNumber->ProcessorSerialNumber));
             break;
-
+        }
         case UefiConfigSmbiosProcessorAssetTag:
+        {
             UEFI_CONFIG_SMBIOS_PROCESSOR_ASSET_TAG *processorAssetTag = (UEFI_CONFIG_SMBIOS_PROCESSOR_ASSET_TAG*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Processor Asset Tag: %a\n", processorAssetTag->ProcessorAssetTag));
             break;
-
+        }
         case UefiConfigSmbiosProcessorPartNumber:
+        {
             UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER *processorPartNumber = (UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSmbios Processor Part Number: %a\n", processorPartNumber->ProcessorPartNumber));
             break;
-
+        }
         case UefiConfigFlags:
+        {
             UEFI_CONFIG_FLAGS *flags = (UEFI_CONFIG_FLAGS*) Header;
             DEBUG((DEBUG_VERBOSE, "\tSerialControllersEnabled: %u\n", flags->Flags.SerialControllersEnabled));
             DEBUG((DEBUG_VERBOSE, "\tPauseAfterBootFailure: %u\n", flags->Flags.PauseAfterBootFailure));
@@ -732,22 +757,25 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tTpmLocalityRegsEnabled: %u\n", flags->Flags.TpmLocalityRegsEnabled));
             DEBUG((DEBUG_VERBOSE, "\tMtrrsInitializedAtLoad: %u\n", flags->Flags.MtrrsInitializedAtLoad));
             break;
-
+        }
         case UefiConfigProcessorInformation:
+        {
             UEFI_CONFIG_PROCESSOR_INFORMATION *processorInfo = (UEFI_CONFIG_PROCESSOR_INFORMATION*) Header;
             DEBUG((DEBUG_VERBOSE, "\tProcessor Count: %u\n\tProcessorsPerVirtualSocket: %u\n",
                 processorInfo->ProcessorCount,
                 processorInfo->ProcessorsPerVirtualSocket));
             break;
-
+        }
         case UefiConfigMmioRanges:
+        {
             UEFI_CONFIG_MMIO_RANGES *mmioRanges = (UEFI_CONFIG_MMIO_RANGES*) Header;
             DEBUG((DEBUG_VERBOSE, "\tMmio Ranges:\n"));
             DEBUG((DEBUG_VERBOSE, "\tStart:0x%17lx Size:0x%x\n", mmioRanges->Ranges[0].MmioPageNumberStart, mmioRanges->Ranges[0].MmioSizeInPages));
             DEBUG((DEBUG_VERBOSE, "\tStart:0x%17lx Size:0x%x\n", mmioRanges->Ranges[1].MmioPageNumberStart, mmioRanges->Ranges[1].MmioSizeInPages));
             break;
-
+        }
         case UefiConfigAcpiTable:
+        {
             UEFI_CONFIG_ACPI_TABLE *acpi = (UEFI_CONFIG_ACPI_TABLE*) Header;
             UINT64 acpiTableSize = acpi->Header.Length - sizeof(UEFI_CONFIG_HEADER);
             EFI_ACPI_DESCRIPTION_HEADER* acpiHeader = (EFI_ACPI_DESCRIPTION_HEADER*) acpi->AcpiTableData;
@@ -755,17 +783,19 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tAcpi Header Size:0x%x\n", acpiHeader->Length));
             DEBUG((DEBUG_VERBOSE, "\tAcpi Header Signature:0x%x\n", acpiHeader->Signature));
             break;
-
+        }
         case UefiConfigNvdimmCount:
+        {
             UEFI_CONFIG_NVDIMM_COUNT *cfg = (UEFI_CONFIG_NVDIMM_COUNT*) Header;
             DEBUG((DEBUG_VERBOSE, "\tNVDIMM Count:0x%lx\n", cfg->Count));
             break;
-
+        }
         case UefiConfigVpciInstanceFilter:
+        {
             UEFI_CONFIG_VPCI_INSTANCE_FILTER *filter = (UEFI_CONFIG_VPCI_INSTANCE_FILTER*) Header;
             DEBUG((DEBUG_VERBOSE, "\tVpci instance filter:%g\n", (EFI_GUID*) filter->InstanceGuid));
             break;
-
+        }
         case UefiConfigMcfg:
             DEBUG((DEBUG_VERBOSE, "\tMCFG table found.\n"));
             break;
@@ -1216,12 +1246,14 @@ Return Value:
         switch(header->Type)
         {
             case UefiConfigBiosInformation:
+            {
                 UEFI_CONFIG_BIOS_INFORMATION *biosInfo = (UEFI_CONFIG_BIOS_INFORMATION*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdLegacyMemoryMap, (UINT8)biosInfo->Flags.LegacyMemoryMap));
                 requiredStructures.UefiConfigBiosInformation = 1;
                 break;
-
+            }
             case UefiConfigMadt:
+            {
                 UEFI_CONFIG_MADT * madtStructure = (UEFI_CONFIG_MADT*)header;
                 EFI_ACPI_DESCRIPTION_HEADER *madtHdr = (EFI_ACPI_DESCRIPTION_HEADER*)madtStructure->Madt;
 
@@ -1239,8 +1271,9 @@ Return Value:
                 requiredStructures.UefiConfigMadt = 1;
 #endif
                 break;
-
+            }
             case UefiConfigSrat:
+            {
                 UEFI_CONFIG_SRAT *sratStructure = (UEFI_CONFIG_SRAT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *sratHdr = (EFI_ACPI_DESCRIPTION_HEADER*) sratStructure->Srat;
 
@@ -1261,8 +1294,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSratSize, sratHdr->Length));
                 requiredStructures.UefiConfigSrat = 1;
                 break;
-
+            }
             case UefiConfigSlit:
+            {
                 UEFI_CONFIG_SLIT *slitStructure = (UEFI_CONFIG_SLIT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *slitHdr = (EFI_ACPI_DESCRIPTION_HEADER*) slitStructure->Slit;
 
@@ -1277,8 +1311,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSlitPtr, (UINT64)slitStructure->Slit));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSlitSize, slitHdr->Length));
                 break;
-
+            }
             case UefiConfigPptt:
+            {
                 UEFI_CONFIG_PPTT *ppttStructure = (UEFI_CONFIG_PPTT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *ppttHdr = (EFI_ACPI_DESCRIPTION_HEADER*) ppttStructure->Pptt;
 
@@ -1293,8 +1328,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdPpttPtr, (UINT64)ppttStructure->Pptt));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdPpttSize, ppttHdr->Length));
                 break;
-
+            }
             case UefiConfigHmat:
+            {
                 UEFI_CONFIG_HMAT *hmatStructure = (UEFI_CONFIG_HMAT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *hmatHdr = (EFI_ACPI_DESCRIPTION_HEADER*) hmatStructure->Hmat;
 
@@ -1309,115 +1345,119 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdHmatPtr, (UINT64)hmatStructure->Hmat));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdHmatSize, hmatHdr->Length));
                 break;
-
+            }
             case UefiConfigMemoryMap:
+            {
                 UEFI_CONFIG_MEMORY_MAP *memoryMapStructure = (UEFI_CONFIG_MEMORY_MAP*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdMemoryMapPtr, (UINT64) memoryMapStructure->MemoryMap));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdMemoryMapSize, header->Length - sizeof(UEFI_CONFIG_HEADER)));
                 requiredStructures.UefiConfigMemoryMap = 1;
                 break;
-
+            }
             case UefiConfigEntropy:
+            {
                 UEFI_CONFIG_ENTROPY *entropy = (UEFI_CONFIG_ENTROPY*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdEntropyPtr, (UINT64) entropy->Entropy));
                 requiredStructures.UefiConfigEntropy = 1;
                 break;
-
+            }
             case UefiConfigBiosGuid:
+            {
                 UEFI_CONFIG_BIOS_GUID *biosGuid = (UEFI_CONFIG_BIOS_GUID*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdBiosGuidPtr, (UINT64) biosGuid->BiosGuid));
                 requiredStructures.UefiConfigBiosGuid = 1;
                 break;
-
+            }
             case UefiConfigSmbiosSystemManufacturer:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_MANUFACTURER *systemManufacturer = (UEFI_CONFIG_SMBIOS_SYSTEM_MANUFACTURER*) header;
                 GetSmbiosStructureStringLength(header->Length, systemManufacturer->SystemManufacturer, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemManufacturerStr, (UINT64)systemManufacturer->SystemManufacturer));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemManufacturerSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosSystemProductName:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_PRODUCT_NAME *systemProductName = (UEFI_CONFIG_SMBIOS_SYSTEM_PRODUCT_NAME*) header;
                 GetSmbiosStructureStringLength(header->Length, systemProductName->SystemProductName, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemProductNameStr, (UINT64)systemProductName->SystemProductName));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemProductNameSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosSystemVersion:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_VERSION *systemVersion = (UEFI_CONFIG_SMBIOS_SYSTEM_VERSION*) header;
                 GetSmbiosStructureStringLength(header->Length, systemVersion->SystemVersion, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemVersionStr, (UINT64)systemVersion->SystemVersion));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemVersionSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosSystemSerialNumber:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_SERIAL_NUMBER *systemSerialNumber = (UEFI_CONFIG_SMBIOS_SYSTEM_SERIAL_NUMBER*) header;
                 GetSmbiosStructureStringLength(header->Length, systemSerialNumber->SystemSerialNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemSerialNumberStr, (UINT64)systemSerialNumber->SystemSerialNumber));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemSerialNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosSystemSKUNumber:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_SKU_NUMBER *systemSKUNumber = (UEFI_CONFIG_SMBIOS_SYSTEM_SKU_NUMBER*) header;
                 GetSmbiosStructureStringLength(header->Length, systemSKUNumber->SystemSKUNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemSKUNumberStr, (UINT64)systemSKUNumber->SystemSKUNumber));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemSKUNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosSystemFamily:
+            {
                 UEFI_CONFIG_SMBIOS_SYSTEM_FAMILY *systemFamily = (UEFI_CONFIG_SMBIOS_SYSTEM_FAMILY*) header;
                 GetSmbiosStructureStringLength(header->Length, systemFamily->SystemFamily, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosSystemFamilyStr, (UINT64)systemFamily->SystemFamily));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosSystemFamilySize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosBaseSerialNumber:
+            {
                 UEFI_CONFIG_SMBIOS_BASE_SERIAL_NUMBER *baseSerialNumber = (UEFI_CONFIG_SMBIOS_BASE_SERIAL_NUMBER*) header;
                 GetSmbiosStructureStringLength(header->Length, baseSerialNumber->BaseSerialNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosBaseSerialNumberStr, (UINT64)baseSerialNumber->BaseSerialNumber));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosBaseSerialNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosChassisSerialNumber:
+            {
                 UEFI_CONFIG_SMBIOS_CHASSIS_SERIAL_NUMBER *chassisSerialNumber = (UEFI_CONFIG_SMBIOS_CHASSIS_SERIAL_NUMBER*) header;
                 GetSmbiosStructureStringLength(header->Length, chassisSerialNumber->ChassisSerialNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosChassisSerialNumberStr, (UINT64)chassisSerialNumber->ChassisSerialNumber));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosChassisSerialNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosChassisAssetTag:
+            {
                 UEFI_CONFIG_SMBIOS_CHASSIS_ASSET_TAG *chassisAssetTag = (UEFI_CONFIG_SMBIOS_CHASSIS_ASSET_TAG*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosChassisAssetTagStr, (UINT64) chassisAssetTag->ChassisAssetTag));
                 GetSmbiosStructureStringLength(header->Length, chassisAssetTag->ChassisAssetTag, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosChassisAssetTagSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosBiosLockString:
+            {
                 UEFI_CONFIG_SMBIOS_BIOS_LOCK_STRING *biosLockString = (UEFI_CONFIG_SMBIOS_BIOS_LOCK_STRING*) header;
                 GetSmbiosStructureStringLength(header->Length, biosLockString->BiosLockString, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosBiosLockStringStr, (UINT64)biosLockString->BiosLockString));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosBiosLockStringSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosMemoryDeviceSerialNumber:
+            {
                 UEFI_CONFIG_SMBIOS_MEMORY_DEVICE_SERIAL_NUMBER *memoryDeviceSerialNumber = (UEFI_CONFIG_SMBIOS_MEMORY_DEVICE_SERIAL_NUMBER*) header;
                 GetSmbiosStructureStringLength(header->Length, memoryDeviceSerialNumber->MemoryDeviceSerialNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosMemoryDeviceSerialNumberStr, (UINT64)memoryDeviceSerialNumber->MemoryDeviceSerialNumber));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosMemoryDeviceSerialNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbios31ProcessorInformation:
+            {
                 UEFI_CONFIG_SMBIOS_3_1_PROCESSOR_INFORMATION *procInfo = (UEFI_CONFIG_SMBIOS_3_1_PROCESSOR_INFORMATION*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet8S(PcdSmbiosProcessorType, procInfo->ProcessorType));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorID, procInfo->ProcessorID));
@@ -1430,68 +1470,71 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet16S(PcdSmbiosProcessorCharacteristics, procInfo->ProcessorCharacteristics));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet16S(PcdSmbiosProcessorFamily2, procInfo->ProcessorFamily2));
                 break;
-
+            }
             case UefiConfigSmbiosSocketDesignation:
+            {
                 UEFI_CONFIG_SMBIOS_SOCKET_DESIGNATION *socketDesignation = (UEFI_CONFIG_SMBIOS_SOCKET_DESIGNATION*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorSocketDesignationStr, (UINT64) socketDesignation->SocketDesignation));
                 GetSmbiosStructureStringLength(header->Length, socketDesignation->SocketDesignation, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorSocketDesignationSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosProcessorManufacturer:
+            {
                 UEFI_CONFIG_SMBIOS_PROCESSOR_MANUFACTURER *processorManufacturer = (UEFI_CONFIG_SMBIOS_PROCESSOR_MANUFACTURER*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorManufacturerStr, (UINT64) processorManufacturer->ProcessorManufacturer));
                 GetSmbiosStructureStringLength(header->Length, processorManufacturer->ProcessorManufacturer, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorManufacturerSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosProcessorVersion:
+            {
                 UEFI_CONFIG_SMBIOS_PROCESSOR_VERSION *processorVersion = (UEFI_CONFIG_SMBIOS_PROCESSOR_VERSION*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorVersionStr, (UINT64) processorVersion->ProcessorVersion));
                 GetSmbiosStructureStringLength(header->Length, processorVersion->ProcessorVersion, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorVersionSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosProcessorSerialNumber:
+            {
                 UEFI_CONFIG_SMBIOS_PROCESSOR_SERIAL_NUMBER *processorSerialNumber = (UEFI_CONFIG_SMBIOS_PROCESSOR_SERIAL_NUMBER*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorSerialNumberStr, (UINT64) processorSerialNumber->ProcessorSerialNumber));
                 GetSmbiosStructureStringLength(header->Length, processorSerialNumber->ProcessorSerialNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorSerialNumberSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosProcessorAssetTag:
+            {
                 UEFI_CONFIG_SMBIOS_PROCESSOR_ASSET_TAG *processorAssetTag = (UEFI_CONFIG_SMBIOS_PROCESSOR_ASSET_TAG*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorAssetTagStr, (UINT64) processorAssetTag->ProcessorAssetTag));
                 GetSmbiosStructureStringLength(header->Length, processorAssetTag->ProcessorAssetTag, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorAssetTagSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigSmbiosProcessorPartNumber:
+            {
                 UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER *processorPartNumber = (UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSmbiosProcessorAssetTagStr, (UINT64) processorPartNumber->ProcessorPartNumber));
                 GetSmbiosStructureStringLength(header->Length, processorPartNumber->ProcessorPartNumber, &stringLength);
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSmbiosProcessorAssetTagSize, stringLength));
-
                 break;
-
+            }
             case UefiConfigFlags:
+            {
                 UEFI_CONFIG_FLAGS *flags = (UEFI_CONFIG_FLAGS*) header;
                 ConfigSetUefiConfigFlags(flags);
                 requiredStructures.UefiConfigFlags = 1;
                 break;
-
+            }
             case UefiConfigProcessorInformation:
+            {
                 UEFI_CONFIG_PROCESSOR_INFORMATION *processorInfo = (UEFI_CONFIG_PROCESSOR_INFORMATION*) header;
                 ConfigSetProcessorInfo(processorInfo);
                 requiredStructures.UefiConfigProcessorInformation = 1;
                 break;
-
+            }
             case UefiConfigMmioRanges:
+            {
                 UINT64 lowGap, highGap;
                 UEFI_CONFIG_MMIO_RANGES *mmioRanges = (UEFI_CONFIG_MMIO_RANGES*) header;
 
@@ -1524,8 +1567,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdHighMmioGapSizeInPages, mmioRanges->Ranges[highGap].MmioSizeInPages));
                 requiredStructures.UefiConfigMmioRanges = 1;
                 break;
-
+            }
             case UefiConfigAcpiTable:
+            {
                 UEFI_CONFIG_ACPI_TABLE *acpiTable = (UEFI_CONFIG_ACPI_TABLE*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *acpiHeader = (EFI_ACPI_DESCRIPTION_HEADER*) acpiTable->AcpiTableData;
 
@@ -1542,20 +1586,23 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdAcpiTablePtr, (UINT64) acpiTable->AcpiTableData));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdAcpiTableSize, acpiHeader->Length));
                 break;
-
+            }
             case UefiConfigNvdimmCount:
+            {
                 UEFI_CONFIG_NVDIMM_COUNT *cfg = (UEFI_CONFIG_NVDIMM_COUNT*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet16S(PcdNvdimmCount, cfg->Count));
                 break;
-
+            }
             case UefiConfigVpciInstanceFilter:
+            {
                 UEFI_CONFIG_VPCI_INSTANCE_FILTER *filter = (UEFI_CONFIG_VPCI_INSTANCE_FILTER*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdVpciInstanceFilterGuidPtr, (UINT64) filter->InstanceGuid));
                 PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdNvmeNamespaceFilter, TRUE));
                 break;
-
+            }
 #if defined(MDE_CPU_X64)
             case UefiConfigAspt:
+            {
                 UEFI_CONFIG_AMD_ASPT *asptStructure = (UEFI_CONFIG_AMD_ASPT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *asptHdr = (EFI_ACPI_DESCRIPTION_HEADER*) asptStructure->Aspt;
 
@@ -1570,16 +1617,20 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdAsptPtr, (UINT64)asptStructure->Aspt));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdAsptSize, asptHdr->Length));
                 break;
+            }
 #endif
 
 #if defined(MDE_CPU_AARCH64)
             case UefiConfigGic:
+            {
                 UEFI_CONFIG_GIC *gicConfig = (UEFI_CONFIG_GIC*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdGicDistributorBase, gicConfig->GicDistributorBase));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdGicRedistributorsBase, gicConfig->GicRedistributorsBase));
                 break;
+            }
 #endif
             case UefiConfigMcfg:
+            {
                 UEFI_CONFIG_MCFG *mcfgStructure = (UEFI_CONFIG_MCFG*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *mcfgHdr = (EFI_ACPI_DESCRIPTION_HEADER*) mcfgStructure->Mcfg;
 
@@ -1594,8 +1645,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdMcfgPtr, (UINT64)mcfgStructure->Mcfg));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdMcfgSize, mcfgHdr->Length));
                 break;
-
+            }
             case UefiConfigSsdt:
+            {
                 UEFI_CONFIG_SSDT *ssdtStructure = (UEFI_CONFIG_SSDT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *ssdtHdr = (EFI_ACPI_DESCRIPTION_HEADER*) ssdtStructure->Ssdt;
 
@@ -1610,8 +1662,9 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSsdtPtr, (UINT64)ssdtStructure->Ssdt));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSsdtSize, ssdtHdr->Length));
                 break;
-
+            }
             case UefiConfigIort:
+            {
                 UEFI_CONFIG_IORT *iortStructure = (UEFI_CONFIG_IORT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *iortHdr = (EFI_ACPI_DESCRIPTION_HEADER*) iortStructure->Iort;
 
@@ -1626,6 +1679,7 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
                 break;
+            }
         }
 
         calculatedConfigSize += header->Length;
