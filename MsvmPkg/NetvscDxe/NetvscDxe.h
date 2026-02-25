@@ -23,9 +23,8 @@
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/EmclLib.h>
 #include <Library/SerialPortLib.h>
-#include <Library/Printlib.h>
-
-#include <NvspProtocol.h>
+#include <Library/PrintLib.h>
+#include <nvspprotocol.h>
 
 #define MAXIMUM_ETHERNET_PACKET_SIZE        1514
 

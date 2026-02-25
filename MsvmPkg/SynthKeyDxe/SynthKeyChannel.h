@@ -10,7 +10,7 @@
 #pragma once
 
 #include <Protocol/SynthKeyProtocol.h>
-#include <Vmbus/VmBusPacketFormat.h>
+#include <Vmbus/VmbusPacketFormat.h>
 
 EFI_STATUS
 SynthKeyChannelOpen(

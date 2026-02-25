@@ -6,10 +6,8 @@
     SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include "StorvscDxe.h"
-
-#include <Industrystandard/Scsi.h>
+#include <IndustryStandard/Scsi.h>
 #include <Vmbus/NtStatus.h>
 
 #include "StorportDxe.h"
