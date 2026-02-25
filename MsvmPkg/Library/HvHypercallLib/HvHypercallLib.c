@@ -708,7 +708,6 @@ Return Value:
 
     default:
         ASSERT(FALSE);
-        __assume(0);
     }
 
     return msrIndex;
