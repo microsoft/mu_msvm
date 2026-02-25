@@ -476,8 +476,7 @@ DeviceBootManagerBeforeConsole (
         Status = gBS->HandleProtocol (
                         ConsoleIn,
                         &gEfiDevicePathProtocolGuid,
-                        &(gPlatformConsoles[0].DevicePath)     // device path for ConIn
-                        );
+                        (void**)&(gPlatformConsoles[0].DevicePath)); // device path for ConIn
         if (EFI_ERROR (Status)) {
             DEBUG((DEBUG_ERROR, "Device Path on handle of Hyper-V keyboard device not found.  Status = %r\n", Status));
         }
@@ -490,8 +489,7 @@ DeviceBootManagerBeforeConsole (
         Status = gBS->HandleProtocol (
                         ConsoleOut,
                         &gEfiDevicePathProtocolGuid,
-                        DevicePath                             // device path for ConOut
-                        );
+                        (void**)DevicePath); // device path for ConOut
         if (EFI_ERROR (Status)) {
             ConsoleOut = NULL;
             DEBUG((DEBUG_ERROR, "Device Path on handle of Hyper-V video device not found.  Status = %r\n", Status));

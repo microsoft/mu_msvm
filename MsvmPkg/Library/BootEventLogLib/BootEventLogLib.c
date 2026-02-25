@@ -197,8 +197,7 @@ Return Value:
         goto Exit;
     }
 
-    status = EventLogPendingGet(mBootEvent, &eventDesc, &bootEvent);
-
+    status = EventLogPendingGet(mBootEvent, &eventDesc, (void**)&bootEvent);
     if (EFI_ERROR(status))
     {
         goto Exit;
@@ -262,8 +261,7 @@ Return Value:
         goto Exit;
     }
 
-    status = EventLogPendingGet(mBootEvent, &eventDesc, &bootEvent);
-
+    status = EventLogPendingGet(mBootEvent, &eventDesc, (void**)&bootEvent);
     if (EFI_ERROR(status))
     {
         goto Exit;

@@ -379,7 +379,7 @@ VpciChannelSendPacketSync(
         NULL,
         0,
         VpciChannelSendCompletionCallback,
-        &completionContext);
+        (void**)&completionContext);
 
     if (EFI_ERROR(status))
     {
@@ -1116,7 +1116,7 @@ VpcivscDriverBindingSupported (
     status = gBS->OpenProtocol(
         ControllerHandle,
         &gEfiVmbusProtocolGuid,
-        &vmbus,
+        (void**)&vmbus,
         This->DriverBindingHandle,
         ControllerHandle,
         EFI_OPEN_PROTOCOL_TEST_PROTOCOL);

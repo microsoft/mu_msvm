@@ -637,7 +637,7 @@ Return Value:
 
     allocSize = sizeof(EVENT_CHANNEL) + Attributes->BufferSize;
 
-    status = EfiHandleTableAllocateObject(mEventChannels, allocSize, &channel, &handle);
+    status = EfiHandleTableAllocateObject(mEventChannels, allocSize, (void**)&channel, &handle);
 
     if (EFI_ERROR(status))
     {

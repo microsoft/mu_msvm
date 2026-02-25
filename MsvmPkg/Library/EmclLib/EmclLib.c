@@ -82,8 +82,7 @@ Return Value:
 
     status = gBS->HandleProtocol(handle,
                                  &gEfiDriverBindingProtocolGuid,
-                                 &driverBinding);
-
+                                 (void**)&driverBinding);
     ASSERT_EFI_ERROR(status);
 
     status = driverBinding->Start(driverBinding,

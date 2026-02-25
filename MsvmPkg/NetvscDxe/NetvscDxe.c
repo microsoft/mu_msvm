@@ -472,7 +472,7 @@ Return Value:
         // The buffer is used temporarily for multiple sync transactions.
         // Hence, dequeueing the buffer from the FreeTxBufferQueue isn't required.
         //
-        TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, &pRndisMessage);
+        TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, (void**)&pRndisMessage);
         TxQueueEnqueue(&AdapterInfo->FreeTxBuffersQueue, pRndisMessage);
         rndisBufferIndex = (UINT32)((((UINT64) pRndisMessage) - ((UINT64) AdapterInfo->TxBuffer))/AdapterInfo->TxSectionSize);
     }
@@ -786,7 +786,7 @@ Returns:
         // The buffer is used temporarily for a sync transaction.
         // Hence, dequeueing the buffer from the FreeTxBufferQueue isn't required.
         //
-        TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, &pRndisMessage);
+        TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, (void**)&pRndisMessage);
         TxQueueEnqueue(&AdapterInfo->FreeTxBuffersQueue, pRndisMessage);
         rndisBufferIndex = (UINT32)((((UINT64) pRndisMessage) - ((UINT64) AdapterInfo->TxBuffer))/AdapterInfo->TxSectionSize);
     }
@@ -964,7 +964,7 @@ Returns:
         goto Cleanup;
     }
 
-    TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, &currentTxBuffer);
+    TxQueueDequeue(&AdapterInfo->FreeTxBuffersQueue, (void**)&currentTxBuffer);
 
     txPacketContext = AllocatePool(sizeof(TX_PACKET_CONTEXT));
 

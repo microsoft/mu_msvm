@@ -40,8 +40,7 @@ Return Value:
         (gBS != NULL) &&
         (gBS->LocateProtocol != NULL))
     {
-        status = gBS->LocateProtocol(&gEfiEventLogProtocolGuid, NULL, &mEventLogProtocol);
-
+        status = gBS->LocateProtocol (&gEfiEventLogProtocolGuid, NULL, (void**)&mEventLogProtocol);
         if (EFI_ERROR (status))
         {
             mEventLogProtocol = NULL;
