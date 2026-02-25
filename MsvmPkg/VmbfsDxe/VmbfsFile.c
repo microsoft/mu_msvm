@@ -303,7 +303,7 @@ Return Value:
 
     status = gBS->AllocatePool(EfiBootServicesData,
                                sizeof(*allocatedFileProtocol) + filePathLengthInBytes,
-                               &allocatedFileProtocol);
+                               (void**)&allocatedFileProtocol);
     if (EFI_ERROR(status))
     {
         status = EFI_OUT_OF_RESOURCES;
