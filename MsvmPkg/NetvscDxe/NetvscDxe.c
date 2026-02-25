@@ -14,7 +14,7 @@
 #include <Library/EmclLib.h>
 
 #include "NetvscDxe.h"
-#include "NvspProtocol.h"
+#include "nvspprotocol.h"
 #include "rndis.h"
 
 //

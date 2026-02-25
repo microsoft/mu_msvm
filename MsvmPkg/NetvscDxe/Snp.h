@@ -12,7 +12,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <Uefi.h>
 
-#include <Netvscdxe.h>
+#include <NetvscDxe.h>
 
 #include <Protocol/SimpleNetwork.h>
 #include <Protocol/DevicePath.h>
