@@ -4,9 +4,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include "VpcivscDxe.h"
-
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
@@ -17,8 +15,8 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Vmbus/NtStatus.h>
-
 #include <IsolationTypes.h>
+#include <stdint.h>
 
 #define AZIHSM_VENDOR_ID 0x1414
 #define AZIHSM_DEVICE_ID 0xC003
@@ -111,8 +109,6 @@ UINT64 mCanonicalizationMask;
 //
 #define RING_BUFFER_INCOMING_PAGE_COUNT    16
 #define RING_BUFFER_OUTGOING_PAGE_COUNT    16
-
-#define UINT32_MAX 0xffffffff
 
 /// \brief      Debug print a VPCI device.
 ///
