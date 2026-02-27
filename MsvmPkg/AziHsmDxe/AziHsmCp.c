@@ -4,7 +4,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
+#include "AssignStruct.h"
 #include <Library/BaseLib.h>
 #include <Library/UefiLib.h>
 #include <Library/DebugLib.h>
@@ -124,7 +124,7 @@ AziHsmFireHsmCmd (
   PsfBitBeforePost = DeviceCqe->PhAndSts.PhStsVal;
 
   // Copy the SQE over to the device
-  *DeviceSqe = HsmSqe;
+  ASSIGN_STRUCT (DeviceSqe, &HsmSqe);
 
   AZIHSM_SQ_INC_TAIL (QuePair->SubmissionQueue);
 

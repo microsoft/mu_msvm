@@ -4,7 +4,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
+#include "AssignStruct.h"
 #include <Library/DebugLib.h>
 #include "AziHsmAdmin.h"
 #include "AziHsmHci.h"
@@ -85,7 +85,7 @@ AziHsmAdminIssueCmd (
 
   // Get the Value of the phase bit before posting.
   PsfBitBeforePost = DestCqe->Psf.Val;
-  *DestSqe         = *AdminSqe;
+  ASSIGN_STRUCT (DestSqe, AdminSqe);
 
   // Increment The Tail and Write It
   AZIHSM_SQ_INC_TAIL (QueuePair->SubmissionQueue);
