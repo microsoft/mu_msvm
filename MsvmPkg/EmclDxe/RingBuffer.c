@@ -42,10 +42,10 @@ PkpInitRingBufferControl(
     // Fetch and validate the in/out pointers.
     //
 
-    incomingIn = ReadNoFence((UINT32*)&Context->Incoming.Control->In);
-    incomingOut = ReadNoFence((UINT32*)&Context->Incoming.Control->Out);
-    outgoingIn = ReadNoFence((UINT32*)&Context->Outgoing.Control->In);
-    outgoingOut = ReadNoFence((UINT32*)&Context->Outgoing.Control->Out);
+    incomingIn = Context->Incoming.Control->In;
+    incomingOut = Context->Incoming.Control->Out;
+    outgoingIn = Context->Outgoing.Control->In;
+    outgoingOut = Context->Outgoing.Control->Out;
     if (!PkpValidatePointer(Context->Incoming.DataBytesInRing, incomingIn) ||
         !PkpValidatePointer(Context->Incoming.DataBytesInRing, incomingOut) ||
         !PkpValidatePointer(Context->Outgoing.DataBytesInRing, outgoingIn) ||
@@ -294,7 +294,7 @@ PkpCheckSendBufferFreeBytes(
         // the public version and check again.
         //
 
-        Out = ReadNoFence((UINT32*)&control->Out);
+        Out = control->Out;
         if (!PkpValidatePointer(DataBytesInRing, Out))
         {
             status = EFI_RING_CORRUPT_ERROR;
@@ -346,7 +346,7 @@ PkpCheckSendBufferFreeBytes(
                 pendingSendSize = DataBytesInRing - 1;
             }
 
-            WriteNoFence((UINT32*)&control->PendingSendSize, pendingSendSize);
+            control->PendingSendSize = pendingSendSize;
 
             //
             // Store the actual send size so that it can be retrieved by
@@ -364,7 +364,7 @@ PkpCheckSendBufferFreeBytes(
             //
 
             MemoryBarrier();
-            Out = ReadNoFence((UINT32*)&control->Out);
+            Out = control->Out;
             if (!PkpValidatePointer(DataBytesInRing, Out))
             {
                 status = EFI_RING_CORRUPT_ERROR;
@@ -459,13 +459,13 @@ PkCompleteInsertion(
     // Read the interrupt mask bit.
     //
 
-    interruptMask = ReadNoFence((UINT32*)&control->InterruptMask);
+    interruptMask = control->InterruptMask;
 
     //
     // Read and cache the public Out pointer.
     //
 
-    currentOut = ReadNoFence((UINT32*)&control->Out);
+    currentOut = control->Out;
     if (!PkpValidatePointer(dataBytesInRing, currentOut))
     {
         return EFI_RING_CORRUPT_ERROR;
@@ -542,7 +542,7 @@ PkCompleteRemoval(
     // Mark that an interrupt is expected if the ring is now empty.
     //
 
-    if ((UINT32)ReadNoFence((UINT32*)&control->In) == NewOut)
+    if (control->In == NewOut)
     {
         PkpExpectInterrupt(PkLibContext, TRUE);
     }
@@ -553,7 +553,7 @@ PkCompleteRemoval(
 
     oldOut = PkLibContext->IncomingOut;
     PkLibContext->IncomingOut = NewOut;
-    WriteNoFence((UINT32*)&control->Out, NewOut);
+    control->Out = NewOut;
 
     //
     // Flush the write to the public Out pointer to ensure that the subsequent
@@ -567,13 +567,13 @@ PkCompleteRemoval(
     // Determine whether an interrupt may be necessary.
     //
 
-    pendingSendSize = ReadNoFence((UINT32*)&control->PendingSendSize);
+    pendingSendSize = control->PendingSendSize;
 
     //
     // Read and cache the public In pointer.
     //
 
-    currentIn = ReadNoFence((UINT32*)&control->In);
+    currentIn = control->In;
     if (!PkpValidatePointer(dataBytesInRing, currentIn))
     {
         return EFI_RING_CORRUPT_ERROR;
@@ -746,7 +746,7 @@ PkGetSendBuffer(
     {
         PkLibContext->PendingSendSize = 0;
         control = PkLibContext->Outgoing.Control;
-        WriteNoFence((UINT32*)&control->PendingSendSize, 0);
+        control->PendingSendSize = 0;
     }
 
     //
@@ -1106,7 +1106,7 @@ PkGetOutgoingRingFreeBytes(
 
     dataBytesInRing = PkLibContext->Outgoing.DataBytesInRing;
     currentIn = PkLibContext->OutgoingIn;
-    currentOut = ReadNoFence((UINT32*)&PkLibContext->Outgoing.Control->Out);
+    currentOut = PkLibContext->Outgoing.Control->Out;
     if (!PkpValidatePointer(dataBytesInRing, currentOut))
     {
         return 0;

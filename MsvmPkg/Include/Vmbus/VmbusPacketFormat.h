@@ -27,15 +27,15 @@ typedef enum _ENDPOINT_TYPE {
 
 typedef struct _VMRCB
 {
-    UINT32 In;        // Offset in bytes from the ring base
-    UINT32 Out;       // Offset in bytes from the ring base
+    UINT32 volatile In;  // Offset in bytes from the ring base
+    UINT32 volatile Out; // Offset in bytes from the ring base
 
     //
     // If the receiving endpoint sets this to some non-zero value, the sending
     // endpoint should not send any interrupts.
     //
 
-    UINT32 InterruptMask;
+    UINT32 volatile InterruptMask;
 
     //
     // If the sending endpoint sets this to a non-zero value, the receiving
@@ -43,7 +43,7 @@ typedef struct _VMRCB
     // than this value.
     //
 
-    UINT32 PendingSendSize;
+    UINT32 volatile PendingSendSize;
 
     UINT32 Reserved[12];
 
@@ -78,7 +78,7 @@ typedef struct _VMPACKET_DESCRIPTOR
 {
     UINT16 Type;
     UINT16 DataOffset8;
-    UINT16 Length8;
+    volatile UINT16 Length8;
     UINT16 Flags;
     UINT64 TransactionId;
 } VMPACKET_DESCRIPTOR, *PVMPACKET_DESCRIPTOR;
