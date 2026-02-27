@@ -1009,7 +1009,7 @@ GetEffectiveMemoryRanges (
 
   CompactAndExtendEffectiveMtrrMemoryRanges (DefaultType, PhysicalAddressBits, &AllRangePieces, &AllRangePiecesCountActual);
   ASSERT (*MemoryRangeCount >= AllRangePiecesCountActual);
-  memcpy (MemoryRanges, AllRangePieces, AllRangePiecesCountActual * sizeof (MTRR_MEMORY_RANGE));
+  CopyMem (MemoryRanges, AllRangePieces, AllRangePiecesCountActual * sizeof (MTRR_MEMORY_RANGE));
   *MemoryRangeCount = AllRangePiecesCountActual;
 
   free (AllEndPointsInclusive);
