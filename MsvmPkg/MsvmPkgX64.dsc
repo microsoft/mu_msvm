@@ -41,7 +41,7 @@
 
   # Generate PDBs on release builds with full debugging, with linker and CC flags
   MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
-  MSFT:*_*_*_CC_FLAGS = /Zi
+  MSFT:*_*_*_CC_FLAGS = /Z7
 
 [BuildOptions.common.EDKII.DXE_CORE]
   MSFT:*_*_*_DLINK_FLAGS = /FILEALIGN:4096
