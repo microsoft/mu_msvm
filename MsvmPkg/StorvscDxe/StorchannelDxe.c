@@ -9,9 +9,8 @@
 #include "StorvscDxe.h"
 #include <IndustryStandard/Scsi.h>
 #include <Vmbus/NtStatus.h>
-
 #include "StorportDxe.h"
-
+#include "Inline.h"
 
 typedef struct _STOR_CHANNEL_PROTOCOL_VERSION
 {
