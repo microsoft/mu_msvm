@@ -17,18 +17,17 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #include <Library/TimerLib.h>
 #include <Library/UefiLib.h>
 #include <Library/IoLib.h>
 #include <Library/BiosDeviceLib.h>
-
 #include "EventLogDxe.h"
 #include "EfiHandleTable.h"
 #include "EfiRing.h"
 #include "EventLogger.h"
 #include "BiosInterface.h"
 #include <IsolationTypes.h>
+#include "Inline.h"
 
 //
 // Information on a currently pending event.

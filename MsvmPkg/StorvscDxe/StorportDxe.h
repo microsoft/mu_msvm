@@ -6,10 +6,9 @@
     SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #pragma once
-
 #include <MsvmBase.h>
+#include "Inline.h"
 
 #define SCSI_MAXIMUM_LUNS_PER_TARGET 255
 

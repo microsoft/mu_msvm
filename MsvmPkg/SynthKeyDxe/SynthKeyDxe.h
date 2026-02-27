@@ -8,16 +8,12 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #pragma once
-
 #include <Protocol/Vmbus.h>
 #include <Protocol/Emcl.h>
 #include <Protocol/DevicePath.h>
-
 #include <Protocol/SimpleTextIn.h>
 #include <Protocol/SimpleTextInEx.h>
-
 #include <Library/UefiDriverEntryPoint.h>
 #include <Library/UefiLib.h>
 #include <Library/UefiBootServicesTableLib.h>
@@ -28,9 +24,8 @@
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/PcdLib.h>
-
 #include <Library/EmclLib.h>
-
+#include "Inline.h"
 
 //
 // Global Variables
@@ -119,7 +114,6 @@ typedef struct _SYNTH_KEYBOARD_DEVICE
 
 } SYNTH_KEYBOARD_DEVICE, *PSYNTH_KEYBOARD_DEVICE;
 
-
 __forceinline
 VOID
 SynthKeyReportStatus(
@@ -154,7 +148,6 @@ Return Value:
     REPORT_STATUS_CODE_WITH_DEVICE_PATH(Type, Value, pDevice->DevicePath);
 }
 
-
 //
 // Helpers to get the device context from
 // EFI_SIMPLE_TEXT_INPUT_PROTOCOL or EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL pointers
@@ -164,7 +157,6 @@ Return Value:
 
 #define SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(a)   \
     CR((a), SYNTH_KEYBOARD_DEVICE, ConInEx, SYNTH_KEYBOARD_DEVICE_SIGNATURE)
-
 
 #define TPL_KEYBOARD_CALLBACK (TPL_CALLBACK + 1)
 #define TPL_KEYBOARD_NOTIFY   TPL_NOTIFY
