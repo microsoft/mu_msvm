@@ -4,15 +4,11 @@
     Copyright (c) Microsoft Corporation.
     SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #pragma once
-
 #include <Uefi.h>
-
 #include <Protocol/Vmbus.h>
 #include <Protocol/Emcl.h>
 #include <Protocol/SimpleNetwork.h>
-
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -25,6 +21,7 @@
 #include <Library/SerialPortLib.h>
 #include <Library/PrintLib.h>
 #include <nvspprotocol.h>
+#include "Inline.h"
 
 #define MAXIMUM_ETHERNET_PACKET_SIZE        1514
 
@@ -196,7 +193,7 @@ RxQueueIsAlmostFull(
     IN  RX_QUEUE *Queue
     );
 
-__forceinline
+extern ALWAYS_INLINE
 BOOLEAN
 RxQueueIsEmpty(
     IN  RX_QUEUE *Queue
@@ -235,7 +232,7 @@ TxQueueIsFull(
     IN  TX_QUEUE *Queue
     );
 
-__forceinline
+extern ALWAYS_INLINE
 BOOLEAN
 TxQueueIsEmpty(
     IN  TX_QUEUE *Queue
@@ -248,7 +245,7 @@ TxQueueEnqueue(
     IN  VOID        *TxBuffer
     );
 
-__forceinline
+extern ALWAYS_INLINE
 VOID
 TxQueueDequeue(
     IN  TX_QUEUE     *Queue,

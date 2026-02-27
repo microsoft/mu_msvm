@@ -6,11 +6,10 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #pragma once
-
 #include <Protocol/SynthKeyProtocol.h>
 #include <Vmbus/VmbusPacketFormat.h>
+#include "Inline.h"
 
 EFI_STATUS
 SynthKeyChannelOpen(
