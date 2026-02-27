@@ -1154,7 +1154,7 @@ Return Value:
             // Replace with validated buffer length.
             //
 
-            WriteNoFence16((UINT16*)&incomingPacket->Descriptor.Length8, (UINT16)(bufferLength / 8));
+            incomingPacket->Descriptor.Length8 = (UINT16)(bufferLength / 8);
 
             EmclDispatchPacket(context, incomingPacket);
             ++receivedCount;

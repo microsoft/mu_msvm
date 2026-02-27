@@ -23,45 +23,6 @@ ReadAcquire (
 }
 
 __forceinline
-INT32
-ReadNoFence (
-    IN INT32 const volatile *Source
-    )
-
-{
-    INT32 value;
-
-    value = *Source;
-    return value;
-}
-
-__forceinline
-VOID
-WriteNoFence (
-    OUT INT32 volatile *Destination,
-    IN  INT32 Value
-    )
-
-{
-
-    *Destination = Value;
-    return;
-}
-
-__forceinline
-VOID
-WriteNoFence16 (
-    OUT INT16 volatile *Destination,
-    IN  INT16 Value
-    )
-
-{
-
-    *Destination = Value;
-    return;
-}
-
-__forceinline
 VOID
 WriteRelease (
     OUT INT32 volatile *Destination,
@@ -111,43 +72,6 @@ ReadAcquire (
     value = __iso_volatile_load32((int *)Source);
     __dmb(_ARM64_BARRIER_ISH);
     return value;
-}
-
-__forceinline
-INT32
-ReadNoFence (
-    IN  INT32 const volatile *Source
-    )
-
-{
-    INT32 value;
-
-    value = __iso_volatile_load32((int *)Source);
-    return value;
-}
-
-__forceinline
-VOID
-WriteNoFence16 (
-    OUT INT16 volatile *Destination,
-    IN  INT16 Value
-    )
-
-{
-    __iso_volatile_store16(Destination, Value);
-    return;
-}
-
-__forceinline
-VOID
-WriteNoFence (
-    OUT INT32 volatile *Destination,
-    IN  INT32 Value
-    )
-
-{
-    __iso_volatile_store32((int *)Destination, Value);
-    return;
 }
 
 __forceinline

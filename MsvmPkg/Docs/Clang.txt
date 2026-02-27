@@ -1,0 +1,16 @@
+setup:
+  trailing slash on next line is required
+  set CLANG_BIN=C:\Program Files\LLVM\bin\
+
+Some example build commands:
+
+  stuart_build -c MsvmPkg\PlatformBuild.py BLD_*_LEGACY_DEBUGGER=1 TARGET=RELEASE TOOL_CHAIN_TAG=VS2022
+  stuart_build -c MsvmPkg\PlatformBuild.py BLD_*_LEGACY_DEBUGGER=1 TARGET=DEBUG   TOOL_CHAIN_TAG=VS2022
+  stuart_build -c MsvmPkg\PlatformBuild.py BLD_*_LEGACY_DEBUGGER=1 TARGET=RELEASE TOOL_CHAIN_TAG=CLANGPDB
+  stuart_build -c MsvmPkg\PlatformBuild.py BLD_*_LEGACY_DEBUGGER=1 TARGET=DEBUG   TOOL_CHAIN_TAG=CLANGPDB
+  stuart_build -c MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64 TARGET=RELEASE TOOL_CHAIN_TAG=VS2022
+  stuart_build -c MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64 TARGET=DEBUG   TOOL_CHAIN_TAG=VS2022
+  stuart_build -c MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64 TARGET=RELEASE TOOL_CHAIN_TAG=CLANGPDB
+  stuart_build -c MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64 TARGET=DEBUG   TOOL_CHAIN_TAG=CLANGPDB
+
+Reading CI logs is useful.

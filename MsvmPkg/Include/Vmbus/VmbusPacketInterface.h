@@ -58,7 +58,7 @@ typedef struct _PACKET_LIB_CONTEXT
     DECLSPEC_CACHEALIGN
     UINT32                  OutgoingIn;
     UINT32                  OutgoingOutCache;
-    UINT32                  PendingSendSize;
+    UINT32 volatile         PendingSendSize;
     UINT32                  FullRingBufferCount;
     UINT64                  StaticInterruptMaskSkips;
     UINT64*                 InterruptMaskSkips;
