@@ -5,9 +5,9 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-#include <Synchronization.h>
-#include "transportp.h"
 #include <stdint.h>
+#include <Synchronization.h>
+#include "Transportp.h"
 
 #define MAXIMUM_EXPECTED_INTERRUPT_COUNT 64
 

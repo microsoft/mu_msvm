@@ -6,16 +6,14 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include <PiPei.h>
 #include <Library/PeimEntryPoint.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
-#include <Library/Armlib.h>
+#include <Library/ArmLib.h>
 #include <Library/DebugAgentLib.h>
 #include <Ppi/TemporaryRamSupport.h>
-
 
 VOID
 SetGuestOsId();
