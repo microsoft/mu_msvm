@@ -67,7 +67,7 @@ VPCI_DEVICE_CONTEXT gVpciDeviceContextTemplate =
     {0}, // RawBars
     {0}, // MappedBars
     NULL, // VPCIVSC_CONTEXT *VpcivscContext
-    0, // Slot
+    {0}, // Slot
 };
 
 VPCIVSC_CONTEXT gVpcivscContextTemplate =

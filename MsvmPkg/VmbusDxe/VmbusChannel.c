@@ -32,8 +32,8 @@ VMBUS_DEVICE_PATH gVmbusChannelNode =
         },
         EFI_VMBUS_CHANNEL_DEVICE_PATH_GUID
     },
-    0,
-    0
+    {0},
+    {0}
 };
 
 
