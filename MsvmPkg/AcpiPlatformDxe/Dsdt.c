@@ -4,7 +4,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
+#include <stdint.h>
 #include <PiDxe.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
@@ -41,7 +41,7 @@ typedef struct _DSDT_AML_DESCRIPTOR
     UINT32 PhysicalAddress;
 } DSDT_AML_DESCRIPTOR;
 
-#define DSDT_AML_DESCRIPTOR_SIGNATURE 0x0c00534f4942805bui64
+#define DSDT_AML_DESCRIPTOR_SIGNATURE UINT64_C(0x0c00534f4942805b)
 #define NVDIMM_IO_BUFFER_SIZE 4096
 
 #pragma pack()

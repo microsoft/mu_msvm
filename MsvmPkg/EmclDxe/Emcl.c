@@ -5,6 +5,7 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
+#include <stdint.h>
 #include <PiDxe.h>
 #include <IsolationTypes.h>
 #include <Library/UefiLib.h>
@@ -19,7 +20,6 @@
 #include <Protocol/EfiHv.h>
 #include <Vmbus/VmbusPacketInterface.h>
 #include <Synchronization.h>
-#include <stdint.h>
 
 #define EMCL_DRIVER_VERSION 0x10
 
