@@ -31,8 +31,8 @@ const EFI_FILE_INFO gVmbFsEfiFileInfoPrototype =
     0, // PhysicalSize, To be filled by VmbfsOpen
     {0},
     {0},
-    EFI_FILE_VALID_ATTR, // Attributes, more attributes to be filled by VmbfsOpen
-    {0} // FileName, To be filled by VmbfsOpen
+    {EFI_FILE_VALID_ATTR}, // Attributes, more attributes to be filled by VmbfsOpen
+    0 // FileName, To be filled by VmbfsOpen
 };
 
 

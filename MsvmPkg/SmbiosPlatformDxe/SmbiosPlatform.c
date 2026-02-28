@@ -480,7 +480,7 @@ Return Value:
             MINOR_RELEASE_VERSION,
             0xFF, // no field upgradeable embedded controller firmware
             0xFF, // no field upgradeable embedded controller firmware
-            0, // Extended Bios ROM Size
+            {0}, // Extended Bios ROM Size
         }
     };
 
@@ -722,7 +722,7 @@ Return Value:
             // so the contained elements value in this structure is actually the
             // SKU Number string index, as access to the SKU Number string
             // index is based on the above two values.
-            { 5 }, // SKU Number string index
+            {{5}}, // SKU Number string index
         }
     };
 
@@ -814,7 +814,7 @@ Return Value:
             SMBIOS_HANDLE_PI_RESERVED, // Chassis Handle
             BaseBoardTypeMotherBoard, // Board Type
             0, // Number of Contained Object Handles
-            SMBIOS_HANDLE_PI_RESERVED, // Contained Object Handles
+            {SMBIOS_HANDLE_PI_RESERVED}, // Contained Object Handles
         }
     };
 
@@ -894,7 +894,7 @@ Return Value:
             0, // ProcessorType
             0, // ProcessorFamily
             2, // ProcessorManufacturer string index
-            {0, 0, 0, 0, 0, 0, 0, 0}, // ProcessorId
+            {0}, // ProcessorId
             3, // ProcessorVersion string index
             {0}, // Voltage
             0, // ExternalClock
@@ -929,8 +929,12 @@ Return Value:
     cpuInfo.Formatted.ProcessorCharacteristics = PcdGet16(PcdSmbiosProcessorCharacteristics);
     cpuInfo.Formatted.ProcessorFamily2         = PcdGet16(PcdSmbiosProcessorFamily2);
 
+    // Redundantly zero.
+    ZeroMem (&cpuInfo.Formatted.ProcessorId, sizeof (cpuInfo.Formatted.ProcessorId));
     // Copy ProcessorId and Voltage using casts because they have explicit
     // structure types with no unions to access all the data.
+    STATIC_ASSERT (sizeof (cpuInfo.Formatted.ProcessorId) == 8, "");
+    STATIC_ASSERT (sizeof (cpuInfo.Formatted.Voltage) == 1, "");
     *((UINT64*)(&cpuInfo.Formatted.ProcessorId)) = PcdGet64(PcdSmbiosProcessorID);
     *((UINT8*)(&cpuInfo.Formatted.Voltage))      = PcdGet8(PcdSmbiosProcessorVoltage);
 
@@ -1015,7 +1019,6 @@ Return Value:
 
     ASSERT(processorsAdded == lpCount);
 }
-
 
 VOID
 AddOEMStrings(
@@ -1578,7 +1581,7 @@ Return Value:
         {
             STANDARD_HEADER(SMBIOS_TABLE_TYPE32, EFI_SMBIOS_TYPE_SYSTEM_BOOT_INFORMATION),
             { 0 }, // Reserved
-            { BootInformationStatusNoError } // Boot Status
+            BootInformationStatusNoError // Boot Status
         },
         {
             0, // terminator bytes
