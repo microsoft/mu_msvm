@@ -16,8 +16,10 @@ static
 EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_PPI exclude = {
     1, //count
     {
-        (EFI_PHYSICAL_ADDRESS) FixedPcdGet64 (PcdFvBaseAddress),
-        (UINT64) FixedPcdGet32 (PcdFvSize)
+        {
+            (EFI_PHYSICAL_ADDRESS) FixedPcdGet64 (PcdFvBaseAddress),
+            (UINT64) FixedPcdGet32 (PcdFvSize)
+        }
     }
 };
 
