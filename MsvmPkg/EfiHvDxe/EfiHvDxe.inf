@@ -32,6 +32,7 @@
 
 [LibraryClasses]
     BaseLib
+    ClangTemporaryLib
     CrashLib
     DebugLib
     HvHypercallLib

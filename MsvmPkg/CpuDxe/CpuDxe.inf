@@ -29,6 +29,7 @@
 [LibraryClasses.common]
   BaseLib
   BaseMemoryLib
+  ClangTemporaryLib
   CpuExceptionHandlerLib
   CpuLib
   DebugLib

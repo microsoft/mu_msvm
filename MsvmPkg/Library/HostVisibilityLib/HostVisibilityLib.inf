@@ -25,6 +25,9 @@
     MdePkg/MdePkg.dec
     MsvmPkg/MsvmPkg.dec
 
+[LibraryClasses]
+    ClangTemporaryLib
+
 [LibraryClasses.X64]
     PcdLib
 
