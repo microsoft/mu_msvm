@@ -67,6 +67,7 @@
 # Library instances to use by default for all modules and phases unless overridden below
 #
 [LibraryClasses]
+  ClangTemporaryLib|MsvmPkg/Library/ClangTemporaryLib/ClangTemporaryLib.inf
   AdvancedLoggerAccessLib|AdvLoggerPkg/Library/AdvancedLoggerAccessLib/AdvancedLoggerAccessLib.inf
   AdvancedLoggerHdwPortLib|AdvLoggerPkg/Library/AdvancedLoggerHdwPortLib/AdvancedLoggerHdwPortLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf

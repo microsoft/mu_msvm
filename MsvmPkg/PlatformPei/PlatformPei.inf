@@ -47,6 +47,7 @@
 
 [LibraryClasses]
     AdvancedLoggerLib
+    ClangTemporaryLib
     CrashLib
     DeviceStateLib
     DebugLib
