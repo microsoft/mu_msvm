@@ -5,9 +5,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
+#include <stdint.h>
 #include <Base.h>
-
 #include <Hv/HvGuestMsr.h>
 #include <Library/BaseLib.h>
 #include <Library/TimerLib.h>
@@ -76,10 +75,9 @@ Return Value:
 
 --*/
 {
-    Stall100ns(MicroSeconds * 10ui64);
+    Stall100ns (MicroSeconds * UINT64_C(10));
     return MicroSeconds;
 }
-
 
 UINTN
 EFIAPI
@@ -102,10 +100,9 @@ Return Value:
 
 --*/
 {
-    Stall100ns(NanoSeconds / 100ui64);
+    Stall100ns (NanoSeconds / UINT64_C(100));
     return NanoSeconds;
 }
-
 
 UINT64
 EFIAPI
@@ -182,9 +179,8 @@ Return Value:
         *EndValue = (UINT64)-1;
     }
 
-    return 10ui64 * 1000ui64 * 1000ui64;
+    return UINT64_C(10) * UINT64_C(1000) * UINT64_C(1000);
 }
-
 
 UINT64
 EFIAPI

@@ -5,13 +5,11 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
+#include <stdint.h>
 #include <PiPei.h>
-
 #include <Platform.h>
 #include <Hv.h>
 #include <IsolationTypes.h>
-
 #include <Hv/HvGuestCpuid.h>
 #include <Library/DebugLib.h>
 #include <Library/CrashDumpAgentLib.h>
@@ -113,12 +111,12 @@ Return Value:
     if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryActive)
     {
         mSharedGpaBit = cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits;
-        sharedGpaBoundary = 1UI64 << mSharedGpaBit;
+        sharedGpaBoundary = UINT64_C(1) << mSharedGpaBit;
         sharedGpaCanonicalizationBitmask = 0;
         virtualAddressBits = 48;
         if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits == (virtualAddressBits - 1))
         {
-            sharedGpaCanonicalizationBitmask = ~((1UI64 << virtualAddressBits) - 1);
+            sharedGpaCanonicalizationBitmask = ~((UINT64_C(1) << virtualAddressBits) - 1);
         }
         else if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits > (virtualAddressBits - 1))
         {
