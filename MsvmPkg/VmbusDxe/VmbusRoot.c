@@ -794,13 +794,13 @@ VmbusRootScanEventFlags(
 
 **/
 {
-    UINT64 *flags;
+    INT64 *flags;
     UINT32 wordIndex;
     UINT32 bitIndex;
     UINT64 currentWord;
     UINT32 wordCount;
 
-    flags = (UINT64*)Flags->Flags32;
+    flags = (INT64*)Flags->Flags32;
 
     //
     // Scan through all the words up to and including largest interrupt flag
@@ -809,9 +809,7 @@ VmbusRootScanEventFlags(
     wordCount = RootContext->MaxInterruptUsed / 64 + 1;
     for (wordIndex = 0; wordIndex < wordCount; ++wordIndex)
     {
-        // Removing intrinsic function because of MSVC 14.44 linker error
-        // currentWord = (UINT64) _InterlockedExchange64((INT64*) &flags[wordIndex], (INT64)0);
-        currentWord = InterlockedCompareExchange64((INT64*) &flags[wordIndex],(INT64) flags[wordIndex], (INT64)0);
+        currentWord = _InterlockedExchange64(&flags[wordIndex], 0);
         while(_BitScanForward64(&bitIndex, currentWord) != 0)
         {
             currentWord &= ~((UINT64)1 << bitIndex);
