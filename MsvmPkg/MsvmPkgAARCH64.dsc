@@ -954,4 +954,6 @@
   # Generate PDBs on release builds with full debugging, with linker and CC flags
   # Force file alignment to 4K as required on AArch64
   MSFT:*_*_*_DLINK_FLAGS = /FILEALIGN:4096 /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
-  MSFT:*_*_*_CC_FLAGS = /Z7
+  # /d2overrideInterlockedIntrinsArm64- inlines Interlocked sequences.
+  # TODO: And they are ARMv8.0 that ARMcorp says not to use on newer hardware.
+  MSFT:*_*_*_CC_FLAGS = /Z7 /d2overrideInterlockedIntrinsArm64-
