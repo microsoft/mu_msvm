@@ -49,6 +49,7 @@
   ClangTemporaryLib
   DebugAgentLib
   DebugLib
+  MsBaseLib
   StackCheckLib
 
 [LibraryClasses.X64]

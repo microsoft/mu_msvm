@@ -7,6 +7,7 @@
 **/
 #include <stdint.h>
 #include <Synchronization.h>
+#include "MsVolatileAccessors.h"
 #include "Transportp.h"
 
 #define MAXIMUM_EXPECTED_INTERRUPT_COUNT 64
