@@ -36,6 +36,7 @@
   BaseLib
   BiosDeviceLib
   DebugLib
+  MsBaseLib
   PrintLib
 
 [LibraryClasses.AARCH64]

@@ -54,6 +54,7 @@
     HobLib
     IoLib
     IsolationLib
+    MsBaseLib
     PeCoffLib
     PeimEntryPoint
     PeiServicesLib

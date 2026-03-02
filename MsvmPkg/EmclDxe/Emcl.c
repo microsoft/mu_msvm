@@ -20,6 +20,7 @@
 #include <Protocol/EfiHv.h>
 #include <Vmbus/VmbusPacketInterface.h>
 #include <Synchronization.h>
+#include "MsVolatileAccessors.h"
 
 #define EMCL_DRIVER_VERSION 0x10
 
