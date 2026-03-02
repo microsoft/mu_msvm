@@ -25,6 +25,7 @@
     BaseLib
     CrashLib
     DebugLib
+    MsBaseLib
     UefiDriverEntryPoint
     MemoryAllocationLib
     DebugLib

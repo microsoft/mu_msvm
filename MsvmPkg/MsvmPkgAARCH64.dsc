@@ -101,6 +101,7 @@
   MathLib|MsCorePkg/Library/MathLib/MathLib.inf
   MmuLib|ArmPkg/Library/MmuLib/BaseMmuLib.inf
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
+  MsBaseLib|MsvmPkg/Library/MsBaseLib/MsBaseLib.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   PanicLib|MdePkg/Library/BasePanicLibNull/BasePanicLibNull.inf

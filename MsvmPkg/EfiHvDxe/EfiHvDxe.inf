@@ -38,6 +38,7 @@
     HvHypercallLib
     IsolationLib
     MemoryAllocationLib
+    MsBaseLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
 
