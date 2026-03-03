@@ -5,8 +5,8 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #pragma once
+#include <stdint.h>
 
 extern HV_HYPERVISOR_ISOLATION_CONFIGURATION mIsolationConfiguration;
 
@@ -129,12 +129,12 @@ typedef union _TDX_VE_EXIT_QUALIFICATION_IO
 
 } TDX_VE_EXIT_QUALIFICATION_IO, *PTDX_VE_EXIT_QUALIFICATION_IO;
 
-long long
+int64_t
 SecGetTdxVeInfo(
     OUT PTDX_VE_INFO VeInfo
     );
 
-long long
+int64_t
 SecGetTdInfo(
     OUT UINT32 *GpaWidth
     );
