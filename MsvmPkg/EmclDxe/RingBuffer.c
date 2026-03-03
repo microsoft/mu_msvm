@@ -6,7 +6,7 @@
 
 **/
 #include <stdint.h>
-#include <Synchronization.h>
+#include "MsBarrier.h"
 #include "MsVolatileAccessors.h"
 #include "Transportp.h"
 
@@ -852,7 +852,7 @@ PkGetReceiveBuffer(
     // Prevent double fetches of the packet length.
     //
 
-    _ReadWriteBarrier();
+    CompilerBarrier();
     totalPacketSize = packetLength + sizeof(PREVIOUS_PACKET_OFFSET);
 
     //
