@@ -5,20 +5,13 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #include <PiDxe.h>
-
 #include <IsolationTypes.h>
-#include <Synchronization.h>
-
 #include <Hv/HvGuestHypercall.h>
 #include <Hv/HvStatus.h>
-
 #include <Protocol/Cpu.h>
 #include <Protocol/EfiHv.h>
-
 #include <Guid/EventGroup.h>
-
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/CrashLib.h>
@@ -27,6 +20,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/HvHypercallLib.h>
+#include "MsBarrier.h"
 
 #if defined(MDE_CPU_X64)
 #include <Library/LocalApicLib.h>
@@ -2279,7 +2273,6 @@ EFI_HV_IVM_PROTOCOL mHvIvm =
     EfiHvMakeAddressRangeHostVisible,
     EfiHvMakeAddressRangeNotHostVisible
 };
-
 
 EFI_STATUS
 EFIAPI

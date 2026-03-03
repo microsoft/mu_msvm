@@ -12,6 +12,7 @@
     LIBRARY_CLASS                  = PEIM DXE_CORE DXE_DRIVER UEFI_DRIVER UEFI_APPLICATION
 
 [Sources]
+    Barrier.c
     VolatileAccessors.c
 
 [Packages]
