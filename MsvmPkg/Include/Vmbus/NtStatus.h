@@ -4,11 +4,10 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #pragma once
+#include <stdint.h>
 
-
-typedef long NTSTATUS;
+typedef int32_t NTSTATUS;
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
 
 //
