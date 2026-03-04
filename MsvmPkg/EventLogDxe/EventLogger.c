@@ -282,6 +282,7 @@ Return Value:
 
 
 EFI_STATUS
+EFIAPI
 EventChannelFlushCallback(
     IN      const EFI_HANDLE            TableHandle,
     IN      VOID                       *CallbackContext,
@@ -417,6 +418,7 @@ Exit:
 
 
 EFI_STATUS
+EFIAPI
 EventChannelResetCallback(
     IN      const EFI_HANDLE            TableHandle,
     IN      VOID                       *CallbackContext,
