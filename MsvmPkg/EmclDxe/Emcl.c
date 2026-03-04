@@ -1069,6 +1069,7 @@ Return Value:
 
 
 VOID
+EFIAPI
 EmclProcessQueue(
     IN  EFI_EVENT Event,
     IN  VOID *EventContext OPTIONAL
