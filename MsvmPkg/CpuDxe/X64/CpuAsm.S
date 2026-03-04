@@ -1,19 +1,18 @@
 #      TITLE   CpuAsm.S:
 
-;++
-;
-; Copyright (c) 2013  Microsoft Corporation
-;
-; Module Name:
-;
-;   CpuAsm.S
-;
-; Abstract:
-;
-;   This module implements functions to support the CPU.
-;
-;--
-
+#++
+#
+# Copyright (c) 2013  Microsoft Corporation
+#
+# Module Name:
+#
+#   CpuAsm.S
+#
+# Abstract:
+#
+#   This module implements functions to support the CPU.
+#
+#--
 
 #text  SEGMENT
 
