@@ -1359,7 +1359,7 @@ VmbusRootExitBootServices(
 
     rootContext = (VMBUS_ROOT_CONTEXT*)Context;
 
-    for (i = 0; i < VMBUS_MAX_GPADLS; i++);
+    for (i = 0; i < VMBUS_MAX_GPADLS; i++)
     {
         if (rootContext->GpadlTable[i].Event)
         {
