@@ -472,6 +472,7 @@ Return Value:
 }
 
 BOOLEAN
+EFIAPI
 PlatformConsoleEventCallback(
     IN  VOID                            *Context,
     IN  const EFI_EVENT_DESCRIPTOR      *Metadata,
