@@ -7,6 +7,7 @@
 **/
 #pragma once
 #include <stdint.h>
+#include "AllowNamelessAggregate.h"
 
 extern HV_HYPERVISOR_ISOLATION_CONFIGURATION mIsolationConfiguration;
 
@@ -112,8 +113,6 @@ typedef union _TDX_VE_EXIT_QUALIFICATION_IO
 {
     UINT64 AsUINT64;
     UINT32 AsUINT32;
-
-#pragma warning(disable : 4201)
     struct
     {
         UINT32 AccessSize:2;
@@ -125,8 +124,6 @@ typedef union _TDX_VE_EXIT_QUALIFICATION_IO
         UINT32 Reserved2:9;
         UINT32 PortNumber:16;
     };
-#pragma warning(default : 4201)
-
 } TDX_VE_EXIT_QUALIFICATION_IO, *PTDX_VE_EXIT_QUALIFICATION_IO;
 
 int64_t

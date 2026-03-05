@@ -6,9 +6,9 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 #pragma once
-#include "DeclspecAlign.h"
 #include <Hv/HvGuest.h>
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
+#include "DeclspecAlign.h"
 
 //
 // Define synthetic interrupt source.
@@ -339,5 +339,3 @@ typedef union _HV_SYNIC_SIEFP
         UINT64 BaseSiefpGpa : 52;
     };
 } HV_SYNIC_SIEFP, *PHV_SYNIC_SIEFP;
-
-#pragma warning(default : 4201)

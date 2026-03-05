@@ -7,13 +7,9 @@
     SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #pragma once
-
 #include <MsvmBase.h>
-
-#pragma warning(push)
-#pragma warning(disable: 4201) // Allow nameless structs
+#include "AllowNamelessAggregate.h"
 
 //
 //  Public interface to the server
@@ -409,6 +405,3 @@ typedef struct _ADAPTER_ADDRESS
 // Alignment information
 //
 #define VSTORAGE_ALIGNMENT_MASK 0x01
-
-#pragma warning(pop)
-

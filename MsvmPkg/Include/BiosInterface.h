@@ -6,8 +6,8 @@
     Copyright (c) Microsoft Corporation.
     SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
+#include "AllowNamelessAggregate.h"
 
 //
 // BIOS Interface constants
@@ -831,13 +831,11 @@ typedef struct _UEFI_CONFIG_ACPI_TABLE
 typedef struct _UEFI_CONFIG_NVDIMM_COUNT
 {
     UEFI_CONFIG_HEADER Header;
-#pragma warning(disable : 4201)
     union
     {
         UINT64 Padding;
         UINT16 Count;
     };
-#pragma warning(default : 4201)
 } UEFI_CONFIG_NVDIMM_COUNT;
 
 typedef struct _UEFI_CONFIG_VPCI_INSTANCE_FILTER
