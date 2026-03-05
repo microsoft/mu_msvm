@@ -466,8 +466,6 @@ Return Value:
 
 --*/
 {
-    VIDEODXE_CONTEXT* context = NULL;
-
     if (This == NULL)
     {
         return EFI_INVALID_PARAMETER;
@@ -478,8 +476,6 @@ Return Value:
         return EFI_UNSUPPORTED;
     }
 
-    context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS(This);
-
     if (ModeNumber == This->Mode->Mode)
     {
         return EFI_SUCCESS;
@@ -489,7 +485,6 @@ Return Value:
 
     return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI

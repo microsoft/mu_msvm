@@ -1239,7 +1239,6 @@ Arguments:
     BOOLEAN bufferIsFull;
     NVSP_MESSAGE outNvspMessage;
     PRNDIS_MESSAGE pRndisMessage;
-    UINT32 bufferIndex;
     PRNDIS_PACKET pRndisPacket;
     PRNDIS_QUERY_COMPLETE pQueryReqComplete;
     VOID *packetBuffer, *copyPacketBuffer;
@@ -1250,7 +1249,6 @@ Arguments:
 
     ASSERT(RangeCount > 0);
     ZeroMem(&outNvspMessage, sizeof(NVSP_MESSAGE));
-    bufferIndex = ((PNVSP_MESSAGE)Buffer)->Messages.Version1Messages.SendRNDISPacket.SendBufferSectionIndex;
 
     adapterInfo = (NIC_DATA_INSTANCE *) ReceiveContext;
 
