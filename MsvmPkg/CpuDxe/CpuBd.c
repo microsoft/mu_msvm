@@ -269,7 +269,6 @@ BdInitInterruptDescriptorTable (
   UINTN                     OldIdtSize;
   DECLSPEC_ALIGN (16) IA32_DESCRIPTOR IdtPtr;
   UINTN                     Index;
-  UINT16                    CurrentCs;
   VOID                      *IntHandler;
 
   SetMem (ExternalVectorTable, sizeof(ExternalVectorTable), 0);
@@ -295,7 +294,6 @@ BdInitInterruptDescriptorTable (
   //
   // Intialize IDT
   //
-  CurrentCs = AsmReadCs();
   for (Index = 0; Index < CPU_INTERRUPT_NUM; Index ++) {
 
     //

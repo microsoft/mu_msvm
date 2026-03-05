@@ -333,12 +333,10 @@ EFI_STATUS SelectAndBootDevice(EFI_GUID *ByGuid, FILTER_ROUTINE ByFilter) {
     EFI_HANDLE                  *Handles;
     UINTN                        HandleCount;
     UINTN                        Index;
-    UINTN                        FlagSize;
     EFI_BOOT_MANAGER_LOAD_OPTION BootOption;
     CHAR16                      *TmpStr;
     EFI_DEVICE_PATH_PROTOCOL    *DevicePath;
 
-    FlagSize = sizeof(UINTN);
     Status = gBS->LocateHandleBuffer(
         ByProtocol,
         ByGuid,

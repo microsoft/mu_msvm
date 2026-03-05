@@ -76,7 +76,6 @@ IN  EFI_GUID  *LogoFile
     EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt;
     EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
     EDKII_BOOT_LOGO2_PROTOCOL     *BootLogo;
-    BOOLEAN                       IsLandscape = FALSE;
     BOOLEAN                       IsSystemLogo = FALSE;
     UINT32                        Color;
 
@@ -189,7 +188,6 @@ IN  EFI_GUID  *LogoFile
 
         if (SizeOfX >= SizeOfY) {
             DEBUG((DEBUG_VERBOSE, "Landscape mode detected.\n"));
-            IsLandscape = TRUE;
         }
 
         //check if the image is appropriate size as per data defined in the windows engineering guide.
