@@ -43,11 +43,19 @@
   MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   MSFT:*_*_*_CC_FLAGS = /Z7
 
+# Set file alignment and (memory) alignment to 4K.
+# Memory alignment 4K is required for page protection.
+# i.e. So that, text/data/rdata are on different pages,
+# so that data/rdata are not executable and text/rdata are not writable.
+# This is the main reason sections exist and the main feature of the PE format.
+# File==memory for execute in place, or loader perf/simplicity otherwise.
+# The linker defaults to -align:4096, but this could be preceded by a lower -align specified
+# elsewhere in EFI build system.
 [BuildOptions.common.EDKII.DXE_CORE]
-  MSFT:*_*_*_DLINK_FLAGS = /FILEALIGN:4096
+  *_*_*_DLINK_FLAGS = -filealign:4096
 
 [BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  MSFT:*_*_*_DLINK_FLAGS = /ALIGN:4096 /FILEALIGN:4096
+  *_*_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
