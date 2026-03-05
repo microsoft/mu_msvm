@@ -12,7 +12,7 @@
 #if defined (__clang__) || defined (__GNUC__) || !defined (_MSC_VER)
 #define ASSIGN_STRUCT(dest, src)                \
     ((void)CopyMem (                            \
-        (dest)                                  \
+        (dest),                                 \
         (src),                                  \
         STATIC_ASSERT_EXPRESSION (              \
             sizeof (*(dest)) == sizeof (*(src)) \
