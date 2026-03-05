@@ -90,10 +90,7 @@ DeviceBootManagerBdsEntry (
 }
 
 //Device path filter routines
-typedef
-BOOLEAN
-(EFIAPI *FILTER_ROUTINE)(
-                         IN  EFI_DEVICE_PATH_PROTOCOL *DevicePath);
+typedef BOOLEAN (*FILTER_ROUTINE)(IN EFI_DEVICE_PATH_PROTOCOL *DevicePath);
 
 BOOLEAN CheckDeviceNodeEx(
     EFI_DEVICE_PATH_PROTOCOL *DevicePath,
