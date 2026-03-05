@@ -43,7 +43,6 @@ Return Value:
 --*/
 {
     EVENT_CHANNEL_INFO attributes;
-    EFI_STATUS status = EFI_SUCCESS;
 
     if (mBootEvent == INVALID_EVENT_HANDLE)
     {
@@ -51,12 +50,11 @@ Return Value:
         attributes.RecordSize = 0;
         attributes.BufferSize = PcdGet32(PcdBootEventLogSize);
         attributes.Tpl        = TPL_NOTIFY;
-        status = EventLogChannelCreate(&gBootEventChannelGuid, &attributes, &mBootEvent);
+        (void)EventLogChannelCreate(&gBootEventChannelGuid, &attributes, &mBootEvent);
     }
 
     return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI

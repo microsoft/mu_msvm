@@ -198,9 +198,6 @@ InitializeFrontPage (
                     )
 {
     EFI_STATUS                  Status = EFI_SUCCESS;
-    CHAR16                      *StringBuffer;
-
-    StringBuffer = NULL;
 
     if (InitializeHiiData)
     {

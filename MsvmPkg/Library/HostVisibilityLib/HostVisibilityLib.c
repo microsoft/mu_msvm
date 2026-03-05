@@ -233,7 +233,6 @@ Return Value:
     UINT32 maximumEntries;
     UINT32 numberOfEntries;
     UINT64* pageArray;
-    UINT32 pageIndex;
     HV_GPA_PAGE_NUMBER pageNumber;
     UINT64 pagesRemaining;
     PSVSM_PVALIDATE pvalidate;
@@ -262,7 +261,6 @@ Return Value:
         //
 
         errorCode = SVSM_SUCCESS;
-        pageIndex = 0;
         pageNumber = StartingPageNumber;
         pagesRemaining = PageCount;
         numberOfEntries = 0;
