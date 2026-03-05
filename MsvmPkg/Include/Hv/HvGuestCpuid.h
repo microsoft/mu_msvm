@@ -4,7 +4,6 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
 
 #pragma warning(disable : 4201)
@@ -14,8 +13,7 @@
 //
 typedef enum _HV_HYPERVISOR_INTERFACE
 {
-    HvMicrosoftHypervisorInterface = '1#vH'
-
+    HvMicrosoftHypervisorInterface = SIGNATURE_32('H','v','#','1')
 } HV_HYPERVISOR_INTERFACE, *PHV_HYPERVISOR_INTERFACE;
 
 //
