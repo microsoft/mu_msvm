@@ -6,9 +6,9 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 #pragma once
-#include "DeclspecAlign.h"
 #include <Hv/HvGuest.h>
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
+#include "DeclspecAlign.h"
 
 //
 // Define a 128bit type.
@@ -1527,5 +1527,3 @@ typedef struct HV_CALL_ATTRIBUTES _HV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILI
     HV_CALL_ATTRIBUTES HV_GPA_PAGE_NUMBER GpaPageList[];
 
 } HV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILITY, *PHV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILITY;
-
-#pragma warning(default : 4201)

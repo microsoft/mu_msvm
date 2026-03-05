@@ -4,8 +4,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
+#include "AllowNamelessAggregate.h"
 
 #define HV_MAXIMUM_PROCESSORS       2048
 
@@ -112,7 +112,6 @@ typedef struct _HV_X64_SEGMENT_REGISTER
     UINT64 Base;
     UINT32 Limit;
     UINT16 Selector;
-#pragma warning(disable : 4201)
     union
     {
         struct
@@ -129,8 +128,6 @@ typedef struct _HV_X64_SEGMENT_REGISTER
         };
         UINT16 Attributes;
     };
-#pragma warning(default : 4201)
-
 } HV_X64_SEGMENT_REGISTER, *PHV_X64_SEGMENT_REGISTER;
 
 typedef struct _HV_X64_TABLE_REGISTER

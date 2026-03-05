@@ -5,20 +5,12 @@
     SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
-
 #pragma once
-
 #include <Protocol/DevicePath.h>
 #include <Protocol/EfiHv.h>
 #include <Protocol/Vmbus.h>
 #include <Library/CrashLib.h>
-
-//
-// Disable warnings for nameless unions/structs.
-//
-#pragma warning(push)
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
 
 //
 // Definitions needed for ChannelMessages.h
@@ -289,6 +281,3 @@ VmbusRootSupportsFeatureFlag(
     IN  VMBUS_ROOT_CONTEXT *RootContext,
     IN  UINT32 FeatureFlag
     );
-
-#pragma warning(pop)
-

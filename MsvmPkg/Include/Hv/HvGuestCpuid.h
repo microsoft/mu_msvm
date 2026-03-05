@@ -5,8 +5,7 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 #pragma once
-
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
 
 //
 // Microsoft hypervisor interface signature.
@@ -760,5 +759,3 @@ typedef union _HV_CPUID_RESULT
     HV_HYPERVISOR_ISOLATION_CONFIGURATION MsHvIsolationConfiguration;
 
 } HV_CPUID_RESULT, *PHV_CPUID_RESULT;
-
-#pragma warning(default : 4201)

@@ -4,10 +4,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
-
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
 
 //
 // Version info reported by guest OS's
@@ -211,5 +209,3 @@ typedef union _HV_CRASH_CTL_REG_CONTENTS
         UINT64 CrashNotify   : 1;  // Log contents of crash parameter system registers
     };
 } HV_CRASH_CTL_REG_CONTENTS, *PHV_CRASH_CTL_REG_CONTENTS;
-
-#pragma warning(default : 4201)

@@ -19,6 +19,7 @@
 #include <Protocol/Vmbus.h>
 #include <Protocol/EfiHv.h>
 #include <Vmbus/VmbusPacketInterface.h>
+#include "AllowNamelessAggregate.h"
 #include "MsVolatileAccessors.h"
 
 #define EMCL_DRIVER_VERSION 0x10
@@ -109,7 +110,6 @@ typedef struct _EMCL_CONTEXT
 
 } EMCL_CONTEXT;
 
-#pragma warning(disable : 4201)
 typedef struct _EMCL_INCOMING_PACKET
 {
     union
@@ -120,7 +120,6 @@ typedef struct _EMCL_INCOMING_PACKET
     };
 
 } EMCL_INCOMING_PACKET;
-#pragma warning(default : 4201)
 
 typedef struct _EMCL_OUTGOING_PACKET
 {
