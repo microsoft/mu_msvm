@@ -4,8 +4,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #pragma once
+#include "AllowNamelessAggregate.h"
 
 //
 // Latest version of the SynthVid protocol.
@@ -57,9 +57,6 @@ typedef struct
     BYTE                    Data[1]; // Enclosed message
 } SYNTHVID_MESSAGE, *PSYNTHVID_MESSAGE;
 
-
-#pragma warning(push)
-#pragma warning(disable : 4201)
 typedef union
 {
     struct
@@ -70,7 +67,6 @@ typedef union
 
     UINT32 AsDWORD;
 } SYNTHVID_VERSION, *PSYNTHVID_VERSION;
-#pragma warning(pop)
 
 //
 // The following messages are listed in order of occurance during startup

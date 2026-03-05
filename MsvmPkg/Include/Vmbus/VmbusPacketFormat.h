@@ -5,12 +5,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
-
-// allow nameless unions
-#pragma warning(push)
-#pragma warning(disable : 4201)
+#include "AllowNamelessAggregate.h"
 
 typedef enum _ENDPOINT_TYPE {
     VmbusServerEndpoint = 0,
@@ -195,7 +191,3 @@ typedef struct _VMTRANSFER_PAGE_RANGES
     VMTRANSFER_PAGE_RANGE           Range[1];
 
 } VMTRANSFER_PAGE_RANGES, *PVMTRANSFER_PAGE_RANGES;
-
-#pragma warning(pop)
-
-

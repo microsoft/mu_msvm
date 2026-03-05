@@ -7,9 +7,8 @@
 --*/
 
 #pragma once
-
 #include <IndustryStandard/Pci30.h>
-
+#include "AllowNamelessAggregate.h"
 #include "wdm.h"
 
 #define ALIGN_UP(x, y) ALIGN_VALUE((x), sizeof(y))
@@ -35,11 +34,6 @@ typedef enum _DEVICE_POWER_STATE {
     PowerDeviceD3,
     PowerDeviceMaximum
 } DEVICE_POWER_STATE, *PDEVICE_POWER_STATE;
-
-
-// allow nameless unions
-#pragma warning(push)
-#pragma warning(disable : 4201)
 
 #define VPCI_PROTOCOL_VERSION_RS1             0x00010002
 #define VPCI_PROTOCOL_VERSION_CURRENT         VPCI_PROTOCOL_VERSION_RS1
@@ -246,5 +240,3 @@ typedef struct _VPCI_FDO_D0_ENTRY_REPLY
     UINT32 NtStatus;
     UINT32 Pad;
 } VPCI_FDO_D0_ENTRY_REPLY, *PVPCI_FDO_D0_ENTRY_REPLY;
-
-#pragma warning(pop)

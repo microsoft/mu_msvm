@@ -26,6 +26,7 @@
 #include <Guid/DxeMemoryProtectionSettings.h>
 #include <UefiConstants.h>
 #include <Hob.h>
+#include "AllowNamelessAggregate.h"
 
 //
 // Values and type used with CPUID to get the physical address width.
@@ -35,14 +36,12 @@
 
 typedef union _CPUID_ADDRESS_SPACE_SIZES
 {
-#pragma warning(disable : 4201)
     struct
     {
         UINT8 PhysicalAddressBits;
         UINT8 VirtualAddressBits;
         UINT16 Reserved;
     };
-#pragma warning(default : 4201)
 
     UINT32 Value;
 } CPUID_ADDRESS_SPACE_SIZES;
@@ -1148,7 +1147,6 @@ Return Value:
     //
     // Tracking to see if the config blob has all the required structures.
     //
-#pragma warning(disable : 4201)
 #if defined(MDE_CPU_X64)
     static const UINT64 AllStructuresFound = 0x1FF;
     union {
@@ -1185,8 +1183,6 @@ Return Value:
         UINT64 AsUINT64;
     } requiredStructures;
 #endif
-#pragma warning(default : 4201)
-
     requiredStructures.AsUINT64 = 0;
 
     header = GetStartOfConfigBlob();

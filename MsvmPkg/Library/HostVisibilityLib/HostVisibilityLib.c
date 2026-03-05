@@ -7,13 +7,12 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include <Hv/HvGuest.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Uefi/UefiBaseType.h>
 #include <IsolationTypes.h>
-
+#include "AllowNamelessAggregate.h"
 UINT64
 _sev_pvalidate(
     IN  VOID    *Address,
@@ -37,7 +36,6 @@ SpecialGhcbCall(
     UINT64 GhcbValue
     );
 
-#pragma warning(disable : 4201)
 typedef union _GHCB_MSR
 {
     UINT64 AsUINT64;
@@ -55,7 +53,6 @@ typedef union _GHCB_MSR
     };
 
 } GHCB_MSR;
-#pragma warning(default : 4201)
 
 #define GHCB_INFO_PAGE_STATE_CHANGE     0x014
 #define GHCB_INFO_PAGE_STATE_UPDATED    0x015
@@ -89,7 +86,6 @@ typedef struct _SVSM_PVALIDATE {
 
 #define TDX_TDG_STATUS(_status_) ((_status_) >> 32)
 
-#pragma warning(disable : 4201)
 typedef union _TDX_ACCEPT_GPA {
     UINT64 AsUINT64;
     struct {
@@ -98,7 +94,6 @@ typedef union _TDX_ACCEPT_GPA {
         UINT64 GpaPageNumber : 52;
     };
 } TDX_ACCEPT_GPA, *PTDX_ACCEPT_GPA;
-#pragma warning(default : 4201)
 
 UINT64
 _tdx_tdg_mem_page_accept(

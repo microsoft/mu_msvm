@@ -25,6 +25,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/PcdLib.h>
 #include <Library/EmclLib.h>
+#include "AllowNamelessAggregate.h"
 #include "Inline.h"
 
 //
@@ -62,7 +63,6 @@ typedef struct _EFI_KEY_BUFFER
 // Encapsulates the EFI KeyState (shift key and toggle key state) plus
 // internal state specific to the Hyper-V driver.
 //
-#pragma warning(disable : 4201)
 typedef struct _SYNTH_KEYBOARD_STATE
 {
     EFI_KEY_STATE   KeyState;
@@ -83,7 +83,6 @@ typedef struct _SYNTH_KEYBOARD_STATE
     };
 
 }SYNTH_KEYBOARD_STATE, *PSYNTH_KEYBOARD_STATE;
-#pragma warning(default : 4201)
 
 
 #define SYNTH_KEYBOARD_DEVICE_SIGNATURE         SIGNATURE_32('S', 'k', 'e', 'y')

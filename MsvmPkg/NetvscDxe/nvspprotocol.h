@@ -8,8 +8,8 @@
     Copyright (c) Microsoft Corporation.
     SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #pragma once
+#include "AllowNamelessAggregate.h"
 
 #define NVSP_INVALID_PROTOCOL_VERSION           ((UINT32)0xFFFFFFFF)
 
@@ -208,7 +208,6 @@ typedef UINT32 GPADL_HANDLE;
 // in Win7 to indicate major and minor protocol version
 // number.
 //
-#pragma warning(disable : 4201)
 typedef struct _NVSP_MESSAGE_INIT
 {
     union
@@ -222,7 +221,6 @@ typedef struct _NVSP_MESSAGE_INIT
     };
     UINT32                                  ProtocolVersion2;           // was MaxProtocolVersion
 } NVSP_MESSAGE_INIT, *PNVSP_MESSAGE_INIT;
-#pragma warning(default : 4201)
 
 //
 // This message is used by the VSP to complete the initialization
@@ -397,7 +395,6 @@ typedef struct _NVSP_1_MESSAGE_SEND_RNDIS_PACKET_COMPLETE
 // to the VSP. The VSP can use this information when handling
 // OIDs sent by the VSC.
 //
-#pragma warning(disable : 4201)
 typedef struct _NVSP_2_NETVSC_CAPABILITIES
 {
     union
@@ -415,7 +412,6 @@ typedef struct _NVSP_2_NETVSC_CAPABILITIES
         };
     };
 } NVSP_2_NETVSC_CAPABILITIES, *PNVSP_2_NETVSC_CAPABILITIES;
-#pragma warning(default : 4201)
 
 typedef struct _NVSP_2_MESSAGE_SEND_NDIS_CONFIG
 {
@@ -513,7 +509,6 @@ typedef struct _NVSP_5_MESSAGE_OID_QUERY_EX
 //
 typedef int NDIS_STATUS, *PNDIS_STATUS;
 
-#pragma warning(disable : 4201)
 typedef struct _NVSP_5_MESSAGE_OID_QUERY_EX_COMPLETE
 {
     //
@@ -532,7 +527,6 @@ typedef struct _NVSP_5_MESSAGE_OID_QUERY_EX_COMPLETE
         UINT32 BytesNeeded;
     };
 } NVSP_5_MESSAGE_OID_QUERY_EX_COMPLETE, *PNVSP_5_MESSAGE_OID_QUERY_EX_COMPLETE;
-#pragma warning(default : 4201)
 
 //
 // This defines the subchannel requests we can send to the host. We don't need
