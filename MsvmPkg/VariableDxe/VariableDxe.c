@@ -523,8 +523,6 @@ Returns:
 {
     VARIABLE_HEADER* newVariable;
     UINTN newVariableSize;
-    UINTN scratchSize;
-    UINTN scratchDataSize;
     UINTN nameOffset;
     UINTN nameSize;
     UINTN dataOffset;
@@ -663,14 +661,8 @@ Returns:
     //
     // Now update variable or create new variable.
     //
-    // Use scratch data area at the end as temporary storage for the new/updated variable.
-    //
     newVariable = GetEndPointer(mVariableStore);
-    scratchSize = STORE_SCRATCH_SIZE;
-    scratchDataSize = scratchSize - sizeof(VARIABLE_HEADER) -
-                      StrSize(VariableName) - GET_PAD_SIZE(StrSize(VariableName));
-
-    SetMem(newVariable, scratchSize, 0xff);
+    SetMem(newVariable, STORE_SCRATCH_SIZE, 0xff);
 
     newVariable->StartId  = VARIABLE_DATA;
     //
