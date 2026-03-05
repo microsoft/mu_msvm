@@ -567,9 +567,9 @@ SecProcessVirtualCpuid (
             //
 
             cpuidResult.Eax = cpuidInfo->MaximumLeafIndex | (leaf & 0x80000000);
-            cpuidResult.Ebx = 'htuA';
-            cpuidResult.Edx = 'itne';
-            cpuidResult.Ecx = 'DMAc';
+            cpuidResult.Ebx = SIGNATURE_32('A','u','t','h');
+            cpuidResult.Edx = SIGNATURE_32('e','n','t','i');
+            cpuidResult.Ecx = SIGNATURE_32('c','A','M','D');
         }
         break;
 
@@ -590,7 +590,7 @@ SecProcessVirtualCpuid (
         break;
 
     case HvCpuIdFunctionHvInterface:
-        cpuidResult.HvInterface.Interface = '1#vH';
+        cpuidResult.HvInterface.Interface = HvMicrosoftHypervisorInterface;
         break;
 
     case HvCpuIdFunctionMsHvFeatures:
