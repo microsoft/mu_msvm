@@ -241,12 +241,6 @@ VpciChannelReceivePacketCallback(
             FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
 
-        if (busRelationsPacket->Devices == NULL)
-        {
-            DEBUG((DEBUG_ERROR, "vpci child device list empty!\n"));
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-
         DEBUG((DEBUG_VPCI_INFO, "Recv VpciMsgBusRelations packet, number of child devices 0x%x\n", busRelationsPacket->Devices));
 
         sizeRequired = context->DeviceCount * sizeof(VPCI_DEVICE_DESCRIPTION) + OFFSET_OF(VPCI_QUERY_BUS_RELATIONS, Devices);
