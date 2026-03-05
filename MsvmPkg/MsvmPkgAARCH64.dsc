@@ -41,10 +41,10 @@
 
 # ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64k aligned
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
-  MSFT:*_*_AARCH64_DLINK_FLAGS = /ALIGN:0x10000
+  *_*_AARCH64_DLINK_FLAGS = -align:0x10000
 
 [BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  MSFT:*_*_*_DLINK_FLAGS = /ALIGN:4096 /FILEALIGN:4096
+  *_*_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
@@ -952,8 +952,16 @@
 
 [BuildOptions]
   # Generate PDBs on release builds with full debugging, with linker and CC flags
-  # Force file alignment to 4K as required on AArch64
-  MSFT:*_*_*_DLINK_FLAGS = /FILEALIGN:4096 /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
+  MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   # /d2overrideInterlockedIntrinsArm64- inlines Interlocked sequences.
   # TODO: And they are ARMv8.0 that ARMcorp says not to use on newer hardware.
   MSFT:*_*_*_CC_FLAGS = /Z7 /d2overrideInterlockedIntrinsArm64-
+
+  # Set file alignment and (memory) alignment to 4K.
+  # Memory alignment 4K is required for page protection.
+  # i.e. So that, text/data/rdata are on different pages,
+  # so that data/rdata are not executable and text/rdata are not writable.
+  # This is the main reason sections exist and the main feature of the PE format.
+  # File==memory for execute in place, or loader perf/simplicity otherwise.
+  # Memory alignment defaults to 4K, if not otherwise changed by build system.
+  *_*_*_DLINK_FLAGS = -filealign:4096
