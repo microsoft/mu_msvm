@@ -13,6 +13,7 @@
 
 [Sources]
     Barrier.c
+    Interlocked.c
     VolatileAccessors.c
 
 [Packages]
