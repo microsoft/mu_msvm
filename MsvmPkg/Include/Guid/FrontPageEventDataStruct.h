@@ -8,9 +8,9 @@ Copyright (c) 2015, Microsoft Corporation. All rights reserved.<BR>
 #ifndef _FRONT_PAGE_EVENT_DATA_STRUCT_H_
 #define _FRONT_PAGE_EVENT_DATA_STRUCT_H_
 
-//==========================================
+//------------------------------------------
 // Data Structure GUID and Definitions
-//==========================================
+//------------------------------------------
 
 //
 // Establish the structure version that this was written for.
@@ -83,9 +83,9 @@ typedef struct {
 extern EFI_GUID gFrontPageNVVarGuid;
 
 
-//==========================================
+//------------------------------------------
 // Event GUIDs and Definitions
-//==========================================
+//------------------------------------------
 
 //
 // Create definitions for the Hyper-V FrontPage variables.
