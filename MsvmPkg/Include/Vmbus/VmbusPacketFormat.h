@@ -7,6 +7,7 @@
 --*/
 #pragma once
 #include "AllowNamelessAggregate.h"
+#include "StaticAssert1.h"
 
 typedef enum _ENDPOINT_TYPE {
     VmbusServerEndpoint = 0,
@@ -53,7 +54,7 @@ typedef struct _VMRCB
 
 } VMRCB, *PVMRCB;
 
-STATIC_ASSERT(OFFSET_OF(VMRCB, FeatureBits) == 64, "");
+STATIC_ASSERT_1(OFFSET_OF(VMRCB, FeatureBits) == 64);
 
 //
 // This structure defines a range in guest physical space that can be made

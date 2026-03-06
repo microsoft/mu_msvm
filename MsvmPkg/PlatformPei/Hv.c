@@ -13,6 +13,7 @@
 #include <Hv/HvGuestCpuid.h>
 #include <Library/DebugLib.h>
 #include <Library/CrashDumpAgentLib.h>
+#include "StaticAssert1.h"
 
 BOOLEAN mParavisorPresent = FALSE;
 UINT32 mIsolationType = UefiIsolationTypeNone;
@@ -71,19 +72,19 @@ Return Value:
     switch (cpuidResult.MsHvIsolationConfiguration.IsolationType)
     {
     case HV_PARTITION_ISOLATION_TYPE_VBS:
-        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs, ""); }
+        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs); }
         mIsolationType = UefiIsolationTypeVbs;
         break;
     case HV_PARTITION_ISOLATION_TYPE_SNP:
-        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp, ""); }
+        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp); }
         mIsolationType = UefiIsolationTypeSnp;
         break;
     case HV_PARTITION_ISOLATION_TYPE_TDX:
-        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx, ""); }
+        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx); }
         mIsolationType = UefiIsolationTypeTdx;
         break;
     case HV_PARTITION_ISOLATION_TYPE_NONE:
-        { STATIC_ASSERT(HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone, ""); }
+        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone); }
         return;
     default:
         ASSERT(FALSE);

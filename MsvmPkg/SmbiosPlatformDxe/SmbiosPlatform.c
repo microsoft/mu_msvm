@@ -19,6 +19,7 @@
 #include <IndustryStandard/SmBios.h>
 #include <IndustryStandard/Acpi.h>
 #include <stddef.h>
+#include "StaticAssert1.h"
 
 #define MAJOR_RELEASE_VERSION 4
 #define MINOR_RELEASE_VERSION 1
@@ -933,8 +934,8 @@ Return Value:
     ZeroMem (&cpuInfo.Formatted.ProcessorId, sizeof (cpuInfo.Formatted.ProcessorId));
     // Copy ProcessorId and Voltage using casts because they have explicit
     // structure types with no unions to access all the data.
-    STATIC_ASSERT (sizeof (cpuInfo.Formatted.ProcessorId) == 8, "");
-    STATIC_ASSERT (sizeof (cpuInfo.Formatted.Voltage) == 1, "");
+    STATIC_ASSERT_1 (sizeof (cpuInfo.Formatted.ProcessorId) == 8);
+    STATIC_ASSERT_1 (sizeof (cpuInfo.Formatted.Voltage) == 1);
     *((UINT64*)(&cpuInfo.Formatted.ProcessorId)) = PcdGet64(PcdSmbiosProcessorID);
     *((UINT8*)(&cpuInfo.Formatted.Voltage))      = PcdGet8(PcdSmbiosProcessorVoltage);
 
