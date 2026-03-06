@@ -28,6 +28,7 @@
 #include "BiosInterface.h"
 #include <IsolationTypes.h>
 #include "Inline.h"
+#include "StaticAssert1.h"
 
 //
 // Information on a currently pending event.
@@ -77,7 +78,7 @@ typedef struct
 //  Channel Id GUID must be the first field in the EVENT_CHANNEL
 //  as it is used as the object lookup key in the handle table.
 //
-STATIC_ASSERT(OFFSET_OF(EVENT_CHANNEL,Id) == 0, "");
+STATIC_ASSERT_1(OFFSET_OF(EVENT_CHANNEL,Id) == 0);
 
 //
 // Number of bytes to increase the enumeration bounce buffer by
