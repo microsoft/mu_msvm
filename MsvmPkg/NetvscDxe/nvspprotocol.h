@@ -10,6 +10,7 @@
 **/
 #pragma once
 #include "AllowNamelessAggregate.h"
+#include "StaticAssert1.h"
 
 #define NVSP_INVALID_PROTOCOL_VERSION           ((UINT32)0xFFFFFFFF)
 
@@ -650,6 +651,6 @@ typedef struct _NVSP_MESSAGE
     UINT32                                  Padding;
 } NVSP_MESSAGE, *PNVSP_MESSAGE;
 
-STATIC_ASSERT(sizeof(NVSP_MESSAGE) % 8 == 0, "");
+STATIC_ASSERT_1(sizeof(NVSP_MESSAGE) % 8 == 0);
 
 #pragma pack(pop)

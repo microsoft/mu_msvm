@@ -5,8 +5,8 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #pragma once
+#include "StaticAssert1.h"
 
 #define CmResourceTypeNull                      0
 #define CmResourceTypeMemory                    3
@@ -49,4 +49,4 @@ typedef struct _CM_PARTIAL_RESOURCE_DESCRIPTOR {
 
 #pragma pack()
 
-STATIC_ASSERT(sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR) == 0x14, "");
+STATIC_ASSERT_1(sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR) == 0x14);
