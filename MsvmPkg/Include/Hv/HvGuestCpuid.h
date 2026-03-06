@@ -179,11 +179,11 @@ typedef union _HV_X64_PLATFORM_CAPABILITIES {
 //
 // Typedefs for CPUID leaves on HvMicrosoftHypercallInterface-supporting
 // hypervisors.
-// =====================================================================
+// ---------------------------------------------------------------------
 //
 // The below CPUID leaves are present if VersionAndFeatures.HypervisorPresent
 // is set by CPUID(HvCpuIdFunctionVersionAndFeatures).
-// =====================================================================
+// ---------------------------------------------------------------------
 //
 
 typedef enum _HV_CPUID_FUNCTION
