@@ -895,7 +895,7 @@ Return Value:
             0, // ProcessorType
             0, // ProcessorFamily
             2, // ProcessorManufacturer string index
-            {0}, // ProcessorId
+            {{0}}, // ProcessorId
             3, // ProcessorVersion string index
             {0}, // Voltage
             0, // ExternalClock
