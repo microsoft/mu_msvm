@@ -5,7 +5,6 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include <IsolationTypes.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -19,7 +18,7 @@
 #include <Library/UefiLib.h>
 #include <PiDxe.h>
 #include <Protocol/InternalEventServices.h>
-
+#include "MsInterlocked.h"
 #include "VmbusP.h"
 
 #define VMBUS_SUPPORTED_FEATURE_FLAGS (VMBUS_FEATURE_FLAG_CLIENT_ID)
@@ -809,7 +808,7 @@ VmbusRootScanEventFlags(
     wordCount = RootContext->MaxInterruptUsed / 64 + 1;
     for (wordIndex = 0; wordIndex < wordCount; ++wordIndex)
     {
-        currentWord = _InterlockedExchange64(&flags[wordIndex], 0);
+        currentWord = InterlockedExchange64(&flags[wordIndex], 0);
         while(_BitScanForward64(&bitIndex, currentWord) != 0)
         {
             currentWord &= ~((UINT64)1 << bitIndex);
