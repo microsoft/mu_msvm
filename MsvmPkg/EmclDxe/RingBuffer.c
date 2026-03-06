@@ -1036,7 +1036,7 @@ PkSendPacketRaw(
 {
     EFI_STATUS      status;
     UINT32          newIn;
-    UINT8*          buffer;
+    void*           buffer;
 
     ASSERT(PacketBufSize > 0);
 
