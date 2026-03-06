@@ -848,6 +848,11 @@ PkGetReceiveBuffer(
 
     packetLength = header->Length8 * 8;
 
+    //
+    // Prevent double fetches of the packet length.
+    //
+
+    CompilerBarrier();
     totalPacketSize = packetLength + sizeof(PREVIOUS_PACKET_OFFSET);
 
     //
