@@ -4,7 +4,6 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #include <Uefi.h>
 #include <Library/BaseLib.h>
 #include <Library/BiosDeviceLib.h>
@@ -12,8 +11,8 @@
 #include <Hv/HvGuestCpuid.h>
 #include <Hv/HvGuestMsr.h>
 #include <BiosInterface.h>
-
 #include "CrashLibConstants.h"
+#include "MsCpuid.h"
 
 VOID
 TripleFault(
@@ -47,7 +46,7 @@ ReportCrash(
     // Determine if crash MSRs are supported
     //
     HV_CPUID_RESULT cpuidResult;
-    __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
 
     if (!cpuidResult.MsHvFeatures.GuestCrashRegsAvailable)
     {

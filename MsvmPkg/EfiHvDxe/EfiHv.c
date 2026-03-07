@@ -20,14 +20,14 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/HvHypercallLib.h>
-#include "MsBarrier.h"
-
 #if defined(MDE_CPU_X64)
 #include <Library/LocalApicLib.h>
 #endif
 #if defined(MDE_CPU_AARCH64)
 #include <Protocol/HardwareInterrupt.h>
 #endif
+#include "MsBarrier.h"
+#include "MsCpuid.h"
 
 #define WINHVP_MAX_REPS_PER_HYPERCALL   0xFFF
 typedef struct _EFI_HV_SINT_CONFIGURATION
@@ -1586,7 +1586,7 @@ EfiHvConnectToHypervisor (
         // Validate that the hypervisor is present, is a Microsoft hypervisor,
         // and has all the required features.
         //
-        __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
+        MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
         if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
         {
             status = EFI_UNSUPPORTED;
@@ -1594,7 +1594,7 @@ EfiHvConnectToHypervisor (
             goto Exit;
         }
 
-        __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
+        MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
         if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
         {
             status = EFI_UNSUPPORTED;
@@ -1796,11 +1796,11 @@ EfiHvConnectToHypervisor (
     }
     else
     {
-        __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
+        MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
         mAutoEoi = !cpuidResult.MsHvEnlightenmentInformation.DeprecateAutoEoi;
         DEBUG((DEBUG_VERBOSE, "--- %a: mAutoEoi 0x%x\n", __FUNCTION__, mAutoEoi));
 
-        __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
+        MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
         if (!(cpuidResult.MsHvFeatures.PartitionPrivileges.AccessPartitionReferenceCounter &&
               cpuidResult.MsHvFeatures.PartitionPrivileges.AccessSynicRegs &&
               cpuidResult.MsHvFeatures.PartitionPrivileges.AccessSyntheticTimerRegs &&
