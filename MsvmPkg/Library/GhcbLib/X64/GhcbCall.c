@@ -4,24 +4,22 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-
 #include <Base.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/GhcbLib.h>
+#include "MsBit.h"
 
 EFI_TPL
 GhcbpDisableInterrupts(
     VOID
     );
 
-
 VOID
 GhcbpEnableInterrupts(
     EFI_TPL tpl
     );
-
 
 typedef struct _GHCB_HYPERCALL {
     UINT64 Parameters[511];
@@ -36,7 +34,7 @@ typedef struct _GHCB_HYPERCALL {
 #define GHCB_SET_FIELD_VALID(Ghcb, Field) \
     do { \
         if (Field < GHCB_FIELD_VALID_BITMAP0) { \
-            _bittestandset64((UINT64*)((UINT8*)(Ghcb) + GHCB_FIELD_VALID_BITMAP0), GHCB_FIELD_INDEX(Field)); \
+            SetBit (((UINT8*)(Ghcb)) + GHCB_FIELD_VALID_BITMAP0, GHCB_FIELD_INDEX (Field)); \
         } \
     } while (0)
 

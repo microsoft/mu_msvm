@@ -13,6 +13,7 @@
 
 [Sources]
     Barrier.c
+    Bit.c
     Cpuid.c
     Interlocked.c
     InternalEventServices.c

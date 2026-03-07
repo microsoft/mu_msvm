@@ -20,6 +20,7 @@
 #include <Protocol/InternalEventServices.h>
 #include "MsInterlocked.h"
 #include "MsInternalEventServices.h"
+#include "MsBit.h"
 #include "VmbusP.h"
 
 EFI_HV_PROTOCOL *mHv;
@@ -813,7 +814,7 @@ VmbusRootScanEventFlags(
     for (wordIndex = 0; wordIndex < wordCount; ++wordIndex)
     {
         currentWord = InterlockedExchange64(&flags[wordIndex], 0);
-        while(_BitScanForward64(&bitIndex, currentWord) != 0)
+        while (BitScanForward64(&bitIndex, currentWord))
         {
             currentWord &= ~((UINT64)1 << bitIndex);
             gBS->SignalEvent(
