@@ -3,16 +3,13 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include <IsolationTypes.h>
-
 #include <Protocol/EfiHv.h>
 #include <Protocol/Emcl.h>
 #include <Protocol/InternalEventServices.h>
-
 #include <Library/DebugLib.h>
 #include <Library/EmclLib.h>
-
+#include "MsInternalEventServices.h"
 #include "NetvscDxe.h"
 #include "nvspprotocol.h"
 #include "rndis.h"
@@ -47,9 +44,6 @@
 #define NDIS_STATUS_NETWORK_CHANGE              ((NDIS_STATUS)0x40010018L)
 
 #define TPL_NETVSC_CALLBACK                (TPL_CALLBACK + 2)
-
-INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices = NULL;
-
 
 EFI_STATUS
 NetvscInit(

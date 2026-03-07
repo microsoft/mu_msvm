@@ -39,6 +39,7 @@
   DebugLib
   EmclLib
   MemoryAllocationLib
+  MsBaseLib
   SynchronizationLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint

@@ -37,12 +37,10 @@ typedef struct _GPA_RANGE
 #define EFI_VMBUS_CHANNEL_DEVICE_PATH_GUID \
     {0x9b17e5a2, 0x891, 0x42dd, {0xb6, 0x53, 0x80, 0xb5, 0xc2, 0x28, 0x9, 0xba}}
 
-EFI_HV_PROTOCOL *mHv;
-EFI_HV_IVM_PROTOCOL *mHvIvm;
-UINTN mSharedGpaBoundary;
-UINT64 mCanonicalizationMask;
-
-extern EFI_GUID gEfiVmbusChannelDevicePathGuid;
+extern EFI_HV_PROTOCOL *mHv;
+extern EFI_HV_IVM_PROTOCOL *mHvIvm;
+extern UINTN mSharedGpaBoundary;
+extern UINT64 mCanonicalizationMask;
 
 //
 // A tag GUID for the VMBus bus controller. The UEFI driver model requires
@@ -111,9 +109,8 @@ typedef struct
 
 } VMBUS_CHANNEL_DEVICE_PATH;
 
-VMBUS_ROOT_NODE gVmbusRootNode;
-VMBUS_DEVICE_PATH gVmbusChannelNode;
-EFI_DEVICE_PATH_PROTOCOL gEfiEndNode;
+extern VMBUS_ROOT_NODE gVmbusRootNode;
+extern EFI_DEVICE_PATH_PROTOCOL gEfiEndNode;
 
 #define TPL_VMBUS (TPL_HIGH_LEVEL - 1)
 #define VMBUS_MAX_GPADLS 256

@@ -19,7 +19,13 @@
 #include <PiDxe.h>
 #include <Protocol/InternalEventServices.h>
 #include "MsInterlocked.h"
+#include "MsInternalEventServices.h"
 #include "VmbusP.h"
+
+EFI_HV_PROTOCOL *mHv;
+EFI_HV_IVM_PROTOCOL *mHvIvm;
+UINTN mSharedGpaBoundary;
+UINT64 mCanonicalizationMask;
 
 #define VMBUS_SUPPORTED_FEATURE_FLAGS (VMBUS_FEATURE_FLAG_CLIENT_ID)
 #define VMBUS_SUPPORTED_FEATURE_FLAGS_PARAVISOR \
@@ -54,8 +60,6 @@ struct _VMBUS_ROOT_CONTEXT
     UINT32 MaxInterruptUsed;
     UINT32 FeatureFlags;
 };
-
-INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices = NULL;
 
 // Values from MsvmPkg.dec
 VMBUS_ROOT_ALLOWED_GUIDS gAllowedGuids[VMBUS_NUMBER_OF_ALLOWED_GUIDS] = 

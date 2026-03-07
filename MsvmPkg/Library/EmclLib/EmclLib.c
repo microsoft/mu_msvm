@@ -4,20 +4,20 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include <Uefi.h>
-
 #include <Library/UefiLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/DebugLib.h>
-
 #include <Protocol/Emcl.h>
 #include <Protocol/Vmbus.h>
 #include <Protocol/InternalEventServices.h>
-
 #include <Library/EmclLib.h>
+#include "MsInternalEventServices.h"
+
+// MsBaseLib does not work here, without forking BdsDxe.inf.
+INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices;
 
 typedef struct _EMCL_LIB_COMPLETION_CONTEXT
 {
@@ -27,12 +27,8 @@ typedef struct _EMCL_LIB_COMPLETION_CONTEXT
 
 } EMCL_LIB_COMPLETION_CONTEXT;
 
-
 extern EFI_GUID gEfiEmclTagProtocolGuid;
 extern EFI_GUID gEfiVmbusChannelDevicePathGuid;
-
-INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices = NULL;
-
 
 EFI_STATUS
 EFIAPI
