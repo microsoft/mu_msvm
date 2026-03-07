@@ -13,6 +13,7 @@
 #include <Hv/HvGuestCpuid.h>
 #include <Library/DebugLib.h>
 #include <Library/CrashDumpAgentLib.h>
+#include "MsCpuid.h"
 #include "StaticAssert1.h"
 
 BOOLEAN mParavisorPresent = FALSE;
@@ -47,28 +48,28 @@ Return Value:
     EFI_STATUS status = EFI_SUCCESS;
     UINT32 virtualAddressBits;
 
-    __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
     if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
     {
         DEBUG((DEBUG_INFO, "%a - Hypervisor is not present \n", __FUNCTION__));
         return;
     }
 
-    __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
     if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
     {
         DEBUG((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __FUNCTION__));
         return;
     }
 
-    __cpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
     if (!cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation)
     {
         DEBUG((DEBUG_INFO, "%a - Isolation is not present \n", __FUNCTION__));
         return;
     }
 
-    __cpuid(cpuidResult.AsUINT32, HvCpuidFunctionMsHvIsolationConfiguration);
+    MsCpuid(cpuidResult.AsUINT32, HvCpuidFunctionMsHvIsolationConfiguration);
     switch (cpuidResult.MsHvIsolationConfiguration.IsolationType)
     {
     case HV_PARTITION_ISOLATION_TYPE_VBS:
