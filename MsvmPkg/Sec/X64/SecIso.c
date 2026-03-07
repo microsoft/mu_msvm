@@ -16,13 +16,14 @@
 #include <Register/Intel/ArchitecturalMsr.h>
 #include <BiosInterface.h>
 #include <IsolationTypes.h>
+#include "MsBit.h"
 #include "SecP.h"
 
 #define GHCB_FIELD_INDEX(Field) ((Field) / 8)
 #define GHCB_SET_FIELD_VALID(Ghcb, Field) \
     do { \
         if (Field < GHCB_FIELD_VALID_BITMAP0) { \
-            _bittestandset64((UINT64*)((UINT8*)(Ghcb) + GHCB_FIELD_VALID_BITMAP0), GHCB_FIELD_INDEX(Field)); \
+            SetBit (((UINT8*)(Ghcb)) + GHCB_FIELD_VALID_BITMAP0, GHCB_FIELD_INDEX (Field)); \
         } \
     } while (0)
 
