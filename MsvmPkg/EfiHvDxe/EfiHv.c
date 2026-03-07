@@ -113,8 +113,6 @@ EFI_HARDWARE_INTERRUPT_PROTOCOL *mHwInt;
 #endif
 
 extern EFI_HV_PROTOCOL mHv;
-extern EFI_HV_IVM_PROTOCOL mHvIvm;
-
 
 UINTN
 EfiHvpSharedPa(

@@ -74,12 +74,10 @@ typedef struct _VMBFS_FILE {
     EFI_FILE_INFO EfiFileInfo;
 } VMBFS_FILE, *PVMBFS_FILE;
 
-
 extern const EFI_FILE_PROTOCOL gVmbFsEfiFileProtocol;
 extern const EFI_SIMPLE_FILE_SYSTEM_PROTOCOL gVmbFsSimpleFileSystemProtocol;
 extern const EFI_FILE_SYSTEM_INFO gVmbFsEfiFileSystemInfoPrototype;
 extern const EFI_FILE_INFO gVmbFsEfiFileInfoPrototype;
-UINTN gEventIndexDiscarded;
 
 //
 // Driver protocol implementation.

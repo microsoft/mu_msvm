@@ -9,8 +9,9 @@
 #include "StorvscDxe.h"
 #include <IndustryStandard/Scsi.h>
 #include <Vmbus/NtStatus.h>
-#include "StorportDxe.h"
 #include "Inline.h"
+#include "MsInternalEventServices.h"
+#include "StorportDxe.h"
 
 typedef struct _STOR_CHANNEL_PROTOCOL_VERSION
 {
@@ -40,8 +41,6 @@ const STOR_CHANNEL_PROTOCOL_VERSION g_StorChannelSupportedVersions[] =
 // This operation is missing from Industrystandard/Scsi.h
 //
 #define EFI_SCSI_OP_REPORT_LUNS 0xA0
-
-INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices = NULL;
 
 __forceinline
 BOOLEAN

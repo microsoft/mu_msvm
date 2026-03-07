@@ -62,6 +62,7 @@
   DebugLib
   EmclLib
   IsolationLib
+  MsBaseLib                                     ## MS_HYP_CHANGE
   NetLib
   PcdLib
   PrintLib
