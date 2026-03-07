@@ -36,6 +36,7 @@
     DevicePathLib
     EmclLib
     MemoryAllocationLib
+    MsBaseLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiLib

@@ -89,11 +89,7 @@ STATIC_ASSERT_1(OFFSET_OF(EVENT_CHANNEL,Id) == 0);
 //
 // Handle table for managing channels.
 //
-EFI_HANDLE  mEventChannels      = NULL;
-
-EFI_HV_PROTOCOL *mHv;
-EFI_HV_IVM_PROTOCOL *mHvIvm;
-
+EFI_HANDLE mEventChannels;
 
 const EFI_EVENTLOG_PROTOCOL mEfiEventLogProtocol =
 {
