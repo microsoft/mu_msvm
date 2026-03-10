@@ -5,7 +5,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
-#ifdef __clang__
+#if (defined(__clang__) || defined(__GNUC__)) && defined(MDE_CPU_X64)
 void _ModuleEntryPoint(void) { }
 void _sev_pvalidate(void) { }
 void _sev_vmgexit(void) { }
