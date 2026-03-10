@@ -15,6 +15,7 @@
 #if defined(MDE_CPU_AARCH64)
 
 HV_HYPERCALL_OUTPUT
+EFIAPI
 AsmHyperCall(
     IN  HV_HYPERCALL_INPUT  InputControl,
         UINT64              InputPhysicalAddress,
@@ -22,18 +23,21 @@ AsmHyperCall(
     );
 
 HV_STATUS
+EFIAPI
 AsmGetVpRegister64(
         UINT32  RegisterIndex,
     OUT UINT64  *RegisterBuffer
     );
 
 HV_STATUS
+EFIAPI
 AsmGetVpRegister(
         UINT32              RegisterIndex,
     OUT HV_REGISTER_VALUE  *RegisterBuffer
     );
 
 HV_STATUS
+EFIAPI
 AsmSetVpRegister64(
     UINT32  RegisterIndex,
     UINT64  RegisterBuffer

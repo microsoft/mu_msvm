@@ -14,6 +14,7 @@
 #include <IsolationTypes.h>
 #include "AllowNamelessAggregate.h"
 UINT64
+EFIAPI
 _sev_pvalidate(
     IN  VOID    *Address,
         UINT32  PageSize,
@@ -22,6 +23,7 @@ _sev_pvalidate(
     );
 
 UINT64
+EFIAPI
 VispCallSvsm(
     UINT64 CallCode,
     UINT64 Parameter
@@ -32,6 +34,7 @@ VispCallSvsm(
 #define SNP_FAIL_SIZEMISMATCH   6
 
 UINT64
+EFIAPI
 SpecialGhcbCall(
     UINT64 GhcbValue
     );
@@ -96,17 +99,18 @@ typedef union _TDX_ACCEPT_GPA {
 } TDX_ACCEPT_GPA, *PTDX_ACCEPT_GPA;
 
 UINT64
+EFIAPI
 _tdx_tdg_mem_page_accept(
     TDX_ACCEPT_GPA AcceptGpa
     );
 
 UINT64
+EFIAPI
 _tdx_vmcall_map_gpa(
                     UINT64  Gpa,
                     UINT64  Size,
     OUT OPTIONAL    UINT64  *FailedGpa
     );
-
 
 EFI_STATUS
 EfiUpdatePageRangeAcceptanceSnp(
