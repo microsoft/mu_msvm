@@ -1223,12 +1223,11 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel;
     EFI_STATUS status = EFI_NOT_FOUND;
 
-    channel = EventChannelFromHandle(Channel);
+    EVENT_CHANNEL *channel = EventChannelFromHandle(Channel);
 
-    if (channel != NULL)
+    if (channel)
     {
         EventChannelLock(channel);
 
