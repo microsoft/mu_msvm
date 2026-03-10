@@ -22,12 +22,12 @@
 #if defined(MDE_CPU_X64)
 
 HV_HYPERCALL_OUTPUT
+EFIAPI
 HvHypercallpIssueTdxHypercall(
     IN  HV_HYPERCALL_INPUT  Control,
         UINT64              InputPhysicalAddress,
         UINT64              OutputPhysicalAddress
     );
-
 
 VOID
 HvHypercallConnect(

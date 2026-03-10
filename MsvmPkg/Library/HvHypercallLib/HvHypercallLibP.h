@@ -24,12 +24,14 @@ HvHypercallpIssueGhcbHypercall(
     );
 
 VOID
+EFIAPI
 _tdx_vmcall_wrmsr(
     UINT32 MsrIndex,
     UINT64 MsrValue
     );
 
 UINT64
+EFIAPI
 _tdx_vmcall_rdmsr(
     UINT32 MsrIndex
     );
