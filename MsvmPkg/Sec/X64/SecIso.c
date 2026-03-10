@@ -715,6 +715,7 @@ SecProcessIoPortWrite(
 }
 
 BOOLEAN
+EFIAPI
 SecProcessVirtualCommunicationException (
     IN PTRAP_FRAME TrapFrame
     )
@@ -765,6 +766,7 @@ SecProcessVirtualCommunicationException (
 }
 
 BOOLEAN
+EFIAPI
 SecProcessVirtualizationException (
     IN PTRAP_FRAME TrapFrame
     )
