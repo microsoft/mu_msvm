@@ -14,10 +14,9 @@
 #include <Protocol/Vmbus.h>
 #include <Protocol/InternalEventServices.h>
 #include <Library/EmclLib.h>
-#include "MsInternalEventServices.h"
 
 // MsBaseLib does not work here, without forking BdsDxe.inf.
-INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices;
+static INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices;
 
 typedef struct _EMCL_LIB_COMPLETION_CONTEXT
 {
