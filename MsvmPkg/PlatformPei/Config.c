@@ -1150,6 +1150,7 @@ Return Value:
 #if defined(MDE_CPU_X64)
     static const UINT64 AllStructuresFound = 0x1FF;
     union {
+        UINT64 AsUINT64;
         struct {
             UINT64 UefiConfigBiosInformation:1;
             UINT64 UefiConfigMadt:1;
@@ -1162,12 +1163,11 @@ Return Value:
             UINT64 UefiConfigMmioRanges:1;
             UINT64 Reserved:55;
         };
-
-        UINT64 AsUINT64;
-    } requiredStructures;
+    } requiredStructures={0};
 #elif defined(MDE_CPU_AARCH64)
     static const UINT64 AllStructuresFound = 0xFF;
     union {
+        UINT64 AsUINT64;
         struct {
             UINT64 UefiConfigBiosInformation:1;
             UINT64 UefiConfigSrat:1;
@@ -1179,11 +1179,8 @@ Return Value:
             UINT64 UefiConfigMmioRanges:1;
             UINT64 Reserved:56;
         };
-
-        UINT64 AsUINT64;
-    } requiredStructures;
+    } requiredStructures={0};
 #endif
-    requiredStructures.AsUINT64 = 0;
 
     header = GetStartOfConfigBlob();
 
