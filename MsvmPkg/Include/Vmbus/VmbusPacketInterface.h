@@ -6,8 +6,10 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 #pragma once
-#include "DeclspecCacheAlign.h"
 #include <Vmbus/VmbusPacketFormat.h>
+#include "DeclspecCacheAlign.h"
+#include "Pragma.h"
+#include "WarningDisable.h"
 
 #define EFI_RING_CORRUPT_ERROR              ENCODE_ERROR(0x00000102L)
 
@@ -31,7 +33,8 @@ typedef struct _PACKET_RING_CONTEXT
     UINT32                      DataBytesInRing;
 } PACKET_RING_CONTEXT, *PPACKET_RING_CONTEXT;
 
-#pragma warning(disable : 4324) // 4324 - structure was padded due to __declspec(align())
+MS_PRAGMA(warning(push))
+MS_WARNING_DISABLE(4324) // pad due to __declspec(align())
 typedef struct _PACKET_LIB_CONTEXT
 {
     //
@@ -40,6 +43,7 @@ typedef struct _PACKET_LIB_CONTEXT
 
     PACKET_RING_CONTEXT     Outgoing;
     PACKET_RING_CONTEXT     Incoming;
+    void*                   Reserved[2];
 
     //
     // Incoming loop mutable fields. Keep these on their own cache line.
@@ -64,10 +68,9 @@ typedef struct _PACKET_LIB_CONTEXT
     UINT64*                 InterruptMaskSkips;
 
 } PACKET_LIB_CONTEXT, *PPACKET_LIB_CONTEXT;
-#pragma warning(default : 4324)
+MS_PRAGMA(warning(pop))
 
 typedef PPACKET_LIB_CONTEXT PACKET_LIB_HANDLE;
-
 
 EFI_STATUS
 PkInitializeDoubleMappedRingBuffer(
