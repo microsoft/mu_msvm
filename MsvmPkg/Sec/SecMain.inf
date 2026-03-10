@@ -29,7 +29,8 @@
   X64/SecMain.c
 
 [Sources.AARCH64]
-  AArch64/SecEntry.masm | MSFT
+  AArch64/SecEntry.masm
+  AArch64/SecEntry.S
   AArch64/SecMain.c
 
 [Packages]

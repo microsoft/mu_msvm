@@ -25,6 +25,7 @@
 [Sources.AARCH64]
     AArch64/Mmu.c
     AArch64/Extra.masm
+    AArch64/Extra.S
 
 [Sources]
     Config.c

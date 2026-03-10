@@ -19,6 +19,9 @@
     InternalEventServices.c
     VolatileAccessors.c
 
+[Sources.AARCH64]
+    AArch64/AArch64Support.S
+
 [Packages]
     MdeModulePkg/MdeModulePkg.dec
     MdePkg/MdePkg.dec

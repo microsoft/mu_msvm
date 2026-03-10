@@ -1,0 +1,36 @@
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+#include <AsmMacroLib.h>
+
+ASM_FUNC(ConfigureCachesAndMmu)
+
+    //  x0 - TTBR0
+    //  x1 - TCR
+    //  x2 - MAIR
+
+    stp         x19,x20,[sp,#-0x20]!
+    stp         x21,lr,[sp,#0x10]
+
+    mov         x21,x0
+    mov         x20,x1
+    mov         x19,x2
+
+    bl          ArmDisableCachesAndMmu // It's forbidden to use memory (stack) after this line.
+
+    mov         x0,x21
+    bl          ArmSetTTBR0
+
+    mov         x0,x20
+    bl          ArmSetTCR
+
+    mov         x0,x19
+    bl          ArmSetMAIR
+
+    bl          ArmInvalidateTlb
+
+    bl          ArmEnableCachesAndMmu
+
+    ldp         x21,lr,[sp,#0x10]
+    ldp         x19,x20,[sp],#0x20
+
+    ret
