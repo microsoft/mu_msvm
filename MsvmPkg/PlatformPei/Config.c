@@ -28,9 +28,8 @@
 #include <Hob.h>
 #include "AllowNamelessAggregate.h"
 
-//
+#if defined(MDE_CPU_X64)
 // Values and type used with CPUID to get the physical address width.
-//
 #define CPUID_FUNCTION_EXTENDED_MAX_FUNCTION        0x80000000
 #define CPUID_FUNCTION_EXTENDED_ADDRESS_SPACE_SIZES 0x80000008
 
@@ -45,6 +44,7 @@ typedef union _CPUID_ADDRESS_SPACE_SIZES
 
     UINT32 Value;
 } CPUID_ADDRESS_SPACE_SIZES;
+#endif
 
 UINT8
 GetPhysicalAddressWidth(
@@ -113,11 +113,13 @@ Return Value:
     }
 
 #elif defined(MDE_CPU_AARCH64)
-
+#if defined(__clang__) || defined(__GNUC__)
+    physicalAddressWidth = ArmGetPhysicalAddressBits();
+#else
     // Read system register ID_AA64MMFR0_EL1
     // ID_AA64MMFR0_EL1.PARange is bits[3:0]
     // Valid values for ARMv8.1 PARange are 0 thru 6 which mean the following address widths.
-    static UINT8 aw[7] = { 32, 36, 40, 42, 44, 48, 52 };
+    static const UINT8 aw[7] = { 32, 36, 40, 42, 44, 48, 52 };
     UINT64 regValue = (UINT64)ArmReadIdMmfr0();
     DEBUG((DEBUG_VERBOSE, "ArmReadIdMmfr0 %lx PARange %lx\n", regValue, regValue & 0xF));
     if ((regValue & 0xF) < 7)
@@ -132,9 +134,8 @@ Return Value:
             minimumAddressWidth));
         physicalAddressWidth = minimumAddressWidth;
     }
-
 #endif
-
+#endif
     if (physicalAddressWidth < minimumAddressWidth)
     {
         DEBUG((DEBUG_WARN, "Increasing address width from %u to %u\n",
