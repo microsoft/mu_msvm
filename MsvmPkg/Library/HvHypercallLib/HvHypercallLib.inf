@@ -16,6 +16,7 @@
 
 [Sources.AARCH64]
     AArch64/HypercallImpl.masm
+    AArch64/HypercallImpl.S
 
 [Packages]
     MdePkg/MdePkg.dec
