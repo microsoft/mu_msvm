@@ -38,9 +38,9 @@ STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
   IN  AZIHSM_CONTROLLER_STATE  *State,
-  IN  AZIHSM_DDI_API_REV       ApiRevisionMax,
+  IN  CONST AZIHSM_DDI_API_REV *ApiRevisionMax,
   IN  UINT8                    *HsmSerialData,
-  IN  UINTN                    HsmSerialDataLength
+  IN  UINTN                     HsmSerialDataLength
 );
 
 //
@@ -327,7 +327,7 @@ AziHsmDriverBindingStart (
   }
 
   // Perform complete BKS3 derivation and sealing workflow: Use HSM serial number as input
-  Status = AziHsmPerformBks3SealingWorkflow (State, ApiRevisionMax, (UINT8 *)(&HsmIdenData.Sn), sizeof (HsmIdenData.Sn));
+  Status = AziHsmPerformBks3SealingWorkflow (State, &ApiRevisionMax, (UINT8 *)(&HsmIdenData.Sn), sizeof (HsmIdenData.Sn));
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: BKS3 derivation and sealing workflow failed. Status: %r\n", Status));
     Status = EFI_UNSUPPORTED;
@@ -383,9 +383,9 @@ STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
   IN  AZIHSM_CONTROLLER_STATE  *State,
-  IN  AZIHSM_DDI_API_REV       ApiRevisionMax,
+  IN  CONST AZIHSM_DDI_API_REV *ApiRevisionMax,
   IN  UINT8                    *HsmSerialData,
-  IN  UINTN                    HsmSerialDataLength
+  IN  UINTN                     HsmSerialDataLength
 )
 {
   EFI_STATUS          Status = EFI_INVALID_PARAMETER;
@@ -473,7 +473,6 @@ AziHsmPerformBks3SealingWorkflow (
     goto Exit;
   }
 
-
   // Use TPM to get random AES key and IV
   if (EFI_ERROR (AziHsmTpmGetRandom (sizeof (Aes256Key), Aes256Key))) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow - TPM GetRandom failed for key\n"));
@@ -536,7 +535,6 @@ AziHsmPerformBks3SealingWorkflow (
   // RecordSize does not include the size of the RecordSize field itself
   KeyIvRecord.RecordSize = sizeof(AZIHSM_KEY_IV_RECORD) - sizeof(UINT16);
 
-  
   ZeroMem (&KeyIvBuffer, sizeof (KeyIvBuffer));
   if (sizeof (KeyIvRecord) > sizeof (KeyIvBuffer.Data)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Key/IV record too large for AZIHSM_BUFFER\n"));
@@ -590,7 +588,6 @@ AziHsmPerformBks3SealingWorkflow (
     Status = EFI_ABORTED;
     goto Cleanup;
   }
-
 
   DEBUG ((DEBUG_INFO, "AziHsm: SetSealBKS3 Blob size : %d\n", SealedBKS3Buffer.Size));
 
