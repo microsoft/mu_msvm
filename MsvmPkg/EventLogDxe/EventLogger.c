@@ -27,6 +27,7 @@
 #include "EventLogger.h"
 #include "BiosInterface.h"
 #include <IsolationTypes.h>
+#include "AssignStruct.h"
 #include "Inline.h"
 #include "StaticAssert1.h"
 
@@ -978,7 +979,7 @@ Exit:
 
     if (!EFI_ERROR(status))
     {
-        *Metadata = eventMeta;
+        ASSIGN_STRUCT(Metadata, &eventMeta);
     }
 
     *Enumerator = enumContext;
@@ -1239,7 +1240,7 @@ Return Value:
         }
         else
         {
-            *Metadata = channel->Pending.Metadata;
+            ASSIGN_STRUCT(Metadata, &channel->Pending.Metadata);
             *Data     = channel->Pending.Cache;
             status    = EFI_SUCCESS;
         }
