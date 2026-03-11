@@ -1,13 +1,11 @@
-/** @file
-  This file contains architecture specific functions for debugging a failure.
-
-  Copyright (c) Microsoft Corporation.
-  SPDX-License-Identifier: BSD-2-Clause-Patent
-
-**/
-
-.code
-
+;
+;  This file contains architecture specific functions for debugging a failure.
+;
+;  Copyright (c) Microsoft Corporation.
+;  SPDX-License-Identifier: BSD-2-Clause-Patent
+;
+    default rel
+    section .text
 ;++
 ;
 ; TripleFault
@@ -24,24 +22,16 @@
 ; @return   None  This routine does not return
 ;
 ;--
-TripleFault PROC PUBLIC
-
-                mov     rax, rcx
+global TripleFault
+TripleFault:    mov     rax, rcx
                 mov     rbx, rdx
                 mov     rcx, r8
                 mov     rdx, r9
-
                 push    0
                 push    0
-                lidt    fword ptr [rsp]   ; SET EMPTY IDT
+                lidt    [rsp] ; SET EMPTY IDT
 ;
 ; Generate #UD using UD2 instruction
 ;
-EternalUD:
-                db      0FH, 0Bh        ; #UD -> #DF -> TRIPLE FAULT
-
+EternalUD:      ud2 ; #UD -> #DF -> TRIPLE FAULT
                 jmp     EternalUD
-
-TripleFault ENDP
-
-end
