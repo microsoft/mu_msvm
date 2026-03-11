@@ -6,7 +6,7 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
+#include "AssignStruct.h"
 #include "VmbfsEfi.h"
 
 const EFI_SIMPLE_FILE_SYSTEM_PROTOCOL gVmbFsSimpleFileSystemProtocol =
@@ -166,7 +166,7 @@ Return Value:
 
     fileInformation = &allocatedFileProtocol->FileInformation;
 
-    allocatedFileProtocol->EfiFileInfo = gVmbFsEfiFileInfoPrototype;
+    ASSIGN_STRUCT(&allocatedFileProtocol->EfiFileInfo, &gVmbFsEfiFileInfoPrototype);
     allocatedFileProtocol->EfiFileInfo.FileName[0] = L'\0';
 
     fileInformation->IsDirectory = TRUE;
@@ -231,12 +231,12 @@ Return Value:
         goto Cleanup;
     }
 
-    allocatedFileProtocol->EfiFileProtocol = gVmbFsEfiFileProtocol;
+    ASSIGN_STRUCT(&allocatedFileProtocol->EfiFileProtocol, &gVmbFsEfiFileProtocol);
 
     fileInformation->FileSystem = (PVMBFS_SIMPLE_FILE_SYSTEM_PROTOCOL)This;
     fileSystemInformation->ReferenceCount++;
 
-    *efiFileSystemInfo = gVmbFsEfiFileSystemInfoPrototype;
+    ASSIGN_STRUCT(efiFileSystemInfo, &gVmbFsEfiFileSystemInfoPrototype);
 
     *Root = &allocatedFileProtocol->EfiFileProtocol;
     status = EFI_SUCCESS;

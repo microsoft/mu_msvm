@@ -385,7 +385,7 @@ Returns:
 EFI_STATUS
 FindVariable(
     IN  CHAR16*           VariableName,
-    IN  EFI_GUID*         VendorGuid,
+    IN  const EFI_GUID*   VendorGuid,
     OUT VARIABLE_HEADER** Variable
   )
 /*++
@@ -910,7 +910,7 @@ Returns:
 
 --*/
 {
-    EFI_GUID hyperVGuid = HYPERV_PRIVATE_NAMESPACE;
+    static const EFI_GUID hyperVGuid = HYPERV_PRIVATE_NAMESPACE;
     EFI_STATUS status;
     UINT32 supportedIndications;
     VARIABLE_HEADER* variable;

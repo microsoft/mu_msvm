@@ -6,8 +6,8 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include "VmbfsEfi.h"
+#include "AssignStruct.h"
 
 const EFI_FILE_PROTOCOL gVmbFsEfiFileProtocol =
 {
@@ -318,7 +318,7 @@ Return Value:
 
     filePath = &efiFileInfo->FileName[0];
 
-    *efiFileInfo = gVmbFsEfiFileInfoPrototype;
+    ASSIGN_STRUCT(efiFileInfo, &gVmbFsEfiFileInfoPrototype);
 
     //
     // File path in VMBus message does not require a terminating NULL.
