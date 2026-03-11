@@ -63,3 +63,13 @@ FailFastFromMacro(
     IN  UINTN              Line,
     IN  CONST CHAR8 *      Description
     );
+
+#if defined(MDE_CPU_X64)
+VOID
+EFIAPI
+TripleFault(
+    IN  UINTN              ErrorCode,
+    IN  UINTN              Param1,
+    IN  UINTN              Param2,
+    IN  UINTN              Param3);
+#endif
