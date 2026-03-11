@@ -1,19 +1,21 @@
-/** @file
-  SecEntry
+; @file
+; SecEntry
+;
+; Copyright (c) 2006 - 2009, Intel Corporation. All rights reserved.
+; Copyright (c) Microsoft Corporation.
+; SPDX-License-Identifier: BSD-2-Clause-Patent
 
-  Copyright (c) 2006 - 2009, Intel Corporation. All rights reserved.
-  Copyright (c) Microsoft Corporation.
-  SPDX-License-Identifier: BSD-2-Clause-Patent
+#include "Base.h"
 
-**/
+%define ErrorCode 1
+%define Blank     0
 
-#include <Base.h>
+    default rel
+    section .text
 
-.code
-
-EXTERN SecCoreStartupWithStack:PROC
-EXTERN SecProcessVirtualCommunicationException:PROC
-EXTERN SecProcessVirtualizationException:PROC
+extern SecCoreStartupWithStack
+extern SecProcessVirtualCommunicationException
+extern SecProcessVirtualizationException
 
 ;
 ; SecCore Entry Point
@@ -28,7 +30,8 @@ EXTERN SecProcessVirtualizationException:PROC
 ;
 ; @return     None  This routine does not return
 ;
-_ModuleEntryPoint PROC PUBLIC
+global _ModuleEntryPoint
+_ModuleEntryPoint:
 
     ;
     ; Load temporary stack top at very low memory.  The C code
@@ -59,48 +62,44 @@ _ModuleEntryPoint PROC PUBLIC
     ; If SecCoreStartupWithStack returns, then startup has failed.  Invoke a
     ; fatal exception.
     ;
-    int     3
-
-_ModuleEntryPoint ENDP
+    int3
 
 ;
 ; #VC exception handler
 ;
 
-TrapFrame   struct      ; keep in sync with SecP.h
-            P1Home      dq ?
-            P2Home      dq ?
-            P3Home      dq ?
-            P4Home      dq ?
-            SavedXmm0   oword ?
-            SavedXmm1   oword ?
-            SavedXmm2   oword ?
-            SavedXmm3   oword ?
-            SavedXmm4   oword ?
-            SavedXmm5   oword ?
-            SavedRax    dq ?
-            SavedRcx    dq ?
-            SavedRdx    dq ?
-            SavedRbx    dq ?
-            SavedR8     dq ?
-            SavedR9     dq ?
-            SavedR10    dq ?
-            SavedR11    dq ?
-            TrErrorCode dq ?
-TrapFrame   ends
+struc TrapFrame ; keep in sync with SecP.h
+            .P1Home      dq ?
+            .P2Home      dq ?
+            .P3Home      dq ?
+            .P4Home      dq ?
+            .SavedXmm0   do ?
+            .SavedXmm1   do ?
+            .SavedXmm2   do ?
+            .SavedXmm3   do ?
+            .SavedXmm4   do ?
+            .SavedXmm5   do ?
+            .SavedRax    dq ?
+            .SavedRcx    dq ?
+            .SavedRdx    dq ?
+            .SavedRbx    dq ?
+            .SavedR8     dq ?
+            .SavedR9     dq ?
+            .SavedR10    dq ?
+            .SavedR11    dq ?
+            .TrErrorCode dq ?
+endstruc
 
-BEGIN_TRAP_HANDLER macro ErrorCode
+%macro BEGIN_TRAP_HANDLER 1
+; %1 is ErrorCode, true or false
 
-ifb <ErrorCode>
-
-            sub     rsp, (sizeof TrapFrame) ; allocate trap frame storage
-
-else
-
+%if %1
+            ; If there is already ErrorCode from hardware, allocate TrapFrame without ErrorCode.
             sub     rsp, TrapFrame.TrErrorCode ; allocate trap frame storage
-
-endif
-
+%else
+            ; If there is no ErrorCode from hardware, allocate full TrapFrame.
+            sub     rsp, TrapFrame_size        ; allocate trap frame storage
+%endif
             mov     TrapFrame.SavedRax[rsp], rax ; save volatile registers
             mov     TrapFrame.SavedRcx[rsp], rcx
             mov     TrapFrame.SavedRdx[rsp], rdx
@@ -115,10 +114,9 @@ endif
             movdqa  TrapFrame.SavedXmm4[rsp], xmm4
             movdqa  TrapFrame.SavedXmm5[rsp], xmm5
             mov     TrapFrame.SavedRbx[rsp], rbx ; non-volatile but required by trap handler
+%endmacro
 
-            endm
-
-END_TRAP_HANDLER macro
+%macro END_TRAP_HANDLER 0
 
             movdqa  xmm0, TrapFrame.SavedXmm0[rsp] ; restore volatile registers
             movdqa  xmm1, TrapFrame.SavedXmm1[rsp]
@@ -134,58 +132,49 @@ END_TRAP_HANDLER macro
             mov     rdx, TrapFrame.SavedRdx[rsp]
             mov     rcx, TrapFrame.SavedRcx[rsp]
             mov     rax, TrapFrame.SavedRax[rsp]
-            add     rsp, (sizeof TrapFrame) ; deallocate trap frame
+            add     rsp, TrapFrame_size ; deallocate trap frame
             iretq
 
-            endm
+%endmacro
 
-SecVirtualCommunicationExceptionHandler PROC PUBLIC
+global SecVirtualCommunicationExceptionHandler
+SecVirtualCommunicationExceptionHandler:
 
-            BEGIN_TRAP_HANDLER <ErrorCode>
+            BEGIN_TRAP_HANDLER ErrorCode
 
             mov     rcx, rsp                ; load address of trap frame
             call    SecProcessVirtualCommunicationException ; attempt to handle
             test    al, al                  ; check return value
-            jnz     @f                      ; if nz, successful
-            int     3                       ; force unrecoverable exception
-@@:
-
+            jnz SecVirtualCommunicationExceptionHandler_end ; if nz, successful
+            int3                            ; force unrecoverable exception
+SecVirtualCommunicationExceptionHandler_end :
             END_TRAP_HANDLER
-
-SecVirtualCommunicationExceptionHandler ENDP
 
 ;
 ; SecVmgexit
 ;
 ; Executes the VMGEXIT instruction
 ;
-
-SecVmgexit PROC PUBLIC
-
-            db      0f3h                ; VMGEXIT prefix
+global SecVmgexit
+SecVmgexit: db      0f3h                ; VMGEXIT prefix
             vmmcall
             ret
-
-SecVmgexit ENDP
 
 ;
 ; #VE exception handler
 ;
+global SecVirtualizationExceptionHandler
+SecVirtualizationExceptionHandler:
 
-SecVirtualizationExceptionHandler PROC PUBLIC
-
-            BEGIN_TRAP_HANDLER <>
+            BEGIN_TRAP_HANDLER Blank
 
             mov     rcx, rsp                ; load address of trap frame
             call    SecProcessVirtualizationException ; attempt to handle
             test    al, al                  ; check return value
-            jnz     @f                      ; if nz, successful
-            int     3                       ; force unrecoverable exception
-@@:
-
+            jnz SecVirtualizationExceptionHandler_end ; if nz, successful
+            int3 ; force unrecoverable exception
+SecVirtualizationExceptionHandler_end:
             END_TRAP_HANDLER
-
-SecVirtualizationExceptionHandler ENDP
 
 ;
 ; SecGetTdxVeInfo
@@ -194,9 +183,8 @@ SecVirtualizationExceptionHandler ENDP
 ;
 ; @param[out] RCX The VE info buffer to populate.
 ;
-
-SecGetTdxVeInfo PROC PUBLIC
-
+global SecGetTdxVeInfo
+SecGetTdxVeInfo:
             mov     r11, rcx            ; preserve output argument
             mov     eax, 3              ; TDG.VP.VEINFO.GET call code
             db      66h                 ; TDCALL instruction sequence
@@ -209,9 +197,6 @@ SecGetTdxVeInfo PROC PUBLIC
             mov     18h[r11], r9        ;
             mov     20h[r11], r10       ;
             ret
-
-SecGetTdxVeInfo ENDP
-
 ;
 ; SecGetTdInfo
 ;
@@ -219,9 +204,8 @@ SecGetTdxVeInfo ENDP
 ;
 ; @param[out] RCX Variable to receive the shared GPA width.
 ;
-
-SecGetTdInfo PROC PUBLIC
-
+global SecGetTdInfo
+SecGetTdInfo:
             push    r12                 ; preserve non-volatile register
             mov     r12, rcx            ; capture argument register
             mov     eax, 1              ; TDG.VP.INFO call code
@@ -234,8 +218,6 @@ SecGetTdInfo PROC PUBLIC
             pop     r12                 ; restore non-volatile register
             ret
 
-SecGetTdInfo ENDP
-
 ;
 ; SecTdCallRdmsr
 ;
@@ -245,9 +227,8 @@ SecGetTdInfo ENDP
 ;
 ; @return         MSR value.
 ;
-
-SecTdCallRdmsr PROC PUBLIC
-
+global SecTdCallRdmsr
+SecTdCallRdmsr:
             push    r12                 ; preserve non-volatile register
             mov     r12d, ecx           ; capture argument register
             xor     eax, eax            ; TDG.VP.VMCALL call code
@@ -260,14 +241,12 @@ SecTdCallRdmsr PROC PUBLIC
             db      0cch
             test    rax, rax            ; verify successful call
             jz      Stcr20              ; if z, successful
-Stcr10:     int     3                   ; failure
+Stcr10:     int3                        ; failure
 Stcr20:     test    r10, r10            ; verify successful read
             jnz     Stcr10              ; if nz, not successful
             mov     rax, r11            ; capture return value
             pop     r12                 ; restore non-volatile register
             ret
-
-SecTdCallRdmsr ENDP
 
 ;
 ; SecTdCallWrmsr
@@ -277,9 +256,8 @@ SecTdCallRdmsr ENDP
 ; @param[in] RCX  The MSR to write.
 ; @param[in] RDX  MSR value.
 ;
-
-SecTdCallWrmsr PROC PUBLIC
-
+global SecTdCallWrmsr
+SecTdCallWrmsr:
             push    r12                 ; preserve non-volatile registers
             push    r13                 ;
             mov     r12d, ecx           ; capture argument register
@@ -294,23 +272,20 @@ SecTdCallWrmsr PROC PUBLIC
             db      0cch
             test    rax, rax            ; verify successful call
             jz      Stcw20              ; if z, successful
-Stcw10:     int     3                   ; failure
+Stcw10:     int3                        ; failure
 Stcw20:     test    r10, r10            ; verify successful write
             jnz     Stcw10              ; if nz, not successful
             pop     r13                 ; restore non-volatile registers
             pop     r12                 ;
             ret
 
-SecTdCallWrmsr ENDP
-
 ;
 ; SecTdCallHlt
 ;
 ; Issues an enlightened HLT
 ;
-
-SecTdCallHlt PROC PUBLIC
-
+global SecTdCallHlt
+SecTdCallHlt:
             push    r12                 ; preserve non-volatile registers
             xor     r12d, r12d          ; clear the interrupt blocked flag
             xor     eax, eax            ; TDG.VP.VMCALL call code
@@ -323,13 +298,11 @@ SecTdCallHlt PROC PUBLIC
             db      0cch
             test    rax, rax            ; verify successful call
             jz      Stch20              ; if z, successful
-Stch10:     int     3                   ; failure
+Stch10:     int3                        ; failure
 Stch20:     test    r10, r10            ; verify successful HLT
             jnz     Stch10              ; if nz, not successful
             pop     r12                 ;
             ret
-
-SecTdCallHlt ENDP
 
 ;
 ; SecTdCallReadIoPort
@@ -340,9 +313,8 @@ SecTdCallHlt ENDP
 ; @param[in] EDX - The access size.
 ; @return        - Value read.
 ;
-
-SecTdCallReadIoPort PROC PUBLIC
-
+global SecTdCallReadIoPort
+SecTdCallReadIoPort:
             push    r12                 ; preserve non-volatile registers
             push    r13                 ; preserve non-volatile registers
             push    r14                 ; preserve non-volatile registers
@@ -368,8 +340,6 @@ exitIoRead: pop     r14
             pop     r12
             ret
 
-SecTdCallReadIoPort ENDP
-
 ;
 ; SecTdCallWriteIoPort
 ;
@@ -379,9 +349,8 @@ SecTdCallReadIoPort ENDP
 ; @param[in] EDX - The access size.
 ; @param[in] R8d - Value to write.
 ;
-
-SecTdCallWriteIoPort PROC PUBLIC
-
+global SecTdCallWriteIoPort
+SecTdCallWriteIoPort:
             push    r12                 ; preserve non-volatile registers
             push    r13                 ; preserve non-volatile registers
             push    r14                 ; preserve non-volatile registers
@@ -407,8 +376,6 @@ SecTdCallWriteIoPort PROC PUBLIC
             pop     r12
             ret
 
-SecTdCallWriteIoPort ENDP
-
 ;
 ; MulDiv64
 ;
@@ -420,14 +387,8 @@ SecTdCallWriteIoPort ENDP
 ;
 ; @return         Result
 ;
-
-MulDiv64 PROC PUBLIC
-
-            mov     rax, rdx            ; move multiplier to correct register
+global MulDiv64
+MulDiv64:   mov     rax, rdx            ; move multiplier to correct register
             mul     rcx                 ; multiply into RDX:RAX
             div     r8                  ; divide RDX:RAX by R8
             ret                         ; result is in rax
-
-MulDiv64 ENDP
-
-END
