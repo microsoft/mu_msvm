@@ -23,8 +23,7 @@
 [Sources]
 
 [Sources.X64]
-  X64/SecEntry.asm  | MSFT
-  X64/SecEntry.asm  | INTEL
+  X64/SecEntry.nasm
   X64/SecIso.c
   X64/SecMain.c
 
