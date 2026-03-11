@@ -247,14 +247,14 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmInitBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  IN CONST UINT8 *CONST                      DerivedKey,
-  IN CONST UINTN                             KeySize,
-  OUT  UINT8 *CONST                          WrappedKey,
-  IN OUT  UINT16 *CONST                      WrappedKeySize, // Should pass max memory, and returns wrapped key size
-  OUT UINT8 *CONST                           Guid,
-  IN OUT UINT16 *CONST                       GuidSize
+  IN CONST AZIHSM_CONTROLLER_STATE *State,
+  IN CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  IN CONST UINT8                   *DerivedKey,
+  IN       UINTN                    KeySize,
+  OUT      UINT8                   *WrappedKey,
+  IN OUT   UINT16                  *WrappedKeySize, // Should pass max memory, and returns wrapped key size
+  OUT      UINT8                   *Guid,
+  IN OUT   UINT16                  *GuidSize
   )
 {
   /*
@@ -373,7 +373,7 @@ AziHsmInitBks3 (
   DEBUG ((DEBUG_INFO, "AzihsmDdiApi: Bks3Init Request Data Length: %d\n", InitBks3Req.Bks3.Length));
 
   // Encode InitBks3 request
-  Status = AzihsmEncodeInitBks3Req (&Encoder, &ApiRevision, NULL, &InitBks3Req, &EncodedSize);
+  Status = AzihsmEncodeInitBks3Req (&Encoder, ApiRevision, NULL, &InitBks3Req, &EncodedSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to encode InitBks3 request: %r\n", Status));
     Status = EFI_PROTOCOL_ERROR;
@@ -524,13 +524,12 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmSetSealedBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  IN CONST UINT8 *CONST                      DataBlob,
-  IN CONST UINTN                             DataSize,
-  OUT  BOOLEAN *CONST                        IsSealSuccess
+  IN CONST AZIHSM_CONTROLLER_STATE *State,
+  IN CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  IN CONST UINT8                   *DataBlob,
+  IN       UINTN                    DataSize,
+  OUT      BOOLEAN                 *IsSealSuccess
   ){
-
     /*
     Function for BKS3 sealing.
     1. Encode SetSeal request
@@ -629,7 +628,7 @@ AziHsmSetSealedBks3 (
     SetSealedBks3Req.SealedBks3.Data = SetSealedBks3Data;
 
     // Encode SetSealedBks3 request (Session ID is null for now)
-    Status = AzihsmEncodeSetSealedBks3Req(&Encoder, &ApiRevision, NULL, &SetSealedBks3Req, &EncodedSize);
+    Status = AzihsmEncodeSetSealedBks3Req(&Encoder, ApiRevision, NULL, &SetSealedBks3Req, &EncodedSize);
     if (EFI_ERROR(Status)) {
         DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to encode SetSealedBks3 request: %r\n", Status));
         goto Cleanup;
@@ -755,11 +754,11 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmGetSealedBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  OUT  UINT8 *CONST                           DataBlob,
-  IN CONST UINTN                              DataBlobSize,
-  OUT UINTN *CONST                            DataSize
+  IN  CONST AZIHSM_CONTROLLER_STATE *State,
+  IN  CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  OUT UINT8                         *DataBlob,
+  IN  UINTN                          DataBlobSize,
+  OUT UINTN                         *DataSize
   ){
     // Local variable
     AZIHSM_MBOR_ENCODER         Encoder            = {0};
@@ -836,7 +835,7 @@ AziHsmGetSealedBks3 (
     }
     //  // Encode GetSealedBks3 request (no data needed, just header)
     // Function now properly handles NULL ApiRev and SessionId
-    Status = AzihsmEncodeGetSealedBks3Req(&Encoder, &ApiRevision, NULL, &EncodedSize);
+    Status = AzihsmEncodeGetSealedBks3Req(&Encoder, ApiRevision, NULL, &EncodedSize);
     if (EFI_ERROR(Status)) {
         DEBUG((DEBUG_ERROR, "AziHsmDdi: Failed to encode GetSealedBks3 request: %r\n", Status));
         goto Cleanup;
