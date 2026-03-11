@@ -13,14 +13,7 @@
 #include <BiosInterface.h>
 #include "CrashLibConstants.h"
 #include "MsCpuid.h"
-
-VOID
-TripleFault(
-    IN  UINTN              ErrorCode,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2,
-    IN  UINTN              Param3
-);
+#include <Library/CrashLib.h>
 
 VOID
 ResetAfterCrash(
