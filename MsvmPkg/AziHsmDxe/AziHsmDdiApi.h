@@ -86,14 +86,14 @@ AziHsmGetApiRevision (
 EFI_STATUS
 EFIAPI
 AziHsmInitBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  IN CONST UINT8 *CONST                      DerivedKey,
-  IN CONST UINTN                             KeySize,
-  OUT  UINT8 *CONST                          WrappedKey,
-  IN OUT  UINT16 *CONST                      WrappedKeySize, // Should pass max memory, and returns wrapped key size
-  OUT UINT8 *CONST                           Guid,
-  IN OUT UINT16 *CONST                       GuidSize
+  IN  CONST AZIHSM_CONTROLLER_STATE *State,
+  IN  CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  IN  CONST UINT8                   *DerivedKey,
+  IN        UINTN                    KeySize,
+  OUT       UINT8                   *WrappedKey,
+  IN OUT UINT16                     *WrappedKeySize, // Should pass max memory, and returns wrapped key size
+  OUT UINT8 *                        Guid,
+  IN OUT UINT16 *                    GuidSize
   );
 
   /**
@@ -130,11 +130,11 @@ AziHsmInitBks3 (
 EFI_STATUS
 EFIAPI
 AziHsmSetSealedBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  IN CONST UINT8 *CONST                      DataBlob,
-  IN CONST UINTN                             DataSize,
-  OUT  BOOLEAN *CONST                        IsSealSuccess
+  IN  CONST AZIHSM_CONTROLLER_STATE *State,
+  IN  CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  IN  CONST UINT8                   *DataBlob,
+  IN        UINTN                    DataSize,
+  OUT       BOOLEAN                 *IsSealSuccess
   );
 
   /**
@@ -170,11 +170,11 @@ AziHsmSetSealedBks3 (
 EFI_STATUS
 EFIAPI
 AziHsmGetSealedBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE   *CONST  State,
-  IN CONST AZIHSM_DDI_API_REV                ApiRevision,
-  OUT  UINT8 *CONST                           DataBlob,
-  IN CONST UINTN                              DataBlobSize,
-  OUT UINTN *CONST                            DataSize
+  IN  CONST AZIHSM_CONTROLLER_STATE *State,
+  IN  CONST AZIHSM_DDI_API_REV      *ApiRevision,
+  OUT       UINT8                   *DataBlob,
+  IN        UINTN                    DataBlobSize,
+  OUT       UINTN                   *DataSize
 );
 
 #endif // Endof _AZIHSMDDIAPI_H
