@@ -9,7 +9,6 @@
 #pragma once
 #include <Protocol/SynthKeyProtocol.h>
 #include <Vmbus/VmbusPacketFormat.h>
-#include "Inline.h"
 
 EFI_STATUS
 SynthKeyChannelOpen(
@@ -26,7 +25,7 @@ SynthKeyChannelSetIndicators(
     IN          PSYNTH_KEYBOARD_DEVICE      pDevice
     );
 
-__forceinline
+static inline
 VOID
 SynthKeyChannelInitMessage(
     IN OUT      PHK_MESSAGE_HEADER          Header,
