@@ -317,8 +317,8 @@ AziHsmDriverBindingStart (
   //
   // Get API revision
   //
-  ApiRevisionMin = (AZIHSM_DDI_API_REV){ 0 };
-  ApiRevisionMax = (AZIHSM_DDI_API_REV){ 0 };
+  ZeroMem(&ApiRevisionMin, sizeof(ApiRevisionMin));
+  ZeroMem(&ApiRevisionMax, sizeof(ApiRevisionMax));
   Status         = AziHsmGetApiRevision (State, &ApiRevisionMin, &ApiRevisionMax);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get API revision: %r\n", Status));
