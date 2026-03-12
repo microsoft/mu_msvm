@@ -26,25 +26,13 @@
 #include <Guid/DxeMemoryProtectionSettings.h>
 #include <UefiConstants.h>
 #include <Hob.h>
+#include <Library/BaseMemoryLib.h>
 #include "AllowNamelessAggregate.h"
+#include "AssignStruct.h"
 
-#if defined(MDE_CPU_X64)
-// Values and type used with CPUID to get the physical address width.
-#define CPUID_FUNCTION_EXTENDED_MAX_FUNCTION        0x80000000
-#define CPUID_FUNCTION_EXTENDED_ADDRESS_SPACE_SIZES 0x80000008
-
-typedef union _CPUID_ADDRESS_SPACE_SIZES
-{
-    struct
-    {
-        UINT8 PhysicalAddressBits;
-        UINT8 VirtualAddressBits;
-        UINT16 Reserved;
-    };
-
-    UINT32 Value;
-} CPUID_ADDRESS_SPACE_SIZES;
-#endif
+DXE_MEMORY_PROTECTION_SETTINGS const gMemoryProtectionSettingsDebug = DXE_MEMORY_PROTECTION_SETTINGS_DEBUG;
+DXE_MEMORY_PROTECTION_SETTINGS const gMemoryProtectionSettingsOff   = DXE_MEMORY_PROTECTION_SETTINGS_OFF;
+DXE_MEMORY_PROTECTION_SETTINGS const gMemoryProtectionSettingsShip  = DXE_MEMORY_PROTECTION_SETTINGS_SHIP_MODE;
 
 UINT8
 GetPhysicalAddressWidth(
@@ -71,6 +59,23 @@ Return Value:
     UINT8 physicalAddressWidth = 0;
 
 #if defined(MDE_CPU_X64)
+
+// Values and type used with CPUID to get the physical address width.
+
+#define CPUID_FUNCTION_EXTENDED_MAX_FUNCTION        0x80000000
+#define CPUID_FUNCTION_EXTENDED_ADDRESS_SPACE_SIZES 0x80000008
+
+typedef union _CPUID_ADDRESS_SPACE_SIZES
+{
+    struct
+    {
+        UINT8 PhysicalAddressBits;
+        UINT8 VirtualAddressBits;
+        UINT16 Reserved;
+    };
+
+    UINT32 Value;
+} CPUID_ADDRESS_SPACE_SIZES;
 
     UINT32 maximumFunction;
     CPUID_ADDRESS_SPACE_SIZES addressSpaceSizes;
@@ -933,20 +938,20 @@ ConfigSetUefiConfigFlags(
     //
     if (ConfigFlags->Flags.MemoryProtectionMode == ConfigLibMemoryProtectionModeDisabled)
     {
-        memoryProtectionSettings = (DXE_MEMORY_PROTECTION_SETTINGS) DXE_MEMORY_PROTECTION_SETTINGS_OFF;
+        ASSIGN_STRUCT(&memoryProtectionSettings, &gMemoryProtectionSettingsOff);
     }
     else if (ConfigFlags->Flags.MemoryProtectionMode == ConfigLibMemoryProtectionModeDefault)
     {
-        memoryProtectionSettings = (DXE_MEMORY_PROTECTION_SETTINGS) DXE_MEMORY_PROTECTION_SETTINGS_SHIP_MODE;
+        ASSIGN_STRUCT(&memoryProtectionSettings, &gMemoryProtectionSettingsShip);
     }
     else if (ConfigFlags->Flags.MemoryProtectionMode == ConfigLibMemoryProtectionModeStrict)
     {
-        memoryProtectionSettings = (DXE_MEMORY_PROTECTION_SETTINGS) DXE_MEMORY_PROTECTION_SETTINGS_DEBUG;
+        ASSIGN_STRUCT(&memoryProtectionSettings, &gMemoryProtectionSettingsDebug);
         memoryProtectionSettings.ImageProtectionPolicy.Fields.RaiseErrorIfProtectionFails = 0;
     }
     else if (ConfigFlags->Flags.MemoryProtectionMode == ConfigLibMemoryProtectionModeRelaxed)
     {
-        memoryProtectionSettings = (DXE_MEMORY_PROTECTION_SETTINGS) DXE_MEMORY_PROTECTION_SETTINGS_SHIP_MODE;
+        ASSIGN_STRUCT(&memoryProtectionSettings, &gMemoryProtectionSettingsShip);
         memoryProtectionSettings.ImageProtectionPolicy.Fields.RaiseErrorIfProtectionFails = 0;
 
         // Linux has some known loader limitations. The following checks needs to be relaxed for Linux
