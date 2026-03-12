@@ -31,17 +31,18 @@
 //
 // Constants for iHSM Key Derivation
 //
-#define AZIHSM_DEFAULT_KEY_LENGTH             48 // 384 bits for BKS3
-#define AZIHSM_HASH_USER_INPUT                "AZIHSM_VM_BKS3_KDF"
-#define AZIHSM_PRIMARY_KEY_USER_DATA          "AZIHSM_VM_BKS3_PRIMARY_KEY"
-#define AZIHSM_APPLICATION_INFO               "AZIHSM_VM_BKS3_HASH_INFO"
-#define AZIHSM_PRIMARY_KEY_USER_DATA_MAX_LEN  64
-#define AZIHSM_TCG_PCR_INDEX                  6   // PCR index for Azure Integrated HSM measurements
-#define AZIHSM_TCG_EVENT_TYPE                 EV_COMPACT_HASH
-#define AZIHSM_TCG_EVENT_MAX_SIZE             128
-#define AZIHSM_GUID_SIZE                      16  // Size of GUID in bytes
-#define AZIHSM_DERIVED_KEY_SIZE               AZIHSM_DEFAULT_KEY_LENGTH
-#define AZIHSM_PCI_IDENTIFIER_MAX_LEN         32  // Max length of PCI Identifier (serial number) in bytes
+#define AZIHSM_DEFAULT_KEY_LENGTH              48 // 384 bits for BKS3
+#define AZIHSM_HASH_USER_INPUT                 "AZIHSM_VM_BKS3_KDF"
+#define AZIHSM_HASH_USER_INPUT_SIZE            ((UINT16)(sizeof(AZIHSM_HASH_USER_INPUT) - 1))
+#define AZIHSM_PRIMARY_KEY_USER_DATA           "AZIHSM_VM_BKS3_PRIMARY_KEY"
+//#define AZIHSM_APPLICATION_INFO              "AZIHSM_VM_BKS3_HASH_INFO"
+//#define AZIHSM_PRIMARY_KEY_USER_DATA_MAX_LEN 64
+#define AZIHSM_TCG_PCR_INDEX                   6   // PCR index for Azure Integrated HSM measurements
+#define AZIHSM_TCG_EVENT_TYPE                  EV_COMPACT_HASH
+#define AZIHSM_TCG_EVENT_MAX_SIZE              128
+#define AZIHSM_GUID_SIZE                       16  // Size of GUID in bytes
+#define AZIHSM_DERIVED_KEY_SIZE                AZIHSM_DEFAULT_KEY_LENGTH
+#define AZIHSM_PCI_IDENTIFIER_MAX_LEN          32  // Max length of PCI Identifier (serial number) in bytes
 
 #define AZIHSM_TPM_CMD_BUFSIZE  1024
 #define AZIHSM_TPM_RSP_BUFSIZE  1024
