@@ -21,7 +21,6 @@
 #include <Library/SerialPortLib.h>
 #include <Library/PrintLib.h>
 #include <nvspprotocol.h>
-#include "Inline.h"
 
 #define MAXIMUM_ETHERNET_PACKET_SIZE        1514
 
@@ -174,78 +173,66 @@ NvspStatusToEfiStatus(
     IN  NVSP_STATUS nvspStatus
 );
 
-__forceinline
 EFI_STATUS
 RxQueueInit(
     IN  RX_QUEUE    *Queue,
     IN  UINT32      Length
     );
 
-__forceinline
 VOID
 RxQueueDestroy(
     IN  RX_QUEUE *Queue
     );
 
-__forceinline
 BOOLEAN
 RxQueueIsAlmostFull(
     IN  RX_QUEUE *Queue
     );
 
-extern ALWAYS_INLINE
 BOOLEAN
 RxQueueIsEmpty(
     IN  RX_QUEUE *Queue
     );
 
-__forceinline
 VOID
 RxQueueEnqueue(
     IN  RX_QUEUE                *Queue,
     IN  RX_PACKET_INSTANCE      *PacketInfo
     );
 
-__forceinline
 VOID
 RxQueueDequeue(
     IN  RX_QUEUE                *Queue,
     OUT RX_PACKET_INSTANCE      *PacketInfo
     );
 
-__forceinline
 EFI_STATUS
 TxQueueInit(
     IN  TX_QUEUE    *Queue,
     IN  UINT32      Length
     );
 
-__forceinline
 VOID
 TxQueueDestroy(
     IN  TX_QUEUE *Queue
     );
 
-__forceinline
 BOOLEAN
 TxQueueIsFull(
     IN  TX_QUEUE *Queue
     );
 
-extern ALWAYS_INLINE
 BOOLEAN
 TxQueueIsEmpty(
     IN  TX_QUEUE *Queue
     );
 
-__forceinline
 VOID
 TxQueueEnqueue(
     IN  TX_QUEUE    *Queue,
     IN  VOID        *TxBuffer
     );
 
-extern ALWAYS_INLINE
 VOID
 TxQueueDequeue(
     IN  TX_QUEUE     *Queue,
