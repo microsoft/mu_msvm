@@ -5,10 +5,14 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
 #include "AziHsmBKS3.h"
 #include <Library/TpmMeasurementLib.h>
 #include <Library/BaseCryptLib.h>
+#include "CastConstant.h"
+#include "StaticAssert1.h"
+#include "StaticAssertExpression.h"
+
+#define STRSPAN(str, type) (str), CAST_CONSTANT(sizeof(str) - 1, type)
 
 //
 // Forward declarations for internal helper functions
@@ -769,8 +773,8 @@ EFI_STATUS
 EFIAPI
 AziHsmCreatePlatformPrimaryKeyedHash (
   OUT TPM_HANDLE  *PrimaryHandle,
-  IN BYTE         *PrimaryKeyUserData,
-  IN UINT16       PrimaryKeyUserDataLength
+  IN const char   *PrimaryKeyUserData,
+  IN UINT16        PrimaryKeyUserDataLength
   )
 {
   EFI_STATUS              Status;
@@ -853,11 +857,6 @@ AziHsmGetTpmPlatformSecret (
   TPM_HANDLE        PrimaryHandle = 0;
   TPM2B_MAX_BUFFER  KdfInput;
   TPM2B_DIGEST      HmacResult;
-  CONST CHAR8       *WellKnownString           = AZIHSM_HASH_USER_INPUT;
-  CHAR8             PrimaryKeyUserData[AZIHSM_PRIMARY_KEY_USER_DATA_MAX_LEN] = AZIHSM_PRIMARY_KEY_USER_DATA;
-  UINT16            PrimaryKeyUserDataLength = 0;
-  
-  PrimaryKeyUserDataLength   = (UINT16)AsciiStrLen (PrimaryKeyUserData);
 
   if (TpmPlatformHierarchySecret == NULL) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmGetTpmPlatformSecret - Invalid parameter\n"));
@@ -866,23 +865,18 @@ AziHsmGetTpmPlatformSecret (
 
   // Primary Key User Data to be input to primary key creation
   DEBUG ((DEBUG_INFO, "AziHsm: Creating Platform hierarchy primary\n"));
-  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, (BYTE*)PrimaryKeyUserData, PrimaryKeyUserDataLength);
+  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, STRSPAN(AZIHSM_PRIMARY_KEY_USER_DATA, UINT16));
   AZIHSM_CHECK_RC (Status, "Primary (platform) creation failed\n");
 
   // Step 2: HMAC KDF Derivation
-  ZeroMem (KdfInput.buffer, sizeof (KdfInput.buffer));
+  ZeroMem (&KdfInput, sizeof (KdfInput));
   ZeroMem (&HmacResult, sizeof (HmacResult));
   ZeroMem (TpmPlatformHierarchySecret, sizeof (*TpmPlatformHierarchySecret));
   
   // Prepare HMAC input: Well-known string
-  KdfInput.size = (UINT16)AsciiStrLen (WellKnownString);
-  if (KdfInput.size > sizeof (KdfInput.buffer)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: KDF input string too long\n"));
-    Status = EFI_INVALID_PARAMETER;
-    goto Cleanup;
-  }
-
-  CopyMem (KdfInput.buffer, WellKnownString, KdfInput.size);
+  STATIC_ASSERT_1 (AZIHSM_HASH_USER_INPUT_SIZE <= sizeof (KdfInput.buffer));
+  KdfInput.size = AZIHSM_HASH_USER_INPUT_SIZE;
+  CopyMem (KdfInput.buffer, AZIHSM_HASH_USER_INPUT, AZIHSM_HASH_USER_INPUT_SIZE);
 
   // Perform HMAC using the Primary KeyedHash using SHA-256 to derive the PRK of 32 bytes
   Status = InternalTpm2HMAC (
@@ -911,8 +905,7 @@ Cleanup:
   // Clean up TPM handles
   AziHsmTpmCleanup(&PrimaryHandle);
   // Zero sensitive data
-  ZeroMem (PrimaryKeyUserData, sizeof (PrimaryKeyUserData));
-  ZeroMem (&KdfInput.buffer, sizeof (KdfInput.buffer));
+  ZeroMem (&KdfInput, sizeof (KdfInput));
   ZeroMem (&HmacResult, sizeof (HmacResult));
 
   if (EFI_ERROR (Status)) {
