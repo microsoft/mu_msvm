@@ -28,7 +28,6 @@
 #include "BiosInterface.h"
 #include <IsolationTypes.h>
 #include "AssignStruct.h"
-#include "Inline.h"
 #include "StaticAssert1.h"
 
 //
@@ -149,9 +148,7 @@ Return Value:
 
     return (VOID*)(UINTN)address;
 }
-
-
-__forceinline
+static inline
 VOID
 EventChannelLock(
     IN      EVENT_CHANNEL              *Channel
@@ -175,8 +172,7 @@ Return Value:
     EfiAcquireLock(&Channel->Lock);
 }
 
-
-__forceinline
+static inline
 VOID
 EventChannelUnlock(
     IN      EVENT_CHANNEL              *Channel

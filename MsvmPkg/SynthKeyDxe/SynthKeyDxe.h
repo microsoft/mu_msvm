@@ -26,7 +26,6 @@
 #include <Library/PcdLib.h>
 #include <Library/EmclLib.h>
 #include "AllowNamelessAggregate.h"
-#include "Inline.h"
 
 //
 // Global Variables
@@ -113,7 +112,7 @@ typedef struct _SYNTH_KEYBOARD_DEVICE
 
 } SYNTH_KEYBOARD_DEVICE, *PSYNTH_KEYBOARD_DEVICE;
 
-__forceinline
+static inline
 VOID
 SynthKeyReportStatus(
     IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
