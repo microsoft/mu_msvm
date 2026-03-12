@@ -8,7 +8,6 @@
 **/
 #pragma once
 #include <MsvmBase.h>
-#include "Inline.h"
 
 #define SCSI_MAXIMUM_LUNS_PER_TARGET 255
 
@@ -110,10 +109,8 @@ typedef struct _LUN_LIST
 #define IsSenseDataCurrentError(SenseInfoBuffer) \
             ((ScsiGetSenseErrorCode(SenseInfoBuffer)) == SCSI_SENSE_ERRORCODE_FIXED_CURRENT || \
              (ScsiGetSenseErrorCode(SenseInfoBuffer)) == SCSI_SENSE_ERRORCODE_DESCRIPTOR_CURRENT)
-
-
-__forceinline
- BOOLEAN
+static inline
+BOOLEAN
 ScsiGetTotalSenseByteCountIndicated (
    IN  VOID  *SenseInfoBuffer,
    IN  UINT8 SenseInfoBufferLength,
@@ -184,8 +181,7 @@ Returns:
     return succeed;
 }
 
-
-__forceinline
+static inline
 BOOLEAN
 ScsiGetFixedSenseKeyAndCodes (
    IN  VOID     *SenseInfoBuffer,
@@ -272,8 +268,7 @@ Returns:
     return succeed;
 }
 
-
-__forceinline
+static inline
 BOOLEAN
 ScsiGetDescriptorSenseKeyAndCodes (
    IN  VOID     *SenseInfoBuffer,
@@ -363,8 +358,7 @@ typedef UINT32 SCSI_SENSE_OPTIONS;
 //
 #define SCSI_SENSE_OPTIONS_FIXED_FORMAT_IF_UNKNOWN_FORMAT_INDICATED  ((SCSI_SENSE_OPTIONS)0x00000001)
 
-
-__forceinline
+static inline
 BOOLEAN
 ScsiGetSenseKeyAndCodes (
    IN  VOID  *SenseInfoBuffer,
@@ -443,8 +437,7 @@ Returns:
     return succeed;
 }
 
-
-__forceinline
+static inline
 BOOLEAN
 ScsiConvertToFixedSenseFormat(
     IN  VOID* SenseInfoBuffer,
