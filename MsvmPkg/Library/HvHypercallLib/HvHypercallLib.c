@@ -355,7 +355,7 @@ Return Value:
     }
     else
     {
-        typedef HV_HYPERCALL_OUTPUT HYPERCALL_ROUTINE(
+        typedef HV_HYPERCALL_OUTPUT EFIAPI HYPERCALL_ROUTINE(
             IN  HV_HYPERCALL_INPUT  Control,
                 UINT64              InputPhysicalAddress,
                 UINT64              OutputPhysicalAddress
