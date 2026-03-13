@@ -9,7 +9,7 @@
     FILE_GUID                      = 70DCD215-9E4B-44F2-8884-1AFAB7A66790
     MODULE_TYPE                    = BASE
     VERSION_STRING                 = 1.0
-    LIBRARY_CLASS                  = PEIM DXE_CORE DXE_DRIVER UEFI_DRIVER UEFI_APPLICATION
+    LIBRARY_CLASS                  = MsBaseLib
 
 [Sources]
     Barrier.c
