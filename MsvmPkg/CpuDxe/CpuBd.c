@@ -38,7 +38,7 @@ extern EFI_CPU_ARCH_PROTOCOL gCpu;
 // bit 1 - exception 1
 // etc.
 //
-UINT32 mErrorCodeFlag = 0x00027d00;
+extern const UINT32 mErrorCodeFlag;
 
 //
 // Local function prototypes

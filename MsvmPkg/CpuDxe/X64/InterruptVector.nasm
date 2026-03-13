@@ -8,7 +8,7 @@
 ;------------------------------------------------------------------------------
 
 extern ExternalVectorTable
-ErrorCodeBitmap equ 0x00027d00
+ErrorCodeBitmap equ 0x20227d00
 
     default rel
     section .text
