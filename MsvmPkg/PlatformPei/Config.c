@@ -590,6 +590,10 @@ DebugDumpUefiConfigStruct(
             DebugDumpHmat(hmat->Hmat);
             break;
 
+        case UefiConfigApmt:
+            DEBUG((DEBUG_VERBOSE, "\tAPMT table found.\n"));
+            break;
+
         case UefiConfigMemoryMap:
             UEFI_CONFIG_MEMORY_MAP *memMap = (UEFI_CONFIG_MEMORY_MAP*) Header;
             DebugDumpMemoryMap(memMap->MemoryMap, Header->Length - sizeof(UEFI_CONFIG_HEADER), PcdGetBool(PcdLegacyMemoryMap));
@@ -1065,6 +1069,7 @@ Return Value:
         0, //UefiConfigSsdt
         0, //UefiConfigHmat
         0, //UefiConfigIort
+        0, //UefiConfigApmt
     };
 
     //
@@ -1629,6 +1634,22 @@ Return Value:
 
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
+                break;
+
+            case UefiConfigApmt:
+                UEFI_CONFIG_APMT *apmtStructure = (UEFI_CONFIG_APMT*) header;
+                EFI_ACPI_DESCRIPTION_HEADER *apmtHdr = (EFI_ACPI_DESCRIPTION_HEADER*) apmtStructure->Apmt;
+
+                if (apmtStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
+                    apmtHdr->Signature != ARM_ACPI_APMT_TABLE_SIGNATURE ||
+                    apmtHdr->Length > (apmtStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
+                {
+                    DEBUG((DEBUG_ERROR, "*** Malformed APMT\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdApmtPtr, (UINT64)apmtStructure->Apmt));
+                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdApmtSize, apmtHdr->Length));
                 break;
         }
 

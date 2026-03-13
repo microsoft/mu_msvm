@@ -89,6 +89,8 @@
     gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap
     gMsvmPkgTokenSpaceGuid.PcdIortPtr
     gMsvmPkgTokenSpaceGuid.PcdIortSize
+    gMsvmPkgTokenSpaceGuid.PcdApmtPtr
+    gMsvmPkgTokenSpaceGuid.PcdApmtSize
     gMsvmPkgTokenSpaceGuid.PcdMadtPtr
     gMsvmPkgTokenSpaceGuid.PcdMadtSize
     gMsvmPkgTokenSpaceGuid.PcdMcfgPtr

@@ -863,6 +863,62 @@ Return Value:
 
 
 EFI_STATUS
+AcpiInstallApmtTable(
+    EFI_ACPI_TABLE_PROTOCOL *AcpiTable
+    )
+/*++
+
+Routine Description:
+
+    Retrieves the APMT table from the worker process and installs it.
+
+Arguments:
+
+    AcpiTable - A pointer to the ACPI table protocol.
+
+Return Value:
+
+    EFI_STATUS.
+
+--*/
+{
+    EFI_STATUS status;
+    EFI_ACPI_DESCRIPTION_HEADER *table;
+    UINTN tableHandle;
+    UINT32 tableSize;
+
+    //
+    // Get the table from the config blob parsed in PEI. It may not be present.
+    //
+    tableSize = PcdGet32(PcdApmtSize);
+
+    if (tableSize == 0)
+    {
+        return EFI_SUCCESS;
+    }
+
+    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdApmtPtr);
+
+    if (table == NULL)
+    {
+        return EFI_NOT_FOUND;
+    }
+
+    ASSERT(table->Length == tableSize);
+
+    //
+    // Install it into the published tables.
+    //
+    status = AcpiTable->InstallAcpiTable(AcpiTable,
+                                         table,
+                                         table->Length,
+                                         &tableHandle);
+
+    return status;
+}
+
+
+EFI_STATUS
 EFIAPI
 AcpiPlatformInitializeAcpiTables(
     IN  EFI_HANDLE        ImageHandle,
@@ -1073,6 +1129,15 @@ Return Value:
     // Add the HMAT table if present.
     //
     status = AcpiInstallHmatTable(acpiTable);
+    if (EFI_ERROR(status))
+    {
+        goto Cleanup;
+    }
+
+    //
+    // Add the APMT table if present.
+    //
+    status = AcpiInstallApmtTable(acpiTable);
     if (EFI_ERROR(status))
     {
         goto Cleanup;
