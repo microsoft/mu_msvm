@@ -343,7 +343,27 @@
 
 [PcdsFixedAtBuild.common]
   # Advanced Logger Config
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerBase|0xFA000000   # Must be TemporaryRamBase
+  #
+  # N.B PcdAdvancedLoggerBase is explicitly set to 0 for Hyper-V UEFI in order 
+  # to disable the SEC pre-memory logger.
+  #
+  # During SEC phase, the Advanced Logger writes a small pointer structure
+  # to the address specified by this PCD. The original address (0xFA000000) sits
+  # in the MMIO gap, which is not backed by real RAM. On normal VMs this works
+  # because the hypervisor/paravisor maps the access. On hardware-isolated VMs without a
+  # paravisor (TDX or SNP "NoManagementVtl"), guest memory pages must be
+  # explicitly accepted before use, and SEC has no ability to do that. 
+  #
+  # Writing to an unaccepted address causes a fatal fault (#VE on TDX, #VC on SNP)
+  # that SEC cannot handle, crashing the VM at boot.
+  #
+  # Setting this to 0 makes the logger skip the write in SEC. PEI Core detects
+  # the 0 and allocates its own log buffer from accepted RAM, so logging still
+  # works from PEI onward.
+  #
+  # Original value: 0xFA000000
+  #
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerBase|0x0
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|1     # Size is 4KB
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB  
 !if $(DEBUGLIB_SERIAL) == 1
