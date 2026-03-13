@@ -36,7 +36,7 @@
 #
 ################################################################################
 [BuildOptions]
-  *_*_X64_GENFW_FLAGS = --keepexceptiontable
+  *_*_*_GENFW_FLAGS = --keepexceptiontable
   DEBUG_*_*_CC_FLAGS = -D DEBUG_PLATFORM
 
   # Generate PDBs on release builds with full debugging, with linker and CC flags

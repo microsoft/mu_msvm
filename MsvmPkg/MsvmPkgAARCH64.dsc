@@ -36,7 +36,7 @@
 #
 ################################################################################
 [BuildOptions]
-  *_*_AARCH64_GENFW_FLAGS = --keepexceptiontable
+  *_*_*_GENFW_FLAGS = --keepexceptiontable
   DEBUG_*_*_CC_FLAGS = -D DEBUG_PLATFORM
 
 # ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64k aligned
