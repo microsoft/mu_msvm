@@ -19,3 +19,4 @@
 
 [Packages]
     MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
