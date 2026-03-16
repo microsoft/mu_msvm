@@ -22,6 +22,9 @@
 [Sources.AARCH64]
     AArch64/AArch64Support.S
 
+[Sources.X64]
+    X64/EnableInterrupts.nasm
+
 [Packages]
     MdeModulePkg/MdeModulePkg.dec
     MdePkg/MdePkg.dec
