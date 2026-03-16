@@ -888,37 +888,17 @@ Return Value:
         SMBIOS_TABLE_TYPE4 Formatted;
         CHAR8 Unformed[((MAX_SMBIOS_STRING_LENGTH + 1) * 6) + 1];
     } cpuInfo =
-    {
-        {
-            STANDARD_HEADER(SMBIOS_TABLE_TYPE4, EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION),
-            1, // SocketDesignation string index
-            0, // ProcessorType
-            0, // ProcessorFamily
-            2, // ProcessorManufacturer string index
-            {{0}}, // ProcessorId
-            3, // ProcessorVersion string index
-            {0}, // Voltage
-            0, // ExternalClock
-            0, // MaxSpeed
-            0, // CurrentSpeed
-            0, // Status
-            0, // Upgrade
-            0xFFFF, // L1 Cache Handle - Unknown
-            0xFFFF, // L2 Cache Handle - Unknown
-            0xFFFF, // L3 Cache Handle - Unknown
-            4, // SerialNumber string index
-            5, // AssetTag string index
-            6, // PartNumber string index
-            0, // CoreCount
-            0, // CoreEnabled
-            0, // ThreadCount
-            0, // ProcessorCharacteristics
-            0, // ProcessorFamily2
-            0, // CoreCount2
-            0, // CoreEnabled2
-            0, // ThreadCount2
-        }
-    };
+    {{STANDARD_HEADER(SMBIOS_TABLE_TYPE4, EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION)}};
+    SMBIOS_TABLE_TYPE4* cpuf = &cpuInfo.Formatted;
+    cpuf->L1CacheHandle =            // L1 Cache Handle - Unknown
+    cpuf->L2CacheHandle =            // L2 Cache Handle - Unknown
+    cpuf->L3CacheHandle = 0xFFFF;    // L3 Cache Handle - Unknown
+    cpuf->Socket = 1;                // Strings.
+    cpuf->ProcessorManufacturer = 2; //
+    cpuf->ProcessorVersion = 3;      //
+    cpuf->SerialNumber = 4;          //
+    cpuf->AssetTag = 5;              //
+    cpuf->PartNumber = 6;            //
 
     // Set values and strings read in PEI via PCDs.
     cpuInfo.Formatted.ProcessorType            = PcdGet8(PcdSmbiosProcessorType);
@@ -930,8 +910,6 @@ Return Value:
     cpuInfo.Formatted.ProcessorCharacteristics = PcdGet16(PcdSmbiosProcessorCharacteristics);
     cpuInfo.Formatted.ProcessorFamily2         = PcdGet16(PcdSmbiosProcessorFamily2);
 
-    // Redundantly zero.
-    ZeroMem (&cpuInfo.Formatted.ProcessorId, sizeof (cpuInfo.Formatted.ProcessorId));
     // Copy ProcessorId and Voltage using casts because they have explicit
     // structure types with no unions to access all the data.
     STATIC_ASSERT_1 (sizeof (cpuInfo.Formatted.ProcessorId) == 8);
