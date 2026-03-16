@@ -33,18 +33,26 @@
 ################################################################################
 #
 # BuildOptions Section - extra build flags
+# TODO: There should be only one [BuildOptions].
 #
 ################################################################################
 [BuildOptions]
   *_*_*_GENFW_FLAGS = --keepexceptiontable
   DEBUG_*_*_CC_FLAGS = -D DEBUG_PLATFORM
+  *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
+  *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
 
-# ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64k aligned
+# ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64K aligned
+# This applies to in-memory section alignment, and need not apply to file system alignment.
 [BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER]
-  *_*_AARCH64_DLINK_FLAGS = -align:0x10000
+  MSFT:*_*_AARCH64_DLINK_FLAGS   = -align:0x10000
+  *_CLANGPDB_AARCH64_DLINK_FLAGS = -align:0x10000
+  *_GCC_AARCH64_ASLDLINK_FLAGS   = -z common-page-size=0x10000
+  *_GCC_AARCH64_DLINK_FLAGS      = -z common-page-size=0x10000
 
 [BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  *_*_*_DLINK_FLAGS = -align:4096 -filealign:4096
+  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
+  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
@@ -979,12 +987,16 @@
   PrmPkg/Samples/PrmSampleContextBufferModule/PrmSampleContextBufferModule.inf
 !endif
 
+# TODO: There should be only one [BuildOptions].
 [BuildOptions]
   # Generate PDBs on release builds with full debugging, with linker and CC flags
   MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   # /d2overrideInterlockedIntrinsArm64- inlines Interlocked sequences.
   # TODO: And they are ARMv8.0 that ARMcorp says not to use on newer hardware.
   MSFT:*_*_*_CC_FLAGS = /Z7 /d2overrideInterlockedIntrinsArm64-
+
+  *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
+  *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
 
   # Set file alignment and (memory) alignment to 4K.
   # Memory alignment 4K is required for page protection.
@@ -993,4 +1005,5 @@
   # This is the main reason sections exist and the main feature of the PE format.
   # File==memory for execute in place, or loader perf/simplicity otherwise.
   # Memory alignment defaults to 4K, if not otherwise changed by build system.
-  *_*_*_DLINK_FLAGS = -filealign:4096
+  MSFT:*_*_*_DLINK_FLAGS      = -align:4096 -filealign:4096
+  *_CLANGPDB_*_DLINK_FLAGS    = -align:4096 -filealign:4096

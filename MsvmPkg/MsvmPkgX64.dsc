@@ -43,6 +43,10 @@
   MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   MSFT:*_*_*_CC_FLAGS = /Z7
 
+  *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
+  *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
+  *_CLANGPDB_X64_DLINK_FLAGS = -align:4096
+
 # Set file alignment and (memory) alignment to 4K.
 # Memory alignment 4K is required for page protection.
 # i.e. So that, text/data/rdata are on different pages,
@@ -52,10 +56,12 @@
 # The linker defaults to -align:4096, but this could be preceded by a lower -align specified
 # elsewhere in EFI build system.
 [BuildOptions.common.EDKII.DXE_CORE]
-  *_*_*_DLINK_FLAGS = -filealign:4096
+  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
+  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 [BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  *_*_*_DLINK_FLAGS = -align:4096 -filealign:4096
+  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
+  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
