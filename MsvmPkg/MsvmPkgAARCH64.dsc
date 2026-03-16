@@ -991,9 +991,11 @@
 [BuildOptions]
   # Generate PDBs on release builds with full debugging, with linker and CC flags
   MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
+  *_CLANGPDB_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   # /d2overrideInterlockedIntrinsArm64- inlines Interlocked sequences.
   # TODO: And they are ARMv8.0 that ARMcorp says not to use on newer hardware.
   MSFT:*_*_*_CC_FLAGS = /Z7 /d2overrideInterlockedIntrinsArm64-
+  *_CLANGPDB_*_CC_FLAGS = -g -gcodeview -gcodeview-ghash -gcodeview-command-line
 
   *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
   *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
