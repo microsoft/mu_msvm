@@ -76,7 +76,7 @@ ProcessUsingHostEmulation (
   }
   else
   {
-    DEBUG((DEBUG_ERROR, "%a: Host emulation failed - %r \n", __FUNCTION__, ENCODE_ERROR(mCryptoCommandDescriptor->Status)));
+    DEBUG((DEBUG_ERROR, "%a: Host emulation failed - %r \n", __func__, ENCODE_ERROR(mCryptoCommandDescriptor->Status)));
     return FALSE;
   }
 
@@ -113,14 +113,14 @@ MsvmRngLibConstructor (
     //
     if (IsHardwareIsolated())
     {
-      DEBUG((DEBUG_ERROR, "%a: Hardware RNG is not present on an isolated guest..\n", __FUNCTION__));
+      DEBUG((DEBUG_ERROR, "%a: Hardware RNG is not present on an isolated guest..\n", __func__));
       FAIL_FAST_INITIALIZATION_FAILURE(EFI_SECURITY_VIOLATION);
     }
 
 #if defined(MDE_CPU_X64)
-    DEBUG((DEBUG_INFO, "%a: RDRAND is not present. Using host emulation.\n", __FUNCTION__));
+    DEBUG((DEBUG_INFO, "%a: RDRAND is not present. Using host emulation.\n", __func__));
 #elif defined(MDE_CPU_AARCH64)
-    DEBUG((DEBUG_VERBOSE, "%a: RNDR is not present. Using host emulation.\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, "%a: RNDR is not present. Using host emulation.\n", __func__));
 #else
 #error Unsupported Architecture
 #endif

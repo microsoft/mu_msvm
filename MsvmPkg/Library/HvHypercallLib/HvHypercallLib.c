@@ -293,7 +293,7 @@ Return Value:
     ASSERT(Context->Connected);
     ASSERT(CountOfElements <= HV_X64_MAX_HYPERCALL_ELEMENTS);
 
-    // DEBUG((DEBUG_VERBOSE, ">>> %a\n", __FUNCTION__));
+    // DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
 
     callInput.AsUINT64 = 0;
     callInput.CallCode = CallCode;
@@ -439,7 +439,7 @@ Return Value:
 #else
 #error Unsupported Architecture
 #endif
-    // DEBUG((DEBUG_VERBOSE, "<<< %a\n", __FUNCTION__));
+    // DEBUG((DEBUG_VERBOSE, "<<< %a\n", __func__));
 
     if (ElementsProcessed != NULL)
     {
@@ -743,7 +743,7 @@ Return Value:
 #if defined (MDE_CPU_X64)
     UINT32 msr = HvHypercallpGetMsrNameFromRegisterName(RegisterName);
 
-    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s MSR 0x%x\n", __FUNCTION__,
+    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s MSR 0x%x\n", __func__,
     //     RegisterName, HvHypercallpRegisterNameToString(RegisterName), msr));
 
 #if defined(MDE_CPU_X64)
@@ -775,7 +775,7 @@ Return Value:
 #error Unsupported Architecture
 #endif
 
-    // DEBUG((DEBUG_VERBOSE, "<<< %a: Value 0x%lx\n", __FUNCTION__, registerValue));
+    // DEBUG((DEBUG_VERBOSE, "<<< %a: Value 0x%lx\n", __func__, registerValue));
     return registerValue;
 }
 
@@ -811,7 +811,7 @@ Return Value:
 
     UINT32 msr = HvHypercallpGetMsrNameFromRegisterName(RegisterName);
 
-    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s MSR 0x%x Value 0x%lx\n", __FUNCTION__,
+    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s MSR 0x%x Value 0x%lx\n", __func__,
     //     RegisterName, HvHypercallpRegisterNameToString(RegisterName), msr, RegisterValue));
 
 #if defined(MDE_CPU_X64)
@@ -833,7 +833,7 @@ Return Value:
 
 #elif defined(MDE_CPU_AARCH64)
 
-    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s Value 0x%lx\n", __FUNCTION__,
+    // DEBUG((DEBUG_VERBOSE, ">>> %a: Name 0x%x %s Value 0x%lx\n", __func__,
     //     RegisterName, HvHypercallpRegisterNameToString(RegisterName),
     //     RegisterValue));
 
@@ -844,5 +844,5 @@ Return Value:
 #error Unsupported Architecture
 #endif
 
-    // DEBUG((DEBUG_VERBOSE, "<<< %a\n", __FUNCTION__));
+    // DEBUG((DEBUG_VERBOSE, "<<< %a\n", __func__));
 }

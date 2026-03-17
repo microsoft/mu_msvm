@@ -244,7 +244,7 @@ Return Value:
             status = gBS->AllocatePool(EfiACPIReclaimMemory, updatedMadtSize, (VOID**)&updatedMadtTable);
             if (EFI_ERROR(status))
             {
-                DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the new MADT table.\n", __FUNCTION__));
+                DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the new MADT table.\n", __func__));
                 goto Cleanup;
             }
 
@@ -254,7 +254,7 @@ Return Value:
                                         (EFI_PHYSICAL_ADDRESS*)&apMailboxAddress);
             if (EFI_ERROR(status))
             {
-                DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the new MADT wake up structure.\n", __FUNCTION__));
+                DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the new MADT wake up structure.\n", __func__));
                 goto Cleanup;
             }
 
@@ -279,7 +279,7 @@ Return Value:
             status = PcdSet64S(PcdAcpiMadtMpMailBoxAddress, (UINT64) apMailboxAddress);
             if (EFI_ERROR(status))
             {
-                DEBUG((EFI_D_ERROR, "%a: Failed to set the mailbox address PCD.\n", __FUNCTION__));
+                DEBUG((EFI_D_ERROR, "%a: Failed to set the mailbox address PCD.\n", __func__));
                 goto Cleanup;
             }
         }

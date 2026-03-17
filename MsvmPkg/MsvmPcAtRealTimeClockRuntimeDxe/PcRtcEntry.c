@@ -351,14 +351,14 @@ OnVariablePolicyProtocolNotification (
   EDKII_VARIABLE_POLICY_PROTOCOL  *VariablePolicy = NULL;
   EFI_STATUS                      Status;
 
-  DEBUG ((DEBUG_INFO, "%a: Setting policy for RTC variables, Context=%p\n", __FUNCTION__, Context));
+  DEBUG ((DEBUG_INFO, "%a: Setting policy for RTC variables, Context=%p\n", __func__, Context));
 
   if (Context != NULL) {
     VariablePolicy = (EDKII_VARIABLE_POLICY_PROTOCOL *)Context;
   } else {
     Status = gBS->LocateProtocol (&gEdkiiVariablePolicyProtocolGuid, NULL, (VOID **)&VariablePolicy);
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: - Locating Variable Policy failed - Code=%r\n", __FUNCTION__, Status));
+      DEBUG ((DEBUG_ERROR, "%a: - Locating Variable Policy failed - Code=%r\n", __func__, Status));
       ASSERT_EFI_ERROR (Status);
       return;
     }
@@ -375,7 +375,7 @@ OnVariablePolicyProtocolNotification (
              VARIABLE_POLICY_TYPE_NO_LOCK
              );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: - Error setting policy for RTCALARM - Code=%r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a: - Error setting policy for RTCALARM - Code=%r\n", __func__, Status));
     ASSERT_EFI_ERROR (Status);
   }
 
@@ -390,7 +390,7 @@ OnVariablePolicyProtocolNotification (
              VARIABLE_POLICY_TYPE_NO_LOCK
              );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: - Error setting policy for RTC - Code=%r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a: - Error setting policy for RTC - Code=%r\n", __func__, Status));
     ASSERT_EFI_ERROR (Status);
   }
 
@@ -575,7 +575,7 @@ Cleanup:
                     );
 
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: failed to create notification callback event (%r)\n", __FUNCTION__, Status));
+      DEBUG ((DEBUG_ERROR, "%a: failed to create notification callback event (%r)\n", __func__, Status));
       ASSERT_EFI_ERROR (Status);
     } else {
       Status = gBS->RegisterProtocolNotify (
@@ -585,7 +585,7 @@ Cleanup:
                       );
 
       if (EFI_ERROR (Status)) {
-        DEBUG ((DEBUG_ERROR, "%a: failed to register for notification (%r)\n", __FUNCTION__, Status));
+        DEBUG ((DEBUG_ERROR, "%a: failed to register for notification (%r)\n", __func__, Status));
         gBS->CloseEvent (Event);
         ASSERT_EFI_ERROR (Status);
       }

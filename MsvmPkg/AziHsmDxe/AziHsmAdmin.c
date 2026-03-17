@@ -69,7 +69,7 @@ AziHsmAdminIssueCmd (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a][Line:%d]Invalid Paramters Passed -- return EFI_INVALID_PARAMETER\n",
-      __FUNCTION__,
+      __func__,
       __LINE__
       ));
 
@@ -92,7 +92,7 @@ AziHsmAdminIssueCmd (
 
   Status = AziHsmHciWrSqTailDbReg (PciIo, QueuePair->Id, QueuePair->SubmissionQueue.u.Tail);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: AziHsmHciWrSqTailDbReg Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: AziHsmHciWrSqTailDbReg Failed %r\n", __func__, Status));
     goto Exit;
   }
 
@@ -111,7 +111,7 @@ AziHsmAdminIssueCmd (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a]: Timedout Waiting For Command Cpl [PsfBitBeforePost:0x%x PsfAfterPost:0x%x \n",
-      __FUNCTION__,
+      __func__,
       PsfBitBeforePost,
       DestCqe->Psf.Val
       ));
@@ -138,7 +138,7 @@ AziHsmAdminIssueCmd (
       DEBUG ((
         DEBUG_ERROR,
         "AziHsm: [%a]: Command Failed By Firmware [Status:0x%x] \n",
-        __FUNCTION__,
+        __func__,
         DestCqe->Psf.Val
         ));
     }
@@ -180,7 +180,7 @@ AziHsmAdminIdentifyCtrl (
 
   Status = AziHsmDmaBufferAlloc (State->PciIo, 1, &DmaBuffer);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: DMA Buffer Allocation Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: DMA Buffer Allocation Failed %r\n", __func__, Status));
     goto Exit;
   }
 
@@ -190,12 +190,12 @@ AziHsmAdminIdentifyCtrl (
 
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &IdenSqe, &IdenCqe);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __func__, Status));
     goto Free_Buffer_And_Exit;
   }
 
   if (IdenCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Identify Controller Failed By Firmware %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Identify Controller Failed By Firmware %r\n", __func__, Status));
     Status = EFI_DEVICE_ERROR;
     goto Free_Buffer_And_Exit;
   }
@@ -241,12 +241,12 @@ AziHsmAdminSetHsmQueCnt (
 
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &SetFeatSqe, &SetFeatCqe);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __func__, Status));
     goto Exit;
   }
 
   if (SetFeatCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Set Feature Cmd Failed By Firmware %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Set Feature Cmd Failed By Firmware %r\n", __func__, Status));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
@@ -261,7 +261,7 @@ AziHsmAdminSetHsmQueCnt (
   *QueCnt = (AZIHSM_HSM_CREATE_QUEUE_CNT < (SetFeatCqe.Cs.QueueCnt.Sq + 1)) ?
             AZIHSM_HSM_CREATE_QUEUE_CNT : (SetFeatCqe.Cs.QueueCnt.Sq + 1);
 
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a]: Returning QueCnt %d\n", __FUNCTION__, *QueCnt));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a]: Returning QueCnt %d\n", __func__, *QueCnt));
 
 Exit:
   return Status;
@@ -291,7 +291,7 @@ AziHsmDeleteSubQueue (
   ZeroMem (&DeleteSqe, sizeof (AZIHSM_ADMIN_CMD_SQE));
   ZeroMem (&DeleteCqe, sizeof (AZIHSM_ADMIN_CMD_CQE));
 
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Deleting SQ [Id:%d]\n", __FUNCTION__, __LINE__, Id));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Deleting SQ [Id:%d]\n", __func__, __LINE__, Id));
 
   // Fill up the SQE Here To Delete The Sub Queue
   AZIHSM_ADMIN_CMD_SQE_HDR_INIT (DeleteSqe.DeleteSq.Hdr, AZIHSM_ADMIN_CMD_OP_DELETE_SQ, IoQueue->Buffer.DeviceAddress);
@@ -300,17 +300,17 @@ AziHsmDeleteSubQueue (
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &DeleteSqe, &DeleteCqe);
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __func__, Status));
     goto Exit;
   }
 
   if (DeleteCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Delete IO Submission Queue Failed By Firmware %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Delete IO Submission Queue Failed By Firmware %r\n", __func__, Status));
     goto Exit;
   }
 
 Exit:
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Delete SQ [Id:%d] Status: %r\n", __FUNCTION__, __LINE__, Id, Status));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Delete SQ [Id:%d] Status: %r\n", __func__, __LINE__, Id, Status));
   return Status;
 }
 
@@ -338,7 +338,7 @@ AziHsmDeleteCplQueue (
   ZeroMem (&DeleteSqe, sizeof (AZIHSM_ADMIN_CMD_SQE));
   ZeroMem (&DeleteCqe, sizeof (AZIHSM_ADMIN_CMD_CQE));
 
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Deleting CQ [Id:%d]\n", __FUNCTION__, __LINE__, Id));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Deleting CQ [Id:%d]\n", __func__, __LINE__, Id));
 
   // Fill up the SQE Here To Delete The Cpl Queue
   AZIHSM_ADMIN_CMD_SQE_HDR_INIT (DeleteSqe.DeleteSq.Hdr, AZIHSM_ADMIN_CMD_OP_DELETE_CQ, IoQueue->Buffer.DeviceAddress);
@@ -347,17 +347,17 @@ AziHsmDeleteCplQueue (
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &DeleteSqe, &DeleteCqe);
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminIssueCmd Failed %r\n", __func__, Status));
     goto Exit;
   }
 
   if (DeleteCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Delete IO Completion Queue Failed By Firmware %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: Delete IO Completion Queue Failed By Firmware %r\n", __func__, Status));
     goto Exit;
   }
 
 Exit:
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Delete CQ [Id:%d] Status: %r\n", __FUNCTION__, __LINE__, Id, Status));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Delete CQ [Id:%d] Status: %r\n", __func__, __LINE__, Id, Status));
   return Status;
 }
 
@@ -385,7 +385,7 @@ AziHsmCreateSubQueue (
   ZeroMem (&CreateSqe, sizeof (AZIHSM_ADMIN_CMD_SQE));
   ZeroMem (&CreateCqe, sizeof (AZIHSM_ADMIN_CMD_CQE));
 
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Creating SQ [Id:%d]\n", __FUNCTION__, __LINE__, Id));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Creating SQ [Id:%d]\n", __func__, __LINE__, Id));
 
   AZIHSM_ADMIN_CMD_SQE_HDR_INIT (CreateSqe.CreateSq.Hdr, AZIHSM_ADMIN_CMD_OP_CREATE_SQ, IoQueue->Buffer.DeviceAddress);
   CreateSqe.CreateSq.QueId   = Id;
@@ -397,18 +397,18 @@ AziHsmCreateSubQueue (
   // Create the Sub Queue in the hardware
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &CreateSqe, &CreateCqe);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmAdminIssueCmd Failed %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 
   if (CreateCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: CreateSqe  Failed By Firmware %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: CreateSqe  Failed By Firmware %r\n", __func__, Status));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
 
 Exit:
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Create SQ [Id:%d] Status: %r\n", __FUNCTION__, __LINE__, Id, Status));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Create SQ [Id:%d] Status: %r\n", __func__, __LINE__, Id, Status));
   return Status;
 }
 
@@ -436,7 +436,7 @@ AziHsmCreateCplQueue (
   ZeroMem (&CreateSqe, sizeof (AZIHSM_ADMIN_CMD_SQE));
   ZeroMem (&CreateCqe, sizeof (AZIHSM_ADMIN_CMD_CQE));
 
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Creating CQ [Id:%d]\n", __FUNCTION__, __LINE__, Id));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Creating CQ [Id:%d]\n", __func__, __LINE__, Id));
 
   // Fill up the SQE Here To Create The Cpl Queue
   AZIHSM_ADMIN_CMD_SQE_HDR_INIT (CreateSqe.CreateCq.Hdr, AZIHSM_ADMIN_CMD_OP_CREATE_CQ, IoQueue->Buffer.DeviceAddress);
@@ -448,18 +448,18 @@ AziHsmCreateCplQueue (
 
   Status = AziHsmAdminIssueCmd (State->PciIo, &State->AdminQueue, &CreateSqe, &CreateCqe);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmAdminIssueCmd Failed %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmAdminIssueCmd Failed %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 
   if (CreateCqe.Psf.Bits.Sc != 0) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: CreateSqe  Failed By Firmware %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: CreateSqe  Failed By Firmware %r\n", __func__, __LINE__, Status));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
 
 Exit:
-  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Create CQ [Id:%d] Status: %r\n", __FUNCTION__, __LINE__, Id, Status));
+  DEBUG ((DEBUG_INFO, "AziHsm: [%a] [%d]: Create CQ [Id:%d] Status: %r\n", __func__, __LINE__, Id, Status));
   return Status;
 }
 
@@ -483,13 +483,13 @@ AziHsmAdminCreateDeviceIoQuePair (
 
   if ((State == NULL) || (QueuePair == NULL)) {
     Status = EFI_INVALID_PARAMETER;
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: Invalid Params %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: Invalid Params %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 
   Status = AziHsmCreateCplQueue (State, QueuePair->Id, &QueuePair->CompletionQueue);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmCreateCplQueue Failed %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmCreateCplQueue Failed %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 
@@ -498,13 +498,13 @@ AziHsmAdminCreateDeviceIoQuePair (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a] [%d]: AziHsmCreateSubQueue Failed %r [Deleting Associated Cpl Queue]\n",
-      __FUNCTION__,
+      __func__,
       __LINE__,
       Status
       ));
 
     if (EFI_ERROR (AziHsmDeleteCplQueue (State, QueuePair->Id, &QueuePair->CompletionQueue))) {
-      DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteCplQueue Failed %r\n", __FUNCTION__, __LINE__, Status));
+      DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteCplQueue Failed %r\n", __func__, __LINE__, Status));
     }
 
     goto Exit;
@@ -539,13 +539,13 @@ AziHsmAdminDeleteDeviceIoQueuePair (
 
   Status = AziHsmDeleteSubQueue (State, QueuePair->Id, &QueuePair->SubmissionQueue);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteSubQueue Failed %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteSubQueue Failed %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 
   Status = AziHsmDeleteCplQueue (State, QueuePair->Id, &QueuePair->CompletionQueue);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteCplQueue Failed %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a] [%d]: AziHsmDeleteCplQueue Failed %r\n", __func__, __LINE__, Status));
     goto Exit;
   }
 

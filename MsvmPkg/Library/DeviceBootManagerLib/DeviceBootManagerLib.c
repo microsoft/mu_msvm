@@ -297,7 +297,7 @@ VOID SortHandles(EFI_HANDLE *HandleBuffer, UINTN HandleCount) {
     BOOLEAN                   Swap;
     UINTN                     SwapCount;
 
-    DEBUG((DEBUG_INFO,"%a\n",__FUNCTION__));
+    DEBUG((DEBUG_INFO,"%a\n",__func__));
     if (HandleCount < 2) {
         return;
     }
@@ -324,7 +324,7 @@ VOID SortHandles(EFI_HANDLE *HandleBuffer, UINTN HandleCount) {
     } while ((Swap == TRUE) && (SwapCount < 50));
     DEBUG((DEBUG_INFO,"SortHandles - After sorting\n"));
     DisplayDevicePaths(HandleBuffer, HandleCount);
-    DEBUG((DEBUG_INFO,"Exit %a, swapcount = %d\n",__FUNCTION__,SwapCount));
+    DEBUG((DEBUG_INFO,"Exit %a, swapcount = %d\n",__func__,SwapCount));
     return;
 }
 
@@ -649,7 +649,7 @@ DeviceBootManagerUnableToBoot (
             // because synth video doesn't support it?
             // Status = MsLogoLibSetConsoleMode(TRUE, FALSE);
             // if (EFI_ERROR(Status) != FALSE) {
-            //     DEBUG((DEBUG_ERROR, "%a Unable to set console mode - %r\n", __FUNCTION__, Status));
+            //     DEBUG((DEBUG_ERROR, "%a Unable to set console mode - %r\n", __func__, Status));
             // }
 
             // Attempt PXE based on configured IP version
@@ -668,7 +668,7 @@ DeviceBootManagerUnableToBoot (
             //Reset to native resolution
             // Status = MsLogoLibSetConsoleMode(FALSE, FALSE);
             // if (EFI_ERROR(Status) != FALSE) {
-            //     DEBUG((DEBUG_ERROR, "%a Unable to set console mode - %r\n", __FUNCTION__, Status));
+            //     DEBUG((DEBUG_ERROR, "%a Unable to set console mode - %r\n", __func__, Status));
             // }
         }
     }

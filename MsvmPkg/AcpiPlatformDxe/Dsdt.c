@@ -139,19 +139,19 @@ Return Value:
     data->CxlMemoryEnabled = PcdGetBool(PcdCxlMemoryEnabled);
     data->NvdimmCount = PcdGet16(PcdNvdimmCount);
 
-    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Start               0x%lx\n", __FUNCTION__, data->Mmio1Start));
-    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __FUNCTION__, data->Mmio1Start));
-    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2StartMb             0x%lx\n", __FUNCTION__, data->Mmio2StartMb));
-    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2LengthMb            0x%lx\n", __FUNCTION__, data->Mmio2LengthMb));
-    DEBUG((DEBUG_VERBOSE, "--- %a: ProcessorCount           0x%lx\n", __FUNCTION__, data->ProcessorCount));
-    DEBUG((DEBUG_VERBOSE, "--- %a: SerialControllerEnabled  0x%x\n", __FUNCTION__, data->SerialControllerEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: HibernateEnabled         0x%x\n", __FUNCTION__, data->HibernateEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: PmemEnabled              0x%x\n", __FUNCTION__, data->PmemEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: VirtualBatteryEnabled    0x%x\n", __FUNCTION__, data->VirtualBatteryEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: SgxMemoryEnabled         0x%x\n", __FUNCTION__, data->SgxMemoryEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: ProcIdleEnabled          0x%x\n", __FUNCTION__, data->ProcIdleEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: CxlMemoryEnabled         0x%x\n", __FUNCTION__, data->CxlMemoryEnabled));
-    DEBUG((DEBUG_VERBOSE, "--- %a: NvdimmCount              0x%x\n", __FUNCTION__, data->NvdimmCount));
+    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Start               0x%lx\n", __func__, data->Mmio1Start));
+    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __func__, data->Mmio1Start));
+    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2StartMb             0x%lx\n", __func__, data->Mmio2StartMb));
+    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2LengthMb            0x%lx\n", __func__, data->Mmio2LengthMb));
+    DEBUG((DEBUG_VERBOSE, "--- %a: ProcessorCount           0x%lx\n", __func__, data->ProcessorCount));
+    DEBUG((DEBUG_VERBOSE, "--- %a: SerialControllerEnabled  0x%x\n", __func__, data->SerialControllerEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: HibernateEnabled         0x%x\n", __func__, data->HibernateEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: PmemEnabled              0x%x\n", __func__, data->PmemEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: VirtualBatteryEnabled    0x%x\n", __func__, data->VirtualBatteryEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: SgxMemoryEnabled         0x%x\n", __func__, data->SgxMemoryEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: ProcIdleEnabled          0x%x\n", __func__, data->ProcIdleEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: CxlMemoryEnabled         0x%x\n", __func__, data->CxlMemoryEnabled));
+    DEBUG((DEBUG_VERBOSE, "--- %a: NvdimmCount              0x%x\n", __func__, data->NvdimmCount));
 
     //
     // Allocate space for the NVDIMM IO Buffer if VPMEM is enabled.
@@ -196,7 +196,7 @@ Cleanup:
         }
     }
 
-    DEBUG((DEBUG_VERBOSE, "<<< %a: status %r\n", __FUNCTION__, status));
+    DEBUG((DEBUG_VERBOSE, "<<< %a: status %r\n", __func__, status));
 
     return status;
 }

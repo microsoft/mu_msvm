@@ -452,7 +452,7 @@ Return Value:
     ASSERT_EFI_ERROR(status);
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
         return status;
     }
 
