@@ -1123,7 +1123,7 @@ EndOfDxeCallback (
   Status = gBS->LocateProtocol(&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
   if (EFI_ERROR(Status))
   {
-      DEBUG((EFI_D_ERROR, "%a: Failed to locate the protocol.\n", __FUNCTION__));
+      DEBUG((EFI_D_ERROR, "%a: Failed to locate the protocol.\n", __func__));
       FAIL_FAST_INITIALIZATION_FAILURE(Status);
   }
 
@@ -1139,7 +1139,7 @@ EndOfDxeCallback (
   PageTableBase = InitializeMpPageTables((UINT64)ApMailbox);
   if (PageTableBase == 0)
   {
-      DEBUG((EFI_D_ERROR, "%a: Failed to initialize the page tables\n", __FUNCTION__));
+      DEBUG((EFI_D_ERROR, "%a: Failed to initialize the page tables\n", __func__));
       FAIL_FAST_INITIALIZATION_FAILURE(EFI_OUT_OF_RESOURCES);
   }
 
@@ -1187,7 +1187,7 @@ EndOfDxeCallback (
 
     if (EFI_ERROR(Status))
     {
-      DEBUG((EFI_D_ERROR, "%a: Failed to wakeup AP : %u\n", __FUNCTION__, VpIndex));
+      DEBUG((EFI_D_ERROR, "%a: Failed to wakeup AP : %u\n", __func__, VpIndex));
       FAIL_FAST_INITIALIZATION_FAILURE(Status);
     }
 
@@ -1571,7 +1571,7 @@ InitializeCpu (
   // MS_HYP_CHANGE BEGIN
   if (EFI_ERROR(Status))
   {
-    DEBUG((EFI_D_ERROR, "%a: Failed to create the idle events callback.\n", __FUNCTION__));
+    DEBUG((EFI_D_ERROR, "%a: Failed to create the idle events callback.\n", __func__));
     goto Cleanup;
   }
 
@@ -1592,7 +1592,7 @@ InitializeCpu (
                       &mEndOfDxeEvent);
       if (EFI_ERROR(Status))
       {
-          DEBUG((EFI_D_ERROR, "%a: Failed to create the end of DXE callback.\n", __FUNCTION__));
+          DEBUG((EFI_D_ERROR, "%a: Failed to create the end of DXE callback.\n", __func__));
           goto Cleanup;
       }
     }

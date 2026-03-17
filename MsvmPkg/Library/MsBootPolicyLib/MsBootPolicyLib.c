@@ -44,7 +44,7 @@ MsBootPolicyLibIsDevicePathBootable(
     BOOLEAN                             rc = TRUE;
     EFI_DEVICE_PATH_PROTOCOL           *Node;
 
-    DEBUG((DEBUG_INFO, "%a  Checking if the following device path is permitted to boot:\n", __FUNCTION__));
+    DEBUG((DEBUG_INFO, "%a  Checking if the following device path is permitted to boot:\n", __func__));
 
     if (NULL == DevicePath) {
         DEBUG((DEBUG_ERROR,"NULL device path\n"));

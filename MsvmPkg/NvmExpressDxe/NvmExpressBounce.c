@@ -73,7 +73,7 @@ NvmExpressAllocateBounceBlock(
 
   DEBUG((EFI_D_VERBOSE,
     "%a(%d) Context=%p ByteCount=0x%x\n",
-    __FUNCTION__,
+    __func__,
     __LINE__,
     Private,
     BlockByteCount));
@@ -164,7 +164,7 @@ NvmExpressAllocateBounceBlock(
   Cleanup:
   DEBUG((EFI_D_INFO,
     "%a (%d) Context=%p bounceBlock=%p status=0x%x\n",
-    __FUNCTION__,
+    __func__,
     __LINE__,
     Private,
     bounceBlock,
@@ -233,7 +233,7 @@ NvmExpressFreeAllBounceBlocks(
 
     DEBUG((EFI_D_WARN,
       "%a (%d) Context=%p block=%p IsHostVis=%d InUsePageCount=%d BlockBase=%p PageCount=0x%x\n",
-      __FUNCTION__,
+      __func__,
       __LINE__,
       Private,
       block,
@@ -271,7 +271,7 @@ NvmExpressAcquireBouncePages(
 
   DEBUG((EFI_D_VERBOSE,
     "%a(%d) Context=%p PageCount=%d\n",
-    __FUNCTION__,
+    __func__,
     __LINE__,
     Private,
     PageCount));
@@ -314,7 +314,7 @@ Retry:
       if (EFI_ERROR(status)) {
       DEBUG((EFI_D_WARN,
         "%a(%d) Context=%p Bounce block allocation failure\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Private));
       goto Exit;
@@ -330,14 +330,14 @@ Exit:
 
     DEBUG((EFI_D_WARN,
       "%a(%d) Context=%p PageCount=%d Returning=NULL\n",
-      __FUNCTION__,
+      __func__,
       __LINE__,
       Private,
       PageCount));
   } else {
     DEBUG((EFI_D_VERBOSE,
       "%a(%d) Context=%p PageCount=%d Returning=%p\n",
-      __FUNCTION__,
+      __func__,
       __LINE__,
       Private,
       PageCount,
@@ -376,7 +376,7 @@ NvmExpressReleaseBouncePages(
 
   DEBUG((EFI_D_VERBOSE,
     "%a(%d) Context=%p released PageCount=%d\n",
-    __FUNCTION__,
+    __func__,
     __LINE__,
     Private,
     count));
@@ -414,7 +414,7 @@ NvmExpressCopyBouncePagesToExternalBuffer(
 
   DEBUG((EFI_D_INFO,
     "%a(%d) ExternalBuffer.Buffer=%p Size=0x%x BouncePageList=%p CopyToBounce=%d\n",
-    __FUNCTION__,
+    __func__,
     __LINE__,
     ExternalBuffer,
     BufferSize,
@@ -438,7 +438,7 @@ NvmExpressCopyBouncePagesToExternalBuffer(
     if (CopyToBounce && pageOffset) {
       DEBUG((EFI_D_VERBOSE,
         "%a(%d) Zero %p size=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         bouncePage->PageVA,
         pageOffset));
@@ -456,7 +456,7 @@ NvmExpressCopyBouncePagesToExternalBuffer(
     if (CopyToBounce) {
       DEBUG((EFI_D_VERBOSE,
         "%a(%d) CopyToBounce dst=%p src=%p size=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         bounceBuffer,
         extBuffer,
@@ -466,7 +466,7 @@ NvmExpressCopyBouncePagesToExternalBuffer(
     } else {
       DEBUG((EFI_D_VERBOSE,
         "%a(%d) CopyToExtBuffer dst=%p src=%p size=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         extBuffer,
         bounceBuffer,
@@ -487,7 +487,7 @@ NvmExpressCopyBouncePagesToExternalBuffer(
 
       DEBUG((EFI_D_VERBOSE,
         "%a(%d) Zero %p size=0x%x (from offset=0x%x)\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         bounceBufferEnd,
         zeroSize,
@@ -521,7 +521,7 @@ NvmExpressZeroBouncePageList(
       pageCount++;
     }
     DEBUG((EFI_D_VERBOSE, "%a(%d) BouncePageList=%p zeroed %d pages\n",
-      __FUNCTION__,
+      __func__,
       __LINE__,
       BouncePageList,
       pageCount));

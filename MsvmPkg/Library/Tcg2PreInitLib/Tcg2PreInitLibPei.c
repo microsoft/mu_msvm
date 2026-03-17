@@ -48,26 +48,26 @@ MsvmTpmDeviceInitEarlyBoot(
 
     Status = PeiServicesAllocatePages(EfiRuntimeServicesData, 2, &CrBuffer);
     if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "%a - Failed to allocate CRB for TPM device!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a - Failed to allocate CRB for TPM device!\n", __func__));
         return Status;
     }
 
     if (CrBuffer > 0xFFFFFFFFULL) {
         // PEI memory was published as - Base at 1MB, size max 64MB.
         // It is guaranteed that physical address is below 4 GB.
-        DEBUG((DEBUG_ERROR, "%a - CRB allocation for TPM device is incorrect!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a - CRB allocation for TPM device is incorrect!\n", __func__));
         ASSERT(FALSE);
         return EFI_DEVICE_ERROR;
     }
 
-    DEBUG((DEBUG_VERBOSE, "%a - CrBuffer == 0x%016lX\n", __FUNCTION__, CrBuffer));
+    DEBUG((DEBUG_VERBOSE, "%a - CrBuffer == 0x%016lX\n", __func__, CrBuffer));
 
     ZeroMem((UINT8*)CrBuffer, 2 * EFI_PAGE_SIZE);
 
     TpmBaseAddress = FixedPcdGet64(PcdTpmBaseAddress);
     TpmBaseAddress += PcdGetBool(PcdTpmLocalityRegsEnabled) ? 0x40 : 0;
 
-    DEBUG((DEBUG_VERBOSE, "%a - TpmBaseAddress == 0x%016lX\n", __FUNCTION__, TpmBaseAddress));
+    DEBUG((DEBUG_VERBOSE, "%a - TpmBaseAddress == 0x%016lX\n", __func__, TpmBaseAddress));
 
     //
     // Send the request to the TPM device.
@@ -83,11 +83,11 @@ MsvmTpmDeviceInitEarlyBoot(
         //
         // Couldn't establish memory mapping with device.
         //
-        DEBUG((DEBUG_ERROR, "%a - Couldn't establish memory mapping with device!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a - Couldn't establish memory mapping with device!\n", __func__));
         return EFI_NO_MAPPING;
     }
 
-    DEBUG((DEBUG_VERBOSE, "%a - TpmIoEstablishedResponse == 0x%08X\n", __FUNCTION__, TpmIoEstablishedResponse));
+    DEBUG((DEBUG_VERBOSE, "%a - TpmIoEstablishedResponse == 0x%08X\n", __func__, TpmIoEstablishedResponse));
 
     Tpm2RegisterTpm2DeviceLib((TPM2_DEVICE_INTERFACE*)TpmBaseAddress);
 
@@ -119,7 +119,7 @@ MsvmTpm2InitLibConstructorPei (
   UINTN             GuidSize = sizeof( EFI_GUID );
   static BOOLEAN    EarlyInitComplete = FALSE;
 
-  DEBUG(( DEBUG_INFO, "%a()\n", __FUNCTION__ ));
+  DEBUG(( DEBUG_INFO, "%a()\n", __func__ ));
 
   //
   // If the TPM is disabled in the Hyper-V UI, don't perform
@@ -128,11 +128,11 @@ MsvmTpm2InitLibConstructorPei (
   //       This is because of the depex on gEfiPeiMasterBootModePpiGuid.
   TpmEnabled = PcdGetBool( PcdTpmEnabled );
   if (!TpmEnabled) {
-    DEBUG((DEBUG_INFO, "%a - Detected a disabled TPM. Bypassing init.\n", __FUNCTION__));
+    DEBUG((DEBUG_INFO, "%a - Detected a disabled TPM. Bypassing init.\n", __func__));
     Status = PcdSetPtrS( PcdTpmInstanceGuid, &GuidSize, &gEfiTpmDeviceInstanceNoneGuid );
     if (EFI_ERROR(Status))
     {
-        DEBUG((DEBUG_ERROR, "%a - Failed to set the PCD PcdTpmInstanceGuid::0x%x \n", __FUNCTION__, Status));
+        DEBUG((DEBUG_ERROR, "%a - Failed to set the PCD PcdTpmInstanceGuid::0x%x \n", __func__, Status));
         ASSERT_EFI_ERROR( Status );
     }
   }
@@ -142,7 +142,7 @@ MsvmTpm2InitLibConstructorPei (
   if (TpmEnabled && !EarlyInitComplete) {
     Status = MsvmTpmDeviceInitEarlyBoot();
     if (EFI_ERROR( Status )) {
-      DEBUG(( DEBUG_ERROR, "%a - MsvmTpmDeviceInitEarlyBoot() returned %r!\n", __FUNCTION__, Status ));
+      DEBUG(( DEBUG_ERROR, "%a - MsvmTpmDeviceInitEarlyBoot() returned %r!\n", __func__, Status ));
       ASSERT_EFI_ERROR( Status );
     }
     EarlyInitComplete = TRUE;

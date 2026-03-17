@@ -50,7 +50,7 @@ NvmeDeviceUnitTestPassthru (
 
   switch (Command->Cdw0.Opcode) {
     case NVME_ADMIN_FORMAT_NVM_CMD:
-      UT_LOG_VERBOSE ("%a: Opcode = NVME_ADMIN_FORMAT_NVM_CMD\n", __FUNCTION__);
+      UT_LOG_VERBOSE ("%a: Opcode = NVME_ADMIN_FORMAT_NVM_CMD\n", __func__);
 
       CopyMem (&FormatNvmCdw10, &Command->Cdw10, sizeof (NVME_ADMIN_FORMAT_NVM));
 
@@ -76,7 +76,7 @@ NvmeDeviceUnitTestPassthru (
 
       break;
     case NVME_ADMIN_SANITIZE_CMD:
-      UT_LOG_VERBOSE ("%a: Opcode = NVME_ADMIN_SANITIZE_CMD\n", __FUNCTION__);
+      UT_LOG_VERBOSE ("%a: Opcode = NVME_ADMIN_SANITIZE_CMD\n", __func__);
 
       CopyMem (&SanitizeCdw1011, &Command->Cdw10, sizeof (NVME_ADMIN_SANITIZE));
 
@@ -104,7 +104,7 @@ NvmeDeviceUnitTestPassthru (
 
       break;
     default:
-      UT_LOG_VERBOSE ("%a: Invalid Opcode = 0x%x!!!\n", __FUNCTION__, Command->Cdw0.Opcode);
+      UT_LOG_VERBOSE ("%a: Invalid Opcode = 0x%x!!!\n", __func__, Command->Cdw0.Opcode);
       break;
   }
 
@@ -464,8 +464,8 @@ NvmeCreateDeviceInstance (
 
   Private->ControllerData = (NVME_ADMIN_CONTROLLER_DATA *)AllocateZeroPool (sizeof (NVME_ADMIN_CONTROLLER_DATA));
 
-  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_CONTROLLER_PRIVATE_DATA\n", __FUNCTION__);
-  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_ADMIN_CONTROLLER_DATA\n", __FUNCTION__);
+  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_CONTROLLER_PRIVATE_DATA\n", __func__);
+  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_ADMIN_CONTROLLER_DATA\n", __func__);
 
   Private->ControllerData->Nn          = 1; // One namespace
   Private->ControllerData->Sanicap.Bes = 1; // Block Erase Supported
@@ -473,7 +473,7 @@ NvmeCreateDeviceInstance (
   Private->ControllerData->Sanicap.Ows = 1; // Overwrite Supported
 
   NamespaceData = AllocateZeroPool (sizeof (NVME_ADMIN_NAMESPACE_DATA));
-  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_ADMIN_NAMESPACE_DATA\n", __FUNCTION__);
+  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_ADMIN_NAMESPACE_DATA\n", __func__);
 
   Device = (NVME_DEVICE_PRIVATE_DATA *)(AllocateZeroPool (sizeof (NVME_DEVICE_PRIVATE_DATA)));
 
@@ -525,7 +525,7 @@ NvmeCreateDeviceInstance (
   CopyMem (&Device->NamespaceData, NamespaceData, sizeof (NVME_ADMIN_NAMESPACE_DATA));
   *ppDevice = Device;
 
-  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_DEVICE_PRIVATE_DATA\n", __FUNCTION__);
+  UT_LOG_VERBOSE ("%a: Allocated and Initialized NVME_DEVICE_PRIVATE_DATA\n", __func__);
 
   return UNIT_TEST_PASSED;
 }
@@ -547,10 +547,10 @@ MediaSanitizePurgeUnitTest (
   UT_ASSERT_STATUS_EQUAL (UnitTestStatus, UNIT_TEST_PASSED);
   UT_ASSERT_NOT_NULL (NvmeDevice);
 
-  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __FUNCTION__, UnitTestStatus);
-  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __FUNCTION__, NvmeDevice);
-  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __FUNCTION__, NvmeDevice->BlockIo);
-  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __FUNCTION__, NvmeDevice->Signature);
+  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __func__, UnitTestStatus);
+  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __func__, NvmeDevice);
+  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __func__, NvmeDevice->BlockIo);
+  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __func__, NvmeDevice->Signature);
 
   //
   // Case 1: Block Erase
@@ -595,10 +595,10 @@ NvmeSanitizeUnitTest (
   UT_ASSERT_STATUS_EQUAL (UnitTestStatus, UNIT_TEST_PASSED);
   UT_ASSERT_NOT_NULL (NvmeDevice);
 
-  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __FUNCTION__, UnitTestStatus);
-  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __FUNCTION__, NvmeDevice);
-  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __FUNCTION__, NvmeDevice->BlockIo);
-  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __FUNCTION__, NvmeDevice->Signature);
+  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __func__, UnitTestStatus);
+  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __func__, NvmeDevice);
+  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __func__, NvmeDevice->BlockIo);
+  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __func__, NvmeDevice->Signature);
 
   //
   // Case 1: Block Erase
@@ -708,10 +708,10 @@ NvmeFormatNvmUnitTest (
   UT_ASSERT_STATUS_EQUAL (UnitTestStatus, UNIT_TEST_PASSED);
   UT_ASSERT_NOT_NULL (NvmeDevice);
 
-  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __FUNCTION__, UnitTestStatus);
-  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __FUNCTION__, NvmeDevice);
-  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __FUNCTION__, NvmeDevice->BlockIo);
-  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __FUNCTION__, NvmeDevice->Signature);
+  UT_LOG_VERBOSE ("%a: Create Device Instance Status = 0x%x\n", __func__, UnitTestStatus);
+  UT_LOG_VERBOSE ("%a: Device = 0x%x\n", __func__, NvmeDevice);
+  UT_LOG_VERBOSE ("%a: Device->BlockIo = 0x%x\n", __func__, NvmeDevice->BlockIo);
+  UT_LOG_VERBOSE ("%a: Device->Signature = 0x%x\n", __func__, NvmeDevice->Signature);
 
   //
   // Case 1: User Data Erase (Flbas = 0)

@@ -154,7 +154,7 @@ HandleRebootToFrontPage (
     UINTN       DataSize;
     UINT8       OsIndications[sizeof( UINT64 )] = {0};      // For UINT32 Compatibility
 
-    DEBUG(( DEBUG_INFO, "INFO [SFP] %a()\n", __FUNCTION__ ));
+    DEBUG(( DEBUG_INFO, "INFO [SFP] %a()\n", __func__ ));
 
     //
     // Step 1: Read the current OS indications variable.
@@ -165,7 +165,7 @@ HandleRebootToFrontPage (
                                &Attributes,
                                &DataSize,
                                OsIndications );
-    DEBUG(( DEBUG_VERBOSE, "VERBOSE [SFP] %a - GetVariable(OsIndications) = %r\n", __FUNCTION__, Status ));
+    DEBUG(( DEBUG_VERBOSE, "VERBOSE [SFP] %a - GetVariable(OsIndications) = %r\n", __func__, Status ));
 
     //
     // Step 2: Update OS indications variable to enable the boot to FrontPage.
@@ -178,7 +178,7 @@ HandleRebootToFrontPage (
                                    Attributes,
                                    DataSize,
                                    OsIndications );
-        DEBUG(( DEBUG_VERBOSE, "VERBOSE [SFP] %a - SetVariable(OsIndications) = %r\n", __FUNCTION__, Status ));
+        DEBUG(( DEBUG_VERBOSE, "VERBOSE [SFP] %a - SetVariable(OsIndications) = %r\n", __func__, Status ));
     }
 
     //
@@ -186,7 +186,7 @@ HandleRebootToFrontPage (
     //
     if (!EFI_ERROR( Status ))
     {
-        DEBUG(( DEBUG_INFO, "INFO [SFP] %a - Requesting reboot...\n", __FUNCTION__ ));
+        DEBUG(( DEBUG_INFO, "INFO [SFP] %a - Requesting reboot...\n", __func__ ));
         *ActionRequest = EFI_BROWSER_ACTION_REQUEST_EXIT;
         mResetRequired = TRUE;
     }
