@@ -83,7 +83,9 @@ AziHsmFireHsmCmd (
       State,
       DmaBufferIn,
       DmaBufferOut,
-      SessionData
+      SessionData,
+      InXferBuffSz,
+      OutXferBuffSz
       ));
 
     return EFI_INVALID_PARAMETER;
