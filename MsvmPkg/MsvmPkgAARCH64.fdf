@@ -34,11 +34,19 @@
 #
 [FD.MSVM]
 BaseAddress   = 0x00000000|gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+Size          = 0x00810000|gMsvmPkgTokenSpaceGuid.PcdFdSize
+!else
 Size          = 0x00800000|gMsvmPkgTokenSpaceGuid.PcdFdSize
+!endif
 
 ErasePolarity = 1
 BlockSize     = 0x1000 # This multiplied by NumBlocks should == Size
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+NumBlocks     = 0x810
+!else
 NumBlocks     = 0x800
+!endif
 
 #
 # UEFI has trouble dealing with FVs that reside at physical address 0x0.
@@ -59,7 +67,11 @@ FV = MAIN
 
 # DXE volume that is not force rebased so that the section alignment and
 # file alignment do not need to match
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+0x00200000|0x00610000
+!else
 0x00200000|0x00600000
+!endif
 gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
 FV = DXE
 

@@ -47,27 +47,46 @@
 
 [FD.MSVM]
 BaseAddress   = 0x00100000|gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+Size          = 0x00800000|gMsvmPkgTokenSpaceGuid.PcdFdSize
+!else
 Size          = 0x00600000|gMsvmPkgTokenSpaceGuid.PcdFdSize
+!endif
 
 ErasePolarity = 1
 BlockSize     = 0x1000
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+NumBlocks     = 0x800
+!else
 NumBlocks     = 0x600
+!endif
 
 # DXE volume that is not force rebased so that the section alignment and
 # file alignment do not need to match
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+0x00000000|0x00500000
+!else
 0x00000000|0x004E0000
+!endif
 gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
 FV = DXE
 
 # The MAIN volume (start|size)
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+0x00500000|0x100000
+!else
 0x004E0000|0x100000
+!endif
 gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAINFV
 
 # The SEC volume (start|size)
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+0x00600000|0x00020000
+!else
 0x005E0000|0x00020000
+!endif
 FV = SECFV
-
 
 ################################################################################
 #
