@@ -1,0 +1,24 @@
+### Specify container image and other global variables in this section. ###
+# https://aka.ms/obpipelines/variables
+
+variables:
+  Parameters.vPack.majorVer: "25"
+  Parameters.vPack.minorVer: "0"
+
+  # Directory to download Nugets to, emulating CoreXT.
+  Pkg:      $(System.ArtifactsDirectory)/pkg
+
+  # Clang from VisualStudio2022 in the 1ES image. Windows hosted.
+  CLANGVS:  'C:/program files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/x64'
+
+  # Clang built and supported by Windows org. Windows hosted.
+  # It is awkwardly split into two Nugets. We keep both the Nuget store
+  # and the "install" carefully structured.
+  LlvmMajorVersion: 22
+  LlvmFeed:         ES-LLVM
+  LlvmVersion:      $(LlvmMajorVersion).1.1-47
+  CLANGWIN:         $(Agent.TempDirectory)/llvm$(LlvmVersion)
+  CLANGWIN_BIN:     $(CLANGWIN)/bin
+  CLANGWIN_INC:     $(CLANGWIN)/lib/clang/$(LlvmMajorVersion)
+  PkgLlvm_Tools:    $(Pkg)/llvm.tools.$(LlvmVersion)
+  PkgClang_Headers: $(Pkg)/clang.headers.$(LlvmVersion)
