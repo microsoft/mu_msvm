@@ -1007,6 +1007,19 @@ Return Value:
 
     HobAddFvMemoryRange(PcdGet64(PcdDxeFvBaseAddress), PcdGet32(PcdDxeFvSize));
 
+    //
+    // Install an FvInfo PPI for the DXE FV so that Tcg2Pei discovers it and
+    // measures the entire volume into PCR0. Without this, Tcg2Pei only sees
+    // the BFV (MAINFV) and the DXE FV would go unmeasured in PEI, causing
+    // individual DXE drivers to be measured into PCR2 instead.
+    //
+    PeiServicesInstallFvInfoPpi(
+        &((EFI_FIRMWARE_VOLUME_HEADER*)(UINTN)PcdGet64(PcdDxeFvBaseAddress))->FileSystemGuid,
+        (VOID*)(UINTN)PcdGet64(PcdDxeFvBaseAddress),
+        PcdGet32(PcdDxeFvSize),
+        NULL,
+        NULL);
+
     if (!IsHardwareIsolatedNoParavisor())
     {
         //
