@@ -42,7 +42,6 @@ void BdXmmException(void) { }
 void* EFIAPI DebugService2(void *Param1, void *Param2, UINT32 Service)
     { UNREFERENCED_PARAMETER(Param1 && Param2 && Service); return 0; }
 void EFIAPI EfiCaptureContext(PCONTEXT ContextRecord) { UNREFERENCED_PARAMETER(ContextRecord); }
-void EFIAPI EnableInterruptsAndSleep(void) { }
 void HvHypercallpIssueTdxHypercall(void) { }
 void EFIAPI KiRestoreProcessorControlState(PKPROCESSOR_STATE ProcessorState) { UNREFERENCED_PARAMETER(ProcessorState); }
 void EFIAPI KiSaveProcessorControlState(PKPROCESSOR_STATE ProcessorState) { UNREFERENCED_PARAMETER(ProcessorState); }
