@@ -12,8 +12,8 @@ variables:
   CLANGVS:  'C:/program files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/x64'
 
   # Clang built and supported by Windows org. Windows hosted.
-  # It is awkwardly split into two Nugets. We keep both the Nuget store
-  # and the "install" carefully structured.
+  # It is split into two Nugets. We keep them separate in the
+  # Nuget store and copy them together.
   LlvmMajorVersion: 22
   LlvmFeed:         ES-LLVM
   LlvmVersion:      $(LlvmMajorVersion).1.1-47
