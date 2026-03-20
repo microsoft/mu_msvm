@@ -353,6 +353,8 @@ Return Value:
                     DeviceHandle,
                     &gEfiSimpleNetworkProtocolGuid,
                     SnpProtocol,
+                    &gEfiAdapterInformationProtocolGuid,    // MS_HYP_CHANGE
+                    &(SnpDriver->Aip),                      // MS_HYP_CHANGE
                     NULL
                     );
         }
@@ -586,6 +588,12 @@ Return Value:
 
     snpDriver->Snp.Mode           = &snpDriver->Mode;
 
+    // MS_HYP_CHANGE BEGIN - Initialize AIP protocol for media state reporting
+    snpDriver->Aip.GetInformation    = NetvscAipGetInformation;
+    snpDriver->Aip.SetInformation    = NetvscAipSetInformation;
+    snpDriver->Aip.GetSupportedTypes = NetvscAipGetSupportedTypes;
+    // MS_HYP_CHANGE END
+
     snpDriver->AdapterContext     = adapterContext;
 
     //
@@ -621,6 +629,8 @@ Return Value:
         &snpDriver->AdapterContext->DeviceHandle,
         &gEfiSimpleNetworkProtocolGuid,
         &(snpDriver->Snp),
+        &gEfiAdapterInformationProtocolGuid,    // MS_HYP_CHANGE
+        &(snpDriver->Aip),                      // MS_HYP_CHANGE
         NULL);
 
     if (EFI_ERROR(status))
