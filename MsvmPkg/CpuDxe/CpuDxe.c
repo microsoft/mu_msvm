@@ -483,6 +483,7 @@ CpuSetMemoryAttributes (
 }
 
 // MS_HYP_CHANGE BEGIN
+VOID EFIAPI MsEnableInterruptsAndSleep (VOID);
 /**
   Waits for an interrupt to arrive, then enables CPU interrupts.
 
@@ -497,7 +498,7 @@ CpuWaitForAndEnableInterrupt (
   IN EFI_CPU2_PROTOCOL          *This
   )
 {
-  EnableInterruptsAndSleep ();
+  MsEnableInterruptsAndSleep ();
 
   return EFI_SUCCESS;
 }
