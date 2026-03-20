@@ -16,6 +16,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <Protocol/SimpleNetwork.h>
 #include <Protocol/DevicePath.h>
+#include <Protocol/AdapterInformation.h>  // MS_HYP_CHANGE
 
 
 #include <Guid/EventGroup.h>
@@ -37,6 +38,7 @@ typedef struct {
   UINT32                         Signature;
   EFI_SIMPLE_NETWORK_PROTOCOL    Snp;
   EFI_SIMPLE_NETWORK_MODE        Mode;
+  EFI_ADAPTER_INFORMATION_PROTOCOL Aip; // MS_HYP_CHANGE
 
   NETVSC_ADAPTER_CONTEXT      *AdapterContext;
 
@@ -44,6 +46,35 @@ typedef struct {
 } SNP_DRIVER;
 
 #define EFI_SIMPLE_NETWORK_DEV_FROM_THIS(a)  CR (a, SNP_DRIVER, Snp, SNP_DRIVER_SIGNATURE)
+#define SNP_DRIVER_FROM_AIP(a)               CR (a, SNP_DRIVER, Aip, SNP_DRIVER_SIGNATURE)  // MS_HYP_CHANGE
+
+// MS_HYP_CHANGE BEGIN - AIP protocol functions
+EFI_STATUS
+EFIAPI
+NetvscAipGetInformation (
+  IN  EFI_ADAPTER_INFORMATION_PROTOCOL  *This,
+  IN  EFI_GUID                          *InformationType,
+  OUT VOID                              **InformationBlock,
+  OUT UINTN                             *InformationBlockSize
+  );
+
+EFI_STATUS
+EFIAPI
+NetvscAipSetInformation (
+  IN  EFI_ADAPTER_INFORMATION_PROTOCOL  *This,
+  IN  EFI_GUID                          *InformationType,
+  IN  VOID                              *InformationBlock,
+  IN  UINTN                             InformationBlockSize
+  );
+
+EFI_STATUS
+EFIAPI
+NetvscAipGetSupportedTypes (
+  IN  EFI_ADAPTER_INFORMATION_PROTOCOL  *This,
+  OUT EFI_GUID                          **InfoTypesBuffer,
+  OUT UINTN                             *InfoTypesBufferCount
+  );
+// MS_HYP_CHANGE END
 
 //
 // Global Variables
