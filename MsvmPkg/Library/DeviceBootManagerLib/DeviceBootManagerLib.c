@@ -9,8 +9,10 @@
 
 #include <Protocol/Emcl.h>
 #include <Protocol/LoadFile.h>
+#include <Protocol/PciIo.h>
 #include <Protocol/SimpleFileSystem.h>
 
+#include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BiosDeviceLib.h>
 #include <Library/DebugLib.h>
@@ -631,6 +633,104 @@ DeviceBootManagerUnableToBoot (
     }
 
     if (AttemptDefaultBoot) {
+        //
+        // Diagnostic: walk the x64 page table for the ECAM VA to see what
+        // physical address it maps to, and whether it's present.
+        //
+        {
+            UINT64 Va = 0xE4000000ULL;
+            UINT64 Cr3 = AsmReadCr3();
+
+            UINT64 *Pml4  = (UINT64 *)(UINTN)(Cr3 & ~0xFFFULL);
+            UINT64 Pml4e  = Pml4[(Va >> 39) & 0x1FF];
+            UINT64 *Pdpt  = (UINT64 *)(UINTN)(Pml4e & ~0xFFFULL);
+            UINT64 Pdpte  = Pdpt[(Va >> 30) & 0x1FF];
+            UINT64 *Pd    = (UINT64 *)(UINTN)(Pdpte & ~0xFFFULL);
+            UINT64 Pde    = Pd[(Va >> 21) & 0x1FF];
+
+            if (Pde & 0x80) {
+                // 2MB large page
+                UINT64 Pa = (Pde & 0xFFFFFFFE00000ULL) | (Va & 0x1FFFFFULL);
+                DEBUG((DEBUG_ERROR,
+                    "ePCI: PT VA=%lx CR3=%lx PML4E=%lx PDPTE=%lx PDE=%lx -> 2MB PA=%lx\n",
+                    Va, Cr3, Pml4e, Pdpte, Pde, Pa));
+            } else if (Pde & 1) {
+                // 4KB page table
+                UINT64 *Pt = (UINT64 *)(UINTN)(Pde & ~0xFFFULL);
+                UINT64 Pte = Pt[(Va >> 12) & 0x1FF];
+                UINT64 Pa = (Pte & 0xFFFFFFFFF000ULL) | (Va & 0xFFFULL);
+                DEBUG((DEBUG_ERROR,
+                    "ePCI: PT VA=%lx CR3=%lx PML4E=%lx PDPTE=%lx PDE=%lx PTE=%lx -> 4KB PA=%lx\n",
+                    Va, Cr3, Pml4e, Pdpte, Pde, Pte, Pa));
+            } else {
+                DEBUG((DEBUG_ERROR,
+                    "ePCI: PT VA=%lx CR3=%lx PML4E=%lx PDPTE=%lx PDE=%lx -> NOT PRESENT\n",
+                    Va, Cr3, Pml4e, Pdpte, Pde));
+            }
+
+            volatile UINT32 *EcamBase = (volatile UINT32 *)(UINTN)Va;
+            UINT32 Val = *EcamBase;
+            DEBUG((DEBUG_ERROR, "ePCI: BEFORE ConnectAll: direct read @%lx = %08x\n", Va, Val));
+        }
+
+        EfiBootManagerConnectAll();
+
+        {
+            volatile UINT32 *EcamBase = (volatile UINT32 *)(UINTN)0xE4000000;
+            UINT32 Val = *EcamBase;
+            DEBUG((DEBUG_ERROR, "ePCI: AFTER first ConnectAll: direct read @0xE4000000 = %08x\n", Val));
+        }
+
+        //
+        // Flush diagnostics after first ConnectAll so we can see PciHostBridgeDxe
+        // and PciBusDxe activity in the log buffer.
+        //
+        DEBUG((DEBUG_ERROR, "ePCI: first ConnectAll complete, flushing diagnostics\n"));
+
+        //
+        // Diagnostic: enumerate all PCI_IO handles to see what devices registered.
+        //
+        {
+            EFI_HANDLE  *PciHandles = NULL;
+            UINTN        PciHandleCount = 0;
+            gBS->LocateHandleBuffer(
+                ByProtocol,
+                &gEfiPciIoProtocolGuid,
+                NULL,
+                &PciHandleCount,
+                &PciHandles
+            );
+            DEBUG((DEBUG_ERROR, "ePCI: %u PCI_IO handles after first ConnectAll\n", PciHandleCount));
+            for (UINTN i = 0; i < PciHandleCount; i++) {
+                EFI_PCI_IO_PROTOCOL *PciIo = NULL;
+                UINTN Seg, Bus, Dev, Func;
+                gBS->HandleProtocol(PciHandles[i], &gEfiPciIoProtocolGuid, (VOID **)&PciIo);
+                if (PciIo != NULL) {
+                    PciIo->GetLocation(PciIo, &Seg, &Bus, &Dev, &Func);
+                    EFI_DEVICE_PATH_PROTOCOL *Dp = NULL;
+                    gBS->HandleProtocol(PciHandles[i], &gEfiDevicePathProtocolGuid, (VOID **)&Dp);
+                    CHAR16 *DpStr = Dp ? ConvertDevicePathToText(Dp, FALSE, FALSE) : L"<none>";
+                    DEBUG((DEBUG_ERROR, "ePCI:   [%u] Handle=%p Seg=%u Bus=%u Dev=%u Func=%u Path=%s\n",
+                           i, PciHandles[i], Seg, Bus, Dev, Func, DpStr));
+                    if (Dp && DpStr) FreePool(DpStr);
+                }
+            }
+            if (PciHandles) gBS->FreePool(PciHandles);
+        }
+
+        WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
+
+        //
+        // Second ConnectAll pass: PciBusDxe creates PCI_IO handles for ePCI
+        // devices (e.g., NVMe on PCIe root ports) during the first ConnectAll.
+        // These new handles need another connect pass so that device-specific
+        // drivers like NvmExpressDxe can bind to them and produce block I/O
+        // protocols for the boot manager to find.
+        //
+        EfiBootManagerConnectAll();
+
+        DEBUG((DEBUG_ERROR, "ePCI: second ConnectAll complete, flushing diagnostics\n"));
+        WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
         EfiBootManagerConnectAll();
 
         // Attempt HDD

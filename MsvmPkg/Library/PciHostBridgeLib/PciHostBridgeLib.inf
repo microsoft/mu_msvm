@@ -25,9 +25,11 @@
 [LibraryClasses]
   BaseMemoryLib
   DebugLib
+  DxeServicesTableLib
   PcdLib
   MemoryAllocationLib
   DevicePathLib
+  UefiBootServicesTableLib
 
 [Pcd]
   gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
