@@ -224,6 +224,9 @@ INF FatPkg/EnhancedFatDxe/Fat.inf
 
 INF MdeModulePkg/Bus/Scsi/ScsiDiskDxe/ScsiDiskDxe.inf
 INF MdeModulePkg/Bus/Scsi/ScsiBusDxe/ScsiBusDxe.inf
+INF UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
+INF MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf
+INF MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
 INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
 INF MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
 INF MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.inf

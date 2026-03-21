@@ -1,0 +1,32 @@
+## @file
+#  Platform PCI Segment Info Library for Hyper-V Gen2 VMs.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = PciSegmentInfoLib
+  FILE_GUID      = A7BC2547-C840-4B54-AE92-E084BC5A2E3C
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = PciSegmentInfoLib
+
+[Sources]
+  PciSegmentInfoLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  DebugLib
+  PcdLib
+  MemoryAllocationLib
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
+  gMsvmPkgTokenSpaceGuid.PcdMcfgSize

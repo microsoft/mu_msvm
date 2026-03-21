@@ -273,6 +273,9 @@
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
   WatchdogTimerLib|MsvmPkg/Library/WatchdogTimerLib/WatchdogTimerLib.inf
+  PciSegmentLib|MdePkg/Library/PciSegmentLibSegmentInfo/BasePciSegmentLibSegmentInfo.inf
+  PciSegmentInfoLib|MsvmPkg/Library/PciSegmentInfoLib/PciSegmentInfoLib.inf
+  IoMmuLib|MdeModulePkg/Library/IoMmuLibNull/IoMmuLibNull.inf
 
 #
 # Library instances overrides for just DXE CORE
@@ -290,6 +293,7 @@
   PolicyLib|PolicyServicePkg/Library/DxePolicyLib/DxePolicyLib.inf
 ##MSChange End
   Tcg2PhysicalPresencePromptLib|MsvmPkg/Library/Tcg2PhysicalPresencePromptLibApprove/Tcg2PhysicalPresencePromptLibApprove.inf   ## MS_CHANGE
+  PciHostBridgeLib|MsvmPkg/Library/PciHostBridgeLib/PciHostBridgeLib.inf
 
 #
 # Library instance overrides for all DXE Drivers
@@ -736,6 +740,10 @@
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary|0x0
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask|0x0
 
+  # UEFI_CONFIG_PCIE_BAR_APERTURES
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0
+
 ################################################################################
 #
 # Components Section - list of all Modules include for this Platform.
@@ -777,6 +785,9 @@
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
   MdeModulePkg/Bus/Scsi/ScsiDiskDxe/ScsiDiskDxe.inf
   MdeModulePkg/Bus/Scsi/ScsiBusDxe/ScsiBusDxe.inf
+  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf
+  UefiCpuPkg/CpuIo2Dxe/CpuIo2Dxe.inf
+  MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
   MdeModulePkg/Core/Dxe/DxeMain.inf {
     <LibraryClasses>
       NULL|MsCorePkg/Library/DebugPortProtocolInstallLib/DebugPortProtocolInstallLib.inf

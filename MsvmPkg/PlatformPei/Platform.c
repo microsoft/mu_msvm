@@ -15,6 +15,7 @@
 #include <Hv.h>
 #include <Guid/MemoryTypeInformation.h>
 #include <IndustryStandard/Acpi.h>
+#include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
@@ -738,6 +739,54 @@ Return Value:
         PcdGet64(PcdHighMmioGapBasePageNumber) * SIZE_4KB,
         PcdGet64(PcdHighMmioGapSizeInPages) * SIZE_4KB
         );
+
+    //
+    // Register ECAM MMIO ranges for each MCFG segment so that DxeCore
+    // can map them in page tables for PciSegmentLib MMIO access.
+    //
+    typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
+        MCFG_ALLOCATION_ENTRY;
+
+    UINT64 McfgPtr = PcdGet64(PcdMcfgPtr);
+    UINT32 McfgSize = PcdGet32(PcdMcfgSize);
+    if (McfgPtr != 0 && McfgSize >= sizeof(EFI_ACPI_DESCRIPTION_HEADER)) {
+        EFI_ACPI_DESCRIPTION_HEADER *McfgHdr =
+            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) McfgPtr;
+        UINT32 McfgReservedSize = 8;
+        UINT32 McfgDataLen = McfgHdr->Length
+            - sizeof(EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
+        UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
+        MCFG_ALLOCATION_ENTRY *Entries =
+            (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
+                + sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
+
+        for (UINT32 i = 0; i < NumEntries; i++) {
+            UINT64 EcamBase = Entries[i].BaseAddress
+                + (UINT64)Entries[i].StartBusNumber * 256 * 4096;
+            UINT64 EcamSize =
+                (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
+                * 256 * 4096;
+            HobAddMmioRange(EcamBase, EcamSize);
+        }
+    }
+
+    //
+    // Register PCIe BAR MMIO ranges so PciHostBridgeDxe can add them to GCD.
+    //
+    UINT64 AperturePtr = PcdGet64(PcdPcieBarAperturesPtr);
+    UINT32 ApertureSize = PcdGet32(PcdPcieBarAperturesSize);
+    if (AperturePtr != 0 && ApertureSize >= sizeof(PCIE_BAR_APERTURE_ENTRY)) {
+        UINT32 ApertureCount = ApertureSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+        PCIE_BAR_APERTURE_ENTRY *Apertures = (PCIE_BAR_APERTURE_ENTRY *)(UINTN) AperturePtr;
+        for (UINT32 i = 0; i < ApertureCount; i++) {
+            if (Apertures[i].LowMmioLength > 0) {
+                HobAddMmioRange(Apertures[i].LowMmioBase, Apertures[i].LowMmioLength);
+            }
+            if (Apertures[i].HighMmioLength > 0) {
+                HobAddMmioRange(Apertures[i].HighMmioBase, Apertures[i].HighMmioLength);
+            }
+        }
+    }
 
     //
     // Memory Type Information HOB
