@@ -118,30 +118,6 @@ rex_push_eflags macro
 
 ;++
 ;
-; ret_zero
-;
-; Macro Description:
-;
-;   This macro emits a three byte return instruction.
-;
-;   This differs from the typical ret in that it adds additional padding bytes
-;   that prevent branch misprediction problems when the ret is the target of
-;   a (un)conditional branch, or is immediately preceded by a conditional branch.
-;
-; Arguments:
-;
-;   none
-;
-;--
-
-ret_zero macro
-
-        db      0c2h, 0, 0
-
-        endm
-
-;++
-;
 ; alloc_stack <Size>
 ;
 ; Macro Description:
