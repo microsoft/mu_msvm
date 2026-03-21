@@ -852,8 +852,6 @@ NvmExpressDriverBindingSupported (
   EFI_PCI_IO_PROTOCOL       *PciIo;
   UINT8                     ClassCode[3];
 
-  DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpressDxe Supported() called for handle %p\n", Controller));
-
   //
   // Check whether device path is valid
   //
@@ -894,9 +892,12 @@ NvmExpressDriverBindingSupported (
   }
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpress Supported() handle %p DevicePath OpenProtocol failed: %r\n", Controller, Status));
     return Status;
   }
+
+  //
+  // Close protocol, don't use device path protocol in the Support() function
+  //
   gBS->CloseProtocol (
          Controller,
          &gEfiDevicePathProtocolGuid,
@@ -920,7 +921,6 @@ NvmExpressDriverBindingSupported (
   }
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpress Supported() handle %p PciIo OpenProtocol failed: %r\n", Controller, Status));
     return Status;
   }
 
@@ -936,47 +936,13 @@ NvmExpressDriverBindingSupported (
                         ClassCode
                         );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "ePCI-DIAG: PciIo->Pci.Read failed: %r\n", Status));
     goto Done;
-  }
-
-  //
-  // Also read VID/DID and full CLASS_REVISION dword for diagnostics.
-  // Compute the expected ECAM physical address and do a direct MMIO read
-  // to compare with the PciIo path.
-  //
-  {
-    UINT32 VidDid = 0;
-    UINT32 ClassRev = 0;
-    UINTN Seg, Bus, Dev, Func;
-    PciIo->GetLocation (PciIo, &Seg, &Bus, &Dev, &Func);
-    PciIo->Pci.Read (PciIo, EfiPciIoWidthUint32, 0x00, 1, &VidDid);
-    PciIo->Pci.Read (PciIo, EfiPciIoWidthUint32, 0x08, 1, &ClassRev);
-
-    // Compute expected ECAM physical address: base + (Bus<<20 | Dev<<15 | Func<<12 | Reg)
-    // ECAM base from MCFG = 0xE4000000 (hardcoded for diagnostic)
-    UINT64 EcamPhys = 0xE4000000ULL
-        + ((UINT64)Bus << 20)
-        + ((UINT64)Dev << 15)
-        + ((UINT64)Func << 12);
-    volatile UINT32 *EcamPtr0 = (volatile UINT32 *)(UINTN)(EcamPhys + 0x00);
-    volatile UINT32 *EcamPtr8 = (volatile UINT32 *)(UINTN)(EcamPhys + 0x08);
-    UINT32 DirectVidDid = *EcamPtr0;
-    UINT32 DirectClassRev = *EcamPtr8;
-
-    DEBUG ((DEBUG_ERROR,
-            "ePCI-DIAG: [%u|%u|%u] PciIo VidDid=%08x ClassRev=%08x | Direct@%lx VidDid=%08x ClassRev=%08x\n",
-            Bus, Dev, Func, VidDid, ClassRev,
-            EcamPhys, DirectVidDid, DirectClassRev));
   }
 
   //
   // Examine Nvm Express controller PCI Configuration table fields
   //
   if ((ClassCode[0] != PCI_IF_NVMHCI) || (ClassCode[1] != PCI_CLASS_MASS_STORAGE_NVM) || (ClassCode[2] != PCI_CLASS_MASS_STORAGE)) {
-    DEBUG ((DEBUG_ERROR, "ePCI-DIAG: ClassCode mismatch: [%02x,%02x,%02x] expected [%02x,%02x,%02x]\n",
-            ClassCode[0], ClassCode[1], ClassCode[2],
-            PCI_IF_NVMHCI, PCI_CLASS_MASS_STORAGE_NVM, PCI_CLASS_MASS_STORAGE));
     Status = EFI_UNSUPPORTED;
   }
 
@@ -988,7 +954,6 @@ Done:
          Controller
          );
 
-  DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpressDxe Supported() handle %p returning %r\n", Controller, Status));
   return Status;
 }
 
@@ -1049,7 +1014,7 @@ NvmExpressDriverBindingStart (
   UINTN  QueuePageCount = PcdGetBool (PcdSupportAlternativeQueueSize) ?
                           NVME_ALTERNATIVE_TOTAL_QUEUE_BUFFER_IN_PAGES : 6;
 
-  DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpressDriverBindingStart for handle %p\n", Controller));
+  DEBUG ((DEBUG_INFO, "NvmExpressDriverBindingStart: start\n"));
 
   Private          = NULL;
   Passthru         = NULL;
@@ -1077,16 +1042,6 @@ NvmExpressDriverBindingStart (
                   );
 
   if (EFI_ERROR (Status) && (Status != EFI_ALREADY_STARTED)) {
-    //
-    // Close DevicePath that was opened above before returning.
-    //
-    gBS->CloseProtocol (
-           Controller,
-           &gEfiDevicePathProtocolGuid,
-           This->DriverBindingHandle,
-           Controller
-           );
-    DEBUG ((DEBUG_ERROR, "ePCI-DIAG: NvmExpress Start() PciIo open failed: %r, closed DevicePath\n", Status));
     return Status;
   }
 

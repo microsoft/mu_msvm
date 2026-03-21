@@ -53,8 +53,6 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
   gEfiVmbusProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
   gEfiLoadFileProtocolGuid
-  gEfiPciIoProtocolGuid
-  gEfiDevicePathProtocolGuid
 
 [Guids]
   gEfiVmbusChannelDevicePathGuid    ## CONSUMES
