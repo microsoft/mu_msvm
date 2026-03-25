@@ -753,20 +753,27 @@ Return Value:
         EFI_ACPI_DESCRIPTION_HEADER *McfgHdr =
             (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) McfgPtr;
         UINT32 McfgReservedSize = 8;
-        UINT32 McfgDataLen = McfgHdr->Length
-            - sizeof(EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
-        UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
-        MCFG_ALLOCATION_ENTRY *Entries =
-            (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
-                + sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
 
-        for (UINT32 i = 0; i < NumEntries; i++) {
-            UINT64 EcamBase = Entries[i].BaseAddress
-                + (UINT64)Entries[i].StartBusNumber * 256 * 4096;
-            UINT64 EcamSize =
-                (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
-                * 256 * 4096;
-            HobAddMmioRange(EcamBase, EcamSize);
+        if (McfgHdr->Length >= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize &&
+            McfgHdr->Length <= McfgSize) {
+            UINT32 McfgDataLen = McfgHdr->Length
+                - sizeof(EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
+            UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
+            MCFG_ALLOCATION_ENTRY *Entries =
+                (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
+                    + sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
+
+            for (UINT32 i = 0; i < NumEntries; i++) {
+                if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
+                    continue;
+                }
+                UINT64 EcamBase = Entries[i].BaseAddress
+                    + (UINT64)Entries[i].StartBusNumber * 256 * 4096;
+                UINT64 EcamSize =
+                    (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
+                    * 256 * 4096;
+                HobAddMmioRange(EcamBase, EcamSize);
+            }
         }
     }
 

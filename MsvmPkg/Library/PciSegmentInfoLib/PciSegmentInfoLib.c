@@ -72,7 +72,7 @@ GetPciSegmentInfo (
 
     if (McfgHdr->Length < sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize ||
         McfgHdr->Length > McfgSize) {
-        DEBUG ((DEBUG_ERROR, "PciSegmentInfoLib: Invalid MCFG Length %u (PCD size %u)\n",
+        DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Invalid MCFG Length %u (PCD size %u)\n",
                 McfgHdr->Length, McfgSize));
         *Count = 0;
         return NULL;
@@ -81,11 +81,18 @@ GetPciSegmentInfo (
     DataLen = McfgHdr->Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
     EntryCount = DataLen / sizeof (MCFG_ALLOCATION_ENTRY);
 
-    DEBUG ((DEBUG_INFO, "PciSegmentInfoLib: %u segments from MCFG\n", EntryCount));
+    if (EntryCount == 0 || (DataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0) {
+        DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Invalid MCFG data (len=%u, entry_size=%u)\n",
+                DataLen, (UINT32)sizeof (MCFG_ALLOCATION_ENTRY)));
+        *Count = 0;
+        return NULL;
+    }
+
+    DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: %u segments from MCFG\n", EntryCount));
 
     mSegmentInfo = AllocateZeroPool (EntryCount * sizeof (PCI_SEGMENT_INFO));
     if (mSegmentInfo == NULL) {
-        DEBUG ((DEBUG_ERROR, "PciSegmentInfoLib: Failed to allocate segment info\n"));
+        DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Failed to allocate segment info\n"));
         *Count = 0;
         return NULL;
     }
@@ -99,7 +106,7 @@ GetPciSegmentInfo (
         mSegmentInfo[i].StartBusNumber = Entries[i].StartBusNumber;
         mSegmentInfo[i].EndBusNumber   = Entries[i].EndBusNumber;
 
-        DEBUG ((DEBUG_INFO, "  Segment[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
+        DEBUG ((DEBUG_INFO, "PCIe:   Segment[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
                 i, Entries[i].PciSegmentGroupNumber, Entries[i].BaseAddress,
                 Entries[i].StartBusNumber, Entries[i].EndBusNumber));
     }

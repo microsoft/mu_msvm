@@ -881,8 +881,6 @@ typedef struct _UEFI_CONFIG_IORT
 // One entry per PCIe root bridge / host bridge segment.
 // Matches by Segment number with the MCFG table entries.
 //
-// 40 bytes, all fields naturally aligned (no #pragma pack needed).
-//
 typedef struct _PCIE_BAR_APERTURE_ENTRY {
     UINT16  Segment;
     UINT8   StartBus;
@@ -893,6 +891,8 @@ typedef struct _PCIE_BAR_APERTURE_ENTRY {
     UINT64  HighMmioBase;
     UINT64  HighMmioLength;
 } PCIE_BAR_APERTURE_ENTRY;
+
+STATIC_ASSERT (sizeof (PCIE_BAR_APERTURE_ENTRY) == 40, "PCIE_BAR_APERTURE_ENTRY must be 40 bytes");
 
 typedef struct _UEFI_CONFIG_PCIE_BAR_APERTURES {
     UEFI_CONFIG_HEADER          Header;

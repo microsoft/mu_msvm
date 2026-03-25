@@ -88,10 +88,10 @@ PciHostBridgeGetRootBridges (
     McfgPtr  = PcdGet64 (PcdMcfgPtr);
     McfgSize = PcdGet32 (PcdMcfgSize);
 
-    DEBUG ((DEBUG_ERROR, "ePCI: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
+    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
 
     if (McfgPtr == 0 || McfgSize < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
-        DEBUG ((DEBUG_ERROR, "ePCI: No MCFG table, no root bridges\n"));
+        DEBUG ((DEBUG_ERROR, "PCIe: No MCFG table, no root bridges\n"));
         return NULL;
     }
 
@@ -100,7 +100,7 @@ PciHostBridgeGetRootBridges (
 
     if (McfgHdr->Length < sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize ||
         McfgHdr->Length > McfgSize) {
-        DEBUG ((DEBUG_ERROR, "ePCI: Invalid MCFG Length %u (PCD size %u)\n",
+        DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG Length %u (PCD size %u)\n",
                 McfgHdr->Length, McfgSize));
         return NULL;
     }
@@ -108,8 +108,9 @@ PciHostBridgeGetRootBridges (
     McfgDataLen = McfgHdr->Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
     McfgEntryCount = McfgDataLen / sizeof (MCFG_ALLOCATION_ENTRY);
 
-    if (McfgEntryCount == 0) {
-        DEBUG ((DEBUG_ERROR, "ePCI: MCFG has 0 entries\n"));
+    if (McfgEntryCount == 0 || (McfgDataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0) {
+        DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG data (len=%u, entry_size=%u)\n",
+                McfgDataLen, (UINT32)sizeof (MCFG_ALLOCATION_ENTRY)));
         return NULL;
     }
 
@@ -123,11 +124,11 @@ PciHostBridgeGetRootBridges (
     ApertureCount = PcdGet32 (PcdPcieBarAperturesSize) / sizeof (PCIE_BAR_APERTURE_ENTRY);
 
     if (ApertureCount > 0 && Apertures == NULL) {
-        DEBUG ((DEBUG_ERROR, "ePCI: ApertureCount > 0 but pointer is NULL\n"));
+        DEBUG ((DEBUG_ERROR, "PCIe: ApertureCount > 0 but pointer is NULL\n"));
         ApertureCount = 0;
     }
 
-    DEBUG ((DEBUG_ERROR, "ePCI: %u MCFG entries, %u aperture entries\n",
+    DEBUG ((DEBUG_INFO, "PCIe: %u MCFG entries, %u aperture entries\n",
             McfgEntryCount, ApertureCount));
 
     //
@@ -139,8 +140,6 @@ PciHostBridgeGetRootBridges (
         return NULL;
     }
 
-    
-
     for (i = 0; i < McfgEntryCount; i++) {
         UINT16  Segment  = McfgEntries[i].PciSegmentGroupNumber;
         UINT8   StartBus = McfgEntries[i].StartBusNumber;
@@ -150,6 +149,12 @@ PciHostBridgeGetRootBridges (
         UINT64  HighMmioBase   = 0;
         UINT64  HighMmioLength = 0;
         UINT32  j;
+
+        if (EndBus < StartBus) {
+            DEBUG ((DEBUG_ERROR, "PCIe: Invalid bus range for segment %u: Start=%u End=%u\n",
+                    Segment, StartBus, EndBus));
+            continue;
+        }
 
         //
         // Find matching aperture entry by segment number.
@@ -164,8 +169,8 @@ PciHostBridgeGetRootBridges (
             }
         }
 
-        DEBUG ((DEBUG_ERROR,
-                "ePCI: Bridge[%u]: Seg=%u Bus=%u..%u EcamBase=%016lx LowMmio=%016lx+%016lx HighMmio=%016lx+%016lx\n",
+        DEBUG ((DEBUG_INFO,
+                "PCIe: Bridge[%u]: Seg=%u Bus=%u..%u EcamBase=%016lx LowMmio=%016lx+%016lx HighMmio=%016lx+%016lx\n",
                 i, Segment, StartBus, EndBus,
                 McfgEntries[i].BaseAddress,
                 LowMmioBase, LowMmioLength, HighMmioBase, HighMmioLength));
@@ -255,11 +260,16 @@ PciHostBridgeGetRootBridges (
     // will hand out ECAM addresses for unrelated MMIO allocations.
     //
     for (i = 0; i < McfgEntryCount; i++) {
+        if (McfgEntries[i].EndBusNumber < McfgEntries[i].StartBusNumber) {
+            continue;
+        }
+
         UINT64 EcamBase = McfgEntries[i].BaseAddress
             + (UINT64)McfgEntries[i].StartBusNumber * 256 * 4096;
         UINT64 EcamSize =
             (UINT64)(McfgEntries[i].EndBusNumber - McfgEntries[i].StartBusNumber + 1)
             * 256 * 4096;
+        UINT64 OrigEcamBase = EcamBase;
 
         EFI_STATUS ReserveStatus = gDS->AllocateMemorySpace (
             EfiGcdAllocateAddress,
@@ -271,9 +281,9 @@ PciHostBridgeGetRootBridges (
             NULL
             );
         if (EFI_ERROR (ReserveStatus)) {
-            DEBUG ((DEBUG_WARN,
+            DEBUG ((DEBUG_ERROR,
                     "PciHostBridgeLib: Failed to reserve ECAM range %016lx+%016lx: %r\n",
-                    EcamBase, EcamSize, ReserveStatus));
+                    OrigEcamBase, EcamSize, ReserveStatus));
         } else {
             DEBUG ((DEBUG_INFO,
                     "PciHostBridgeLib: Reserved ECAM range %016lx+%016lx\n",
