@@ -29,41 +29,30 @@
 typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
     MCFG_ALLOCATION_ENTRY;
 
-#pragma pack(1)
-typedef struct {
-    ACPI_HID_DEVICE_PATH     AcpiDevicePath;
-    EFI_DEVICE_PATH_PROTOCOL EndDevicePath;
-} EFI_PCI_ROOT_BRIDGE_DEVICE_PATH;
-#pragma pack()
-
 STATIC
 EFI_DEVICE_PATH_PROTOCOL *
 CreateRootBridgeDevicePath (
     UINT32  Uid
     )
 {
-    EFI_PCI_ROOT_BRIDGE_DEVICE_PATH *DevicePath;
+    ACPI_HID_DEVICE_PATH      *AcpiNode;
+    EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
 
-    DevicePath = AllocateCopyPool (
-                     sizeof (EFI_PCI_ROOT_BRIDGE_DEVICE_PATH),
-                     &(EFI_PCI_ROOT_BRIDGE_DEVICE_PATH) {
-                         .AcpiDevicePath = {
-                             .Header = {
-                                 .Type    = ACPI_DEVICE_PATH,
-                                 .SubType = ACPI_DP,
-                                 .Length  = { sizeof (ACPI_HID_DEVICE_PATH), 0 },
-                             },
-                             .HID = EISA_PNP_ID (0x0A08),
-                             .UID = Uid,
-                         },
-                         .EndDevicePath = {
-                             .Type    = END_DEVICE_PATH_TYPE,
-                             .SubType = END_ENTIRE_DEVICE_PATH_SUBTYPE,
-                             .Length  = { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0 },
-                         },
-                     }
-                 );
-    return (EFI_DEVICE_PATH_PROTOCOL *)DevicePath;
+    AcpiNode = (ACPI_HID_DEVICE_PATH *)CreateDeviceNode (
+                   ACPI_DEVICE_PATH,
+                   ACPI_DP,
+                   sizeof (ACPI_HID_DEVICE_PATH)
+                   );
+    if (AcpiNode == NULL) {
+        return NULL;
+    }
+
+    AcpiNode->HID = EISA_PNP_ID (0x0A08);
+    AcpiNode->UID = Uid;
+
+    DevicePath = AppendDevicePathNode (NULL, (EFI_DEVICE_PATH_PROTOCOL *)AcpiNode);
+    FreePool (AcpiNode);
+    return DevicePath;
 }
 
 /**
