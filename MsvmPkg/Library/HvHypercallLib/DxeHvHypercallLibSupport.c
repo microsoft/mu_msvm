@@ -4,29 +4,24 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include <Uefi.h>
-
 #include <Library/UefiBootServicesTableLib.h>
-
 #include <HvHypercallLibP.h>
 
-EFI_TPL mTpl;
-
-VOID
+EFI_TPL
 HvHypercallpDisableInterrupts(
     VOID
     )
 {
     // In DXE, raise TPL to high level that will be restored when enable interrupts
     // is called.
-    mTpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+    return gBS->RaiseTPL(TPL_HIGH_LEVEL);
 }
 
 VOID
 HvHypercallpEnableInterrupts(
-    VOID
+    EFI_TPL Tpl
     )
 {
-    gBS->RestoreTPL(mTpl);
+    gBS->RestoreTPL(Tpl);
 }

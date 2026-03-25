@@ -304,7 +304,7 @@ Return Value:
 
     if (Context->Ghcb != NULL)
     {
-        HvHypercallpDisableInterrupts();
+        EFI_TPL tpl = HvHypercallpDisableInterrupts();
 
         //
         // When a GHCB is present, it means that the call must be made via
@@ -349,7 +349,7 @@ Return Value:
                                                                CountOfElements,
                                                                ElementsProcessed);
 
-        HvHypercallpEnableInterrupts();
+        HvHypercallpEnableInterrupts(tpl);
 
         return callOutput.CallStatus;
     }

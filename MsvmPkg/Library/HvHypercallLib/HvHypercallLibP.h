@@ -39,14 +39,14 @@ _tdx_vmcall_rdmsr(
 /// Functions that enable and disable interrupts, that are implemented based
 /// on the environment the library is built for.
 
-VOID
+EFI_TPL
 HvHypercallpDisableInterrupts(
     VOID
     );
 
 VOID
 HvHypercallpEnableInterrupts(
-    VOID
+    EFI_TPL Tpl
     );
 
 #endif
