@@ -132,35 +132,6 @@ SecGetTdInfo(
     );
 
 UINT64
-SecTdCallRdmsr(
-    UINT64 MsrNumber
-    );
-
-VOID
-SecTdCallWrmsr(
-    UINT64 MsrNumber,
-    UINT64 MsrValue
-    );
-
-VOID
-SecTdCallHlt(
-    VOID
-    );
-
-UINT32
-SecTdCallReadIoPort(
-    UINT32 PortNumber,
-    UINT32 AccessSize
-    );
-
-VOID
-SecTdCallWriteIoPort(
-    UINT32 PortNumber,
-    UINT32 AccessSize,
-    UINT32 Value
-    );
-
-UINT64
 MulDiv64 (
     UINT64 Value,
     UINT64 Multiplier,

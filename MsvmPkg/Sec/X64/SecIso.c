@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <Hv/HvGuestCpuid.h>
 #include <Hv/HvGuestMsr.h>
+#include <IndustryStandard/Tdx.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
@@ -67,6 +68,79 @@ SEC_CPUID_INFO ExtendedCpuidInfo;
 // Access to ioports should be restricted in TDX scenario.
 //
 BOOLEAN FilterIoPortAccesses = TRUE;
+
+static
+UINT32
+SecTdCallReadIoPort(
+    UINT32 PortNumber_ecx,
+    UINT32 AccessSize_edx
+    )
+// Reads an IO port using the TD call GHCI interface.
+{
+    UINT64 const r12 = AccessSize_edx;
+    UINT64 const r13 = 0; // read
+    UINT64 const r14 = PortNumber_ecx;
+    UINT64 value = 0;
+    if (TdVmCall(TDVMCALL_IO, r12, r13, r14, 0, &value))
+        value = (UINT32)-1;
+    return (UINT32)value;
+}
+
+static
+VOID
+SecTdCallWriteIoPort(
+    UINT32 PortNumber_ecx,
+    UINT32 AccessSize_edx,
+    UINT32 Value_r8d
+    )
+// Writes an IO port using the TD call GHCI interface.
+{
+    UINT64 const r12 = AccessSize_edx;
+    UINT64 const r13 = 1; // write
+    UINT64 const r14 = PortNumber_ecx;
+    UINT64 const r15 = Value_r8d;
+    if (TdVmCall(TDVMCALL_IO, r12, r13, r14, r15, 0))
+    {
+        // Ignore failures and move on.
+    }
+}
+
+static
+VOID
+SecTdCallHlt(
+    VOID
+    )
+// Issues an enlightened HLT
+{
+    UINT64 const r12 = 0; // clear the interrupt blocked flag
+    if (TdVmCall(TDVMCALL_HALT, r12, 0, 0, 0, 0))
+        CpuBreakpoint();
+}
+
+static
+UINT64
+SecTdCallRdmsr(
+    UINT64 MsrNumber
+    )
+// Reads a virtual MSR using the TDCALL GHCI interface.
+{
+    UINT64 value = 0;
+    if (TdVmCall(TDVMCALL_RDMSR, MsrNumber, 0, 0, 0, &value))
+        CpuBreakpoint();
+    return value;
+}
+
+static
+VOID
+SecTdCallWrmsr(
+    UINT64 MsrNumber,
+    UINT64 MsrValue
+    )
+// Writes a virtual MSR using the TDCALL GHCI interface.
+{
+    if (TdVmCall(TDVMCALL_WRMSR, MsrNumber, MsrValue, 0, 0, 0))
+        CpuBreakpoint();
+}
 
 BOOLEAN
 SecIsPortAccessAllowed(
