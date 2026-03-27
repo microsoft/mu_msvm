@@ -9,7 +9,7 @@
 #
 ##
 
-#Override : 00000002 | UefiCpuPkg/CpuDxe/CpuDxe.inf | 2677b20196e4acae3f3c017d3618ed5f | 2025-10-29T21-15-15 | 966acaa68dec4765e7ee122730f9b48cca1dfdac
+#Override : 00000002 | UefiCpuPkg/CpuDxe/CpuDxe.inf | 2677b20196e4acae3f3c017d3618ed5f | 2026-03-27T22-15-00 | 40548b12d821a8bce209f8b5559c3b230b226d50
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -29,7 +29,7 @@
 [LibraryClasses.common]
   BaseLib
   BaseMemoryLib
-  ClangTemporaryLib
+  ClangTemporaryLib     ## MS_HYP_CHANGE
   CpuExceptionHandlerLib
   CpuLib
   DebugLib
@@ -44,8 +44,8 @@
   UefiDriverEntryPoint
   UefiLib
   PanicLib                  ## MU_CHANGE
-  DxeMemoryProtectionHobLib ## MU_CHANGE
   DeviceStateLib            ## MU_CHANGE
+  DxeMemoryProtectionHobLib ## MU_CHANGE
 
 [LibraryClasses.IA32, LibraryClasses.X64]
   CrashLib                  ## MS_HYP_CHANGE
