@@ -18,15 +18,15 @@
     HostVisibilityLib.c
 
 [Sources.X64]
-    X64/Snp.asm
-    X64/Tdx.asm
+    X64/Snp.nasm
+    X64/Tdx.nasm
 
 [Packages]
     MdePkg/MdePkg.dec
     MsvmPkg/MsvmPkg.dec
 
 [LibraryClasses]
-    ClangTemporaryLib
+    MsBaseLib
 
 [LibraryClasses.X64]
     PcdLib

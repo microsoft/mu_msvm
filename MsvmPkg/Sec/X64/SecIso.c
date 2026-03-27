@@ -142,7 +142,7 @@ SecReadMsrWithGhcb(
     SetGhcbField32(Ghcb, GHCB_FIELD32_FORMAT, 0);
     SetGhcbField16(Ghcb, GHCB_FIELD16_VERSION, 1);
 
-    SecVmgexit();
+    AsmVmgExit();
 
     msrValue = (UINT32)GetGhcbField64(Ghcb, GHCB_FIELD64_RAX);
     msrValue |= GetGhcbField64(Ghcb, GHCB_FIELD64_RDX) << 32;
@@ -173,7 +173,7 @@ SecWriteMsrWithGhcb(
     SetGhcbField32(Ghcb, GHCB_FIELD32_FORMAT, 0);
     SetGhcbField16(Ghcb, GHCB_FIELD16_VERSION, 1);
 
-    SecVmgexit();
+    AsmVmgExit();
 }
 
 VOID
@@ -243,7 +243,7 @@ SecInitializeHardwareIsolation (
         //
 
         AsmWriteMsr64(MSR_GHCB, ghcbAddress | GHCB_INFO_REGISTER_REQUEST);
-        SecVmgexit();
+        AsmVmgExit();
         ghcbMsr = AsmReadMsr64(MSR_GHCB);
         if (ghcbMsr != (ghcbAddress | GHCB_INFO_REGISTER_RESPONSE))
         {

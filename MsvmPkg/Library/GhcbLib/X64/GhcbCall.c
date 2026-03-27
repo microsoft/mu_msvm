@@ -141,7 +141,7 @@ GhcbWriteMsr(
     ((PGHCB_HYPERCALL)Ghcb)->Format = 0;
     ((PGHCB_HYPERCALL)Ghcb)->Version = 1;
 
-    _sev_vmgexit();
+    AsmVmgExit();
 
     GhcbpEnableInterrupts(tpl);
 }
@@ -174,7 +174,7 @@ GhcbReadMsr(
     ((PGHCB_HYPERCALL)Ghcb)->Format = 0;
     ((PGHCB_HYPERCALL)Ghcb)->Version = 1;
 
-    _sev_vmgexit();
+    AsmVmgExit();
 
     //
     // The value is present in EDX:EAX.

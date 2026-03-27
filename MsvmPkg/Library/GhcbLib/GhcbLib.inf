@@ -19,13 +19,13 @@
 
 [Sources.X64]
     X64/GhcbCall.c
-    X64/SvmSnp.asm | MSFT
 
 [Packages]
     MdePkg/MdePkg.dec
     MsvmPkg/MsvmPkg.dec
 
 [LibraryClasses.X64]
+    MsBaseLib
     PcdLib
     UefiBootServicesTableLib
 

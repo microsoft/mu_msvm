@@ -13,6 +13,7 @@
 #include <Uefi/UefiBaseType.h>
 #include <IsolationTypes.h>
 #include "AllowNamelessAggregate.h"
+
 UINT64
 EFIAPI
 _sev_pvalidate(
@@ -22,22 +23,13 @@ _sev_pvalidate(
     OUT UINT64  *ErrorCode
     );
 
-UINT64
-EFIAPI
-VispCallSvsm(
-    UINT64 CallCode,
-    UINT64 Parameter
-    );
-
 #define SNP_SUCCESS             0
 #define SNP_FAIL_INPUT          1
 #define SNP_FAIL_SIZEMISMATCH   6
 
-UINT64
-EFIAPI
-SpecialGhcbCall(
-    UINT64 GhcbValue
-    );
+#define RETURN_GHCB    1
+#define RETURN_VMGEXIT 2
+#define MSR_GHCB 0xC0010130
 
 typedef union _GHCB_MSR
 {
@@ -111,6 +103,103 @@ _tdx_vmcall_map_gpa(
                     UINT64  Size,
     OUT OPTIONAL    UINT64  *FailedGpa
     );
+
+UINT64
+EFIAPI
+MsVmgExit(
+    UINT64 VmgExitRax,
+    UINT64 VmgExitRcx);
+
+static
+UINT64
+InternalGhcbCall(
+    UINT64 GhcbValue,
+    UINT64 VmgExitRax,
+    UINT64 VmgExitRcx,
+    UINT64 ret
+    )
+/*++
+Routine Description:
+
+  This routine temporarily updates the GHCB MSR to a specified value and
+  executes VMGEXIT, returning either resulting GHCB or Rax.
+
+Arguments:
+
+  GhcbValue  - GHCB MSR value for VMGEXIT.
+  VmgExitRax - Rax for VMGEXIT.
+  VmgExitRcx - Rcx for VMGEXIT.
+  ret        - Return GHCB or VmgExit
+
+Return Value:
+
+  Value of GHCB or RAX after VMGEXIT.
+
+--*/
+{
+    BOOLEAN interruptState = SaveAndDisableInterrupts(); // disable interrupts to prevent conflicting GHCB MSR use
+    UINT64 previousGHCB = AsmReadMsr64(MSR_GHCB);        // read current GHCB value
+    AsmWriteMsr64(MSR_GHCB, GhcbValue);                  // update GHCB value
+    UINT64 vmgExit = MsVmgExit(VmgExitRax, VmgExitRcx);  // VMGEXIT
+    UINT64 ghcb = AsmReadMsr64(MSR_GHCB);                // read current GHCB value
+    AsmWriteMsr64(MSR_GHCB, previousGHCB);               // restore previous GHCB value
+    SetInterruptState(interruptState);                   // restore interrupt state
+    return (ret == RETURN_VMGEXIT) ? vmgExit : ghcb;
+}
+
+static
+UINT64
+VispCallSvsm(
+    UINT64 RequestCode,
+    UINT64 Parameter
+    )
+/*++
+Routine Description:
+
+  This routine invokes the SVSM to execute the specified request.
+
+  This is like SpecialGhcbCall, but returns the VMGEXIT return instead
+  of the GHCB value.
+
+Arguments:
+
+  RequestCode - Supplies the request code.
+
+  Parameter - Supplies the call parameter.
+
+Return Value:
+
+ Return code from SVSM.
+
+--*/
+{
+   UINT64 ecx = 0x16; // load GHCB value to run VMPL zero
+   return InternalGhcbCall(ecx, RequestCode, Parameter, RETURN_VMGEXIT);
+}
+
+static
+UINT64
+SpecialGhcbCall(
+    UINT64 GhcbValue
+    )
+/*++
+Routine Description:
+
+  This routine temporarily updates the GHCB MSR to a specified value and
+  executes VMGEXIT.
+
+Arguments:
+
+  GhcbValue - Supplies the GHCB MSR value to use for the call.
+
+Return Value:
+
+  Value of GHCB MSR following the exit.
+
+--*/
+{
+   return InternalGhcbCall(GhcbValue, 0, 0, RETURN_GHCB);
+}
 
 EFI_STATUS
 EfiUpdatePageRangeAcceptanceSnp(

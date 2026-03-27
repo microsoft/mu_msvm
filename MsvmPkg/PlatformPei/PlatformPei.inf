@@ -48,7 +48,6 @@
 
 [LibraryClasses]
     AdvancedLoggerLib
-    ClangTemporaryLib
     CrashLib
     DeviceStateLib
     DebugLib
@@ -62,6 +61,7 @@
     PeiServicesTablePointerLib
     PcdLib
     ResourcePublicationLib
+    SafeIntLib
 
 [LibraryClasses.X64]
     HostVisibilityLib

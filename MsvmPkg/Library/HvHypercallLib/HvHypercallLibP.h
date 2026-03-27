@@ -23,19 +23,6 @@ HvHypercallpIssueGhcbHypercall(
     OUT OPTIONAL    UINT32                  *ElementsProcessed
     );
 
-VOID
-EFIAPI
-_tdx_vmcall_wrmsr(
-    UINT32 MsrIndex,
-    UINT64 MsrValue
-    );
-
-UINT64
-EFIAPI
-_tdx_vmcall_rdmsr(
-    UINT32 MsrIndex
-    );
-
 /// Functions that enable and disable interrupts, that are implemented based
 /// on the environment the library is built for.
 

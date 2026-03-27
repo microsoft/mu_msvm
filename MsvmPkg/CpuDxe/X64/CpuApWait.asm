@@ -17,14 +17,14 @@ include macamd64.inc
 
 altentry ApWaitInMailboxEnd
 
-#define COMMAND_OFFSET           0x0
-#define APICID_OFFSET            0x4
-#define WAKEUP_VECTOR_OFFSET     0x8
+COMMAND_OFFSET           equ 0x0
+APICID_OFFSET            equ 0x4
+WAKEUP_VECTOR_OFFSET     equ 0x8
 
-#define MpCommandNoop            0x0
-#define MpCommandWakeup          0x1
+MpCommandNoop            equ 0x0
+MpCommandWakeup          equ 0x1
 
-#define HasVcpuEnteredMailboxWaitOffset   0x800   
+HasVcpuEnteredMailboxWaitOffset equ 0x800
 
 ;
 ; AP loops and wait in the mailbox.
