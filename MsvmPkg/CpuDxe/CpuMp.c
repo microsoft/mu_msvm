@@ -760,13 +760,10 @@ InitializeMpExceptionHandlers (
     RegisterCpuInterruptHandler (EXCEPT_IA32_PAGE_FAULT, PageFaultExceptionHandler);
   }
 
-  // MU_CHANGE: Start Prevent AP Deadlock
   //
-  // Setup stack switch for Stack Guard feature.
+  // Setup stack switch for Stack Guard feature and separate AP GDTs.
   //
-  // if (PcdGetBool (PcdCpuStackGuard)) {
   InitializeMpExceptionStackSwitchHandlers ();
-  // }
 }
 
 /**
