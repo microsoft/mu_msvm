@@ -97,7 +97,7 @@ HvHypercallpIssueGhcbHypercall(
     {
         ghcb->CallCode = hypercallInput.AsUINT64;
 
-        _sev_vmgexit();
+        AsmVmgExit();
 
         //
         // If this was not a rep hypercall, or if the call failed, then no

@@ -4,7 +4,6 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
-
 #include <Base.h>
 #include <Hv/HvGuest.h>
 #include <Hv/HvGuestMsr.h>
@@ -14,10 +13,8 @@
 #include <Library/HvHypercallLib.h>
 #include <Library/GhcbLib.h>
 #include <IsolationTypes.h>
-
 #include <HvHypercallLibP.h>
-
-#define SEV_MSR_GHCB                    0xC0010130
+#include <IndustryStandard/Tdx.h>
 
 #if defined(MDE_CPU_X64)
 
@@ -28,6 +25,27 @@ HvHypercallpIssueTdxHypercall(
         UINT64              InputPhysicalAddress,
         UINT64              OutputPhysicalAddress
     );
+
+static
+UINT64
+_tdx_vmcall_rdmsr(
+    UINT32 MsrIndex
+    )
+{
+    UINT64 result = 0;
+    (void)TdVmCall(TDVMCALL_RDMSR, MsrIndex, 0, 0, 0, &result);
+    return result;
+}
+
+static
+VOID
+_tdx_vmcall_wrmsr(
+    UINT32 MsrIndex,
+    UINT64 MsrValue
+    )
+{
+    (void)TdVmCall(TDVMCALL_WRMSR, MsrIndex, MsrValue, 0, 0, 0);
+}
 
 VOID
 HvHypercallConnect(

@@ -149,17 +149,6 @@ SecVirtualCommunicationExceptionHandler:
             int3                            ; force unrecoverable exception
 SecVirtualCommunicationExceptionHandler_end :
             END_TRAP_HANDLER
-
-;
-; SecVmgexit
-;
-; Executes the VMGEXIT instruction
-;
-global SecVmgexit
-SecVmgexit: db      0f3h                ; VMGEXIT prefix
-            vmmcall
-            ret
-
 ;
 ; #VE exception handler
 ;

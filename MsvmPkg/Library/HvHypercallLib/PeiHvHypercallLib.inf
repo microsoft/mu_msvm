@@ -20,6 +20,7 @@
 
 [Sources.X64]
     X64/GhcbHypercall.c
+    X64/TdxCall.nasm
 
 [Sources.AARCH64]
     AArch64/HypercallImpl.masm

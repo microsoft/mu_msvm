@@ -24,6 +24,7 @@
 
 [Sources.X64]
     X64/EnableInterrupts.nasm
+    X64/VmgExit.nasm
 
 [Packages]
     MdeModulePkg/MdeModulePkg.dec

@@ -11,27 +11,6 @@
 
 Routine Description:
 
-    This routine executes the VMGEXIT instruction.
-
-Arguments:
-
-    None.
-
-Return Value:
-
-    None.
-
---*/
-VOID
-_sev_vmgexit(
-    VOID
-    );
-
-
-/*++
-
-Routine Description:
-
     This routine initializes the GHCB on an SNP system.
 
 Arguments:

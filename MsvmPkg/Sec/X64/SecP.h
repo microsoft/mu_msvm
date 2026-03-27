@@ -49,11 +49,6 @@ SecVirtualCommunicationExceptionHandler (
 #define VC_EXIT_CODE_CPUID      0x72
 #define VC_EXIT_CODE_MSR        0x7C
 
-VOID
-SecVmgexit (
-    VOID
-    );
-
 typedef struct _HV_PSP_CPUID_LEAF
 {
     UINT32 EaxIn;

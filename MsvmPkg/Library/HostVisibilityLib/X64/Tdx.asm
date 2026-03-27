@@ -1,10 +1,8 @@
-/** @file
-  Asm implementations of TDX instructions that will become compiler
-  intrinsics.
-
-  Copyright (c) Microsoft Corporation.
-  SPDX-License-Identifier: BSD-2-Clause-Patent
---*/
+; @file
+; TDX functions.
+;
+; Copyright (c) Microsoft Corporation.
+; SPDX-License-Identifier: BSD-2-Clause-Patent
 
 include macamd64.inc
 
@@ -87,11 +85,11 @@ include macamd64.inc
         db      0cch
         test    r10, r10                ; check if successful
         mov     rax, r10                ; load return code
-        jz      @f                      ; if z, no error
+        jz      .f                      ; if z, no error
         test    r8, r8                  ; check if output argument present
-        jz      @f                      ; if z, not present
+        jz      .f                      ; if z, not present
         mov     [r8], r11               ; save failed GPA if argument present
-@@:
+.f:
 
         BEGIN_EPILOGUE
 
