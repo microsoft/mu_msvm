@@ -250,9 +250,9 @@ Return Value:
     }
 
 #if 0
-    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __FUNCTION__));
-    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDescriptor %p\n", __FUNCTION__, mNvramCommandDescriptor));
-    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDataBuffer %p\n", __FUNCTION__, mNvramCommandDataBuffer));
+    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
+    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDescriptor %p\n", __func__, mNvramCommandDescriptor));
+    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDataBuffer %p\n", __func__, mNvramCommandDataBuffer));
 #endif
 
     //
@@ -265,9 +265,9 @@ Return Value:
     ASSERT(!EFI_ERROR(status));
 
 #if 0
-    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDescriptor %p\n", __FUNCTION__, mNvramCommandDescriptor));
-    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDataBuffer %p\n", __FUNCTION__, mNvramCommandDataBuffer));
-    DEBUG((DEBUG_VERBOSE, "<<< %a\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDescriptor %p\n", __func__, mNvramCommandDescriptor));
+    DEBUG((DEBUG_VERBOSE, "--- %a mNvramCommandDataBuffer %p\n", __func__, mNvramCommandDataBuffer));
+    DEBUG((DEBUG_VERBOSE, "<<< %a\n", __func__));
 #endif
 }
 
@@ -300,12 +300,12 @@ Returns:
         return;
     }
 
-    //DEBUG((DEBUG_VERBOSE, ">>> %a\n", __FUNCTION__));
+    //DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
     ZeroMem(mNvramCommandDescriptor, sizeof(NVRAM_COMMAND_DESCRIPTOR));
     mNvramCommandDescriptor->Command = NvramSignalRuntimeCommand;
     mNvramCommandDescriptor->U.SignalRuntimeCommand.S.VsmAware = VsmAware;
     (void)IssueBiosDeviceNvramCommand();
-    //DEBUG((DEBUG_VERBOSE, "<<< %a\n", __FUNCTION__));
+    //DEBUG((DEBUG_VERBOSE, "<<< %a\n", __func__));
 }
 
 

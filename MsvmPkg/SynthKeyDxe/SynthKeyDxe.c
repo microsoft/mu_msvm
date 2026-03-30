@@ -159,7 +159,7 @@ Return Value:
 
     if (!(EFI_ERROR(status)))
     {
-        DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard device found - handle %p \n", __FUNCTION__, DeviceCandidate));
+        DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard device found - handle %p \n", __func__, DeviceCandidate));
     }
 
     return status;
@@ -201,7 +201,7 @@ Return Value:
 
     ASSERT(This == &gSynthKeyDriverBinding);
 
-    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard starting - handle %p \n", __FUNCTION__, Controller));
+    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard starting - handle %p \n", __func__, Controller));
 
     //
     // Install and open the EMCL protocol. This will be used for vmbus communication.
@@ -226,7 +226,7 @@ Return Value:
     if (pDevice == NULL)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -260,7 +260,7 @@ Return Value:
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to open the Emcl protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to open the Emcl protocol - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -286,7 +286,7 @@ Return Value:
 
 Cleanup:
 
-    DEBUG((EFI_D_ERROR, "--- %a: failed to start the synthetic keyboard - %r \n", __FUNCTION__, status));
+    DEBUG((EFI_D_ERROR, "--- %a: failed to start the synthetic keyboard - %r \n", __func__, status));
 
     if (pDevice)
     {
@@ -398,7 +398,7 @@ Return Value:
 
     ASSERT(This == &gSynthKeyDriverBinding);
 
-    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard stopping - handle %p \n", __FUNCTION__, Controller));
+    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard stopping - handle %p \n", __func__, Controller));
 
     // ------------------- Device Specific
 

@@ -90,7 +90,7 @@ Return Value:
     if (BufferLength == 0)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
         return status;
     }
 
@@ -102,14 +102,14 @@ Return Value:
         ((BufferLength & (EFI_PAGE_SIZE - 1)) != 0))
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: Gpadls are not aligned - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: Gpadls are not aligned - %r \n", __func__, status));
         return status;
     }
 
     if ((Flags & ~EFI_VMBUS_PREPARE_GPADL_FLAGS) != 0)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid flags - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid flags - %r \n", __func__, status));
         return status;
     }
 
@@ -125,7 +125,7 @@ Return Value:
     if (gpadl == NULL)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -157,18 +157,18 @@ Return Value:
 
         if (EFI_ERROR(status))
         {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to make the buffer host visible - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: failed to make the buffer host visible - %r \n", __func__, status));
             goto Cleanup;
         }
 
         gpadl->VisibleBufferPA = (UINTN)Buffer + mSharedGpaBoundary;
-        DEBUG((EFI_D_VERBOSE, "--- %a: host-visible GPADL \n", __FUNCTION__));
+        DEBUG((EFI_D_VERBOSE, "--- %a: host-visible GPADL \n", __func__));
     }
     else
     {
         if (IsIsolated())
         {
-            DEBUG((EFI_D_VERBOSE, "--- %a: non-host-visible GPADL \n", __FUNCTION__));
+            DEBUG((EFI_D_VERBOSE, "--- %a: non-host-visible GPADL \n", __func__));
         }
 
         gpadl->VisibleBufferPA = (UINTN)Buffer;
@@ -237,7 +237,7 @@ Return Value:
     if (Gpadl->GpadlHandle != 0)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL handle - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL handle - %r \n", __func__, status));
         return status;
     }
 
@@ -250,7 +250,7 @@ Return Value:
                                    &Gpadl->GpadlHandle);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to free the GPADL - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to free the GPADL - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -290,7 +290,7 @@ Return Value:
 
     DEBUG((EFI_D_INFO,
         "%a(%dnumPages=%d base=%p gpadlHandle=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Gpadl->NumberOfPages,
         (UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT,
@@ -335,7 +335,7 @@ Return Value:
     if (receiveMessage->GpadlCreated.CreationStatus != 0)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create GPADL - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create GPADL - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -394,7 +394,7 @@ Return Value:
     if (BufferLength == 0)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
         return status;
     }
 
@@ -468,7 +468,7 @@ Return Value:
         if (!VmbusRootValidateGpadl(channelContext->RootContext, Gpadl->GpadlHandle))
         {
             status = EFI_INVALID_PARAMETER;
-            DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL - %r \n", __func__, status));
             return status;
         }
 
@@ -685,7 +685,7 @@ Return Value:
 
     if (receiveMessage->OpenResult.Status != 0)
     {
-        DEBUG((EFI_D_ERROR, "--- %a: could not open the channel - %r \n", __FUNCTION__, EFI_OUT_OF_RESOURCES));
+        DEBUG((EFI_D_ERROR, "--- %a: could not open the channel - %r \n", __func__, EFI_OUT_OF_RESOURCES));
         return EFI_OUT_OF_RESOURCES;
     }
 
@@ -1040,13 +1040,13 @@ Return Value:
     {
         if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_RING_BUFFER) != 0)
         {
-            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential ring buffer - {%g}-{%g}-%u\n", __FUNCTION__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential ring buffer - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
             ChannelContext->ConfidentialRing = TRUE;
         }
 
         if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_EXTERNAL_MEMORY) != 0)
         {
-            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential external memory - {%g}-{%g}-%u\n", __FUNCTION__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential external memory - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
             ChannelContext->VmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY;
         }
     }

@@ -30,7 +30,7 @@ Routine Description:
   CHAR8 EventLog[64];
   UINT32 EventSize;
 
-  DEBUG((DEBUG_INFO, "%a() - Measuring VM data to PCR[06]\n", __FUNCTION__));
+  DEBUG((DEBUG_INFO, "%a() - Measuring VM data to PCR[06]\n", __func__));
 
   //
   // Measure the UUID
@@ -46,7 +46,7 @@ Routine Description:
             EventSize
             );
 
-  DEBUG((DEBUG_INFO, "%a() - Logged %a (size=0x%x) status 0x%x\n", __FUNCTION__, EventLog, EventSize, Status));
+  DEBUG((DEBUG_INFO, "%a() - Logged %a (size=0x%x) status 0x%x\n", __func__, EventLog, EventSize, Status));
 
   //
   // Measure the architecture
@@ -68,7 +68,7 @@ Routine Description:
             EventSize
             );
 
-  DEBUG((DEBUG_INFO, "%a() - Logged %a (size=0x%x) status 0x%x\n", __FUNCTION__, EventLog, EventSize, Status));
+  DEBUG((DEBUG_INFO, "%a() - Logged %a (size=0x%x) status 0x%x\n", __func__, EventLog, EventSize, Status));
 
   return EFI_SUCCESS;
 }

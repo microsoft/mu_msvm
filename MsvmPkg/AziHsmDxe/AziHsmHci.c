@@ -404,7 +404,7 @@ AziHsmHciWrSqTailDbReg (
                         );
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: PciIo mem write error: %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: PciIo mem write error: %r\n", __func__, Status));
   }
 
   return Status;
@@ -434,7 +434,7 @@ AziHsmHciWrCqHeadReg (
                         );
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: PciIo mem write error: %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_INFO, "AziHsm: [%a]: PciIo mem write error: %r\n", __func__, Status));
   }
 
   return Status;

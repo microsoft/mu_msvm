@@ -2269,7 +2269,7 @@ Return Value:
     {
         DEBUG((EFI_D_ERROR,
             "%a (%d) LocateProtocol failed. status=0x%x\n",
-            __FUNCTION__,
+            __func__,
             __LINE__,
             status));
         return status;
@@ -2652,7 +2652,7 @@ Return Value:
 
     DEBUG((EFI_D_VERBOSE,
         "%a(%d) Context=%p ByteCount=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Context,
         BlockByteCount));
@@ -2755,7 +2755,7 @@ Return Value:
 Cleanup:
     DEBUG((EFI_D_INFO,
         "%a (%d) Context=%p bounceBlock=%p status=0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Context,
         bounceBlock,
@@ -2849,7 +2849,7 @@ Return Value:
 
         DEBUG((EFI_D_WARN,
             "%a (%d) Context=%p block=%p IsHostVis=%d InUsePageCount=%d BlockBase=%p PageCount=0x%x\n",
-            __FUNCTION__,
+            __func__,
             __LINE__,
             Context,
             block,
@@ -2895,7 +2895,7 @@ Return Value:
 
     DEBUG((EFI_D_VERBOSE,
         "%a(%d) Context=%p PageCount=%d\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Context,
         PageCount));
@@ -2941,7 +2941,7 @@ Return Value:
 
         DEBUG((EFI_D_WARN,
             "%a(%d) Context=%p PageCount=%d Returning=NULL\n",
-            __FUNCTION__,
+            __func__,
             __LINE__,
             Context,
             PageCount));
@@ -2950,7 +2950,7 @@ Return Value:
     {
         DEBUG((EFI_D_VERBOSE,
             "%a(%d) Context=%p PageCount=%d Returning=%p\n",
-            __FUNCTION__,
+            __func__,
             __LINE__,
             Context,
             PageCount,
@@ -3003,7 +3003,7 @@ Return Value:
 
     DEBUG((EFI_D_VERBOSE,
         "%a(%d) Context=%p released PageCount=%d\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         Context,
         count));
@@ -3050,7 +3050,7 @@ Return Value:
 
     DEBUG((EFI_D_INFO,
         "%a(%d) ExternalBuffer.Buffer=%p Size=0x%x BouncePageList=%p CopyToBounce=%d\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         ExternalBuffer->Buffer,
         ExternalBuffer->BufferSize,
@@ -3076,7 +3076,7 @@ Return Value:
         {
             DEBUG((EFI_D_VERBOSE,
                 "%a(%d) Zero %p size=0x%x\n",
-                __FUNCTION__,
+                __func__,
                 __LINE__,
                 bouncePage->PageVA,
                 pageOffset));
@@ -3095,7 +3095,7 @@ Return Value:
         {
             DEBUG((EFI_D_VERBOSE,
                 "%a(%d) CopyToBounce dst=%p src=%p size=0x%x\n",
-                __FUNCTION__,
+                __func__,
                 __LINE__,
                 bounceBuffer,
                 extBuffer,
@@ -3107,7 +3107,7 @@ Return Value:
         {
             DEBUG((EFI_D_VERBOSE,
                 "%a(%d) CopyToExtBuffer dst=%p src=%p size=0x%x\n",
-                __FUNCTION__,
+                __func__,
                 __LINE__,
                 extBuffer,
                 bounceBuffer,
@@ -3129,7 +3129,7 @@ Return Value:
 
             DEBUG((EFI_D_VERBOSE,
                 "%a(%d) Zero %p size=0x%x (from offset=0x%x)\n",
-                __FUNCTION__,
+                __func__,
                 __LINE__,
                 bounceBufferEnd,
                 zeroSize,
@@ -3159,7 +3159,7 @@ EmclpZeroBouncePageList(
         pageCount++;
     }
     DEBUG((EFI_D_VERBOSE, "%a(%d) BouncePageList=%p zeroed %d pages\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         BouncePageList,
         pageCount));

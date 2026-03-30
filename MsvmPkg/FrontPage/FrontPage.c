@@ -465,7 +465,7 @@ RenderTitlebar(VOID)
                    );
         if (EFI_ERROR(Status)) {
             if (EFI_NOT_FOUND != Status) {
-                DEBUG((DEBUG_ERROR, "%a error reading RebootReason. Code = %r\n", __FUNCTION__, Status));
+                DEBUG((DEBUG_ERROR, "%a error reading RebootReason. Code = %r\n", __func__, Status));
             }
             Parameter = 'B';
         } else {
@@ -481,7 +481,7 @@ RenderTitlebar(VOID)
     } else {
         Parameter = *((CHAR8 *) ImageInfo->LoadOptions);
     }
-    DEBUG((DEBUG_ERROR, "%a Parameter = %c - LoadOption=%p\n", __FUNCTION__, Parameter,ImageInfo->LoadOptions));
+    DEBUG((DEBUG_ERROR, "%a Parameter = %c - LoadOption=%p\n", __func__, Parameter,ImageInfo->LoadOptions));
 
     switch (Parameter) {
     case 'V' :  // VOL+
@@ -1050,7 +1050,7 @@ SetStringEntry (
 
     if (IdName != HiiSetString(gFrontPagePrivate.HiiHandle, IdName, StringValue, NULL))
     {
-       DEBUG((DEBUG_ERROR, "%a - Failed to set string for %d: %s. \n", __FUNCTION__, IdName, StringValue));
+       DEBUG((DEBUG_ERROR, "%a - Failed to set string for %d: %s. \n", __func__, IdName, StringValue));
        Status = EFI_NO_MAPPING;
     }
 

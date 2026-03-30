@@ -39,14 +39,14 @@ AziHsmInitHsm (
   Status = AziHsmAdminSetHsmQueCnt (State, &QueCnt);
 
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminSetHsmQueCnt Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminSetHsmQueCnt Failed %r\n", __func__, Status));
     goto Exit;
   }
 
   ASSERT (QueCnt == AZIHSM_HSM_CREATE_QUEUE_CNT);
   Status = AziHsmAdminCreateDeviceIoQuePair (State, &State->HsmQueue);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminSetHsmQueCnt Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmAdminSetHsmQueCnt Failed %r\n", __func__, Status));
     goto Exit;
   }
 
@@ -79,7 +79,7 @@ AziHsmFireHsmCmd (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a]: Invalid Parameters [State: %p, DmaBufferIn: %p, DmaBufferOut: %p, SessionData: %p, InXferBuffSz: %p, OutXferBuffSz: %p]\n",
-      __FUNCTION__,
+      __func__,
       State,
       DmaBufferIn,
       DmaBufferOut,
@@ -93,7 +93,7 @@ AziHsmFireHsmCmd (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a]: Invalid Buffer Sizes [InXferBuffSz: %d, OutXferBuffSz: %d]\n",
-      __FUNCTION__,
+      __func__,
       *InXferBuffSz,
       *OutXferBuffSz
       ));
@@ -131,7 +131,7 @@ AziHsmFireHsmCmd (
   // Ring the doorbell register
   Status = AziHsmHciWrSqTailDbReg (State->PciIo, QuePair->Id, QuePair->SubmissionQueue.u.Tail);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmHciWrSqTailDbReg Failed %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "AziHsm: [%a]: AziHsmHciWrSqTailDbReg Failed %r\n", __func__, Status));
     goto Exit;
   }
 
@@ -150,7 +150,7 @@ AziHsmFireHsmCmd (
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm: [%a]: Timedout Waiting For Command Cpl [PsfBitBeforePost:0x%x PsfAfterPost:0x%x \n",
-      __FUNCTION__,
+      __func__,
       PsfBitBeforePost,
       DeviceCqe->PhAndSts.PhStsVal
       ));
@@ -178,7 +178,7 @@ AziHsmFireHsmCmd (
       DEBUG ((
         DEBUG_ERROR,
         "AziHsm: [%a]: Command Failed By Firmware [Status:0x%x] \n",
-        __FUNCTION__,
+        __func__,
         DeviceCqe->PhAndSts.PhStsVal
         ));
 

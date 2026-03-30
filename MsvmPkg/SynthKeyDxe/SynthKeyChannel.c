@@ -86,7 +86,7 @@ Return Value:
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to set channel callback - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to set channel callback - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -96,7 +96,7 @@ Return Value:
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to start channel - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to start channel - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -105,7 +105,7 @@ Return Value:
     status = SynthKeyChannelEstablishCommunications(pDevice);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to establish communication - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to establish communication - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -206,7 +206,7 @@ Return Value:
     if (EFI_ERROR(status))
     {
         DEBUG ((EFI_D_WARN, "--- %a: failed to send the message (type %d, size %d) --%r \n",
-            __FUNCTION__, Message->MessageType, MessageSize, status));
+            __func__, Message->MessageType, MessageSize, status));
     }
 
     return status;
@@ -277,7 +277,7 @@ Return Value:
 
     default:
         DEBUG ((EFI_D_WARN, "--- %a: unknown message type (type %d, size %d) \n",
-            __FUNCTION__, message->MessageType, BufferLength));
+            __func__, message->MessageType, BufferLength));
         ASSERT(FALSE);
         break;
     }
@@ -319,7 +319,7 @@ Return Value:
 
     request.Version = HK_VERSION_WIN8;
 
-    DEBUG ((EFI_D_VERBOSE, "--- %a protocol version requested 0x%x\n", __FUNCTION__, request.Version));
+    DEBUG ((EFI_D_VERBOSE, "--- %a protocol version requested 0x%x\n", __func__, request.Version));
 
     //
     // Create an event to wait for the negotiation to complete
@@ -329,7 +329,7 @@ Return Value:
     if (EFI_ERROR(status))
     {
         DEBUG ((EFI_D_ERROR,
-            "--- %a:failed to create event - %r \n", __FUNCTION__, status));
+            "--- %a:failed to create event - %r \n", __func__, status));
         goto Exit;
     }
 
@@ -338,7 +338,7 @@ Return Value:
     if (EFI_ERROR(status))
     {
         DEBUG ((EFI_D_ERROR,
-            "--- %a: failed to send message - %r \n", __FUNCTION__, status));
+            "--- %a: failed to send message - %r \n", __func__, status));
         goto Exit;
     }
 
@@ -347,7 +347,7 @@ Return Value:
     if (EFI_ERROR(status))
     {
         DEBUG ((EFI_D_ERROR,
-            "--- %a: failed to wait For event - %r \n", __FUNCTION__, status));
+            "--- %a: failed to wait For event - %r \n", __func__, status));
         goto Exit;
     }
 
@@ -355,7 +355,7 @@ Return Value:
     {
         status = EFI_NOT_READY;
         DEBUG ((EFI_D_ERROR,
-            "--- %a: failed to connect the channel - %r \n", __FUNCTION__, status));
+            "--- %a: failed to connect the channel - %r \n", __func__, status));
     }
 
 Exit:
@@ -400,7 +400,7 @@ Return Value:
     indicatorsState.LedFlags = (pDevice->State.KeyState.KeyToggleState &
                                 (EFI_SCROLL_LOCK_ACTIVE | EFI_NUM_LOCK_ACTIVE | EFI_CAPS_LOCK_ACTIVE));
 
-    DEBUG((EFI_D_VERBOSE, "--- %a: set indicators state: 0x%02x\n", __FUNCTION__, indicatorsState.LedFlags));
+    DEBUG((EFI_D_VERBOSE, "--- %a: set indicators state: 0x%02x\n", __func__, indicatorsState.LedFlags));
 
     status = SynthKeyChannelSendMessage(pDevice, (PHK_MESSAGE_HEADER)&indicatorsState, sizeof(indicatorsState));
 
