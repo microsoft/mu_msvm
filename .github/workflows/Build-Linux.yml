@@ -1,0 +1,50 @@
+name: Build UEFI Firmware on Linux
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        target: [DEBUG, RELEASE]
+        arch: [X64, AARCH64]
+        tools: [GCC, CLANGPDB]
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: py_ver
+        run: python --version
+      - name: py_install_pip
+        run: python -m pip install --upgrade pip
+      - name: pip_install
+        run: pip install -r pip_requirement_stable.txt
+      - name: apt_update
+        run: sudo apt-get update -y
+      - name: apt_install
+        run: sudo apt-get install -y mono-complete clang lld llvm binutils-x86-64-linux-gnu gcc-x86-64-linux-gnu binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu
+      - name: stuart_setup
+        run: stuart_setup -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}}
+      - name: stuart_update
+        run: stuart_update -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}}
+      - name: stuart_build
+        run: stuart_build -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}} TARGET=${{matrix.target}} BUILD_ARCH=${{matrix.arch}}
+
+      # Upload the MSVM.fd file, MAP/ directories directly as an artifact
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.target}}-${{matrix.arch}}-${{matrix.tools}}-artifacts-linux
+          path: |
+            Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/FV/MSVM.fd
+            Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/MAP/
