@@ -743,7 +743,7 @@
   # future change should be to have worker process pass config for this value
   #  This should only be used to support upgrades/existing VMs
   gEfiSecurityPkgTokenSpaceGuid.TcgMeasureBootStringsInPcr4|FALSE
-  gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements|TRUE
+  gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements|TRUE
 
   ## This PCD defines minimum length(in bytes) of the system preboot TCG event log area(LAML).
   #  For PC Client Implementation spec up to and including 1.2 the minimum log size is 64KB.
@@ -944,8 +944,8 @@
       NULL|SecurityPkg/Library/HashInstanceLibSha256/HashInstanceLibSha256.inf
       NULL|SecurityPkg/Library/HashInstanceLibSha1/HashInstanceLibSha1.inf
       NULL|MsvmPkg/Library/Tcg2PreInitLib/Tcg2PreInitLibPei.inf
-      #special library For HyperV so that boot doesn't measure Main FV
-      NULL|MsvmPkg/Library/ExcludeMainFvFromMeasurementLib/ExcludeMainFvFromMeasurementLib.inf
+      #special library For HyperV so that boot doesn't measure FVs
+      NULL|MsvmPkg/Library/ExcludeFvsFromMeasurementLib/ExcludeFvsFromMeasurementLib.inf
   }
 
   MsvmPkg/MsvmTcg2PlatformDxe/MsvmTcg2PlatformDxe.inf {

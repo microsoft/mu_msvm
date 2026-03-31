@@ -210,7 +210,7 @@
     gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
     gMsvmPkgTokenSpaceGuid.PcdAsptPtr
     gMsvmPkgTokenSpaceGuid.PcdAsptSize
-    gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements
+    gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements
 
 [Ppis]
     gEfiPeiMasterBootModePpiGuid
