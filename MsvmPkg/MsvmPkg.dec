@@ -318,7 +318,7 @@
   gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr|0x0|UINT64|0x603B
   gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize|0x0|UINT32|0x603C
 
-  gMsvmPkgTokenSpaceGuid.PcdExcludeFvMainFromMeasurements|FALSE|BOOLEAN|0x603E
+  gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements|FALSE|BOOLEAN|0x603E
 
   # UEFI_CONFIG_NVDIMM_COUNT
   gMsvmPkgTokenSpaceGuid.PcdNvdimmCount|0x0|UINT16|0x603F

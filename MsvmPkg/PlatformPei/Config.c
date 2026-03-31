@@ -983,7 +983,7 @@ ConfigSetUefiConfigFlags(
     if (ConfigFlags->Flags.MeasureAdditionalPcrs)
     {
         PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(TcgMeasureBootStringsInPcr4, TRUE));
-        PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdExcludeFvMainFromMeasurements, FALSE));
+        PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdExcludeFvsFromMeasurements, FALSE));
     }
 
     //
