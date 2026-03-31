@@ -1,5 +1,5 @@
 ## @file
-#  This component sets up the device state information during PEI.
+#  This component sets up the device state information during DXE.
 #
 #  Copyright (c) Microsoft Corporation.
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -18,15 +18,13 @@ ENTRY_POINT         = PlatformDeviceStateHelperInit
   PlatformDeviceStateHelper.c
 
 [LibraryClasses]
-  AdvancedLoggerLib
   BaseLib
-  BiosDeviceLib
   CrashLib
   DebugLib
   DeviceStateLib
-  HobLib
   IsolationLib
   MemoryAllocationLib
+  UefiBootServicesTableLib
   UefiDriverEntryPoint
   UefiLib
 
@@ -34,11 +32,8 @@ ENTRY_POINT         = PlatformDeviceStateHelperInit
   MsvmPkg/MsvmPkg.dec
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  MsCorePkg/MsCorePkg.dec
-  AdvLoggerPkg/AdvLoggerPkg.dec
 
 [Guids]
-  gAdvancedLoggerHobGuid                                  ## CONSUMES
   gEfiGlobalVariableGuid                                  ## CONSUMES   
 
 [Depex]

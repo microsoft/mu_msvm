@@ -995,7 +995,8 @@ Return Value:
     //
     // NOTE: In PEI, MsvmPkg configures the Advanced Logger to write its in-memory
     // log to a temporary buffer before transitioning to DXE. Thus, we write the GPA
-    // again in PlatformDeviceStateHelperInit() in PlatformDeviceStateHelper.c.
+    // again in EfiDiagnosticsDxeEntry() in EfiDiagnosticsDxe.c, which also handles
+    // the buffer relocation that occurs at EndOfDxe.
     //
     // NOTE: Casting the GPA to a UINT32 is safe because the advanced logger's
     // in-memory buffer will always be below the 4GB boundary. See InitializeMemoryMap()
