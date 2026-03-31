@@ -167,6 +167,7 @@ APRIORI DXE {
   INF MsvmPkg/EventLogDxe/EventLogDxe.inf
   INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
   INF MsvmPkg/VariableDxe/VariableDxe.inf
+  INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
   INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
 }
 
@@ -221,6 +222,7 @@ INF MsvmPkg/EventLogDxe/EventLogDxe.inf
 INF MsvmPkg/MsvmPcAtRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
 INF MsvmPkg/NetvscDxe/NetvscDxe.inf
 INF MsvmPkg/NvmExpressDxe/NvmExpressDxe.inf
+INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
 INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
 INF MsvmPkg/SerialDxe/SerialDxe.inf
 INF MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf

@@ -917,6 +917,7 @@
   MsvmPkg/MsvmPcAtRealTimeClockRuntimeDxe/PcatRealTimeClockRuntimeDxe.inf
   MsvmPkg/NetvscDxe/NetvscDxe.inf
   MsvmPkg/NvmExpressDxe/NvmExpressDxe.inf
+  MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
   MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
   MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
   MsvmPkg/StorvscDxe/StorvscDxe.inf

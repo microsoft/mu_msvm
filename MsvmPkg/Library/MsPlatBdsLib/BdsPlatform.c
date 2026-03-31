@@ -12,8 +12,6 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BootEventLogLib.h>
-#include <Library/BiosDeviceLib.h>
-#include <BiosInterface.h>
 
 static EFI_EVENT    mExitBootServicesEvent = NULL;
 
@@ -47,12 +45,6 @@ Returns:
     DEBUG((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceOsLoaded, EFI_SUCCESS\n"));
     BootDeviceEventFlushLog();
     DEBUG((DEBUG_INFO, "[HVBE] Flushing boot event log\n"));
-    
-    //
-    // Tell the host to collect EFI diagnostics.
-    //
-    DEBUG((DEBUG_INFO, "Signaling BIOS device to collect EFI diagnostics...\n"));
-    WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
 }
 
 
