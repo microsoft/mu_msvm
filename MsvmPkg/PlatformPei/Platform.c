@@ -923,7 +923,7 @@ Return Value:
     guidHob = GetFirstGuidHob(&gAdvancedLoggerHobGuid);
     if (guidHob == NULL) 
     {
-        DEBUG((DEBUG_ERROR, "%a: Advanced Logger HOB not found. Setting GPA to 0.\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a: Advanced Logger HOB not found. Setting GPA to 0.\n", __func__));
         WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
     } 
     else 
@@ -932,20 +932,20 @@ Return Value:
         advancedLoggerPtr = (ADVANCED_LOGGER_PTR *)GET_GUID_HOB_DATA (guidHob);
         if (advancedLoggerPtr == NULL) 
         {
-            DEBUG((DEBUG_ERROR, "%a: Advanced Logger Ptr is NULL. Setting GPA to 0.\n", __FUNCTION__));
+            DEBUG((DEBUG_ERROR, "%a: Advanced Logger Ptr is NULL. Setting GPA to 0.\n", __func__));
             WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
         } 
         else if (advancedLoggerPtr->LogBuffer >= MAX_UINT32)
         {
-            DEBUG((DEBUG_ERROR, "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n", __FUNCTION__, advancedLoggerPtr->LogBuffer));
+            DEBUG((DEBUG_ERROR, "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n", __func__, advancedLoggerPtr->LogBuffer));
             WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
         } 
         else 
         {
             // Get the Advanced Logger info header and set the proper GPA.
             ADVANCED_LOGGER_INFO* advancedLoggerInfo = (ADVANCED_LOGGER_INFO *)advancedLoggerPtr->LogBuffer;
-            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer address 0x%016llx\n", __FUNCTION__, advancedLoggerPtr->LogBuffer));
-            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer size 0x%08x\n", __FUNCTION__, advancedLoggerInfo->LogBufferSize));
+            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer address 0x%016llx\n", __func__, advancedLoggerPtr->LogBuffer));
+            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer size 0x%08x\n", __func__, advancedLoggerInfo->LogBufferSize));
             WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, (UINT32)(advancedLoggerPtr->LogBuffer));
         }
     }

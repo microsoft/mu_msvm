@@ -1940,7 +1940,7 @@ InitializeMpPageTables (
 
   if (EFI_ERROR(Status))
   {
-    DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the page table\n", __FUNCTION__));
+    DEBUG((EFI_D_ERROR, "%a: Failed to allocate memory for the page table\n", __func__));
     return 0;
   }
   ZeroMem ((UINT8*)PageTables, EFI_PAGES_TO_SIZE(4 + ExtraPageCount));

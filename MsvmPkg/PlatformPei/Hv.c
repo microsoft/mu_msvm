@@ -51,21 +51,21 @@ Return Value:
     MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
     if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
     {
-        DEBUG((DEBUG_INFO, "%a - Hypervisor is not present \n", __FUNCTION__));
+        DEBUG((DEBUG_INFO, "%a - Hypervisor is not present \n", __func__));
         return;
     }
 
     MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
     if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
     {
-        DEBUG((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __FUNCTION__));
+        DEBUG((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __func__));
         return;
     }
 
     MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
     if (!cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation)
     {
-        DEBUG((DEBUG_INFO, "%a - Isolation is not present \n", __FUNCTION__));
+        DEBUG((DEBUG_INFO, "%a - Isolation is not present \n", __func__));
         return;
     }
 
@@ -127,7 +127,7 @@ Return Value:
 
         DEBUG((DEBUG_VERBOSE,
                "%a: SharedGpaBoundary: 0x%lx, CanonicalizationMask 0x%lx\n",
-               __FUNCTION__,
+               __func__,
                sharedGpaBoundary,
                sharedGpaCanonicalizationBitmask));
 

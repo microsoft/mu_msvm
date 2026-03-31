@@ -740,7 +740,7 @@ NvmExpressPassThru (
         TransferBouncePageList = NvmExpressAcquireBouncePages (Private,
                                                                BouncePageCount);
         if (TransferBouncePageList == NULL) {
-          DEBUG ((DEBUG_ERROR, "%a: Transfer bounce buffer allocation error - %r!\n", __FUNCTION__, Status));
+          DEBUG ((DEBUG_ERROR, "%a: Transfer bounce buffer allocation error - %r!\n", __func__, Status));
           Status =  EFI_OUT_OF_RESOURCES;
           goto EXIT;
         }
@@ -842,7 +842,7 @@ NvmExpressPassThru (
         MetadataBouncePageList = NvmExpressAcquireBouncePages (Private,
                                                                BouncePageCount);
         if (MetadataBouncePageList == NULL) {
-          DEBUG ((DEBUG_ERROR, "%a: Metadata bounce buffer allocation error - %r!\n", __FUNCTION__, Status));
+          DEBUG ((DEBUG_ERROR, "%a: Metadata bounce buffer allocation error - %r!\n", __func__, Status));
           Status =  EFI_OUT_OF_RESOURCES;
           goto EXIT;
         }

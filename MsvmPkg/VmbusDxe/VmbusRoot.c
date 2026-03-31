@@ -284,7 +284,7 @@ VmbusRootInitializeContext(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for WaitForMessage - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for WaitForMessage - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -302,7 +302,7 @@ VmbusRootInitializeContext(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for HotEvent - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for HotEvent - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -321,7 +321,7 @@ VmbusRootInitializeContext(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for hot allocation event - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for hot allocation event - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -354,7 +354,7 @@ VmbusRootDestroyChannel(
     EFI_STATUS status;
 
     DEBUG((EFI_D_INFO, "%a(%d) channelContext = %p ChannelId 0x%x\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         ChannelContext,
         ChannelContext->ChannelId));
@@ -369,7 +369,7 @@ VmbusRootDestroyChannel(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: could not uninstall VmBus protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: could not uninstall VmBus protocol - %r \n", __func__, status));
         return status;
     }
 
@@ -381,7 +381,7 @@ VmbusRootDestroyChannel(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: could not uninstall legacy VmBus protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: could not uninstall legacy VmBus protocol - %r \n", __func__, status));
         return status;
     }
 
@@ -417,7 +417,7 @@ VmbusRootDestroyContext (
     VMBUS_HOT_MESSAGE *hotMessage;
 
     DEBUG((EFI_D_INFO, "%a(%d) RootContext = %p\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         RootContext));
 
@@ -441,7 +441,7 @@ VmbusRootDestroyContext (
             status = VmbusRootDestroyChannel(RootContext->Channels[index]);
             if (EFI_ERROR(status))
             {
-                DEBUG((EFI_D_ERROR, "--- %a: failed to destroy channel - %r \n", __FUNCTION__, status));
+                DEBUG((EFI_D_ERROR, "--- %a: failed to destroy channel - %r \n", __func__, status));
                 return status;
             }
             ASSERT(RootContext->Channels[index] == NULL);
@@ -637,7 +637,7 @@ VmbusRootWaitForGpadlResponse(
     if (RootContext->GpadlTable[GpadlHandle].Event == NULL)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid handle event for the GPADL - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid handle event for the GPADL - %r \n", __func__, status));
         return status;
     }
 
@@ -995,14 +995,14 @@ VmbusRootHotAddAllocation(
     hvMessage = mHv->GetSintMessage(mHv, FixedPcdGet8(PcdVmbusSintIndex), context->Confidential);
     if (hvMessage == NULL)
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to get hot message\n", __FUNCTION__));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to get hot message\n", __func__));
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     hotMessage = AllocatePool(sizeof(*hotMessage));
     if (hotMessage == NULL)
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate hot message - %r \n", __FUNCTION__, EFI_OUT_OF_RESOURCES));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate hot message - %r \n", __func__, EFI_OUT_OF_RESOURCES));
         goto Cleanup;
     }
 
@@ -1019,7 +1019,7 @@ VmbusRootHotAddAllocation(
         hotMessage->Message.OfferChannel.ChildRelId >= VMBUS_MAX_CHANNELS)
     {
         DEBUG((EFI_D_ERROR, "--- %a: invalid offer message: %#x (size %d), rel ID %d",
-            __FUNCTION__,
+            __func__,
             hotMessage->Message.Header.MessageType,
             hotMessage->Message.Size,
             hotMessage->Message.OfferChannel.ChildRelId));
@@ -1110,7 +1110,7 @@ VmbusRootHotAdd(
 
         if (EFI_ERROR(status))
         {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to create the channel - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: failed to create the channel - %r \n", __func__, status));
         }
         else
         {
@@ -1164,7 +1164,7 @@ VmbusRootGetFreeGpadl(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create event - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create event - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -1193,7 +1193,7 @@ VmbusRootGetFreeGpadl(
     if (index == VMBUS_MAX_GPADLS)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to find an available GPADL - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to find an available GPADL - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -1369,7 +1369,7 @@ VmbusRootExitBootServices(
         {
             DEBUG((EFI_D_WARN,
                 "%a (%d) GPADL 0x%x not cleaned up.\n",
-                __FUNCTION__,
+                __func__,
                 __LINE__,
                 i));
             orphanedGpadlCount++;
@@ -1377,7 +1377,7 @@ VmbusRootExitBootServices(
     }
 
     DEBUG((EFI_D_WARN, "%a (%d) orphaned %d GPADLs (IsolationArchitecture=%d)\n",
-        __FUNCTION__,
+        __func__,
         __LINE__,
         orphanedGpadlCount,
         GetIsolationType()));
@@ -1415,12 +1415,12 @@ VmbusRootNegotiateVersion(
             break;
         }
 
-        DEBUG((EFI_D_WARN, "--- %a: host did not support version 0x%x\n", __FUNCTION__, version));
+        DEBUG((EFI_D_WARN, "--- %a: host did not support version 0x%x\n", __func__, version));
     }
 
     if (!EFI_ERROR(status))
     {
-        DEBUG((EFI_D_INFO, "--- %a: negotiated version 0x%x\n", __FUNCTION__, version));
+        DEBUG((EFI_D_INFO, "--- %a: negotiated version 0x%x\n", __func__, version));
     }
 
     return status;
@@ -1481,7 +1481,7 @@ VmbusRootInitiateContact(
             return status;
         }
 
-        DEBUG((EFI_D_WARN, "--- %a: Retrying without confidential control plane\n", __FUNCTION__));
+        DEBUG((EFI_D_WARN, "--- %a: Retrying without confidential control plane\n", __func__));
         RootContext->Confidential = FALSE;
         status = VmbusRootConnectSint(RootContext, TRUE);
         if (EFI_ERROR(status))
@@ -1606,7 +1606,7 @@ VmbusRootCreateChannel(
     if (channelContext == NULL)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for WaitForMessage - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create event for WaitForMessage - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -1659,7 +1659,7 @@ VmbusRootCreateChannel(
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to open the VmBus protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to open the VmBus protocol - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -1713,7 +1713,7 @@ VmbusRootIsChannelAllowed(
 
         if (CompareMem(&OfferMessage->InterfaceType, &gAllowedGuids[index].AllowedGuid, sizeof(EFI_GUID)) == 0)
         {
-            DEBUG((DEBUG_INFO, "%a: Channel allowed during boot (%g).\n", __FUNCTION__, &OfferMessage->InterfaceType));
+            DEBUG((DEBUG_INFO, "%a: Channel allowed during boot (%g).\n", __func__, &OfferMessage->InterfaceType));
             return TRUE;
         }
     }
@@ -1728,13 +1728,13 @@ VmbusRootIsChannelAllowed(
             //
             if (CompareMem(&OfferMessage->InterfaceType, &gVmbfsChannelGuid, sizeof(EFI_GUID)) == 0)
             {
-                DEBUG((DEBUG_INFO, "%a: IMC Channel allowed during boot (%g).\n", __FUNCTION__, &OfferMessage->InterfaceType));
+                DEBUG((DEBUG_INFO, "%a: IMC Channel allowed during boot (%g).\n", __func__, &OfferMessage->InterfaceType));
                 return TRUE;
             }
         }
     }
 
-    DEBUG((DEBUG_WARN, "%a: Channel not allowed during boot (%g).\n", __FUNCTION__, &OfferMessage->InterfaceType));
+    DEBUG((DEBUG_WARN, "%a: Channel not allowed during boot (%g).\n", __func__, &OfferMessage->InterfaceType));
     return FALSE;
 
 }
@@ -1782,7 +1782,7 @@ VmbusRootEnumerateChildren(
             message.Header.MessageType != ChannelMessageOfferChannel)
         {
             status = EFI_PROTOCOL_ERROR;
-            DEBUG((EFI_D_ERROR, "--- %a: unexpected VMBus message received from root - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: unexpected VMBus message received from root - %r \n", __func__, status));
             return status;
         }
 
@@ -1807,7 +1807,7 @@ VmbusRootEnumerateChildren(
 
         if (EFI_ERROR(status))
         {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to create the channel - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: failed to create the channel - %r \n", __func__, status));
             return status;
         }
     }
@@ -1887,10 +1887,10 @@ VmbusRootConnectSint(
                               RootContext->Confidential,
                               VmbusRootSintNotify,
                               RootContext);
-    DEBUG((DEBUG_VERBOSE, "--- %a after ConnectSint status %r\n", __FUNCTION__, status));
+    DEBUG((DEBUG_VERBOSE, "--- %a after ConnectSint status %r\n", __func__, status));
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to connect SINT - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to connect SINT - %r \n", __func__, status));
     }
 
     return status;
@@ -1919,7 +1919,7 @@ VmbusRootDriverStart (
 {
     EFI_STATUS status;
     VOID *protocol;
-    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
 
     ASSERT(ControllerHandle == mRootDevice);
 
@@ -1927,7 +1927,7 @@ VmbusRootDriverStart (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to locate the EfiHv protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to locate the EfiHv protocol - %r \n", __func__, status));
         return status;
     }
 
@@ -1935,7 +1935,7 @@ VmbusRootDriverStart (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to locate the EfiHvIvm protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to locate the EfiHvIvm protocol - %r \n", __func__, status));
         return status;
     }
 
@@ -1945,10 +1945,10 @@ VmbusRootDriverStart (
     status = VmbusRootInitializeContext(&mRootContext);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to initialize context - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to initialize context - %r \n", __func__, status));
         return status;
     }
-    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootInitializeContext\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootInitializeContext\n", __func__));
 
     status = VmbusRootConnectSint(&mRootContext, FALSE);
     if (EFI_ERROR(status))
@@ -1961,10 +1961,10 @@ VmbusRootDriverStart (
     status = VmbusRootNegotiateVersion(&mRootContext);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to initiate contact - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to initiate contact - %r \n", __func__, status));
         goto Cleanup;
     }
-    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootInitiateContact status %r\n", __FUNCTION__, status));
+    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootInitiateContact status %r\n", __func__, status));
 
     status = gBS->CreateEventEx(EVT_NOTIFY_SIGNAL,
                                 TPL_CALLBACK,
@@ -1975,17 +1975,17 @@ VmbusRootDriverStart (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
         goto Cleanup;
     }
 
     status = VmbusRootEnumerateChildren(&mRootContext);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to enumerate children - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to enumerate children - %r \n", __func__, status));
         goto Cleanup;
     }
-    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootEnumerateChildren status %r\n", __FUNCTION__, status));
+    DEBUG((DEBUG_VERBOSE, "--- %a after VmbusRootEnumerateChildren status %r\n", __func__, status));
     status = gBS->OpenProtocol(ControllerHandle,
                                &gEfiVmbusRootProtocolGuid,
                                &protocol,
@@ -1995,7 +1995,7 @@ VmbusRootDriverStart (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to open the VMBus protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to open the VMBus protocol - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -2007,7 +2007,7 @@ Cleanup:
         VmbusRootDestroyContext(&mRootContext);
     }
 
-    DEBUG((DEBUG_VERBOSE, "<<< %a status %r\n", __FUNCTION__, status));
+    DEBUG((DEBUG_VERBOSE, "<<< %a status %r\n", __func__, status));
     return status;
 }
 
@@ -2053,7 +2053,7 @@ VmbusRootDriverStop (
         status = VmbusRootDestroyContext(&mRootContext);
         if (EFI_ERROR(status))
         {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to destroy the context - %r \n", __FUNCTION__, status));
+            DEBUG((EFI_D_ERROR, "--- %a: failed to destroy the context - %r \n", __func__, status));
             return status;
         }
     }
@@ -2072,7 +2072,7 @@ VmbusRootDriverStop (
                     status = VmbusRootDestroyChannel(channelContext);
                     if (EFI_ERROR(status))
                     {
-                        DEBUG((EFI_D_ERROR, "--- %a: failed to destroy the channel - %r \n", __FUNCTION__, status));
+                        DEBUG((EFI_D_ERROR, "--- %a: failed to destroy the channel - %r \n", __func__, status));
                         return status;
                     }
 
@@ -2238,7 +2238,7 @@ VmbusComponentNameGetControllerName(
         );
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to get the managing controller - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to get the managing controller - %r \n", __func__, status));
         return status;
     }
 
@@ -2248,7 +2248,7 @@ VmbusComponentNameGetControllerName(
     if (ChildHandle != NULL)
     {
         status = EFI_UNSUPPORTED;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid child handle - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: invalid child handle - %r \n", __func__, status));
         return status;
     }
 
@@ -2280,7 +2280,7 @@ VmbusDriverInitialize (
 {
     EFI_STATUS status;
 
-    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
 
     mVmbusImageHandle = ImageHandle;
 
@@ -2315,7 +2315,7 @@ VmbusDriverInitialize (
                                                     NULL);
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to install the VMBus protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to install the VMBus protocol - %r \n", __func__, status));
         return status;
     }
 
@@ -2331,11 +2331,11 @@ VmbusDriverInitialize (
                                                       );
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to open the driver binding protocol - %r \n", __FUNCTION__, status));
+        DEBUG((EFI_D_ERROR, "--- %a: failed to open the driver binding protocol - %r \n", __func__, status));
         return status;
     }
 
-    DEBUG((DEBUG_VERBOSE, "<<< %a\n", __FUNCTION__));
+    DEBUG((DEBUG_VERBOSE, "<<< %a\n", __func__));
     return EFI_SUCCESS;
 }
 

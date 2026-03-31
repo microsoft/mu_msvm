@@ -281,7 +281,7 @@ EfiHvConnectSint (
     if (sintConfiguration->Vector != 0)
     {
         status = EFI_ALREADY_STARTED;
-        DEBUG((DEBUG_ERROR, "--- %a: SINT is already registered - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: SINT is already registered - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -300,7 +300,7 @@ EfiHvConnectSint (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -769,13 +769,13 @@ EfiHvConfigureTimer (
     HV_X64_MSR_STIMER_CONFIG_CONTENTS config;
     EFI_STATUS status;
     DEBUG((DEBUG_VERBOSE, ">>> %a: tindex 0x%x sindex 0x%x periodic %s direct %s vector 0x%x\n",
-        __FUNCTION__, TimerIndex, SintIndex, Periodic ? L"TRUE" : L"FALSE",
+        __func__, TimerIndex, SintIndex, Periodic ? L"TRUE" : L"FALSE",
         DirectMode ? L"TRUE" : L"FALSE", Vector));
 
     if (TimerIndex >= HV_SYNIC_STIMER_COUNT)
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((DEBUG_ERROR, "--- %a: invalid timer index - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: invalid timer index - %r \n", __func__, status));
         return status;
     }
 
@@ -791,7 +791,7 @@ EfiHvConfigureTimer (
                 (mDirectTimerInterruptHandlers[Vector] != InterruptHandler))
             {
                 status = EFI_INVALID_PARAMETER;
-                DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration - %r \n", __FUNCTION__, status));
+                DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration - %r \n", __func__, status));
                 return status;
             }
         }
@@ -813,7 +813,7 @@ EfiHvConfigureTimer (
 
             if (EFI_ERROR(status))
             {
-                DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __FUNCTION__, status));
+                DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
                 return status;
             }
 
@@ -825,7 +825,7 @@ EfiHvConfigureTimer (
         if (mTimerConfiguration[TimerIndex].DirectMode)
         {
             status = EFI_INVALID_PARAMETER;
-            DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration (DirectMode) - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration (DirectMode) - %r \n", __func__, status));
             return status;
         }
     }
@@ -960,7 +960,7 @@ EfiHvPostMessage (
     EFI_TPL oldTpl;
 
     DEBUG((DEBUG_VERBOSE, ">>> %a: ConnId 0x%x MessageType 0x%x Payload 0x%p Size 0x%x\n",
-        __FUNCTION__, ConnectionId, MessageType, Payload, PayloadSize));
+        __func__, ConnectionId, MessageType, Payload, PayloadSize));
 
     //
     // A direct hypercall is only valid if we are hardware isolated with a
@@ -1397,7 +1397,7 @@ EfiHvMakeAddressRangeHostVisible(
     if (!IsIsolatedEx(mIsolationType))
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((DEBUG_ERROR, "--- %a: visibility changes are only permitted on isolated systems - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: visibility changes are only permitted on isolated systems - %r \n", __func__, status));
         return status;
     }
 
@@ -1411,7 +1411,7 @@ EfiHvMakeAddressRangeHostVisible(
         ((MapFlags & ~(HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE)) != 0))
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((DEBUG_ERROR, "--- %a: incorrect alignment or access - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: incorrect alignment or access - %r \n", __func__, status));
         return status;
     }
 
@@ -1423,7 +1423,7 @@ EfiHvMakeAddressRangeHostVisible(
         ((MapFlags & (HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE)) == HV_MAP_GPA_READABLE))
     {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((DEBUG_ERROR, "--- %a: invalid host read only request - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: invalid host read only request - %r \n", __func__, status));
         return status;
     }
 
@@ -1434,7 +1434,7 @@ EfiHvMakeAddressRangeHostVisible(
     if (protectionObject == NULL)
     {
         status = EFI_OUT_OF_RESOURCES;
-        DEBUG((DEBUG_ERROR, "--- %a: failed to allocate memory - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
         return status;
     }
 
@@ -1590,7 +1590,7 @@ EfiHvConnectToHypervisor (
         if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
         {
             status = EFI_UNSUPPORTED;
-            DEBUG((DEBUG_ERROR, "--- %a: no hypervisor present - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: no hypervisor present - %r \n", __func__, status));
             goto Exit;
         }
 
@@ -1598,7 +1598,7 @@ EfiHvConnectToHypervisor (
         if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
         {
             status = EFI_UNSUPPORTED;
-            DEBUG((DEBUG_ERROR, "--- %a: hypervisor present is not a Microsoft hypervisor - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: hypervisor present is not a Microsoft hypervisor - %r \n", __func__, status));
             goto Exit;
         }
     }
@@ -1620,7 +1620,7 @@ EfiHvConnectToHypervisor (
     if (mHvPages == NULL)
     {
         status =  EFI_OUT_OF_RESOURCES;
-        DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV pages - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV pages - %r \n", __func__, status));
         goto Exit;
     }
     ZeroMem(mHvPages, sizeof(*mHvPages));
@@ -1645,7 +1645,7 @@ EfiHvConnectToHypervisor (
 
         if (EFI_ERROR(status))
         {
-            DEBUG((DEBUG_ERROR, "--- %a: failed to make pages host visible - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: failed to make pages host visible - %r \n", __func__, status));
             goto Exit;
         }
 
@@ -1658,7 +1658,7 @@ EfiHvConnectToHypervisor (
         if (mHypercallPage == NULL)
         {
             status = EFI_OUT_OF_RESOURCES;
-            DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate the hypercall page - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate the hypercall page - %r \n", __func__, status));
             goto Exit;
         }
 
@@ -1704,7 +1704,7 @@ EfiHvConnectToHypervisor (
     if (mHvPages == NULL)
     {
         status =  EFI_OUT_OF_RESOURCES;
-        DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV pages - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV pages - %r \n", __func__, status));
         goto Exit;
     }
 
@@ -1750,7 +1750,7 @@ EfiHvConnectToHypervisor (
             if (hvInputPage == NULL)
             {
                 status = EFI_OUT_OF_RESOURCES;
-                DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV input page - %r \n", __FUNCTION__, status));
+                DEBUG((DEBUG_ERROR, "--- %a: failed to allcoate HV input page - %r \n", __func__, status));
                 goto Exit;
             }
 
@@ -1798,7 +1798,7 @@ EfiHvConnectToHypervisor (
     {
         MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
         mAutoEoi = !cpuidResult.MsHvEnlightenmentInformation.DeprecateAutoEoi;
-        DEBUG((DEBUG_VERBOSE, "--- %a: mAutoEoi 0x%x\n", __FUNCTION__, mAutoEoi));
+        DEBUG((DEBUG_VERBOSE, "--- %a: mAutoEoi 0x%x\n", __func__, mAutoEoi));
 
         MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
         if (!(cpuidResult.MsHvFeatures.PartitionPrivileges.AccessPartitionReferenceCounter &&
@@ -1807,7 +1807,7 @@ EfiHvConnectToHypervisor (
               cpuidResult.MsHvFeatures.PartitionPrivileges.AccessHypercallMsrs))
         {
             status = EFI_UNSUPPORTED;
-            DEBUG((DEBUG_ERROR, "--- %a: missing hypervisor features - %r \n", __FUNCTION__, status));
+            DEBUG((DEBUG_ERROR, "--- %a: missing hypervisor features - %r \n", __func__, status));
             goto Exit;
         }
 
@@ -1819,7 +1819,7 @@ EfiHvConnectToHypervisor (
 
     if (IsIsolatedEx(mIsolationType))
     {
-        DEBUG((EFI_D_INFO, "--- %a: Partition is Isolated\n", __FUNCTION__));
+        DEBUG((EFI_D_INFO, "--- %a: Partition is Isolated\n", __func__));
     }
 
 #endif
@@ -2312,7 +2312,7 @@ EfiHvInitialize (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to locate protocol - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to locate protocol - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -2327,7 +2327,7 @@ EfiHvInitialize (
                                 &mExitBootServicesEvent);
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to create event - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to create event - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -2337,14 +2337,14 @@ EfiHvInitialize (
     status = EfiHvConnectToHypervisor();
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to connect to the hypervisor - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to connect to the hypervisor - %r \n", __func__, status));
         goto Cleanup;
     }
 
     status = EfiHvConnectToSynic();
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to connect to Synic - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to connect to Synic - %r \n", __func__, status));
         goto Cleanup;
     }
 
@@ -2359,7 +2359,7 @@ EfiHvInitialize (
 
     if (EFI_ERROR(status))
     {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to install the protocol - %r \n", __FUNCTION__, status));
+        DEBUG((DEBUG_ERROR, "--- %a: failed to install the protocol - %r \n", __func__, status));
         goto Cleanup;
     }
 

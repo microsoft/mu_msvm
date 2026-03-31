@@ -170,7 +170,7 @@ Return Value:
 
     if (mTpm2ControlArea == NULL)
     {
-        DEBUG((DEBUG_ERROR, "%a: Tpm2ControlArea is NULL!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a: Tpm2ControlArea is NULL!\n", __func__));
         status = EFI_NOT_READY;
         goto Cleanup;
     }
@@ -178,7 +178,7 @@ Return Value:
     if (mTpm2ControlArea->Start != 0)
     {
         // pending command.
-        DEBUG((DEBUG_ERROR, "%a: Previous command still pending!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a: Previous command still pending!\n", __func__));
         status = EFI_NOT_READY;
         goto Cleanup;
     }
@@ -186,7 +186,7 @@ Return Value:
     if (mTpm2ControlArea->Status != 0)
     {
         // device in error state.
-        DEBUG((DEBUG_ERROR, "%a: Device in error state!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a: Device in error state!\n", __func__));
         status = EFI_DEVICE_ERROR;
         goto Cleanup;
     }
@@ -194,7 +194,7 @@ Return Value:
     // Check if command fits into command buffer.
     if (mTpm2ControlArea->CommandBufferSize < InputParameterBlockSize)
     {
-        DEBUG((DEBUG_ERROR, "%a: Command buffer too small!\n", __FUNCTION__));
+        DEBUG((DEBUG_ERROR, "%a: Command buffer too small!\n", __func__));
         status = EFI_INVALID_PARAMETER;
         goto Cleanup;
     }
@@ -336,13 +336,13 @@ Tpm2RegisterTpm2DeviceLib (
     // MS_HYP_CHANGE BEGIN
     mTpm2ControlArea = (FTPM_CONTROL_AREA*)Tpm2Device;
 
-    DEBUG((DEBUG_VERBOSE, "%a - TpmBaseAddress == 0x%016lX\n", __FUNCTION__, mTpm2ControlArea));
+    DEBUG((DEBUG_VERBOSE, "%a - TpmBaseAddress == 0x%016lX\n", __func__, mTpm2ControlArea));
 
     // If any of these values are bad, we've failed to register this library.
     if ((mTpm2ControlArea->CommandPALow == (UINT32)-1) ||
         (mTpm2ControlArea->ResponsePALow == (UINT32)-1) ||
         (mTpm2ControlArea->ResponseBufferSize == (UINT32)-1)) {
-      DEBUG(( DEBUG_ERROR, "%a - TPM MMIO Space at 0x%08X is not decoding!\tCannot register interface!\n", __FUNCTION__, mTpm2ControlArea ));
+      DEBUG(( DEBUG_ERROR, "%a - TPM MMIO Space at 0x%08X is not decoding!\tCannot register interface!\n", __func__, mTpm2ControlArea ));
       return EFI_DEVICE_ERROR;
     }
 
@@ -358,7 +358,7 @@ Tpm2RegisterTpm2DeviceLib (
     mResponseBuffer = (UINT8*)(UINTN)responseBufferPA.QuadPart;
     mResponseSize = (UINTN)mTpm2ControlArea->ResponseBufferSize;
 
-    DEBUG((DEBUG_VERBOSE, "%a - TPM MMIO Space at 0x%016lX, Command=0x%016lX, Response=0x%016lX, Size=0x%08X\n", __FUNCTION__, mTpm2ControlArea, mCommandBuffer, mResponseBuffer, mResponseSize));
+    DEBUG((DEBUG_VERBOSE, "%a - TPM MMIO Space at 0x%016lX, Command=0x%016lX, Response=0x%016lX, Size=0x%08X\n", __func__, mTpm2ControlArea, mCommandBuffer, mResponseBuffer, mResponseSize));
 
     return EFI_SUCCESS;
     // MS_HYP_CHANGE END
