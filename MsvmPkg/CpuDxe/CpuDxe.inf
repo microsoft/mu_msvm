@@ -73,6 +73,7 @@
   Ia32/PagingAttribute.c
 
 [Sources.X64]
+  X64/CpuApWait.asm        ## MS_HYP_CHANGE
   X64/CpuAsm.nasm
   X64/InterruptVector.nasm ## MS_HYP_CHANGE
   X64/PagingAttribute.c
