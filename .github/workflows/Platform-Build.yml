@@ -17,6 +17,9 @@ jobs:
         target: [DEBUG, RELEASE]
         arch: [X64, AARCH64]
         tools: [VS2022, CLANGPDB]
+        exclude:
+        - arch: AARCH64
+          tools: VS2022
 
     steps:
       # Checkout the repository
