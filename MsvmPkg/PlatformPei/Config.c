@@ -27,6 +27,7 @@
 #include <UefiConstants.h>
 #include <Hob.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/SafeIntLib.h>
 #include "AllowNamelessAggregate.h"
 #include "AssignStruct.h"
 
@@ -1567,6 +1568,53 @@ Return Value:
                 {
                     lowGap = 1;
                     highGap = 0;
+                }
+
+                //
+                // Validate MMIO ranges using safe arithmetic to prevent
+                // unsigned underflow/overflow in ConfigureMmu(). A malicious
+                // host can supply values that cause unsigned subtraction
+                // underflow, leading to oversized memory regions and OOB access.
+                //
+                {
+                    UINT64 lowGapBase = mmioRanges->Ranges[lowGap].MmioPageNumberStart;
+                    UINT64 lowGapSize = mmioRanges->Ranges[lowGap].MmioSizeInPages;
+                    UINT64 highGapBase = mmioRanges->Ranges[highGap].MmioPageNumberStart;
+                    UINT64 highGapSize = mmioRanges->Ranges[highGap].MmioSizeInPages;
+                    UINT64 lowGapEnd;
+                    UINT64 highGapEnd;
+
+                    //
+                    // Low gap size (in pages) must not exceed 4GB worth of pages,
+                    // and the low gap must end at or before the 4GB boundary.
+                    //
+                    if ((lowGapSize > (SIZE_4GB / SIZE_4KB)) ||
+                        RETURN_ERROR(SafeUint64Add(lowGapBase, lowGapSize, &lowGapEnd)) ||
+                        (lowGapEnd > (SIZE_4GB / SIZE_4KB)))
+                    {
+                        DEBUG((DEBUG_ERROR, "***Invalid low MMIO gap range\n"));
+                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                    }
+
+                    //
+                    // High gap must start at or above the 4GB boundary (in pages)
+                    // to avoid unsigned underflow when computing memory region
+                    // lengths in ConfigureMmu().
+                    //
+                    if (highGapBase < (SIZE_4GB / SIZE_4KB))
+                    {
+                        DEBUG((DEBUG_ERROR, "***Invalid high MMIO gap base below 4GB\n"));
+                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                    }
+
+                    //
+                    // High gap must not overflow the address space.
+                    //
+                    if (RETURN_ERROR(SafeUint64Add(highGapBase, highGapSize, &highGapEnd)))
+                    {
+                        DEBUG((DEBUG_ERROR, "***High MMIO gap range overflow\n"));
+                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                    }
                 }
 
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdLowMmioGapBasePageNumber, mmioRanges->Ranges[lowGap].MmioPageNumberStart));
