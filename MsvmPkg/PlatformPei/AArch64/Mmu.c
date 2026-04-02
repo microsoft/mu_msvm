@@ -19,6 +19,7 @@
 #include <Library/ArmMmuLib.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/SafeIntLib.h>
 #include <BiosInterface.h>
 #include <Config.h>
 
@@ -397,15 +398,27 @@ ConfigureMmu(
     UINT64                        TCR;
     EFI_STATUS                    Status;
     ARM_MEMORY_REGION_DESCRIPTOR* MemoryTable;
-    UINT64                        lowMmioBaseAddress = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
-    UINT64                        lowMmioSize = PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
-    UINT64                        highMmioBaseAddress = PcdGet64(PcdHighMmioGapBasePageNumber) * SIZE_4KB;
-    UINT64                        highMmioSize = PcdGet64(PcdHighMmioGapSizeInPages) * SIZE_4KB;
+    UINT64                        lowMmioSize;
+    UINT64                        highMmioBaseAddress;
+    UINT64                        highMmioSize;
 #define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS 6
     ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
 
-    DEBUG((DEBUG_VERBOSE, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
-        MaxAddress, lowMmioBaseAddress, lowMmioSize, highMmioBaseAddress, highMmioSize));
+    //
+    // Convert PCD page counts to byte addresses/sizes using safe
+    // multiplication to catch overflow from host-supplied values.
+    //
+    if (RETURN_ERROR(SafeUint64Mult(PcdGet64(PcdLowMmioGapSizeInPages), SIZE_4KB, &lowMmioSize)) ||
+        RETURN_ERROR(SafeUint64Mult(PcdGet64(PcdHighMmioGapBasePageNumber), SIZE_4KB, &highMmioBaseAddress)) ||
+        RETURN_ERROR(SafeUint64Mult(PcdGet64(PcdHighMmioGapSizeInPages), SIZE_4KB, &highMmioSize)))
+    {
+        DEBUG((DEBUG_ERROR, "ConfigureMmu: MMIO PCD value overflow\n"));
+        ASSERT(FALSE);
+        return EFI_INVALID_PARAMETER;
+    }
+
+    DEBUG((DEBUG_VERBOSE, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
+        MaxAddress, lowMmioSize, highMmioBaseAddress, highMmioSize));
 
     //
     // Fill table that drives the mmu setup functions.
@@ -425,7 +438,15 @@ ConfigureMmu(
     // From 4GB to beginning of high MMIO gap.
     virtualMemoryTable[2].PhysicalBase = virtualMemoryTable[1].PhysicalBase + virtualMemoryTable[1].Length;
     virtualMemoryTable[2].VirtualBase = virtualMemoryTable[2].PhysicalBase;
-    virtualMemoryTable[2].Length = highMmioBaseAddress - virtualMemoryTable[2].PhysicalBase;
+
+    if (RETURN_ERROR(SafeUint64Sub(highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase, &virtualMemoryTable[2].Length)))
+    {
+        DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
+            highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase));
+        ASSERT(FALSE);
+        return EFI_INVALID_PARAMETER;
+    }
+
     virtualMemoryTable[2].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
     // Second MMIO gap.
@@ -437,7 +458,20 @@ ConfigureMmu(
     // To top of address space.
     virtualMemoryTable[4].PhysicalBase = virtualMemoryTable[3].PhysicalBase + virtualMemoryTable[3].Length;
     virtualMemoryTable[4].VirtualBase = virtualMemoryTable[4].PhysicalBase;
-    virtualMemoryTable[4].Length = MaxAddress + 1 - virtualMemoryTable[4].PhysicalBase;
+
+    //
+    // Validate that the final region does not underflow.
+    //
+    if (virtualMemoryTable[4].PhysicalBase > MaxAddress)
+    {
+        DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress (0x%lx)\n",
+            virtualMemoryTable[4].PhysicalBase, MaxAddress));
+        ASSERT(FALSE);
+        return EFI_INVALID_PARAMETER;
+    }
+
+    virtualMemoryTable[4].Length = (MaxAddress - virtualMemoryTable[4].PhysicalBase) + 1;
+
     virtualMemoryTable[4].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
     virtualMemoryTable[5].PhysicalBase = 0;

@@ -55,13 +55,13 @@
     IoLib
     IsolationLib
     MsBaseLib
+    SafeIntLib
     PeCoffLib
     PeimEntryPoint
     PeiServicesLib
     PeiServicesTablePointerLib
     PcdLib
     ResourcePublicationLib
-    SafeIntLib
 
 [LibraryClasses.X64]
     HostVisibilityLib
