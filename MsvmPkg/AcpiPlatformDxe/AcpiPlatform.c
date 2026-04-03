@@ -11,6 +11,7 @@
 #include <Protocol/FirmwareVolume2.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/CrashLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/DebugLib.h>
 #include <Library/PcdLib.h>
@@ -222,7 +223,7 @@ Return Value:
     madtSize = PcdGet32(PcdMadtSize);
     table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdMadtPtr);
 
-    ASSERT(table->Length == madtSize);
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(table->Length == madtSize);
 
 #if defined(MDE_CPU_X64)
 
@@ -273,7 +274,8 @@ Return Value:
             mpWakeUpStruct->Reserved        = 0;
             mpWakeUpStruct->MailBoxAddress  = apMailboxAddress;
 
-            table->Checksum     = CalculateCheckSum8((UINT8*)&table, updatedMadtSize);
+            table->Checksum     = 0;
+            table->Checksum     = CalculateCheckSum8((UINT8*)table, updatedMadtSize);
 
 
             status = PcdSet64S(PcdAcpiMadtMpMailBoxAddress, (UINT64) apMailboxAddress);
