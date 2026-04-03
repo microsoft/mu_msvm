@@ -71,7 +71,6 @@ PxeIp2Mac (
   return EFI_SUCCESS;
 }
 
-
 /**
   Converts a multicast IP address to a multicast HW MAC address.
 
@@ -102,7 +101,7 @@ PxeIp2Mac (
 **/
 EFI_STATUS
 EFIAPI
-SnpMcastIpToMac(
+SnpUndi32McastIpToMac(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      IPv6,
   IN EFI_IP_ADDRESS               *IP,

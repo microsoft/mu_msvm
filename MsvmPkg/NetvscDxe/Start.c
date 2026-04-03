@@ -51,7 +51,7 @@ PxeStart (
 **/
 EFI_STATUS
 EFIAPI
-SnpStart(
+SnpUndi32Start(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   )
 {

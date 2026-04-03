@@ -167,7 +167,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  mSimpleNetworkDriverName
   }
 };
 
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE mSimpleNetworkControllerNameTable[] = {
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE gSimpleNetworkControllerNameTable[] = {
     {
         "eng;en",
         L"Hyper-V Network Controller"
@@ -320,16 +320,12 @@ SimpleNetworkComponentNameGetControllerName (
     return EFI_UNSUPPORTED;
   }
 
-  if (ControllerHandle == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-
   //
   // Make sure this driver is currently managing ControllHandle
   //
   Status = EfiTestManagedDevice (
              ControllerHandle,
-             mSimpleNetworkDriverBinding.DriverBindingHandle,
+             gSimpleNetworkDriverBinding.DriverBindingHandle,
              &gEfiEmclProtocolGuid
              );
   if (EFI_ERROR (Status)) {
@@ -339,7 +335,7 @@ SimpleNetworkComponentNameGetControllerName (
   return LookupUnicodeString2 (
            Language,
            This->SupportedLanguages,
-           mSimpleNetworkControllerNameTable,
+           gSimpleNetworkControllerNameTable,
            ControllerName,
            (BOOLEAN)(This == &gSimpleNetworkComponentName)
            );

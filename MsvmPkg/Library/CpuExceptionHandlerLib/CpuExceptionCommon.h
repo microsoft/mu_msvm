@@ -20,8 +20,6 @@
 #include <Library/SynchronizationLib.h>
 #include <Library/CpuExceptionHandlerLib.h>
 
-#define  CPU_EXCEPTION_NUM    32
-#define  CPU_INTERRUPT_NUM    256
 #define  HOOKAFTER_STUB_SIZE  18
 
 //
@@ -65,11 +63,11 @@ typedef struct {
   EFI_CPU_INTERRUPT_HANDLER    *ExternalInterruptHandler;
 } EXCEPTION_HANDLER_DATA;
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
 #include <Hv/HvGuestMsr.h>
 extern CHAR8 mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
 extern UINTN mDebugCursor;
-// MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
 extern CONST UINT32  mErrorCodeFlag;
 extern CONST UINTN   mDoFarReturnFlag;

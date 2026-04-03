@@ -79,7 +79,7 @@ NetvscAipGetSupportedTypes (
 //
 // Global Variables
 //
-extern EFI_DRIVER_BINDING_PROTOCOL    mSimpleNetworkDriverBinding;
+extern EFI_DRIVER_BINDING_PROTOCOL    gSimpleNetworkDriverBinding;
 extern EFI_COMPONENT_NAME_PROTOCOL    gSimpleNetworkComponentName;
 extern EFI_COMPONENT_NAME2_PROTOCOL   gSimpleNetworkComponentName2;
 
@@ -201,7 +201,7 @@ PxeGetStatus (
 **/
 EFI_STATUS
 EFIAPI
-SnpStart(
+SnpUndi32Start(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -225,7 +225,7 @@ SnpStart(
 **/
 EFI_STATUS
 EFIAPI
-SnpStop(
+SnpUndi32Stop(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -264,7 +264,7 @@ SnpStop(
 **/
 EFI_STATUS
 EFIAPI
-SnpInitialize(
+SnpUndi32Initialize(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        ExtraRxBufferSize OPTIONAL,
   IN UINTN                        ExtraTxBufferSize OPTIONAL
@@ -296,7 +296,7 @@ SnpInitialize(
 **/
 EFI_STATUS
 EFIAPI
-SnpReset(
+SnpUndi32Reset(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ExtendedVerification
   );
@@ -322,7 +322,7 @@ SnpReset(
 **/
 EFI_STATUS
 EFIAPI
-SnpShutdown(
+SnpUndi32Shutdown(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -422,7 +422,7 @@ SnpShutdown(
 **/
 EFI_STATUS
 EFIAPI
-SnpReceiveFilters(
+SnpUndi32ReceiveFilters(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINT32                       Enable,
   IN UINT32                       Disable,
@@ -465,7 +465,7 @@ SnpReceiveFilters(
 **/
 EFI_STATUS
 EFIAPI
-SnpStationAddress(
+SnpUndi32StationAddress(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN EFI_MAC_ADDRESS              *New  OPTIONAL
@@ -520,7 +520,7 @@ SnpStationAddress(
 **/
 EFI_STATUS
 EFIAPI
-SnpStatistics(
+SnpUndi32Statistics(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN OUT UINTN                    *StatisticsSize   OPTIONAL,
@@ -557,7 +557,7 @@ SnpStatistics(
 **/
 EFI_STATUS
 EFIAPI
-SnpMcastIpToMac(
+SnpUndi32McastIpToMac(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      IPv6,
   IN EFI_IP_ADDRESS               *IP,
@@ -617,7 +617,7 @@ SnpMcastIpToMac(
 **/
 EFI_STATUS
 EFIAPI
-SnpNvData(
+SnpUndi32NvData(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ReadWrite,
   IN UINTN                        Offset,
@@ -665,7 +665,7 @@ SnpNvData(
 **/
 EFI_STATUS
 EFIAPI
-SnpGetStatus(
+SnpUndi32GetStatus (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINT32                      *InterruptStatus  OPTIONAL,
   OUT VOID                        **TxBuf           OPTIONAL
@@ -727,7 +727,7 @@ SnpGetStatus(
 **/
 EFI_STATUS
 EFIAPI
-SnpTransmit(
+SnpUndi32Transmit(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        HeaderSize,
   IN UINTN                        BufferSize,
@@ -787,7 +787,7 @@ SnpTransmit(
 **/
 EFI_STATUS
 EFIAPI
-SnpReceive(
+SnpUndi32Receive(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINTN                       *HeaderSize OPTIONAL,
   IN OUT UINTN                    *BufferSize,

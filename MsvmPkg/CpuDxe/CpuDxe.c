@@ -10,8 +10,6 @@
 #include "CpuDxe.h"
 #include "CpuMp.h"
 #include "CpuPageTable.h"
-#include <Library/DeviceStateLib.h> // MU_CHANGE
-#define CPU_INTERRUPT_NUM  256
 
 //
 // Global Variables
@@ -20,7 +18,10 @@ BOOLEAN     InterruptState = FALSE;
 EFI_HANDLE  mCpuHandle     = NULL;
 BOOLEAN     mIsFlushingGCD;
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
+
+#define CPU_INTERRUPT_NUM  256
+
 #include <IsolationTypes.h>
 #include <Library/CrashLib.h>
 
@@ -31,11 +32,11 @@ EFI_EVENT   mEndOfDxeEvent;
 
 #endif
 
-IA32_IDT_GATE_DESCRIPTOR  gIdtTable[CPU_INTERRUPT_NUM] = { 0 };
-
+IA32_IDT_GATE_DESCRIPTOR  gIdtTable[CPU_INTERRUPT_NUM];
 BOOLEAN                   mStrictIsolation;
 UINT32                    mIsolationType;
-// MS_HYP_CHANGE END
+
+#endif // MS_HYP_CHANGE
 
 BOOLEAN     mIsAllocatingPageTable = FALSE;
 UINT64      mTimerPeriod           = 0;
@@ -53,7 +54,8 @@ EFI_CPU_ARCH_PROTOCOL  gCpu = {
   4                           // DmaBufferAlignment
 };
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
+
 EFI_CPU2_PROTOCOL gCpu2 = {
   CpuWaitForAndEnableInterrupt,
 };
@@ -73,7 +75,8 @@ BdRegisterCpuInterruptHandler (
   IN EFI_EXCEPTION_TYPE         InterruptType,
   IN EFI_CPU_INTERRUPT_HANDLER  InterruptHandler
   );
-// MS_HYP_CHANGE END
+
+#endif // MS_HYP_CHANGE
 
 //
 // CPU Arch Protocol Functions
@@ -177,7 +180,9 @@ CpuGetInterruptState (
     return EFI_INVALID_PARAMETER;
   }
 
-  *State = GetInterruptState ();  // MS_HYP_CHANGE
+#if MS_HYP_CHANGE
+  *State = GetInterruptState ();
+#endif
   return EFI_SUCCESS;
 }
 
@@ -266,11 +271,11 @@ CpuGetTimerValue (
   OUT UINT64                 *TimerPeriod OPTIONAL
   )
 {
-  // MS_HYP_CHANGE BEGIN
-  // UINT64  BeginValue;
-  // UINT64  EndValue;
-  // MS_HYP_CHANGE END
-  
+#if !MS_HYP_CHANGE
+  UINT64  BeginValue;
+  UINT64  EndValue;
+#endif // MS_HYP_CHANGE
+
   if (TimerValue == NULL) {
     return EFI_INVALID_PARAMETER;
   }
@@ -282,12 +287,34 @@ CpuGetTimerValue (
   *TimerValue = AsmReadTsc ();
 
   if (TimerPeriod != NULL) {
-      // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
       //
       // BugBug: Hard coded. Don't know how to do this generically
       //
       *TimerPeriod = 1000000000;
-      // MS_HYP_CHANGE END
+#else // MS_HYP_CHANGE above
+    if (mTimerPeriod == 0) {
+      //
+      // Read time stamp counter before and after delay of 100 microseconds
+      //
+      BeginValue = AsmReadTsc ();
+      MicroSecondDelay (100);
+      EndValue = AsmReadTsc ();
+      //
+      // Calculate the actual frequency
+      //
+      mTimerPeriod = DivU64x64Remainder (
+                       MultU64x32 (
+                         1000 * 1000 * 1000,
+                         100
+                         ),
+                       EndValue - BeginValue,
+                       NULL
+                       );
+    }
+
+    *TimerPeriod = mTimerPeriod;
+#endif // MS_HYP_CHANGE
   }
 
   return EFI_SUCCESS;
@@ -345,11 +372,11 @@ CpuSetMemoryAttributes (
 {
   RETURN_STATUS             Status;
   MTRR_MEMORY_CACHE_TYPE    CacheType;
-  // MS_HYP_CHANGE BEGIN
-  // EFI_STATUS                MpStatus;
-  // EFI_MP_SERVICES_PROTOCOL  *MpService;
-  // MTRR_SETTINGS             MtrrSettings;
-  // MS_HYP_CHANGE END
+#if !MS_HYP_CHANGE
+  EFI_STATUS                MpStatus;
+  EFI_MP_SERVICES_PROTOCOL  *MpService;
+  MTRR_SETTINGS             MtrrSettings;
+#endif // MS_HYP_CHANGE END
   UINT64                    CacheAttributes;
   UINT64                    MemoryAttributes;
   MTRR_MEMORY_CACHE_TYPE    CurrentCacheType;
@@ -388,11 +415,11 @@ CpuSetMemoryAttributes (
   }
 
   if (CacheAttributes != 0) {
-    // MS_HYP_CHANGE BEGIN
-    // if (!IsMtrrSupported ()) {
-    //   return EFI_UNSUPPORTED;
-    // }
-    // MS_HYP_CHANGE END
+#if !MS_HYP_CHANGE
+    if (!IsMtrrSupported ()) {
+      return EFI_UNSUPPORTED;
+    }
+#endif // MS_HYP_CHANGE END
 
     switch (CacheAttributes) {
       case EFI_MEMORY_UC:
@@ -419,7 +446,9 @@ CpuSetMemoryAttributes (
         return EFI_INVALID_PARAMETER;
     }
 
-    // MS_HYP_CHANGE BEGIN
+    CurrentCacheType = MtrrGetMemoryAttribute (BaseAddress);
+
+#if MS_HYP_CHANGE
     //
     // If this system enforces hardware isolation with no paravisor, then
     // cache attribute changes are not possible.  However, this routine may
@@ -427,14 +456,14 @@ CpuSetMemoryAttributes (
     // writeback attributes.  If the cache type is writeback, then ignore any
     // attribute changes.
     //
-    CurrentCacheType = MtrrGetMemoryAttribute (BaseAddress);
-
     if (!mStrictIsolation && (CacheType != CacheWriteBack) && (CurrentCacheType != CacheType)) {
 
       if (!IsMtrrSupported ()) {
           return EFI_INVALID_PARAMETER;
       }
-    // MS_HYP_CHANGE END
+#else
+    if (CurrentCacheType != CacheType) {
+#endif // MS_HYP_CHANGE
 
       //
       // call MTRR library function
@@ -444,31 +473,31 @@ CpuSetMemoryAttributes (
                  Length,
                  CacheType
                  );
-      // MS_HYP_CHANGE BEGIN
-      // if (!RETURN_ERROR (Status)) {
-      //   MpStatus = gBS->LocateProtocol (
-      //                     &gEfiMpServiceProtocolGuid,
-      //                     NULL,
-      //                     (VOID **)&MpService
-      //                     );
-      //   //
-      //   // Synchronize the update with all APs
-      //   //
-      //   if (!EFI_ERROR (MpStatus)) {
-      //     MtrrGetAllMtrrs (&MtrrSettings);
-      //     MpStatus = MpService->StartupAllAPs (
-      //                             MpService,          // This
-      //                             SetMtrrsFromBuffer, // Procedure
-      //                             FALSE,              // SingleThread
-      //                             NULL,               // WaitEvent
-      //                             0,                  // TimeoutInMicrosecsond
-      //                             &MtrrSettings,      // ProcedureArgument
-      //                             NULL                // FailedCpuList
-      //                             );
-      //     ASSERT (MpStatus == EFI_SUCCESS || MpStatus == EFI_NOT_STARTED);
-      //   }
-      // }
-      // MS_HYP_CHANGE END
+#if !MS_HYP_CHANGE
+      if (!RETURN_ERROR (Status)) {
+        MpStatus = gBS->LocateProtocol (
+                          &gEfiMpServiceProtocolGuid,
+                          NULL,
+                          (VOID **)&MpService
+                          );
+        //
+        // Synchronize the update with all APs
+        //
+        if (!EFI_ERROR (MpStatus)) {
+          MtrrGetAllMtrrs (&MtrrSettings);
+          MpStatus = MpService->StartupAllAPs (
+                                  MpService,          // This
+                                  SetMtrrsFromBuffer, // Procedure
+                                  FALSE,              // SingleThread
+                                  NULL,               // WaitEvent
+                                  0,                  // TimeoutInMicrosecsond
+                                  &MtrrSettings,      // ProcedureArgument
+                                  NULL                // FailedCpuList
+                                  );
+          ASSERT (MpStatus == EFI_SUCCESS || MpStatus == EFI_NOT_STARTED);
+        }
+      }
+#endif // MS_HYP_CHANGE END
 
       if (EFI_ERROR (Status)) {
         return Status;
@@ -482,7 +511,7 @@ CpuSetMemoryAttributes (
   return AssignMemoryPageAttributes (NULL, BaseAddress, Length, MemoryAttributes, NULL);
 }
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
 VOID EFIAPI MsEnableInterruptsAndSleep (VOID);
 /**
   Waits for an interrupt to arrive, then enables CPU interrupts.
@@ -502,7 +531,7 @@ CpuWaitForAndEnableInterrupt (
 
   return EFI_SUCCESS;
 }
-// MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE END
 
 /**
   Gets GCD Mem Space type from MTRR Type.
@@ -667,7 +696,8 @@ SetGcdMemorySpaceAttributes (
 
   return EFI_SUCCESS;
 }
-// MS_HYP_CHANGE BEGIN
+
+#if MS_HYP_CHANGE
 
 UINT64      mValidMtrrAddressMask;
 UINT64      mValidMtrrBitsMask;
@@ -756,7 +786,7 @@ InitializeMtrrMask (
   mValidMtrrBitsMask    = LShiftU64 (1, PhysicalAddressBits) - 1;
   mValidMtrrAddressMask = mValidMtrrBitsMask & 0xfffffffffffff000ULL;
 }
-// MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
 /**
   Refreshes the GCD Memory Space attributes according to MTRRs.
@@ -785,7 +815,7 @@ RefreshMemoryAttributesFromMtrr (
                   );
   ASSERT_EFI_ERROR (Status);
 
-  // MS_HYP_CHANGE BEGIN
+#if !MS_HYP_CHANGE
   //
   // In 2405 of mu_basecore, calling the newer API
   // MtrrGetMemoryAttributesInMtrrSettings() will trigger assertions if invalid MTRR
@@ -802,7 +832,6 @@ RefreshMemoryAttributesFromMtrr (
   // N.B. this below upstream logic can only be enabled when OpenVMM sets MTRRs in an
   //   architecturally-correct way (not with Hyper-V compatibility).  Until then,
   //   also fall back to Hyper-V specific code that can deal with the peculiar MTRRs.
-  /*
   if (PcdGetBool(PcdMtrrsInitializedAtLoad))
   {
     RETURN_STATUS                    ReturnStatus;
@@ -828,8 +857,8 @@ RefreshMemoryAttributesFromMtrr (
     }
   }
   else
+#endif
   {
-  */
     UINTN                            SubIndex;
     UINT64                           RegValue;
     EFI_PHYSICAL_ADDRESS             BaseAddress;
@@ -984,8 +1013,7 @@ RefreshMemoryAttributesFromMtrr (
       Length,
       Attributes
       );
-  //}
-  // MS_HYP_CHANGE END
+  }
 
   //
   // Free memory space map allocated by GCD service GetMemorySpaceMap ()
@@ -1030,12 +1058,11 @@ RefreshGcdMemoryAttributes (
     RefreshMemoryAttributesFromMtrr ();
   }
 
-  // MS_HYP_CHANGE BEGIN
-  //if (IsPagingAndPageAddressExtensionsEnabled ()) {
-  //  DEBUG ((DEBUG_INFO, "Syncing GCD...\n")); // MU_CHANGE
-  //  RefreshGcdMemoryAttributesFromPaging ();
-  //}
-  // MS_HYP_CHANGE END
+#if !MS_HYP_CHANGE
+  if (IsPagingAndPageAddressExtensionsEnabled ()) {
+    RefreshGcdMemoryAttributesFromPaging ();
+  }
+#endif // MS_HYP_CHANGE
 
   mIsFlushingGCD = FALSE;
 }
@@ -1064,11 +1091,15 @@ InitInterruptDescriptorTable (
 
   AsmReadIdtr (&IdtDescriptor);
   IdtEntryCount = (IdtDescriptor.Limit + 1) / sizeof (IA32_IDT_GATE_DESCRIPTOR);
-  if (IdtEntryCount < CPU_INTERRUPT_NUM) {
+  if (IdtEntryCount < X86_CPU_INTERRUPT_NUM) {
     //
     // Increase Interrupt Descriptor Table and Copy the old IDT table in
     //
-    IdtTable = gIdtTable; // MS_HYP_CHANGE
+#if MS_HYP_CHANGE
+    IdtTable = gIdtTable;
+#else
+    IdtTable = AllocateZeroPool (sizeof (IA32_IDT_GATE_DESCRIPTOR) * X86_CPU_INTERRUPT_NUM);
+#endif
     ASSERT (IdtTable != NULL);
     CopyMem (IdtTable, (VOID *)IdtDescriptor.Base, sizeof (IA32_IDT_GATE_DESCRIPTOR) * IdtEntryCount);
 
@@ -1076,7 +1107,7 @@ InitInterruptDescriptorTable (
     // Load Interrupt Descriptor Table
     //
     IdtDescriptor.Base  = (UINTN)IdtTable;
-    IdtDescriptor.Limit = (UINT16)(sizeof (IA32_IDT_GATE_DESCRIPTOR) * CPU_INTERRUPT_NUM - 1);
+    IdtDescriptor.Limit = (UINT16)(sizeof (IA32_IDT_GATE_DESCRIPTOR) * X86_CPU_INTERRUPT_NUM - 1);
     AsmWriteIdtr (&IdtDescriptor);
   }
 
@@ -1084,7 +1115,7 @@ InitInterruptDescriptorTable (
   ASSERT_EFI_ERROR (Status);
 }
 
-#if defined(MDE_CPU_X64)
+#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
 
 /**
   Callback function for end of DXE.
@@ -1208,8 +1239,7 @@ EndOfDxeCallback (
   gBS->CloseEvent(mEndOfDxeEvent);
 }
 
-#endif
-
+#endif // MS_HYP_CHANGE && defined(MDE_CPU_X64)
 
 /**
   Callback function for idle events.
@@ -1474,20 +1504,19 @@ InitializeCpu (
   EFI_STATUS  Status;
   EFI_EVENT   IdleLoopEvent;
 
-  // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
   //
   // Determine whether hardware isolation is being enforced.  If so, then
   // certain aspects of hardware initialization are not supported when no
   // paravisor is present to handle them.
   //
   if (IsHardwareIsolatedNoParavisor())
-
   {
       mStrictIsolation = TRUE;
   }
 
   mIsolationType = GetIsolationType();
-  // MS_HYP_CHANGE END
+#endif// MS_HYP_CHANGE
 
   InitializePageTableLib ();
 
@@ -1508,7 +1537,7 @@ InitializeCpu (
   //
   InitInterruptDescriptorTable ();
   
-  // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
   //
   // Enable the local APIC for Virtual Wire Mode.
   //
@@ -1516,7 +1545,7 @@ InitializeCpu (
   {
     ProgramVirtualWireMode ();
   }
-  // MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
   //
   // Install CPU Architectural Protocol
@@ -1525,10 +1554,10 @@ InitializeCpu (
                   &mCpuHandle,
                   &gEfiCpuArchProtocolGuid,
                   &gCpu,
-                  // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
                   &gEfiCpu2ProtocolGuid,
                   &gCpu2,
-                  // MS_HYP_CHANGE ENG
+#endif // MS_HYP_CHANGE
                   NULL
                   );
   ASSERT_EFI_ERROR (Status);
@@ -1548,14 +1577,12 @@ InitializeCpu (
   //
   RefreshGcdMemoryAttributes ();
 
-  // MU_CHANGE START: Install blank protocol to signal the end of the GCD sync
-  gBS->InstallMultipleProtocolInterfaces (
-         &ImageHandle,
-         &gEdkiiGcdSyncCompleteProtocolGuid,
-         NULL,
-         NULL
-         );
-  // MU_CHANGE END
+#if !MS_HYP_CHANGE
+  //
+  // Add and allocate local APIC memory mapped space
+  //
+  AddLocalApicMemorySpace (ImageHandle);
+#endif
 
   //
   // Setup a callback for idle events
@@ -1569,14 +1596,17 @@ InitializeCpu (
                   &IdleLoopEvent
                   );
 
-  // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
   if (EFI_ERROR(Status))
   {
     DEBUG((EFI_D_ERROR, "%a: Failed to create the idle events callback.\n", __func__));
     goto Cleanup;
   }
+#else
+  ASSERT_EFI_ERROR (Status);
+#endif // MS_HYP_CHANGE
 
-#if defined(MDE_CPU_X64)
+#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
   //
   // Setup a callback for end of DXE if this is a TDX guest with no paravisor.
   //
@@ -1598,18 +1628,22 @@ InitializeCpu (
       }
     }
   }
-#endif
+#endif // MS_HYP_CHANGE && MDE_CPU_X64
+
   // MS_HYP TODO: do we want this?
-  // MU_CHANGE START
-  //if ((GetDeviceState () & DEVICE_STATE_UNIT_TEST_MODE) != 0) {
-  //  InstallMemoryProtectionNonstopModeProtocol (mCpuHandle);
-  //}
+#if !MU_CHANGE
+  if ((GetDeviceState () & DEVICE_STATE_UNIT_TEST_MODE) != 0) {
+    InstallMemoryProtectionNonstopModeProtocol (mCpuHandle);
+  }
+#endif // MU_CHANGE
 
-  // MU_CHANGE END
-  
+#if !MS_HYP_CHANGE
+  InitializeMpSupport ();
+#endif
 
+#if MS_HYP_CHANGE
 Cleanup:
-  // MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
   return Status;
 }

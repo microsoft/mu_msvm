@@ -11,7 +11,6 @@
 
 #include <IndustryStandard/PeImage.h>
 #include <Protocol/MemoryAttribute.h>
-#include <Protocol/MemoryProtectionNonstopMode.h> // MU_CHANGE
 
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PSE              BIT0
 #define PAGE_TABLE_LIB_PAGING_CONTEXT_IA32_X64_ATTRIBUTES_PAE              BIT1
@@ -166,23 +165,7 @@ InstallEfiMemoryAttributeProtocol (
   IN EFI_HANDLE  Handle
   );
 
-// MU_CHANGE START
-
-/**
-  Install Memory Protection Nonstop Protocol.
-
-  @param Handle A pointer to the EFI_HANDLE on which the interface is to be installed
-**/
-VOID
-InstallMemoryProtectionNonstopModeProtocol (
-  IN EFI_HANDLE  Handle
-  );
-
-// MU_CHANGE END
-
-// MS_HYP_CHANGE BEGIN
-
-#if defined(MDE_CPU_X64)
+#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
 
 /*
   Initialize the page tables for MP support in TDX.
@@ -194,8 +177,5 @@ InitializeMpPageTables (
   IN UINT64 ApMailbox
   );
 
-#endif
-
-// MS_HYP_CHANGE END
-
-#endif
+#endif // MS_HYP_CHANGE && MDE_CPU_X64
+#endif // _PAGE_TABLE_LIB_H_

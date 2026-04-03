@@ -41,25 +41,21 @@
 #include <Guid/IdleLoopEvent.h>
 #include <Guid/VectorHandoffTable.h>
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
 #include <Protocol/Cpu2.h>
 #include <Protocol/EfiHv.h>
-// MS_HYP_CHANGE BEGIN
+#endif // MS_HYP_CHANGE
 
-// MU_CHANGE START Remove Nonstop Mode
+#if MU_CHANGE // Remove Nonstop Mode
 #define HEAP_GUARD_NONSTOP_MODE  FALSE
-
-/*
+#define NULL_DETECTION_NONSTOP_MODE  FALSE
+#else
 #define HEAP_GUARD_NONSTOP_MODE       \
         ((PcdGet8 (PcdHeapGuardPropertyMask) & (BIT6|BIT4|BIT1|BIT0)) > BIT6)
-*/
-#define NULL_DETECTION_NONSTOP_MODE  FALSE
 
-/*
 #define NULL_DETECTION_NONSTOP_MODE   \
         ((PcdGet8 (PcdNullPointerDetectionPropertyMask) & (BIT6|BIT0)) > BIT6)
-*/
-// MU_CHANGE END
+#endif // MU_CHANGE
 
 /**
   Flush CPU data cache. If the instruction cache is fully coherent

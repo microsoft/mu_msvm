@@ -145,7 +145,7 @@ PxeTransmit (
 **/
 EFI_STATUS
 EFIAPI
-SnpTransmit(
+SnpUndi32Transmit(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        HeaderSize,
   IN UINTN                        BufferSize,

@@ -36,13 +36,11 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
         return [
             RequiredSubmodule("MU_BASECORE"),
             RequiredSubmodule("Common/MU"),
-            RequiredSubmodule("Common/MU_TIANO"),
             RequiredSubmodule("Feature/DEBUGGER"),
-            RequiredSubmodule("Silicon/ARM/MU_TIANO"),
         ]
 
     def GetPackagesPath(self):
-        pp = ('MU_BASECORE', 'Common/MU', 'Common/MU_TIANO', 'Feature/DEBUGGER', 'Silicon/ARM/MU_TIANO')
+        pp = ('MU_BASECORE', 'Common/MU', 'Feature/DEBUGGER')
         ws = self.GetWorkspaceRoot()
         return [os.path.join(ws, x) for x in pp]
 

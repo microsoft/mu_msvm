@@ -5,16 +5,14 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-
-#include <Library/DebugLib.h> // MS_HYP_CHANGE
-
 #include "CpuExceptionCommon.h"
 
-// MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
+#include <Library/DebugLib.h>
 #include <Hv/HvGuestMsr.h>
 CHAR8 mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
 UINTN mDebugCursor;
-// MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
 //
 // Error code flag indicating whether or not an error code will be
@@ -101,23 +99,33 @@ InternalPrintMessage (
 {
   CHAR8    Buffer[MAX_DEBUG_MESSAGE_LENGTH];
   VA_LIST  Marker;
-  UINTN    Bytes;  // MS_HYP_CHANGE
-  //
-  // Convert the message to an ASCII String
-  //
-  VA_START (Marker, Format);
-  Bytes = AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker); // MS_HYP_CHANGE
-  VA_END (Marker);
 
-  //
-  // Send the print string to debug       // MS_HYP_CHANGE
-  //
-  DEBUG((DEBUG_ERROR, "%a", Buffer));     // MS_HYP_CHANGE
+  VA_START (Marker, Format);
+
+#if MS_HYP_CHANGE
+
+  // Convert the message to an ASCII String
+  UINTN Bytes = AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker);
+
+  // Send the print string to debug
+  DEBUG((DEBUG_ERROR, "%a", Buffer));
 
   // Copy to the debug page, if it fits
   Bytes = MIN(Bytes, (sizeof mDebugBuffer) - (sizeof(mDebugBuffer[0]) * mDebugCursor));
   CopyMem(&mDebugBuffer[mDebugCursor], &Buffer, Bytes);
   mDebugCursor += Bytes;
+
+#else
+
+  // Convert the message to an ASCII String
+  AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker);
+
+  // Send the print string to a Serial Port
+  SerialPortWrite ((UINT8 *)Buffer, AsciiStrLen (Buffer));
+
+#endif
+
+  VA_END (Marker);
 }
 
 /**

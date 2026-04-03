@@ -57,7 +57,7 @@ PxeShutdown (
 **/
 EFI_STATUS
 EFIAPI
-SnpShutdown(
+SnpUndi32Shutdown(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   )
 {

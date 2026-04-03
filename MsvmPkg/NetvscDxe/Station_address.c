@@ -87,7 +87,7 @@ PxeGetStnAddr (
 **/
 EFI_STATUS
 EFIAPI
-SnpStationAddress(
+SnpUndi32StationAddress(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN EFI_MAC_ADDRESS              *New OPTIONAL

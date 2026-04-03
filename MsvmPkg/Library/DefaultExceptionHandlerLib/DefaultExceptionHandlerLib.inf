@@ -9,7 +9,7 @@
 #
 #**/
 
-#Override : 00000002 | ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf | 96fee854bb34f7b8d099bdf5679984a3 | 2025-05-02T00-01-31 | 1abd9da5b6f5c85089b20eae81285d978709c9bc
+#Override : 00000002 | ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf | 74900d628d2a9a7a18aedd6c345ccd0f | 2025-05-02T00-01-31 | 1abd9da5b6f5c85089b20eae81285d978709c9bc
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -21,9 +21,6 @@
 
 [Sources.common]
   DefaultExceptionHandlerUefi.c
-
-[Sources.ARM]
-  Arm/DefaultExceptionHandler.c
 
 [Sources.AARCH64]
   AArch64/DefaultExceptionHandler.c
