@@ -23,7 +23,7 @@ PxeStop (
   SNP_DRIVER  *Snp
   )
 {
-  // MS_HYP_CHANGE BEGIN
+#if MS_HYP_CHANGE
   switch (Snp->Mode.State)
   {
     case EfiSimpleNetworkStarted:
@@ -35,8 +35,41 @@ PxeStop (
     default:
       return EFI_DEVICE_ERROR;
   }
-  // MS_HYP_CHANGE END
+#else
+  if (Snp->Cdb == NULL) {
+    DEBUG ((DEBUG_ERROR, "%a: Snp->Cdb is NULL\n", __func__));
+    return EFI_DEVICE_ERROR;
+  }
 
+  Snp->Cdb->OpCode    = PXE_OPCODE_STOP;
+  Snp->Cdb->OpFlags   = PXE_OPFLAGS_NOT_USED;
+  Snp->Cdb->CPBsize   = PXE_CPBSIZE_NOT_USED;
+  Snp->Cdb->DBsize    = PXE_DBSIZE_NOT_USED;
+  Snp->Cdb->CPBaddr   = PXE_CPBADDR_NOT_USED;
+  Snp->Cdb->DBaddr    = PXE_DBADDR_NOT_USED;
+  Snp->Cdb->StatCode  = PXE_STATCODE_INITIALIZE;
+  Snp->Cdb->StatFlags = PXE_STATFLAGS_INITIALIZE;
+  Snp->Cdb->IFnum     = Snp->IfNum;
+  Snp->Cdb->Control   = PXE_CONTROL_LAST_CDB_IN_LIST;
+
+  //
+  // Issue UNDI command
+  //
+  DEBUG ((DEBUG_NET, "\nsnp->undi.stop()  "));
+
+  (*Snp->IssueUndi32Command)((UINT64)(UINTN)Snp->Cdb);
+
+  if (Snp->Cdb->StatCode != PXE_STATCODE_SUCCESS) {
+    DEBUG (
+      (DEBUG_WARN,
+       "\nsnp->undi.stop()  %xh:%xh\n",
+       Snp->Cdb->StatFlags,
+       Snp->Cdb->StatCode)
+      );
+
+    return EFI_DEVICE_ERROR;
+  }
+#endif
   //
   // Set simple network state to Stopped and return success.
   //
@@ -67,7 +100,7 @@ PxeStop (
 **/
 EFI_STATUS
 EFIAPI
-SnpStop(
+SnpUndi32Stop(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   )
 {

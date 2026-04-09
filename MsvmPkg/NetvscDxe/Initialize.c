@@ -85,13 +85,16 @@ PxeInit (
 **/
 EFI_STATUS
 EFIAPI
-SnpInitialize(
+SnpUndi32Initialize(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        ExtraRxBufferSize OPTIONAL,
   IN UINTN                        ExtraTxBufferSize OPTIONAL
   )
 {
   EFI_STATUS  EfiStatus;
+#if MU_CHANGE
+  EFI_STATUS  EventStatus;
+#endif
   SNP_DRIVER  *Snp;
   EFI_TPL     OldTpl;
 
@@ -159,6 +162,13 @@ SnpInitialize(
 
 ON_EXIT:
   gBS->RestoreTPL (OldTpl);
+
+#if MU_CHANGE // [BEGIN] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
+  if (!EFI_ERROR (EfiStatus)) {
+    EventStatus = EfiNamedEventSignal (&gSnpNetworkInitializedEventGuid);
+    ASSERT_EFI_ERROR (EventStatus);
+  }
+#endif // MU_CHANGE [END] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
 
   return EfiStatus;
 }

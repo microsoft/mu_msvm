@@ -571,19 +571,19 @@ Return Value:
     snpDriver->Signature  = SNP_DRIVER_SIGNATURE;
 
     snpDriver->Snp.Revision       = EFI_SIMPLE_NETWORK_PROTOCOL_REVISION;
-    snpDriver->Snp.Start          = SnpStart;
-    snpDriver->Snp.Stop           = SnpStop;
-    snpDriver->Snp.Initialize     = SnpInitialize;
-    snpDriver->Snp.Reset          = SnpReset;
-    snpDriver->Snp.Shutdown       = SnpShutdown;
-    snpDriver->Snp.ReceiveFilters = SnpReceiveFilters;
-    snpDriver->Snp.StationAddress = SnpStationAddress;
-    snpDriver->Snp.Statistics     = SnpStatistics;
-    snpDriver->Snp.MCastIpToMac   = SnpMcastIpToMac;
-    snpDriver->Snp.NvData         = SnpNvData;
-    snpDriver->Snp.GetStatus      = SnpGetStatus;
-    snpDriver->Snp.Transmit       = SnpTransmit;
-    snpDriver->Snp.Receive        = SnpReceive;
+    snpDriver->Snp.Start          = SnpUndi32Start;
+    snpDriver->Snp.Stop           = SnpUndi32Stop;
+    snpDriver->Snp.Initialize     = SnpUndi32Initialize;
+    snpDriver->Snp.Reset          = SnpUndi32Reset;
+    snpDriver->Snp.Shutdown       = SnpUndi32Shutdown;
+    snpDriver->Snp.ReceiveFilters = SnpUndi32ReceiveFilters;
+    snpDriver->Snp.StationAddress = SnpUndi32StationAddress;
+    snpDriver->Snp.Statistics     = SnpUndi32Statistics;
+    snpDriver->Snp.MCastIpToMac   = SnpUndi32McastIpToMac;
+    snpDriver->Snp.NvData         = SnpUndi32NvData;
+    snpDriver->Snp.GetStatus      = SnpUndi32GetStatus;
+    snpDriver->Snp.Transmit       = SnpUndi32Transmit;
+    snpDriver->Snp.Receive        = SnpUndi32Receive;
     snpDriver->Snp.WaitForPacket  = NULL;
 
     snpDriver->Snp.Mode           = &snpDriver->Mode;
@@ -659,7 +659,7 @@ Return Value:
     //
     // Calling Snp->Start
     //
-    status = SnpStart(&snpDriver->Snp);
+    status = SnpUndi32Start(&snpDriver->Snp);
 
     if (status != EFI_SUCCESS)
     {
@@ -674,7 +674,7 @@ Return Value:
 
     if (EFI_ERROR(status))
     {
-        SnpStop(&snpDriver->Snp);
+        SnpUndi32Stop(&snpDriver->Snp);
         goto Cleanup;
     }
 
@@ -869,7 +869,7 @@ SimpleNetworkDriverStop(
 //
 // Simple Network Protocol Driver Global Variables
 //
-EFI_DRIVER_BINDING_PROTOCOL mSimpleNetworkDriverBinding = {
+EFI_DRIVER_BINDING_PROTOCOL gSimpleNetworkDriverBinding = {
     SimpleNetworkDriverSupported,
     SimpleNetworkDriverStart,
     SimpleNetworkDriverStop,
@@ -894,7 +894,7 @@ EFI_DRIVER_BINDING_PROTOCOL mSimpleNetworkDriverBinding = {
 **/
 EFI_STATUS
 EFIAPI
-InitializeSnpDriver(
+InitializeSnpNiiDriver(
     IN  EFI_HANDLE       ImageHandle,
     IN  EFI_SYSTEM_TABLE *SystemTable
     )
@@ -902,7 +902,7 @@ InitializeSnpDriver(
     return EfiLibInstallDriverBindingComponentName2(
         ImageHandle,
         SystemTable,
-        &mSimpleNetworkDriverBinding,
+        &gSimpleNetworkDriverBinding,
         ImageHandle,
         &gSimpleNetworkComponentName,
         &gSimpleNetworkComponentName2);

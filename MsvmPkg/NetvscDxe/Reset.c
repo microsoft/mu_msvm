@@ -88,7 +88,7 @@ Cleanup:
 **/
 EFI_STATUS
 EFIAPI
-SnpReset(
+SnpUndi32Reset(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ExtendedVerification
   )

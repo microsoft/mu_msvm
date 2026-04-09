@@ -225,7 +225,7 @@ PxeRecvFilterRead (
 **/
 EFI_STATUS
 EFIAPI
-SnpReceiveFilters(
+SnpUndi32ReceiveFilters(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINT32                       Enable,
   IN UINT32                       Disable,

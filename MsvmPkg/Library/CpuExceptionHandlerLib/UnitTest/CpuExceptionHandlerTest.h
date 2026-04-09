@@ -55,7 +55,7 @@
 #define UNIT_TEST_APP_NAME     "Cpu Exception Handler Lib Unit Tests"
 #define UNIT_TEST_APP_VERSION  "1.0"
 
-#define  CPU_INTERRUPT_NUM       256
+#define  X86_CPU_INTERRUPT_NUM       256
 #define  SPEC_MAX_EXCEPTION_NUM  22
 #define  CR4_RESERVED_BIT        BIT15
 
@@ -212,7 +212,7 @@ CompareCpuContext (
   );
 
 /**
-  Get EFI_MP_SERVICES_PROTOCOL/EDKII_PEI_MP_SERVICES2_PPI pointer.
+  Get EFI_MP_SERVICES_PROTOCOL/EFI_PEI_MP_SERVICES2_PPI pointer.
 
   @param[out] MpServices    Pointer to the MP_SERVICES buffer
 

@@ -11,9 +11,10 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include "Snp.h"
 
 /**
-  Get the status of the interrupts, get the list of transmit
-  buffers that completed transmitting.. This function will also update the MediaPresent
-  field of EFI_SIMPLE_NETWORK_MODE.
+  Call undi to get the status of the interrupts, get the list of recycled transmit
+  buffers that completed transmitting. The recycled transmit buffer address will
+  be saved into Snp->RecycledTxBuf. This function will also update the MediaPresent
+  field of EFI_SIMPLE_NETWORK_MODE if UNDI support it.
 
   @param[in]   Snp                     Pointer to snp driver structure.
   @param[out]  InterruptStatusPtr      A non null pointer to contain the interrupt
@@ -125,7 +126,7 @@ Arguments:
 **/
 EFI_STATUS
 EFIAPI
-SnpGetStatus(
+SnpUndi32GetStatus(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINT32                      *InterruptStatus  OPTIONAL,
   OUT VOID                        **TxBuf           OPTIONAL
@@ -145,11 +146,11 @@ SnpGetStatus(
 
   Snp = EFI_SIMPLE_NETWORK_DEV_FROM_THIS (This);
 
-  OldTpl = gBS->RaiseTPL (TPL_CALLBACK);
-
   if (Snp == NULL) {
     return EFI_DEVICE_ERROR;
   }
+
+  OldTpl = gBS->RaiseTPL (TPL_CALLBACK);
 
   switch (Snp->Mode.State) {
     case EfiSimpleNetworkInitialized:

@@ -91,7 +91,7 @@ PxeNvDataRead (
 **/
 EFI_STATUS
 EFIAPI
-SnpNvData(
+SnpUndi32NvData(
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ReadWrite,
   IN UINTN                        Offset,

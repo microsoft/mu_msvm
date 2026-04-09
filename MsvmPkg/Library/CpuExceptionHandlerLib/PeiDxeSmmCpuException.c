@@ -9,10 +9,10 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/DebugLib.h>
 #include <Library/CcExitLib.h>
 #include "CpuExceptionCommon.h"
-
-
-#include <Library/CrashLib.h>   // MS_HYP_CHANGE
-#include <Library/DebugLib.h>   // MS_HYP_CHANGE
+#if MS_HYP_CHANGE
+#include <Library/CrashLib.h>
+#include <Library/DebugLib.h>
+#endif
 
 /**
   Internal worker function for common exception handler.
@@ -28,12 +28,14 @@ CommonExceptionHandlerWorker (
   IN EXCEPTION_HANDLER_DATA  *ExceptionHandlerData
   )
 {
-  //EFI_STATUS                 Status;
+#if !MS_HYP_CHANGE
+  EFI_STATUS                 Status;
+#endif
   EXCEPTION_HANDLER_CONTEXT  *ExceptionHandlerContext;
   RESERVED_VECTORS_DATA      *ReservedVectors;
   EFI_CPU_INTERRUPT_HANDLER  *ExternalInterruptHandler;
 
-/* // MS_HYP_CHANGE BEGIN   TODO: VC/VE Exceptions handled in a different style
+#if !MS_HYP_CHANGE // TODO: VC/VE Exceptions handled in a different style
   switch (ExceptionType) {
     case VC_EXCEPTION:
       //
@@ -73,7 +75,7 @@ CommonExceptionHandlerWorker (
       break;
   }
 
-*/  // MS_HYP_CHANGE END
+#endif // MS_HYP_CHANGE
 
   ExceptionHandlerContext  = (EXCEPTION_HANDLER_CONTEXT *)(UINTN)(SystemContext.SystemContextIa32);
   ReservedVectors          = ExceptionHandlerData->ReservedVectors;
@@ -141,8 +143,7 @@ CommonExceptionHandlerWorker (
       (ExternalInterruptHandler[ExceptionType] != NULL))
   {
     (ExternalInterruptHandler[ExceptionType])(ExceptionType, SystemContext);
-  } else if (ExceptionType < CPU_EXCEPTION_NUM) {
-
+  } else if (ExceptionType < X86_CPU_INTERRUPT_NUM) {
     //
     // Get Spinlock to display CPU information
     //
@@ -150,7 +151,12 @@ CommonExceptionHandlerWorker (
       CpuPause ();
     }
 
-    // MS_HYP_CHANGE BEGIN
+#if !MS_HYP_CHANGE
+    //
+    // Initialize the serial port before dumping.
+    //
+    SerialPortInitialize ();
+#endif
 
     //
     // Display ExceptionType, CPU information and Image information
@@ -160,19 +166,27 @@ CommonExceptionHandlerWorker (
     // Release Spinlock of output message
     //
     ReleaseSpinLock (&ExceptionHandlerData->DisplayMessageSpinLock);
+#if MS_HYP_CHANGE
     //
     // Fail fast if needn't to execute old IDT handler further
     //
+#else
+    //
+    // Enter a dead loop if needn't to execute old IDT handler further
+    //
+#endif
     if (ReservedVectors[ExceptionType].Attribute != EFI_VECTOR_HANDOFF_HOOK_BEFORE) {
-
+#if !MS_HYP_CHANGE
+      CpuDeadLoop ();
+#else
       FailFast(
         ExceptionType,
         SystemContext.SystemContextX64->ExceptionData,
         0,
         (UINTN)&mDebugBuffer,
         mDebugCursor);
+#endif // MS_HYP_CHANGE
     }
-    // MS_HYP_CHANGE END
   }
 }
 
@@ -284,7 +298,7 @@ InitializeCpuExceptionHandlersWorker (
 
   //
   // Setup the exception handlers according to IDT size, but no more than
-  //   ExceptionHandlerData->IdtEntryCount (32 in PEI and SMM, 256 in DXE) handlers.
+  //   ExceptionHandlerData->IdtEntryCount (256) handlers.
   //
   AsmReadIdtr (&IdtDescriptor);
   IdtEntryCount                       = (IdtDescriptor.Limit + 1) / sizeof (IA32_IDT_GATE_DESCRIPTOR);

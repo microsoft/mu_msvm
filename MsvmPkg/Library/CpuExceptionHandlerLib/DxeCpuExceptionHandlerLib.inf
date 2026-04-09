@@ -8,7 +8,7 @@
 #
 ##
 
-#Override : 00000002 | UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf | 3dcc4c07390c2c199c2e66b5a5d9e5e1 | 2025-05-15T22-54-03 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
+#Override : 00000002 | UefiCpuPkg/Library/CpuExceptionHandlerLib/DxeCpuExceptionHandlerLib.inf | ef007482473a23e95f38f29830197886 | 2025-05-15T22-54-03 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -22,7 +22,7 @@
 #
 # The following information is for reference only and not required by the build tools.
 #
-#  VALID_ARCHITECTURES           = IA32 X64 LOONGARCH64
+#  VALID_ARCHITECTURES           = IA32 X64 LOONGARCH64 RISCV64
 #
 
 [Sources.Ia32]
@@ -49,8 +49,16 @@
   LoongArch/LoongArch64/ArchExceptionHandler.c
   LoongArch/LoongArch64/ExceptionHandlerAsm.S | GCC
 
+[Sources.RISCV64]
+  RiscV/Backtrace.h
+  RiscV/Backtrace.c
+  RiscV/BacktraceHelper.c
+  RiscV/ExceptionLib.c
+  RiscV/ExceptionHandler.h
+  RiscV/ExceptionHandlerAsm.S | GCC
+
 [Pcd]
-  # MU_CHANGE START Remove memory protection PCD references
+  # MU_CHANGE START Use Memory Protection Hob
   # gEfiMdeModulePkgTokenSpaceGuid.PcdCpuStackGuard
   # MU_CHANGE END
   gUefiCpuPkgTokenSpaceGuid.PcdCpuStackSwitchExceptionList
@@ -73,7 +81,7 @@
   PrintLib
   SerialPortLib
   SynchronizationLib
-  DxeMemoryProtectionHobLib ## MU_CHANGE
+  DxeMemoryProtectionHobLib ## MU_CHANGE Use Memory Protection Hob
 
 [LibraryClasses.Ia32, LibraryClasses.X64]
   CcExitLib
@@ -83,5 +91,8 @@
 [LibraryClasses.LoongArch64]
   CpuLib
 
+[Guids.RISCV64]
+  gEfiDebugImageInfoTableGuid
+
 [BuildOptions]
-  XCODE:*_*_X64_NASM_FLAGS = -D NO_ABSOLUTE_RELOCS_IN_TEXT
+  XCODE:*_*_X64_NASM_FLAGS = -D SMM_DXE_NO_ABSOLUTE_RELOCS_IN_TEXT

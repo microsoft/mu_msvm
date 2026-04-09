@@ -14,7 +14,7 @@
 #
 ##
 
-#Override : 00000002 | MdePkg/Library/BaseRngLib/BaseRngLib.inf | 25292aa2b81b68d6f02724e856b48649 | 2025-05-15T22-56-02 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
+#Override : 00000002 | MdePkg/Library/BaseRngLib/BaseRngLib.inf | 78be727569ea11cffdd9211bd907d7d7 | 2025-05-15T22-56-02 | d0e598f6e3ba86b86da8c3f3efd239536dc86aa0
 
 [Defines]
   INF_VERSION                    = 0x00010005
