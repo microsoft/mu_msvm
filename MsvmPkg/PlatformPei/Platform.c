@@ -741,8 +741,26 @@ Return Value:
         );
 
     //
-    // Register ECAM MMIO ranges for each MCFG segment so that DxeCore
-    // can map them in page tables for PciSegmentLib MMIO access.
+    // Read PcieBarApertures first -- these determine which bridges UEFI
+    // should enumerate.  Only ECAM ranges for bridges that have a matching
+    // aperture entry will be declared as MMIO HOBs.  Non-matching ECAM
+    // ranges are intentionally left out of GCD so that no DXE driver
+    // (e.g., VideoDxe) can allocate MMIO space that overlaps them.
+    //
+    UINT64 AperturePtr = PcdGet64(PcdPcieBarAperturesPtr);
+    UINT32 ApertureSize = PcdGet32(PcdPcieBarAperturesSize);
+    UINT32 ApertureCount = 0;
+    PCIE_BAR_APERTURE_ENTRY *Apertures = NULL;
+    if (AperturePtr != 0 && ApertureSize >= sizeof(PCIE_BAR_APERTURE_ENTRY)) {
+        ApertureCount = ApertureSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+        Apertures = (PCIE_BAR_APERTURE_ENTRY *)(UINTN) AperturePtr;
+    }
+
+    //
+    // Register ECAM MMIO ranges only for MCFG segments that have a
+    // matching PcieBarApertures entry.  This ensures DxeCore maps them
+    // in page tables for PciSegmentLib MMIO access, while keeping
+    // non-enumerated ECAM ranges out of GCD entirely.
     //
     typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
         MCFG_ALLOCATION_ENTRY;
@@ -767,6 +785,22 @@ Return Value:
                 if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
                     continue;
                 }
+
+                //
+                // Only create ECAM HOB if this segment has a matching
+                // PcieBarApertures entry.
+                //
+                BOOLEAN HasAperture = FALSE;
+                for (UINT32 j = 0; j < ApertureCount; j++) {
+                    if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
+                        HasAperture = TRUE;
+                        break;
+                    }
+                }
+                if (!HasAperture) {
+                    continue;
+                }
+
                 UINT64 EcamBase = Entries[i].BaseAddress
                     + (UINT64)Entries[i].StartBusNumber * 256 * 4096;
                 UINT64 EcamSize =
@@ -780,11 +814,7 @@ Return Value:
     //
     // Register PCIe BAR MMIO ranges so PciHostBridgeDxe can add them to GCD.
     //
-    UINT64 AperturePtr = PcdGet64(PcdPcieBarAperturesPtr);
-    UINT32 ApertureSize = PcdGet32(PcdPcieBarAperturesSize);
-    if (AperturePtr != 0 && ApertureSize >= sizeof(PCIE_BAR_APERTURE_ENTRY)) {
-        UINT32 ApertureCount = ApertureSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
-        PCIE_BAR_APERTURE_ENTRY *Apertures = (PCIE_BAR_APERTURE_ENTRY *)(UINTN) AperturePtr;
+    if (ApertureCount > 0) {
         for (UINT32 i = 0; i < ApertureCount; i++) {
             if (Apertures[i].LowMmioLength > 0) {
                 HobAddMmioRange(Apertures[i].LowMmioBase, Apertures[i].LowMmioLength);

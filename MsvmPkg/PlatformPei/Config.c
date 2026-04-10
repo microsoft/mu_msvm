@@ -1687,6 +1687,7 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
                 break;
+            }
 
             case UefiConfigPcieBarApertures:
             {

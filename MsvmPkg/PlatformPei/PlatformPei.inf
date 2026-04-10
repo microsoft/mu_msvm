@@ -196,8 +196,6 @@
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
     gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter
-    gMsvmPkgTokenSpaceGuid.PcdHvSintEnabled
-    gMsvmPkgTokenSpaceGuid.PcdAziHsmEnabled
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 
