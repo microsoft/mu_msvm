@@ -236,7 +236,7 @@ PciHostBridgeGetRootBridges (
         Bridges[BridgeCount].Bus.Translation = 0;
 
         //
-        // I/O aperture — empty (no legacy I/O for Gen2 ePCI).
+        // I/O aperture — empty (no legacy I/O supported).
         //
         Bridges[BridgeCount].Io.Base        = MAX_UINT64;
         Bridges[BridgeCount].Io.Limit       = 0;
