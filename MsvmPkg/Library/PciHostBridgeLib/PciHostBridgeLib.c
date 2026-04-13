@@ -185,6 +185,29 @@ PciHostBridgeGetRootBridges (
             goto Cleanup;
         }
 
+        //
+        // Validate that the aperture bus range falls within the MCFG bus range.
+        // If the aperture claims buses outside the MCFG range, PciBusDxe would
+        // attempt config-space reads at ECAM addresses beyond the mapped region.
+        //
+        {
+            UINT32 k;
+            for (k = 0; k < McfgEntryCount; k++) {
+                if (McfgEntries[k].PciSegmentGroupNumber == Segment) {
+                    if (StartBus < McfgEntries[k].StartBusNumber ||
+                        EndBus  > McfgEntries[k].EndBusNumber) {
+                        DEBUG ((DEBUG_ERROR,
+                                "PCIe: Aperture bus range %u..%u exceeds MCFG range %u..%u for segment %u\n",
+                                StartBus, EndBus,
+                                McfgEntries[k].StartBusNumber, McfgEntries[k].EndBusNumber,
+                                Segment));
+                        goto Cleanup;
+                    }
+                    break;
+                }
+            }
+        }
+
         DEBUG ((DEBUG_INFO,
                 "PCIe: Bridge[%u]: Seg=%u Bus=%u..%u EcamBase=%016lx LowMmio=%016lx+%016lx HighMmio=%016lx+%016lx\n",
                 BridgeCount, Segment, StartBus, EndBus, EcamBase,
@@ -223,6 +246,12 @@ PciHostBridgeGetRootBridges (
         // Low MMIO aperture (below 4 GB).
         //
         if (LowMmioLength > 0) {
+            if (LowMmioBase + LowMmioLength < LowMmioBase) {
+                DEBUG ((DEBUG_ERROR,
+                        "PCIe: LowMmio overflow: Base=%016lx Length=%016lx\n",
+                        LowMmioBase, LowMmioLength));
+                goto Cleanup;
+            }
             Bridges[BridgeCount].Mem.Base        = LowMmioBase;
             Bridges[BridgeCount].Mem.Limit       = LowMmioBase + LowMmioLength - 1;
             Bridges[BridgeCount].Mem.Translation = 0;
@@ -236,6 +265,12 @@ PciHostBridgeGetRootBridges (
         // High MMIO aperture (above 4 GB).
         //
         if (HighMmioLength > 0) {
+            if (HighMmioBase + HighMmioLength < HighMmioBase) {
+                DEBUG ((DEBUG_ERROR,
+                        "PCIe: HighMmio overflow: Base=%016lx Length=%016lx\n",
+                        HighMmioBase, HighMmioLength));
+                goto Cleanup;
+            }
             Bridges[BridgeCount].MemAbove4G.Base        = HighMmioBase;
             Bridges[BridgeCount].MemAbove4G.Limit       = HighMmioBase + HighMmioLength - 1;
             Bridges[BridgeCount].MemAbove4G.Translation = 0;
@@ -326,6 +361,7 @@ PciHostBridgeGetRootBridges (
             DEBUG ((DEBUG_ERROR,
                     "PciHostBridgeLib: Failed to reserve ECAM range %016lx+%016lx: %r\n",
                     OrigEcamBase, EcamSize, ReserveStatus));
+            goto Cleanup;
         } else {
             DEBUG ((DEBUG_INFO,
                     "PciHostBridgeLib: Reserved ECAM range %016lx+%016lx\n",
