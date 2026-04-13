@@ -59,6 +59,7 @@ GetPciSegmentInfo (
     McfgSize = PcdGet32 (PcdMcfgSize);
 
     if (McfgPtr == 0 || McfgSize < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
+        DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: No MCFG table\n"));
         *Count = 0;
         return NULL;
     }

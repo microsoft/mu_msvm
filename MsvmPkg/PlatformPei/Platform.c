@@ -812,18 +812,10 @@ Return Value:
     }
 
     //
-    // Register PCIe BAR MMIO ranges so PciHostBridgeDxe can add them to GCD.
+    // Do NOT register PCIe BAR MMIO ranges as HOBs.  PciHostBridgeDxe's
+    // AddMemoryMappedIoSpace() will add them to GCD when it processes the
+    // root bridge apertures.
     //
-    if (ApertureCount > 0) {
-        for (UINT32 i = 0; i < ApertureCount; i++) {
-            if (Apertures[i].LowMmioLength > 0) {
-                HobAddMmioRange(Apertures[i].LowMmioBase, Apertures[i].LowMmioLength);
-            }
-            if (Apertures[i].HighMmioLength > 0) {
-                HobAddMmioRange(Apertures[i].HighMmioBase, Apertures[i].HighMmioLength);
-            }
-        }
-    }
 
     //
     // Memory Type Information HOB

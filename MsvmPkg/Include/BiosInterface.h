@@ -885,7 +885,7 @@ typedef struct _PCIE_BAR_APERTURE_ENTRY {
     UINT16  Segment;
     UINT8   StartBus;
     UINT8   EndBus;
-    UINT32  Reserved;
+    UINT32  Uid;        // Unique identifier matching the ACPI _UID
     UINT64  LowMmioBase;
     UINT64  LowMmioLength;
     UINT64  HighMmioBase;

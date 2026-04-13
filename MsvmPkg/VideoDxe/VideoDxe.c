@@ -8,6 +8,7 @@
 #include "VideoDxe.h"
 #include <VirtualDeviceId.h>
 #include <VramSize.h>
+#include <Library/PcdLib.h>
 
 
 EFI_DRIVER_BINDING_PROTOCOL gVideoDxeDriverBinding =
@@ -224,16 +225,42 @@ Return Value:
     context->Mode.SizeOfInfo      = sizeof (context->ModeInfo);
 
     //
-    // Allocate physical MMIO space for the frame buffer.
+    // Allocate physical MMIO space for the frame buffer within the low
+    // MMIO gap.  Use EfiGcdAllocateAddress to ensure we stay within the
+    // VMBus MMIO region and never allocate from PCIe ECAM or BAR
+    // aperture ranges.
     //
     context->Mode.FrameBufferSize = DEFAULT_VRAM_SIZE_WIN8;
-    status = gDS->AllocateMemorySpace(EfiGcdAllocateAnySearchBottomUp,
-                                      EfiGcdMemoryTypeMemoryMappedIo,
-                                      0,
-                                      context->Mode.FrameBufferSize,
-                                      &FrameBufferBaseAddress,
-                                      VideoDxeImageHandle,
-                                      NULL);
+    {
+        UINT64 GapBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
+        UINT64 GapEnd  = GapBase + PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
+        UINT64 Addr;
+
+        status = EFI_NOT_FOUND;
+
+        // Attempt 5 allocations starting from the base of the low MMIO gap,
+        // incrementing by 1 MB each time. Give up after 5 attempts.
+        for (Addr = GapBase;
+             Addr + context->Mode.FrameBufferSize <= GapEnd;
+             Addr += SIZE_1MB)
+        {
+            FrameBufferBaseAddress = Addr;
+            status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
+                                              EfiGcdMemoryTypeMemoryMappedIo,
+                                              0,
+                                              context->Mode.FrameBufferSize,
+                                              &FrameBufferBaseAddress,
+                                              VideoDxeImageHandle,
+                                              NULL);
+            if (!EFI_ERROR(status)) {
+                break;
+            }
+
+            if (Addr - GapBase >= 4 * SIZE_1MB) {
+                break;
+            }
+        }
+    }
     if (EFI_ERROR(status))
     {
         DEBUG((EFI_D_ERROR,

@@ -1696,8 +1696,8 @@ Return Value:
                 UINT32 dataSize = header->Length - sizeof(UEFI_CONFIG_HEADER);
 
                 //
-                // Validate: data size must be a whole multiple of entry size,
-                // and at least one entry must be present.
+                // dataSize must be a whole multiple of entry size, and at least
+                // one entry must be present.
                 //
                 if (dataSize == 0 ||
                     (dataSize % sizeof(PCIE_BAR_APERTURE_ENTRY)) != 0)

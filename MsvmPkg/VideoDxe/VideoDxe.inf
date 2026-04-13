@@ -32,6 +32,7 @@
     DxeServicesTableLib
     EmclLib
     MemoryAllocationLib
+    PcdLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiLib
@@ -46,3 +47,7 @@
     gEfiVmbusChannelDevicePathGuid  ## CONSUMES
     gSyntheticVideoClassGuid        ## CONSUMES
     gSynthetic3dVideoClassGuid      ## CONSUMES
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapBasePageNumber
+    gMsvmPkgTokenSpaceGuid.PcdLowMmioGapSizeInPages

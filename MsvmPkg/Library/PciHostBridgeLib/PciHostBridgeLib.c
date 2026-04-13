@@ -91,7 +91,7 @@ PciHostBridgeGetRootBridges (
     DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
 
     if (McfgPtr == 0 || McfgSize < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
-        DEBUG ((DEBUG_ERROR, "PCIe: No MCFG table, no root bridges\n"));
+        DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
         return NULL;
     }
 
@@ -132,7 +132,7 @@ PciHostBridgeGetRootBridges (
             McfgEntryCount, ApertureCount));
 
     //
-    // Allocate root bridge array — one per aperture entry.
+    // Allocate root bridge array, one per aperture entry.
     // PcieBarApertures is the authoritative list of bridges UEFI should
     // enumerate.  MCFG may contain additional bridges for the guest OS.
     //
@@ -174,15 +174,15 @@ PciHostBridgeGetRootBridges (
 
         if (!McfgFound) {
             DEBUG ((DEBUG_ERROR,
-                    "PCIe: Aperture segment %u has no matching MCFG entry, skipping\n",
+                    "PCIe: Aperture segment %u has no matching MCFG entry\n",
                     Segment));
-            continue;
+            goto Cleanup;
         }
 
         if (EndBus < StartBus) {
             DEBUG ((DEBUG_ERROR, "PCIe: Invalid bus range for segment %u: Start=%u End=%u\n",
                     Segment, StartBus, EndBus));
-            continue;
+            goto Cleanup;
         }
 
         DEBUG ((DEBUG_INFO,
@@ -257,79 +257,92 @@ PciHostBridgeGetRootBridges (
         Bridges[BridgeCount].PMemAbove4G.Translation = 0;
 
         //
-        // Device path — ACPI(PNP0A08, UID=Segment).
+        // Device path — ACPI(PNP0A08, UID from host).
         //
-        Bridges[BridgeCount].DevicePath = CreateRootBridgeDevicePath (Segment);
+        Bridges[BridgeCount].DevicePath = CreateRootBridgeDevicePath (Apertures[i].Uid);
         if (Bridges[BridgeCount].DevicePath == NULL) {
             DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Failed to create device path\n"));
-            for (UINT32 k = 0; k < BridgeCount; k++) {
-                FreePool (Bridges[k].DevicePath);
-            }
-            FreePool (Bridges);
-            return NULL;
+            goto Cleanup;
         }
 
         BridgeCount++;
     }
 
     if (BridgeCount == 0) {
-        FreePool (Bridges);
-        return NULL;
+        goto Cleanup;
     }
 
     DEBUG ((DEBUG_INFO, "PciHostBridgeLib: Returning %u root bridges\n", BridgeCount));
 
     //
-    // Reserve the ECAM MMIO range in GCD for each bridge we are
-    // enumerating.  PlatformPei declared these ranges as MMIO HOBs
-    // (only for segments with apertures), but HOBs only add the range
-    // to GCD — they don't reserve it.  Without this reservation,
-    // gDS->AllocateMemorySpace(AnySearchBottomUp, MMIO) could hand
-    // out ECAM addresses for unrelated MMIO allocations.
+    // Reserve the ECAM MMIO range in GCD for each bridge we are enumerating.
+    // PlatformPei declared these ranges as MMIO HOBs (only for segments with
+    // apertures), but HOBs only add the range to GCD — they don't reserve it.
+    // Without this reservation, gDS->AllocateMemorySpace(AnySearchBottomUp,
+    // MMIO) could hand out ECAM addresses for unrelated MMIO allocations.
     //
-    // Note: BAR aperture MMIO ranges are reserved by PciHostBridgeDxe
-    // because we set ResourceAssigned = TRUE above.
+    // Note: BAR aperture MMIO ranges are added to GCD by PciHostBridgeDxe.
     //
-    for (i = 0; i < ApertureCount; i++) {
+    // Reserve ECAM ranges for MCFG entries that have at least one
+    // matching aperture.  Each MCFG entry is reserved at most once.
+    //
+    for (i = 0; i < McfgEntryCount; i++) {
+        if (McfgEntries[i].EndBusNumber < McfgEntries[i].StartBusNumber) {
+            continue;
+        }
+
+        //
+        // Check if any aperture references this segment.
+        //
+        BOOLEAN HasAperture = FALSE;
         UINT32 j;
-        for (j = 0; j < McfgEntryCount; j++) {
-            if (McfgEntries[j].PciSegmentGroupNumber == Apertures[i].Segment) {
-                if (McfgEntries[j].EndBusNumber < McfgEntries[j].StartBusNumber) {
-                    break;
-                }
-
-                UINT64 EcamBase = McfgEntries[j].BaseAddress
-                    + (UINT64)McfgEntries[j].StartBusNumber * 256 * 4096;
-                UINT64 EcamSize =
-                    (UINT64)(McfgEntries[j].EndBusNumber - McfgEntries[j].StartBusNumber + 1)
-                    * 256 * 4096;
-                UINT64 OrigEcamBase = EcamBase;
-
-                EFI_STATUS ReserveStatus = gDS->AllocateMemorySpace (
-                    EfiGcdAllocateAddress,
-                    EfiGcdMemoryTypeMemoryMappedIo,
-                    0,
-                    EcamSize,
-                    &EcamBase,
-                    gImageHandle,
-                    NULL
-                    );
-                if (EFI_ERROR (ReserveStatus)) {
-                    DEBUG ((DEBUG_ERROR,
-                            "PciHostBridgeLib: Failed to reserve ECAM range %016lx+%016lx: %r\n",
-                            OrigEcamBase, EcamSize, ReserveStatus));
-                } else {
-                    DEBUG ((DEBUG_INFO,
-                            "PciHostBridgeLib: Reserved ECAM range %016lx+%016lx\n",
-                            EcamBase, EcamSize));
-                }
+        for (j = 0; j < ApertureCount; j++) {
+            if (Apertures[j].Segment == McfgEntries[i].PciSegmentGroupNumber) {
+                HasAperture = TRUE;
                 break;
             }
+        }
+        if (!HasAperture) {
+            continue;
+        }
+
+        UINT64 EcamBase = McfgEntries[i].BaseAddress
+            + (UINT64)McfgEntries[i].StartBusNumber * 256 * 4096;
+        UINT64 EcamSize =
+            (UINT64)(McfgEntries[i].EndBusNumber - McfgEntries[i].StartBusNumber + 1)
+            * 256 * 4096;
+        UINT64 OrigEcamBase = EcamBase;
+
+        EFI_STATUS ReserveStatus = gDS->AllocateMemorySpace (
+            EfiGcdAllocateAddress,
+            EfiGcdMemoryTypeMemoryMappedIo,
+            0,
+            EcamSize,
+            &EcamBase,
+            gImageHandle,
+            NULL
+            );
+        if (EFI_ERROR (ReserveStatus)) {
+            DEBUG ((DEBUG_ERROR,
+                    "PciHostBridgeLib: Failed to reserve ECAM range %016lx+%016lx: %r\n",
+                    OrigEcamBase, EcamSize, ReserveStatus));
+        } else {
+            DEBUG ((DEBUG_INFO,
+                    "PciHostBridgeLib: Reserved ECAM range %016lx+%016lx\n",
+                    EcamBase, EcamSize));
         }
     }
 
     *Count = BridgeCount;
     return Bridges;
+
+Cleanup:
+    for (i = 0; i < BridgeCount; i++) {
+        FreePool (Bridges[i].DevicePath);
+    }
+    FreePool (Bridges);
+    *Count = 0;
+    return NULL;
 }
 
 /**
