@@ -235,14 +235,18 @@ Return Value:
         UINT64 GapBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
         UINT64 GapEnd  = GapBase + PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
         UINT64 Addr;
+        UINT32 Attempts = 0;
 
         status = EFI_NOT_FOUND;
 
-        // Attempt 5 allocations starting from the base of the low MMIO gap,
-        // incrementing by 1 MB each time. Give up after 5 attempts.
+        //
+        // Attempt allocations starting from the base of the low MMIO gap,
+        // incrementing by the frame buffer size each time.  Give up after
+        // 5 attempts.
+        //
         for (Addr = GapBase;
-             Addr + context->Mode.FrameBufferSize <= GapEnd;
-             Addr += SIZE_1MB)
+             Addr + context->Mode.FrameBufferSize <= GapEnd && Attempts < 5;
+             Addr += context->Mode.FrameBufferSize)
         {
             FrameBufferBaseAddress = Addr;
             status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
@@ -252,23 +256,32 @@ Return Value:
                                               &FrameBufferBaseAddress,
                                               VideoDxeImageHandle,
                                               NULL);
+            Attempts++;
             if (!EFI_ERROR(status)) {
                 break;
             }
+        }
 
-            if (Addr - GapBase >= 4 * SIZE_1MB) {
-                break;
-            }
+        if (EFI_ERROR(status)) {
+            DEBUG((DEBUG_ERROR,
+                   "VideoDxe: Failed to allocate FrameBuffer after %u attempts "
+                   "in MMIO gap [%016lx, %016lx)\n",
+                   Attempts, GapBase, GapEnd));
         }
     }
+
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR,
+        DEBUG((DEBUG_ERROR,
                "VideoDxeDriverBindingStart - "
                "AllocateMemorySpace(MMIO) failed. Status %x\n",
                status));
         goto Cleanup;
     }
+
+    DEBUG((DEBUG_VERBOSE,
+           "VideoDxe: FrameBuffer allocated at %016lx size %016lx\n",
+           FrameBufferBaseAddress, context->Mode.FrameBufferSize));
 
     context->Mode.FrameBufferBase = FrameBufferBaseAddress;
 

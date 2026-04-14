@@ -12,11 +12,9 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
-#include <Library/DxeServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PciHostBridgeLib.h>
-#include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/PciRootBridgeIo.h>
 #include <Protocol/PciHostBridgeResourceAllocation.h>
 #include <IndustryStandard/Acpi.h>
@@ -308,66 +306,6 @@ PciHostBridgeGetRootBridges (
     }
 
     DEBUG ((DEBUG_INFO, "PciHostBridgeLib: Returning %u root bridges\n", BridgeCount));
-
-    //
-    // Reserve the ECAM MMIO range in GCD for each bridge we are enumerating.
-    // PlatformPei declared these ranges as MMIO HOBs (only for segments with
-    // apertures), but HOBs only add the range to GCD — they don't reserve it.
-    // Without this reservation, gDS->AllocateMemorySpace(AnySearchBottomUp,
-    // MMIO) could hand out ECAM addresses for unrelated MMIO allocations.
-    //
-    // Note: BAR aperture MMIO ranges are added to GCD by PciHostBridgeDxe.
-    //
-    // Reserve ECAM ranges for MCFG entries that have at least one
-    // matching aperture.  Each MCFG entry is reserved at most once.
-    //
-    for (i = 0; i < McfgEntryCount; i++) {
-        if (McfgEntries[i].EndBusNumber < McfgEntries[i].StartBusNumber) {
-            continue;
-        }
-
-        //
-        // Check if any aperture references this segment.
-        //
-        BOOLEAN HasAperture = FALSE;
-        UINT32 j;
-        for (j = 0; j < ApertureCount; j++) {
-            if (Apertures[j].Segment == McfgEntries[i].PciSegmentGroupNumber) {
-                HasAperture = TRUE;
-                break;
-            }
-        }
-        if (!HasAperture) {
-            continue;
-        }
-
-        UINT64 EcamBase = McfgEntries[i].BaseAddress
-            + (UINT64)McfgEntries[i].StartBusNumber * 256 * 4096;
-        UINT64 EcamSize =
-            (UINT64)(McfgEntries[i].EndBusNumber - McfgEntries[i].StartBusNumber + 1)
-            * 256 * 4096;
-        UINT64 OrigEcamBase = EcamBase;
-
-        EFI_STATUS ReserveStatus = gDS->AllocateMemorySpace (
-            EfiGcdAllocateAddress,
-            EfiGcdMemoryTypeMemoryMappedIo,
-            0,
-            EcamSize,
-            &EcamBase,
-            gImageHandle,
-            NULL
-            );
-        if (EFI_ERROR (ReserveStatus)) {
-            DEBUG ((DEBUG_ERROR,
-                    "PciHostBridgeLib: Failed to reserve ECAM range %016lx+%016lx: %r\n",
-                    OrigEcamBase, EcamSize, ReserveStatus));
-            goto Cleanup;
-        } else {
-            DEBUG ((DEBUG_INFO,
-                    "PciHostBridgeLib: Reserved ECAM range %016lx+%016lx\n",
-                    EcamBase, EcamSize));
-        }
-    }
 
     *Count = BridgeCount;
     return Bridges;
