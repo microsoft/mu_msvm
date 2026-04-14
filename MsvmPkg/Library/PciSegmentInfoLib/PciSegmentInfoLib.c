@@ -107,7 +107,7 @@ GetPciSegmentInfo (
         mSegmentInfo[i].StartBusNumber = Entries[i].StartBusNumber;
         mSegmentInfo[i].EndBusNumber   = Entries[i].EndBusNumber;
 
-        DEBUG ((DEBUG_INFO, "PCIe:   Segment[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
+        DEBUG ((DEBUG_INFO, "PCIe:   SegmentInfo[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
                 i, Entries[i].PciSegmentGroupNumber, Entries[i].BaseAddress,
                 Entries[i].StartBusNumber, Entries[i].EndBusNumber));
     }
