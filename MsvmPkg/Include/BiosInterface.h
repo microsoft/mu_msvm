@@ -877,15 +877,21 @@ typedef struct _UEFI_CONFIG_IORT
 } UEFI_CONFIG_IORT;
 
 //
-// Per-root-bridge MMIO aperture descriptor.
-// One entry per PCIe root bridge / host bridge segment.
-// Matches by Segment number with the MCFG table entries.
+// Describes the BAR Aperture for each PCIe Root Complex / Host bridge. There
+// should be one entry per host bridge that UEFI should enumerate. The MCFG
+// table may contain additional segments that are not described to UEFI via
+// these structures, which UEFI will ignore.
+//
+// This structure is used to pass this information to UEFI instead of having
+// UEFI parse the SSDT.
 //
 typedef struct _PCIE_BAR_APERTURE_ENTRY {
     UINT16  Segment;
     UINT8   StartBus;
     UINT8   EndBus;
-    UINT32  Uid;        // Unique identifier matching the ACPI _UID
+    /// The UID here must match the UID described in the SSDT for the
+    /// corresponding host bridge.
+    UINT32  Uid;
     UINT64  LowMmioBase;
     UINT64  LowMmioLength;
     UINT64  HighMmioBase;
