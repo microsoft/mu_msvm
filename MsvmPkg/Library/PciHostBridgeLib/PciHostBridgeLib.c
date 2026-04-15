@@ -20,12 +20,8 @@
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
 #include <BiosInterface.h>
+#include <PciConstants.h>
 
-//
-// Local typedef for readability.
-//
-typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
-    MCFG_ALLOCATION_ENTRY;
 
 STATIC
 EFI_DEVICE_PATH_PROTOCOL *
@@ -45,7 +41,7 @@ CreateRootBridgeDevicePath (
         return NULL;
     }
 
-    AcpiNode->HID = EISA_PNP_ID (0x0A08);
+    AcpiNode->HID = PCIE_ROOT_COMPLEX_HID;
     AcpiNode->UID = Uid;
 
     DevicePath = AppendDevicePathNode (NULL, (EFI_DEVICE_PATH_PROTOCOL *)AcpiNode);
@@ -68,8 +64,7 @@ PciHostBridgeGetRootBridges (
 {
     UINT64                       McfgPtr;
     UINT32                       McfgSize;
-    EFI_ACPI_DESCRIPTION_HEADER  *McfgHdr;
-    UINT32                       McfgReservedSize;
+    MCFG_TABLE_HEADER            *McfgHdr;
     UINT32                       McfgDataLen;
     UINT32                       McfgEntryCount;
     MCFG_ALLOCATION_ENTRY        *McfgEntries;
@@ -77,6 +72,10 @@ PciHostBridgeGetRootBridges (
     UINT32                       ApertureCount;
     PCI_ROOT_BRIDGE              *Bridges;
     UINT32                       i;
+
+    if (Count == NULL) {
+        return NULL;
+    }
 
     *Count = 0;
 
@@ -88,22 +87,21 @@ PciHostBridgeGetRootBridges (
 
     DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
 
-    if (McfgPtr == 0 || McfgSize < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
+    if (McfgPtr == 0 || McfgSize < sizeof (MCFG_TABLE_HEADER)) {
         DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
         return NULL;
     }
 
-    McfgHdr = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN)McfgPtr;
-    McfgReservedSize = 8;
+    McfgHdr = (MCFG_TABLE_HEADER *)(UINTN)McfgPtr;
 
-    if (McfgHdr->Length < sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize ||
-        McfgHdr->Length > McfgSize) {
+    if (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER) ||
+        McfgHdr->Header.Length > McfgSize) {
         DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG Length %u (PCD size %u)\n",
-                McfgHdr->Length, McfgSize));
+                McfgHdr->Header.Length, McfgSize));
         return NULL;
     }
 
-    McfgDataLen = McfgHdr->Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
+    McfgDataLen = McfgHdr->Header.Length - sizeof (MCFG_TABLE_HEADER);
     McfgEntryCount = McfgDataLen / sizeof (MCFG_ALLOCATION_ENTRY);
 
     if (McfgEntryCount == 0 || (McfgDataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0) {
@@ -112,8 +110,7 @@ PciHostBridgeGetRootBridges (
         return NULL;
     }
 
-    McfgEntries = (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
-                      + sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
+    McfgEntries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
 
     //
     // Read PcieBarApertures from PCD.
@@ -157,7 +154,8 @@ PciHostBridgeGetRootBridges (
         UINT32  j;
 
         //
-        // Find the matching MCFG entry to get the ECAM base address.
+        // Find the matching MCFG entry to get the ECAM base address
+        // and validate that the aperture bus range fits within it.
         //
         BOOLEAN McfgFound = FALSE;
         UINT64  EcamBase  = 0;
@@ -165,7 +163,17 @@ PciHostBridgeGetRootBridges (
             if (McfgEntries[j].PciSegmentGroupNumber == Segment) {
                 McfgFound = TRUE;
                 EcamBase = McfgEntries[j].BaseAddress
-                    + (UINT64)McfgEntries[j].StartBusNumber * 256 * 4096;
+                    + (UINT64)McfgEntries[j].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
+
+                if (StartBus < McfgEntries[j].StartBusNumber ||
+                    EndBus  > McfgEntries[j].EndBusNumber) {
+                    DEBUG ((DEBUG_ERROR,
+                            "PCIe: Aperture bus range %u..%u exceeds MCFG range %u..%u for segment %u\n",
+                            StartBus, EndBus,
+                            McfgEntries[j].StartBusNumber, McfgEntries[j].EndBusNumber,
+                            Segment));
+                    goto Cleanup;
+                }
                 break;
             }
         }
@@ -181,29 +189,6 @@ PciHostBridgeGetRootBridges (
             DEBUG ((DEBUG_ERROR, "PCIe: Invalid bus range for segment %u: Start=%u End=%u\n",
                     Segment, StartBus, EndBus));
             goto Cleanup;
-        }
-
-        //
-        // Validate that the aperture bus range falls within the MCFG bus range.
-        // If the aperture claims buses outside the MCFG range, PciBusDxe would
-        // attempt config-space reads at ECAM addresses beyond the mapped region.
-        //
-        {
-            UINT32 k;
-            for (k = 0; k < McfgEntryCount; k++) {
-                if (McfgEntries[k].PciSegmentGroupNumber == Segment) {
-                    if (StartBus < McfgEntries[k].StartBusNumber ||
-                        EndBus  > McfgEntries[k].EndBusNumber) {
-                        DEBUG ((DEBUG_ERROR,
-                                "PCIe: Aperture bus range %u..%u exceeds MCFG range %u..%u for segment %u\n",
-                                StartBus, EndBus,
-                                McfgEntries[k].StartBusNumber, McfgEntries[k].EndBusNumber,
-                                Segment));
-                        goto Cleanup;
-                    }
-                    break;
-                }
-            }
         }
 
         DEBUG ((DEBUG_INFO,

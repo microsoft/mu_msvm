@@ -16,6 +16,7 @@
 #include <Guid/MemoryTypeInformation.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <PciConstants.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
@@ -762,24 +763,16 @@ Return Value:
     // in page tables for PciSegmentLib MMIO access, while keeping
     // non-enumerated ECAM ranges out of GCD entirely.
     //
-    typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
-        MCFG_ALLOCATION_ENTRY;
-
     UINT64 McfgPtr = PcdGet64(PcdMcfgPtr);
     UINT32 McfgSize = PcdGet32(PcdMcfgSize);
-    if (McfgPtr != 0 && McfgSize >= sizeof(EFI_ACPI_DESCRIPTION_HEADER)) {
-        EFI_ACPI_DESCRIPTION_HEADER *McfgHdr =
-            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) McfgPtr;
-        UINT32 McfgReservedSize = 8;
+    if (McfgPtr != 0 && McfgSize >= sizeof(MCFG_TABLE_HEADER)) {
+        MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)(UINTN) McfgPtr;
 
-        if (McfgHdr->Length >= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize &&
-            McfgHdr->Length <= McfgSize) {
-            UINT32 McfgDataLen = McfgHdr->Length
-                - sizeof(EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
+        if (McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER) &&
+            McfgHdr->Header.Length <= McfgSize) {
+            UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
             UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
-            MCFG_ALLOCATION_ENTRY *Entries =
-                (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
-                    + sizeof(EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
+            MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
 
             for (UINT32 i = 0; i < NumEntries; i++) {
                 if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
@@ -802,10 +795,18 @@ Return Value:
                 }
 
                 UINT64 EcamBase = Entries[i].BaseAddress
-                    + (UINT64)Entries[i].StartBusNumber * 256 * 4096;
+                    + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
                 UINT64 EcamSize =
                     (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
-                    * 256 * 4096;
+                    * PCIE_ECAM_BYTES_PER_BUS;
+
+                if (EcamBase + EcamSize < EcamBase) {
+                    DEBUG((DEBUG_ERROR,
+                           "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
+                           Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
+                    continue;
+                }
+
                 HobAddMmioRange(EcamBase, EcamSize);
 
                 //

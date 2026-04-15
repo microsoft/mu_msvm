@@ -1706,6 +1706,34 @@ Return Value:
                     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
                 }
 
+                //
+                // Validate individual entries.
+                //
+                {
+                    UINT32 entryCount = dataSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+                    for (UINT32 e = 0; e < entryCount; e++) {
+                        PCIE_BAR_APERTURE_ENTRY *entry = &apertures->Entries[e];
+                        if (entry->EndBus < entry->StartBus) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: invalid bus range %u..%u\n",
+                                   e, entry->StartBus, entry->EndBus));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                        if (entry->LowMmioLength > 0 &&
+                            entry->LowMmioBase + entry->LowMmioLength < entry->LowMmioBase) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: LowMmio overflow\n", e));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                        if (entry->HighMmioLength > 0 &&
+                            entry->HighMmioBase + entry->HighMmioLength < entry->HighMmioBase) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: HighMmio overflow\n", e));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                    }
+                }
+
                 PEI_FAIL_FAST_IF_FAILED(
                     PcdSet64S(PcdPcieBarAperturesPtr, (UINT64) apertures->Entries));
                 PEI_FAIL_FAST_IF_FAILED(

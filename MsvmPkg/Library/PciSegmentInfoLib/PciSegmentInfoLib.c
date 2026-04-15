@@ -16,14 +16,10 @@
 #include <Library/PciSegmentInfoLib.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <PciConstants.h>
 
-//
-// Local typedef for readability.
-//
-typedef EFI_ACPI_MEMORY_MAPPED_ENHANCED_CONFIGURATION_SPACE_BASE_ADDRESS_ALLOCATION_STRUCTURE
-    MCFG_ALLOCATION_ENTRY;
-
-STATIC PCI_SEGMENT_INFO  *mSegmentInfo = NULL;
+STATIC
+PCI_SEGMENT_INFO  *mSegmentInfo = NULL;
 STATIC UINTN              mSegmentCount = 0;
 
 /**
@@ -40,8 +36,7 @@ GetPciSegmentInfo (
 {
     UINT64                       McfgPtr;
     UINT32                       McfgSize;
-    EFI_ACPI_DESCRIPTION_HEADER  *McfgHdr;
-    UINT32                       McfgReservedSize;
+    MCFG_TABLE_HEADER            *McfgHdr;
     UINT32                       DataLen;
     UINT32                       EntryCount;
     MCFG_ALLOCATION_ENTRY        *Entries;
@@ -58,28 +53,23 @@ GetPciSegmentInfo (
     McfgPtr  = PcdGet64 (PcdMcfgPtr);
     McfgSize = PcdGet32 (PcdMcfgSize);
 
-    if (McfgPtr == 0 || McfgSize < sizeof (EFI_ACPI_DESCRIPTION_HEADER)) {
+    if (McfgPtr == 0 || McfgSize < sizeof (MCFG_TABLE_HEADER)) {
         DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: No MCFG table\n"));
         *Count = 0;
         return NULL;
     }
 
-    McfgHdr = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN)McfgPtr;
+    McfgHdr = (MCFG_TABLE_HEADER *)(UINTN)McfgPtr;
 
-    //
-    // MCFG layout: ACPI header + 8 bytes reserved + array of allocation entries.
-    //
-    McfgReservedSize = 8;
-
-    if (McfgHdr->Length < sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize ||
-        McfgHdr->Length > McfgSize) {
+    if (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER) ||
+        McfgHdr->Header.Length > McfgSize) {
         DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Invalid MCFG Length %u (PCD size %u)\n",
-                McfgHdr->Length, McfgSize));
+                McfgHdr->Header.Length, McfgSize));
         *Count = 0;
         return NULL;
     }
 
-    DataLen = McfgHdr->Length - sizeof (EFI_ACPI_DESCRIPTION_HEADER) - McfgReservedSize;
+    DataLen = McfgHdr->Header.Length - sizeof (MCFG_TABLE_HEADER);
     EntryCount = DataLen / sizeof (MCFG_ALLOCATION_ENTRY);
 
     if (EntryCount == 0 || (DataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0) {
@@ -98,8 +88,7 @@ GetPciSegmentInfo (
         return NULL;
     }
 
-    Entries = (MCFG_ALLOCATION_ENTRY *)((UINT8 *)McfgHdr
-                  + sizeof (EFI_ACPI_DESCRIPTION_HEADER) + McfgReservedSize);
+    Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
 
     for (i = 0; i < EntryCount; i++) {
         mSegmentInfo[i].SegmentNumber  = Entries[i].PciSegmentGroupNumber;
