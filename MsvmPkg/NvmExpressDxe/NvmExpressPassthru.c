@@ -267,6 +267,7 @@ NvmeCreatePrpList (
                     );
 
   if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: allocate PrpList failed %r\n", __func__, Status));
     return NULL;
   }
 
@@ -279,6 +280,9 @@ NvmeCreatePrpList (
 
     if (EFI_ERROR(Status))
     {
+        DEBUG ((DEBUG_ERROR, "%a: share PrpList failed %r\n", __func__, Status));
+        PciIo->FreeBuffer (PciIo, *PrpListNo, *PrpListHost);
+        *PrpListHost = NULL;
         goto EXIT;
     }
   }
@@ -295,7 +299,7 @@ NvmeCreatePrpList (
                     );
 
   if (EFI_ERROR (Status) || (Bytes != EFI_PAGES_TO_SIZE (*PrpListNo))) {
-    DEBUG ((DEBUG_ERROR, "NvmeCreatePrpList: create PrpList failure!\n"));
+    DEBUG ((DEBUG_ERROR, "%a: map PrpList failed %r\n", __func__, Status));
     goto EXIT;
   }
 
@@ -365,7 +369,6 @@ NvmeCreatePrpList (
   return (VOID *)(UINTN)PrpListPhyAddr;
 
 EXIT:
-  PciIo->FreeBuffer (PciIo, *PrpListNo, *PrpListHost);
   return NULL;
 }
 
@@ -770,7 +773,9 @@ NvmExpressPassThru (
                              &MapData
                              );
         if (EFI_ERROR (Status) || (Packet->TransferLength != MapLength)) {
-          return EFI_OUT_OF_RESOURCES;
+          DEBUG ((DEBUG_ERROR, "%a: Map transfer buffer error - %r!\n", __func__, Status));
+          Status = EFI_OUT_OF_RESOURCES;
+          goto EXIT;
         }
 
       } // MS_HYP_CHANGE
@@ -872,12 +877,9 @@ NvmExpressPassThru (
                              &MapMeta
                              );
         if (EFI_ERROR (Status) || (Packet->MetadataLength != MapLength)) {
-          PciIo->Unmap (
-                   PciIo,
-                   MapData
-                   );
-
-          return EFI_OUT_OF_RESOURCES;
+          DEBUG ((DEBUG_ERROR, "%a: Map packet metadata buffer error - %r!\n", __func__, Status));
+          Status = EFI_OUT_OF_RESOURCES;
+          goto EXIT;
         }
       } // MS_HYP_CHANGE
       Sq->Mptr = PhyAddr;
@@ -1160,13 +1162,14 @@ EXIT:
              );
   }
 
-  if (Prp != NULL) {
+  if (PrpListHost != NULL) {
     // MS_HYP_CHANGE BEGIN
     if (IsIsolated()) {
       NvmExpressMakeAddressRangePrivate(&PrpListVisibilityContext, PrpListHost);
     }
     // MS_HYP_CHANGE END
     PciIo->FreeBuffer (PciIo, PrpListNo, PrpListHost);
+    PrpListHost = NULL;
   }
 
   if (TimerEvent != NULL) {
