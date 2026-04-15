@@ -134,6 +134,7 @@ Return Value:
     gpadl->NumberOfPages = (UINT32)((UINTN)BufferLength >> EFI_PAGE_SHIFT);
     gpadl->GpadlHandle = 0;
     gpadl->Legacy = FALSE;
+    gpadl->ProtectionHandle = NULL;
     zeroPages = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES) != 0;
 
     //
@@ -498,7 +499,8 @@ Return Value:
     // GPADL has been deleted.
     //
     if (IsIsolated() &&
-        !Gpadl->Legacy)
+        !Gpadl->Legacy &&
+        Gpadl->ProtectionHandle != NULL)
     {
         mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, Gpadl->ProtectionHandle);
     }
