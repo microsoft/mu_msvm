@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
       - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -131,8 +135,40 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{matrix.target}}-${{matrix.arch}}-${{matrix.tools}}artifacts
+          name: ${{matrix.target}}-${{matrix.arch}}-${{matrix.tools}}-artifacts
           path: |
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/FV/MSVM.fd
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/MAP/
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/PDB/
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip artifacts for release
+        run: |
+          mkdir -p release
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            (cd "$name" && zip -r "../../release/${name}.zip" .)
+          done
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v26.0.${{ github.run_number }}" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --generate-notes \
+            release/*.zip
