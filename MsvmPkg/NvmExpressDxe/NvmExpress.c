@@ -1081,7 +1081,7 @@ NvmExpressDriverCleanUpQueues (
     }
     // MS_HYP_CHANGE END
 
-    Status             = Private->PciIo->FreeBuffer (Private->PciIo, QueuePairPageCount, Private->Buffer);
+    Status = Private->PciIo->FreeBuffer (Private->PciIo, QueuePairPageCount, Private->Buffer);
 
     if (EFI_ERROR (Status)) {
       ReturnStatus = Status;
@@ -1116,7 +1116,7 @@ NvmExpressDriverCleanUpQueues (
       NvmExpressMakeAddressRangePrivate (&Private->IoQueueVisibilityContext, Private->IoQueueBuffer);
     }
     // MS_HYP_CHANGE END
-    Status             = Private->PciIo->FreeBuffer (Private->PciIo, QueuePairPageCount*Private->NumberOfIoQueuePairs, Private->IoQueueBuffer);
+    Status = Private->PciIo->FreeBuffer (Private->PciIo, QueuePairPageCount*Private->NumberOfIoQueuePairs, Private->IoQueueBuffer);
 
     if (EFI_ERROR (Status)) {
       ReturnStatus = Status;

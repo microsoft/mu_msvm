@@ -1212,7 +1212,15 @@ NvmeControllerInit (
                                               (UINT32)AdminQueuePairPageCount * EFI_PAGE_SIZE
                                               );
 
-    if (EFI_ERROR(Status)) {
+    if (EFI_ERROR (Status)) {
+      EFI_STATUS FreeStatus = PciIo->FreeBuffer (PciIo, AdminQueuePairPageCount, Private->Buffer);
+
+      if (EFI_ERROR (FreeStatus)) {
+        DEBUG ((DEBUG_ERROR, "%a: FreeBuffer Admin Queue Buffer failed %r\n", __func__, FreeStatus));
+        ASSERT_EFI_ERROR (FreeStatus);
+      }
+
+      Private->Buffer = NULL;
       return Status;
     }
   }
@@ -1417,11 +1425,19 @@ NvmeControllerInit (
   if (IsIsolated ()) {
     Status = NvmExpressMakeAddressRangeShared (
                &Private->IoQueueVisibilityContext,
-               Private->Buffer,
+               Private->IoQueueBuffer,
                (UINT32)IoQueuePairPageCount * Private->NumberOfIoQueuePairs * EFI_PAGE_SIZE
                );
 
     if (EFI_ERROR (Status)) {
+      EFI_STATUS FreeStatus = PciIo->FreeBuffer (PciIo, IoQueuePairPageCount*Private->NumberOfIoQueuePairs, Private->IoQueueBuffer);
+
+      if (EFI_ERROR (FreeStatus)) {
+        DEBUG ((DEBUG_ERROR, "%a: FreeBuffer IoQueueBuffer failed %r\n", __func__, FreeStatus));
+        ASSERT_EFI_ERROR (FreeStatus);
+      }
+
+      Private->IoQueueBuffer = NULL;
       return Status;
     }
   }
