@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write
 
+# Bump this when releasing a new major/minor version. The patch number
+# auto-increments from the latest existing GitHub release with this prefix.
+env:
+  BASE_VERSION: "26.0"
+
 jobs:
   build:
     runs-on: windows-latest
@@ -167,7 +172,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v26.0.${{ github.run_number }}" \
+          # Find the highest patch number for this major.minor version
+          # and increment by one. Resets to 0 when BASE_VERSION is bumped.
+          PATCH=$(gh release list --limit 1000 --json tagName \
+            --jq '[.[] | .tagName | select(startswith("v'"${{ env.BASE_VERSION }}"'.")) | ltrimstr("v'"${{ env.BASE_VERSION }}"'.") | tonumber] | max // -1 | . + 1')
+          TAG="v${{ env.BASE_VERSION }}.${PATCH}"
+          gh release create "$TAG" \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
             --generate-notes \
