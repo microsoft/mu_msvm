@@ -234,39 +234,21 @@ Return Value:
     {
         UINT64 GapBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
         UINT64 GapEnd  = GapBase + PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
-        UINT64 Addr;
-        UINT32 Attempts = 0;
 
-        status = EFI_NOT_FOUND;
-
-        //
-        // Attempt allocations starting from the base of the low MMIO gap,
-        // incrementing by the frame buffer size each time.  Give up after
-        // 5 attempts.
-        //
-        for (Addr = GapBase;
-             Addr + context->Mode.FrameBufferSize <= GapEnd && Attempts < 5;
-             Addr += context->Mode.FrameBufferSize)
-        {
-            FrameBufferBaseAddress = Addr;
-            status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
-                                              EfiGcdMemoryTypeMemoryMappedIo,
-                                              0,
-                                              context->Mode.FrameBufferSize,
-                                              &FrameBufferBaseAddress,
-                                              VideoDxeImageHandle,
-                                              NULL);
-            Attempts++;
-            if (!EFI_ERROR(status)) {
-                break;
-            }
-        }
+        FrameBufferBaseAddress = GapBase;
+        status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
+                                          EfiGcdMemoryTypeMemoryMappedIo,
+                                          0,
+                                          context->Mode.FrameBufferSize,
+                                          &FrameBufferBaseAddress,
+                                          VideoDxeImageHandle,
+                                          NULL);
 
         if (EFI_ERROR(status)) {
             DEBUG((DEBUG_ERROR,
-                   "VideoDxe: Failed to allocate FrameBuffer after %u attempts "
+                   "VideoDxe: Failed to allocate FrameBuffer "
                    "in MMIO gap [%016lx, %016lx)\n",
-                   Attempts, GapBase, GapEnd));
+                   GapBase, GapEnd));
         }
     }
 
