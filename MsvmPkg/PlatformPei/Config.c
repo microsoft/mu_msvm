@@ -813,6 +813,14 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tIORT table found.\n"));
             break;
 
+        case UefiConfigPcieBarApertures:
+        {
+            UINT32 dataSize = Header->Length - sizeof(UEFI_CONFIG_HEADER);
+            UINT32 entryCount = dataSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+            DEBUG((DEBUG_INFO, "PcieBarApertures: %u entries\n", entryCount));
+            break;
+        }
+
         default:
             DEBUG((DEBUG_VERBOSE, "\t!!! Unrecognized config structure type !!!\n"));
             break;
@@ -1096,6 +1104,7 @@ Return Value:
         0, //UefiConfigSsdt
         0, //UefiConfigHmat
         0, //UefiConfigIort
+        0, //UefiConfigPcieBarApertures
     };
 
     //
@@ -1677,6 +1686,58 @@ Return Value:
 
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
+                break;
+            }
+
+            case UefiConfigPcieBarApertures:
+            {
+                UEFI_CONFIG_PCIE_BAR_APERTURES *apertures =
+                    (UEFI_CONFIG_PCIE_BAR_APERTURES *) header;
+                UINT32 dataSize = header->Length - sizeof(UEFI_CONFIG_HEADER);
+
+                //
+                // dataSize must be a whole multiple of entry size, and at least
+                // one entry must be present.
+                //
+                if (dataSize == 0 ||
+                    (dataSize % sizeof(PCIE_BAR_APERTURE_ENTRY)) != 0)
+                {
+                    DEBUG((DEBUG_ERROR, "*** Malformed PcieBarApertures\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                //
+                // Validate individual entries.
+                //
+                {
+                    UINT32 entryCount = dataSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+                    for (UINT32 e = 0; e < entryCount; e++) {
+                        PCIE_BAR_APERTURE_ENTRY *entry = &apertures->Entries[e];
+                        if (entry->EndBus < entry->StartBus) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: invalid bus range %u..%u\n",
+                                   e, entry->StartBus, entry->EndBus));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                        if (entry->LowMmioLength > 0 &&
+                            entry->LowMmioBase + entry->LowMmioLength < entry->LowMmioBase) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: LowMmio overflow\n", e));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                        if (entry->HighMmioLength > 0 &&
+                            entry->HighMmioBase + entry->HighMmioLength < entry->HighMmioBase) {
+                            DEBUG((DEBUG_ERROR,
+                                   "*** PcieBarApertures[%u]: HighMmio overflow\n", e));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
+                    }
+                }
+
+                PEI_FAIL_FAST_IF_FAILED(
+                    PcdSet64S(PcdPcieBarAperturesPtr, (UINT64) apertures->Entries));
+                PEI_FAIL_FAST_IF_FAILED(
+                    PcdSet32S(PcdPcieBarAperturesSize, dataSize));
                 break;
             }
         }

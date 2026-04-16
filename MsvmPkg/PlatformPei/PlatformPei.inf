@@ -196,6 +196,8 @@
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
     gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter
+    gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
+    gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 
 [Pcd.AArch64]
     gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress

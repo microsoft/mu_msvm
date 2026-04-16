@@ -15,6 +15,8 @@
 #include <Hv.h>
 #include <Guid/MemoryTypeInformation.h>
 #include <IndustryStandard/Acpi.h>
+#include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <PciConstants.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HobLib.h>
@@ -740,6 +742,85 @@ Return Value:
         );
 
     //
+    // Read PcieBarApertures first -- these determine which bridges UEFI
+    // should enumerate.  Only ECAM ranges for bridges that have a matching
+    // aperture entry will be declared as MMIO HOBs.  Non-matching ECAM
+    // ranges are intentionally left out of GCD so that no DXE driver
+    // (e.g., VideoDxe) can allocate MMIO space that overlaps them.
+    //
+    UINT64 AperturePtr = PcdGet64(PcdPcieBarAperturesPtr);
+    UINT32 ApertureSize = PcdGet32(PcdPcieBarAperturesSize);
+    UINT32 ApertureCount = 0;
+    PCIE_BAR_APERTURE_ENTRY *Apertures = NULL;
+    if (AperturePtr != 0 && ApertureSize >= sizeof(PCIE_BAR_APERTURE_ENTRY)) {
+        ApertureCount = ApertureSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
+        Apertures = (PCIE_BAR_APERTURE_ENTRY *)(UINTN) AperturePtr;
+    }
+
+    //
+    // Register ECAM MMIO ranges only for MCFG segments that have a
+    // matching PcieBarApertures entry.  This ensures DxeCore maps them
+    // in page tables for PciSegmentLib MMIO access, while keeping
+    // non-enumerated ECAM ranges out of GCD entirely.
+    //
+    UINT64 McfgPtr = PcdGet64(PcdMcfgPtr);
+    UINT32 McfgSize = PcdGet32(PcdMcfgSize);
+    if (McfgPtr != 0 && McfgSize >= sizeof(MCFG_TABLE_HEADER)) {
+        MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)(UINTN) McfgPtr;
+
+        if (McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER) &&
+            McfgHdr->Header.Length <= McfgSize) {
+            UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
+            UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
+            MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
+
+            for (UINT32 i = 0; i < NumEntries; i++) {
+                if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
+                    continue;
+                }
+
+                //
+                // Only create ECAM HOB if this segment has a matching
+                // PcieBarApertures entry.
+                //
+                BOOLEAN HasAperture = FALSE;
+                for (UINT32 j = 0; j < ApertureCount; j++) {
+                    if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
+                        HasAperture = TRUE;
+                        break;
+                    }
+                }
+                if (!HasAperture) {
+                    continue;
+                }
+
+                UINT64 EcamBase = Entries[i].BaseAddress
+                    + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
+                UINT64 EcamSize =
+                    (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
+                    * PCIE_ECAM_BYTES_PER_BUS;
+
+                if (EcamBase + EcamSize < EcamBase) {
+                    DEBUG((DEBUG_ERROR,
+                           "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
+                           Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
+                    continue;
+                }
+
+                HobAddMmioRange(EcamBase, EcamSize);
+
+                //
+                // Also create a memory allocation HOB so the GCD marks this
+                // ECAM range as allocated during DxeCore init. This prevents
+                // other DXE drivers (e.g., VideoDxe) from accidentally
+                // allocating MMIO space that overlaps the ECAM region.
+                //
+                BuildMemoryAllocationHob(EcamBase, EcamSize, EfiMemoryMappedIO);
+            }
+        }
+    }
+
+    //
     // Memory Type Information HOB
     //
 #if defined(MDE_CPU_X64)
@@ -906,41 +987,41 @@ Return Value:
     EFI_STATUS status;
     ADVANCED_LOGGER_PTR *advancedLoggerPtr;
     EFI_HOB_GUID_TYPE *guidHob;
-    
+
     DEBUG((DEBUG_VERBOSE, ">>> *** Platform PEIM InitializePlatform@%p\n", InitializePlatform));
 
     //
     // Set the GPA of the advanced logger info header for the host.
     //
-    // NOTE: In PEI, MsvmPkg configures the Advanced Logger to write its in-memory  
+    // NOTE: In PEI, MsvmPkg configures the Advanced Logger to write its in-memory
     // log to a temporary buffer before transitioning to DXE. Thus, we write the GPA
     // again in PlatformDeviceStateHelperInit() in PlatformDeviceStateHelper.c.
     //
     // NOTE: Casting the GPA to a UINT32 is safe because the advanced logger's
     // in-memory buffer will always be below the 4GB boundary. See InitializeMemoryMap()
-    // in Platform.c for more details. 
+    // in Platform.c for more details.
     //
     guidHob = GetFirstGuidHob(&gAdvancedLoggerHobGuid);
-    if (guidHob == NULL) 
+    if (guidHob == NULL)
     {
         DEBUG((DEBUG_ERROR, "%a: Advanced Logger HOB not found. Setting GPA to 0.\n", __func__));
         WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-    } 
-    else 
+    }
+    else
     {
         // Get and validate the Advanced Logger pointer.
         advancedLoggerPtr = (ADVANCED_LOGGER_PTR *)GET_GUID_HOB_DATA (guidHob);
-        if (advancedLoggerPtr == NULL) 
+        if (advancedLoggerPtr == NULL)
         {
             DEBUG((DEBUG_ERROR, "%a: Advanced Logger Ptr is NULL. Setting GPA to 0.\n", __func__));
             WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-        } 
+        }
         else if (advancedLoggerPtr->LogBuffer >= MAX_UINT32)
         {
             DEBUG((DEBUG_ERROR, "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n", __func__, advancedLoggerPtr->LogBuffer));
             WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-        } 
-        else 
+        }
+        else
         {
             // Get the Advanced Logger info header and set the proper GPA.
             ADVANCED_LOGGER_INFO* advancedLoggerInfo = (ADVANCED_LOGGER_INFO *)advancedLoggerPtr->LogBuffer;

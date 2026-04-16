@@ -8,6 +8,7 @@
 #include "VideoDxe.h"
 #include <VirtualDeviceId.h>
 #include <VramSize.h>
+#include <Library/PcdLib.h>
 
 
 EFI_DRIVER_BINDING_PROTOCOL gVideoDxeDriverBinding =
@@ -224,24 +225,45 @@ Return Value:
     context->Mode.SizeOfInfo      = sizeof (context->ModeInfo);
 
     //
-    // Allocate physical MMIO space for the frame buffer.
+    // Allocate physical MMIO space for the frame buffer within the low
+    // MMIO gap.  Use EfiGcdAllocateAddress to ensure we stay within the
+    // VMBus MMIO region and never allocate from PCIe ECAM or BAR
+    // aperture ranges.
     //
     context->Mode.FrameBufferSize = DEFAULT_VRAM_SIZE_WIN8;
-    status = gDS->AllocateMemorySpace(EfiGcdAllocateAnySearchBottomUp,
-                                      EfiGcdMemoryTypeMemoryMappedIo,
-                                      0,
-                                      context->Mode.FrameBufferSize,
-                                      &FrameBufferBaseAddress,
-                                      VideoDxeImageHandle,
-                                      NULL);
+    {
+        UINT64 GapBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
+        UINT64 GapEnd  = GapBase + PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
+
+        FrameBufferBaseAddress = GapBase;
+        status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
+                                          EfiGcdMemoryTypeMemoryMappedIo,
+                                          0,
+                                          context->Mode.FrameBufferSize,
+                                          &FrameBufferBaseAddress,
+                                          VideoDxeImageHandle,
+                                          NULL);
+
+        if (EFI_ERROR(status)) {
+            DEBUG((DEBUG_ERROR,
+                   "VideoDxe: Failed to allocate FrameBuffer "
+                   "in MMIO gap [%016lx, %016lx)\n",
+                   GapBase, GapEnd));
+        }
+    }
+
     if (EFI_ERROR(status))
     {
-        DEBUG((EFI_D_ERROR,
+        DEBUG((DEBUG_ERROR,
                "VideoDxeDriverBindingStart - "
                "AllocateMemorySpace(MMIO) failed. Status %x\n",
                status));
         goto Cleanup;
     }
+
+    DEBUG((DEBUG_VERBOSE,
+           "VideoDxe: FrameBuffer allocated at %016lx size %016lx\n",
+           FrameBufferBaseAddress, context->Mode.FrameBufferSize));
 
     context->Mode.FrameBufferBase = FrameBufferBaseAddress;
 

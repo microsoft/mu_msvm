@@ -1,0 +1,36 @@
+## @file
+#  Platform PCI Host Bridge Library for Hyper-V Gen2 VMs.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = PciHostBridgeLib
+  FILE_GUID      = 3C5C70DB-2E07-4E35-B25A-F4E19B3E4B61
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = PciHostBridgeLib
+
+[Sources]
+  PciHostBridgeLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  DebugLib
+  PcdLib
+  MemoryAllocationLib
+  DevicePathLib
+
+[Pcd]
+  gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
+  gMsvmPkgTokenSpaceGuid.PcdMcfgSize
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize

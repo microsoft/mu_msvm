@@ -377,3 +377,7 @@
   # UEFI_CONFIG_IORT
   gMsvmPkgTokenSpaceGuid.PcdIortPtr|0x0|UINT64|0x6070
   gMsvmPkgTokenSpaceGuid.PcdIortSize|0x0|UINT32|0x6071
+  ## Pointer to PcieBarApertures data from config blob (array of PCIE_BAR_APERTURE_ENTRY)
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0x0|UINT64|0x6074
+  ## Size in bytes of PcieBarApertures data
+  gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0x0|UINT32|0x6075

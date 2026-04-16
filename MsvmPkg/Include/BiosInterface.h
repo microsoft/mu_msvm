@@ -558,6 +558,7 @@ enum UefiStructureType
     UefiConfigSsdt                           = 0x25,
     UefiConfigHmat                           = 0x26,
     UefiConfigIort                           = 0x27,
+    UefiConfigPcieBarApertures               = 0x28,
 };
 
 //
@@ -874,6 +875,35 @@ typedef struct _UEFI_CONFIG_IORT
     UEFI_CONFIG_HEADER Header;
     UINT8 Iort[];
 } UEFI_CONFIG_IORT;
+
+//
+// Describes the BAR Aperture for each PCIe Root Complex / Host bridge. There
+// should be one entry per host bridge that UEFI should enumerate. The MCFG
+// table may contain additional segments that are not described to UEFI via
+// these structures, which UEFI will ignore.
+//
+// This structure is used to pass this information to UEFI instead of having
+// UEFI parse the SSDT.
+//
+typedef struct _PCIE_BAR_APERTURE_ENTRY {
+    UINT16  Segment;
+    UINT8   StartBus;
+    UINT8   EndBus;
+    /// The UID here must match the UID described in the SSDT for the
+    /// corresponding host bridge.
+    UINT32  Uid;
+    UINT64  LowMmioBase;
+    UINT64  LowMmioLength;
+    UINT64  HighMmioBase;
+    UINT64  HighMmioLength;
+} PCIE_BAR_APERTURE_ENTRY;
+
+STATIC_ASSERT (sizeof (PCIE_BAR_APERTURE_ENTRY) == 40, "PCIE_BAR_APERTURE_ENTRY must be 40 bytes");
+
+typedef struct _UEFI_CONFIG_PCIE_BAR_APERTURES {
+    UEFI_CONFIG_HEADER          Header;
+    PCIE_BAR_APERTURE_ENTRY     Entries[];
+} UEFI_CONFIG_PCIE_BAR_APERTURES;
 
 //
 // UEFI configuration information for direct parsing of IGVM parameters.

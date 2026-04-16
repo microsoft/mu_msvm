@@ -140,7 +140,7 @@ Return Value:
     data->NvdimmCount = PcdGet16(PcdNvdimmCount);
 
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Start               0x%lx\n", __func__, data->Mmio1Start));
-    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __func__, data->Mmio1Start));
+    DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __func__, data->Mmio1Length));
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2StartMb             0x%lx\n", __func__, data->Mmio2StartMb));
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio2LengthMb            0x%lx\n", __func__, data->Mmio2LengthMb));
     DEBUG((DEBUG_VERBOSE, "--- %a: ProcessorCount           0x%lx\n", __func__, data->ProcessorCount));
