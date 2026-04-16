@@ -161,13 +161,13 @@ jobs:
         with:
           path: artifacts
 
-      - name: Zip artifacts for release
+      - name: Package artifacts for release
         run: |
           mkdir -p release
           cd artifacts
           for dir in */; do
             name="${dir%/}"
-            (cd "$name" && zip -r "../../release/${name}.zip" .)
+            tar -czf "../../release/${name}.tar.gz" -C "$name" .
           done
 
       - name: Create GitHub Release
@@ -183,4 +183,4 @@ jobs:
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
             --generate-notes \
-            release/*.zip
+            release/*.tar.gz
