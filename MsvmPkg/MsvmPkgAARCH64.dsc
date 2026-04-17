@@ -47,7 +47,7 @@
   # BaseTools/Conf: Make ASLCC_FLAGS independent of CC_FLAGS
   # GenFW:ConvertELF fails otherwise.
   # Ideal, but does not work: *_GCC_AARCH64_ASLCC_FLAGS = $(GCC_AARCH64_CC_FLAGS)
-  *_GCC_AARCH64_ASLCC_FLAGS = -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char  -ffunction-sections -fdata-sections -Wno-address -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-pic -fno-pie -ffixed-x18 -mstack-protector-guard=global
+  *_GCC_AARCH64_ASLCC_FLAGS = -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char -ffunction-sections -fdata-sections -Wno-address -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-pic -fno-pie -ffixed-x18 -mstack-protector-guard=global
 
 # ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64K aligned
 # This applies to in-memory section alignment, and need not apply to file system alignment.
