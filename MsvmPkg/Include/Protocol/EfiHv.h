@@ -177,8 +177,8 @@ EFI_STATUS
 typedef
 VOID
 (EFIAPI *EFI_HV_MAKE_ADDRESS_RANGE_NOT_HOST_VISIBLE)(
-    IN  EFI_HV_IVM_PROTOCOL *This,
-    IN  EFI_HV_PROTECTION_HANDLE ProtectionHandle
+    IN      EFI_HV_IVM_PROTOCOL *This,
+    IN OUT  EFI_HV_PROTECTION_HANDLE *ProtectionHandle
     );
 
 // Interface to Hypervisor for the Isolated VM (IVM) calls

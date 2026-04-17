@@ -502,7 +502,7 @@ Return Value:
         !Gpadl->Legacy &&
         Gpadl->ProtectionHandle != NULL)
     {
-        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, Gpadl->ProtectionHandle);
+        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &Gpadl->ProtectionHandle);
     }
 
     //

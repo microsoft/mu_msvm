@@ -191,7 +191,7 @@ NvmExpressFreeBounceBlock(
     )
 {
   if (Block->IsHostVisible)  {
-    mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, Block->ProtectionHandle);
+    mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &Block->ProtectionHandle);
   }
 
   if (Block->BouncePageStructureBase) {
@@ -614,7 +614,7 @@ NvmExpressMakeAddressRangePrivate(
 {
   ASSERT(IsIsolated());
 
-  mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, HostVisibilityContext->RangeProtectionHandle);
+  mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &HostVisibilityContext->RangeProtectionHandle);
 
   AddressRange = (VOID *)((UINT64)AddressRange & ~mCanonicalizationMask);
   if ((UINTN)AddressRange >= mSharedGpaBoundary) {
