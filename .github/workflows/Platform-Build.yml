@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - '*'
+  workflow_dispatch:
+
+# Bump this when releasing a new major/minor version. The patch number
+# auto-increments from the latest existing GitHub release with this prefix.
+env:
+  BASE_VERSION: "26.0"
 
 jobs:
   build:
@@ -24,11 +30,11 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Set up Python 3.12
       - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
@@ -131,8 +137,50 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{matrix.target}}-${{matrix.arch}}-${{matrix.tools}}artifacts
+          name: ${{matrix.target}}-${{matrix.arch}}-${{matrix.tools}}-artifacts
           path: |
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/FV/MSVM.fd
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/MAP/
             Build/Msvm${{matrix.arch}}/${{matrix.target}}_${{matrix.tools}}/PDB/
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package artifacts for release
+        run: |
+          mkdir -p release
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            tar -czf "../../release/${name}.tar.gz" -C "$name" .
+          done
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Find the highest patch number for this major.minor version
+          # and increment by one. Resets to 0 when BASE_VERSION is bumped.
+          PATCH=$(gh release list --limit 1000 --json tagName \
+            --jq '[.[] | .tagName | select(startswith("v'"${{ env.BASE_VERSION }}"'.")) | ltrimstr("v'"${{ env.BASE_VERSION }}"'.") | tonumber] | max // -1 | . + 1')
+          TAG="v${{ env.BASE_VERSION }}.${PATCH}"
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --generate-notes \
+            release/*.tar.gz
