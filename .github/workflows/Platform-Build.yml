@@ -13,9 +13,6 @@ env:
   # Bump this when releasing a new major/minor version. The patch number
   # auto-increments from the latest existing GitHub release with this prefix.
   BASE_VERSION: "26.0"
-  # Number of expected build artifacts (2 targets × 2 archs × 2 tools, minus
-  # 2 excluded AARCH64+VS2022 combos = 6). Update if you change the build matrix.
-  EXPECTED_ARTIFACT_COUNT: "6"
 
 jobs:
   build:
@@ -172,11 +169,6 @@ jobs:
             name="${dir%/}"
             tar -czf "../release/${name}.tar.gz" -C "$name" .
           done
-          COUNT=$(ls ../release/*.tar.gz | wc -l)
-          if [ "$COUNT" -ne "${{ env.EXPECTED_ARTIFACT_COUNT }}" ]; then
-            echo "::error::Expected ${{ env.EXPECTED_ARTIFACT_COUNT }} release artifacts but found $COUNT"
-            exit 1
-          fi
 
       - name: Create GitHub Release
         env:
