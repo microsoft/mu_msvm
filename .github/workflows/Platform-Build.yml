@@ -9,9 +9,9 @@ on:
       - '*'
   workflow_dispatch:
 
-# Bump this when releasing a new major/minor version. The patch number
-# auto-increments from the latest existing GitHub release with this prefix.
 env:
+  # Bump this when releasing a new major/minor version. The patch number
+  # auto-increments from the latest existing GitHub release with this prefix.
   BASE_VERSION: "26.0"
 
 jobs:
@@ -55,10 +55,10 @@ jobs:
           Write-Host "Checking Visual Studio installation path..."
           $vsPath = &"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
           Write-Host "VS Path: $vsPath"
-          
+
           $vsInstaller = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
           Write-Host "Installing Visual Studio components..."
-          
+
           $installResult = & $vsInstaller modify `
             --installPath $vsPath `
             --add Microsoft.VisualStudio.Component.VC.CoreBuildTools `
@@ -69,12 +69,12 @@ jobs:
             --add Microsoft.VisualStudio.Component.VC.Llvm.Clang `
             --add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang `
             --quiet --wait
-          
+
           Write-Host "Installation completed with exit code: $LASTEXITCODE"
           if ($LASTEXITCODE -ne 0) {
             throw "Visual Studio component installation failed with exit code: $LASTEXITCODE"
           }
-          
+
           Write-Host "Waiting for VS installer to finalize changes..."
           Start-Sleep -Seconds 10
 
@@ -86,21 +86,21 @@ jobs:
           if (-not $vsPath) { throw "Visual Studio is not installed." }
 
           Write-Host "Verifying required build tools are available..."
-          
+
           # Check for VC++ build tools
           $vcToolsPath = Join-Path $vsPath "VC\Tools\MSVC"
           if (-not (Test-Path $vcToolsPath)) {
             throw "VC++ tools directory not found at: $vcToolsPath"
           }
           Write-Host "✓ VC++ build tools found"
-          
+
           # Check for Windows SDK
           $windowsSdkPath = "${env:ProgramFiles(x86)}\Windows Kits\10"
           if (-not (Test-Path $windowsSdkPath)) {
             throw "Windows SDK not found at: $windowsSdkPath"
           }
           Write-Host "✓ Windows SDK found"
-          
+
           # Check for ARM64 tools if they exist
           $armToolsPath = Join-Path $vcToolsPath "*\bin\Hostx64\arm64"
           if (Get-ChildItem $armToolsPath -ErrorAction SilentlyContinue) {
@@ -167,7 +167,7 @@ jobs:
           cd artifacts
           for dir in */; do
             name="${dir%/}"
-            tar -czf "../../release/${name}.tar.gz" -C "$name" .
+            tar -czf "../release/${name}.tar.gz" -C "$name" .
           done
 
       - name: Create GitHub Release
@@ -176,7 +176,7 @@ jobs:
         run: |
           # Find the highest patch number for this major.minor version
           # and increment by one. Resets to 0 when BASE_VERSION is bumped.
-          PATCH=$(gh release list --limit 1000 --json tagName \
+          PATCH=$(gh release list --repo "${{ github.repository }}" --limit 1000 --json tagName \
             --jq '[.[] | .tagName | select(startswith("v'"${{ env.BASE_VERSION }}"'.")) | ltrimstr("v'"${{ env.BASE_VERSION }}"'.") | tonumber] | max // -1 | . + 1')
           TAG="v${{ env.BASE_VERSION }}.${PATCH}"
           gh release create "$TAG" \
