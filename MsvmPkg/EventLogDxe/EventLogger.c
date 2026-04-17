@@ -397,7 +397,7 @@ Return Value:
 
     if (IsHardwareIsolatedNoParavisor() && hostEmulatorsPresent)
     {
-        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, protectionHandle);
+        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &protectionHandle);
     }
 
     channel->Stats.Flush++;

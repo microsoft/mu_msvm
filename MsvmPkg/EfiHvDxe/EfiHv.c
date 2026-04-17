@@ -1154,6 +1154,12 @@ EfiHvpModifySparseGpaPageHostVisibility(
         *PageCountProcessed = 0;
     }
 
+    if (PageCount == 0)
+    {
+        DEBUG((DEBUG_ERROR, "%a: 0 page count\n", __func__));
+        return EFI_INVALID_PARAMETER;
+    }
+
     paravisorPresent = IsParavisorPresent();
 
 #if defined(MDE_CPU_X64)
@@ -1517,8 +1523,8 @@ EfiHvMakeAddressRangeHostVisible(
 VOID
 EFIAPI
 EfiHvMakeAddressRangeNotHostVisible(
-    IN  EFI_HV_IVM_PROTOCOL *This,
-    IN  EFI_HV_PROTECTION_HANDLE ProtectionHandle
+    IN      EFI_HV_IVM_PROTOCOL *This,
+    IN OUT  EFI_HV_PROTECTION_HANDLE *ProtectionHandle
     )
 /*++
     Makes a chunk of memory not visible to the host.
@@ -1533,15 +1539,23 @@ EfiHvMakeAddressRangeNotHostVisible(
 
 --*/
 {
-    EFI_STATUS status;
+    if (ProtectionHandle == NULL || *ProtectionHandle == NULL)
+    {
+        // fail fast here as this error either indicates a double free or another address range
+        // is not made private, which can cause a security issue due to unexpected host visibility.
+        FAIL_FAST(EFI_INVALID_PARAMETER, "Invalid protection handle"); 
+    }
 
-    RemoveEntryList(&ProtectionHandle->ListEntry);
+    EFI_STATUS status;
+    EFI_HV_PROTECTION_OBJECT *ProtectionObject = (EFI_HV_PROTECTION_OBJECT *)(*ProtectionHandle);
+
+    RemoveEntryList(&ProtectionObject->ListEntry);
 
     status =
         EfiHvpModifySparseGpaPageHostVisibility(
             HV_MAP_GPA_PERMISSIONS_NONE,
-            ProtectionHandle->NumberOfPages,
-            ProtectionHandle->GpaPageBase,
+            ProtectionObject->NumberOfPages,
+            ProtectionObject->GpaPageBase,
             NULL);
     if (EFI_ERROR(status))
     {
@@ -1551,6 +1565,9 @@ EfiHvMakeAddressRangeNotHostVisible(
         //
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
+
+    FreePool(ProtectionObject);
+    *ProtectionHandle = NULL;
 }
 
 
@@ -1861,7 +1878,7 @@ EfiHvDisconnectFromHypervisor (
     {
         entry = GetFirstNode(&mHostVisiblePageList);
         protectionObject = BASE_CR(entry, EFI_HV_PROTECTION_OBJECT, ListEntry);
-        EfiHvMakeAddressRangeNotHostVisible(NULL, protectionObject);
+        EfiHvMakeAddressRangeNotHostVisible(NULL, &protectionObject);
     }
 
     //

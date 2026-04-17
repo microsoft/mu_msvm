@@ -2796,7 +2796,7 @@ Return Value:
 {
     if (Block->IsHostVisible)
     {
-        mHv->MakeAddressRangeNotHostVisible(mHv, Block->ProtectionHandle);
+        mHv->MakeAddressRangeNotHostVisible(mHv, &Block->ProtectionHandle);
     }
 
     if (Block->BouncePageStructureBase)
