@@ -20,6 +20,7 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/SafeIntLib.h>
+#include <Library/CrashLib.h>
 #include <BiosInterface.h>
 #include <Config.h>
 
@@ -421,6 +422,31 @@ ConfigureMmu(
         MaxAddress, lowMmioSize, highMmioBaseAddress, highMmioSize));
 
     //
+    // Validate that MMIO regions fit within the physical address space.
+    // The host may provide MMIO ranges that extend beyond the CPU's
+    // physical address width, which would cause page table entries for
+    // unmappable addresses.
+    //
+    {
+        UINT64 highMmioEnd;
+        if (RETURN_ERROR(SafeUint64Add(highMmioBaseAddress, highMmioSize, &highMmioEnd)))
+        {
+            DEBUG((DEBUG_ERROR,
+                "ConfigureMmu: High MMIO range overflow (base=0x%lx, size=0x%lx)\n",
+                highMmioBaseAddress, highMmioSize));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        if (highMmioEnd > MaxAddress + 1)
+        {
+            DEBUG((DEBUG_ERROR,
+                "ConfigureMmu: High MMIO end 0x%lx exceeds physical address limit 0x%lx\n",
+                highMmioEnd, MaxAddress));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+    }
+
+    //
     // Fill table that drives the mmu setup functions.
     //
     // From zero to beginning of low MMIO gap.
@@ -460,18 +486,17 @@ ConfigureMmu(
     virtualMemoryTable[4].VirtualBase = virtualMemoryTable[4].PhysicalBase;
 
     //
-    // Validate that the final region does not underflow.
+    // Validate that the final region does not underflow. This should
+    // not happen given the MMIO validation above, but check defensively.
     //
     if (virtualMemoryTable[4].PhysicalBase > MaxAddress)
     {
         DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress (0x%lx)\n",
             virtualMemoryTable[4].PhysicalBase, MaxAddress));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     virtualMemoryTable[4].Length = (MaxAddress - virtualMemoryTable[4].PhysicalBase) + 1;
-
     virtualMemoryTable[4].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
     virtualMemoryTable[5].PhysicalBase = 0;
