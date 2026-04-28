@@ -10,7 +10,7 @@
 #
 ##
 
-#Override : 00000002 | MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf | 7e0eadc2c658b4d73335aba27f4a1c0c | 2026-02-27T22-48-59 | 187a160e565265c7e9bfdcf157beebef9f2287b9
+#Override : 00000002 | MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf | bc15ab4a6687a3445fd2152860f80fe7 | 2026-04-28T00-00-00 | 3d43ac3575cdd6ffa7ac36c7ff50d190c8a58097
 
 [Defines]
   INF_VERSION                    = 0x00010005
@@ -87,9 +87,11 @@
   ## MU_CHANGE [BEGIN] - Support alternative hardware queue sizes in NVME driver
   gEfiMdeModulePkgTokenSpaceGuid.PcdSupportAlternativeQueueSize ## CONSUMES
   ## MU_CHANGE [END] - Support alternative hardware queue sizes in NVME driver
+  ## MU_CHANGE [BEGIN] - NVMe namespace filtering
+  gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeNamespaceFilterId         ## CONSUMES
+  ## MU_CHANGE [END] - NVMe namespace filtering
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                ## MS_HYP_CHANGE
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask ## MS_HYP_CHANGE
-  gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter                       ## MS_HYP_CHANGE
 
 # [Event]
 # EVENT_TYPE_RELATIVE_TIMER ## SOMETIMES_CONSUMES

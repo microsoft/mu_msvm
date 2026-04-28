@@ -153,11 +153,6 @@ extern EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL  gNvmExpressDriverSupportedEfiV
 
 #define NVME_CONTROLLER_ID  0
 
-// MS_HYP_CHANGE: FIRST_NAMESPACE_ID for filtering
-#define NVME_FIRST_NSID  0x00000001
-
-//
-// Time out value for Nvme transaction execution
 //
 // MS_HYP_CHANGE: Extended I/O timeout for Azure
 #define NVME_GENERIC_TIMEOUT  EFI_TIMER_PERIOD_SECONDS (120)
