@@ -645,7 +645,7 @@ NvmExpressPassThru (
     QueueSize = MIN (NVME_ASYNC_CSQ_SIZE, Private->Cap.Mqes) + 1;
   }
 
-  // MU_CHANGE [END]
+  // MU_CHANGE [END] - Support alternative hardware queue sizes in NVME driver
 
   if (Packet->QueueType == NVME_ADMIN_QUEUE) {
     QueueId = 0;
@@ -931,7 +931,7 @@ NvmExpressPassThru (
     }
   }
 
-  // MU_CHANGE [END]
+  // MU_CHANGE [END] - Support alternative hardware queue sizes in NVME driver
 
   Data   = ReadUnaligned32 ((UINT32 *)&Private->SqTdbl[QueueId]);
   Status = PciIo->Mem.Write (
@@ -1069,7 +1069,7 @@ NvmExpressPassThru (
     //
     // Reset the NVMe controller.
     //
-    Status = NvmeControllerInit (Private);
+    Status = NvmeControllerReset (Private); // MU_CHANGE - Allocate IO Queue Buffer
     if (!EFI_ERROR (Status)) {
       Status = AbortAsyncPassThruTasks (Private);
       if (!EFI_ERROR (Status)) {
@@ -1103,7 +1103,7 @@ NvmExpressPassThru (
     }
   }
 
-  // MU_CHANGE [END]
+  // MU_CHANGE [END] - Support alternative hardware queue sizes in NVME driver
 
   Data           = ReadUnaligned32 ((UINT32 *)&Private->CqHdbl[QueueId]);
   PreviousStatus = Status;
