@@ -81,6 +81,7 @@
     gArmTokenSpaceGuid
 
 [Pcd]
+    gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeNamespaceFilterId
     gEfiNetworkPkgTokenSpaceGuid.PcdDhcp6UidType
     gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdFdSize
@@ -195,7 +196,6 @@
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
-    gMsvmPkgTokenSpaceGuid.PcdNvmeNamespaceFilter
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 

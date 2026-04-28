@@ -2,8 +2,7 @@
 #  EFI Diagnostics DXE driver.
 #
 #  Advertises the Advanced Logger buffer GPA to the host VMM for EFI
-#  diagnostics collection. Handles the buffer relocation that occurs when
-#  AdvLoggerPkg migrates the PEI log buffer at EndOfDxe.
+#  diagnostics collection.
 #
 #  Copyright (c) Microsoft Corporation.
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -40,7 +39,6 @@
 [Guids]
   gAdvancedLoggerHobGuid                                  ## CONSUMES
   gEfiEventExitBootServicesGuid                           ## CONSUMES
-  gMsvmUnableToBootEventGuid                              ## CONSUMES
 
 [Depex]
   TRUE

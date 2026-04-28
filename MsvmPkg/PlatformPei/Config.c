@@ -1653,7 +1653,7 @@ Return Value:
             {
                 UEFI_CONFIG_VPCI_INSTANCE_FILTER *filter = (UEFI_CONFIG_VPCI_INSTANCE_FILTER*) header;
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdVpciInstanceFilterGuidPtr, (UINT64) filter->InstanceGuid));
-                PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdNvmeNamespaceFilter, TRUE));
+                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdNvmeNamespaceFilterId, 1));
                 break;
             }
 #if defined(MDE_CPU_X64)
