@@ -23,12 +23,11 @@
 #include <Library/UefiLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/SynchronizationLib.h>
+#include <Library/CrashLib.h>
 #include <Library/DebugLib.h>
 #include <Library/PrintLib.h>
 #include <Library/EmclLib.h>
 
-
-#define VMBFS_BAD_HOST ASSERT(FALSE)
 
 #define GetPacketBuffer(fileInformation, Type) ((Type*)((fileInformation)->FileSystem->FileSystemInformation.PacketBuffer))
 #define GetPacketSize(fileInformation) (((fileInformation)->FileSystem->FileSystemInformation.PacketSize))
