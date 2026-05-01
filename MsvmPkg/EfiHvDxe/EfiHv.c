@@ -1926,6 +1926,18 @@ EfiHvDisconnectFromHypervisor (
 #if defined (MDE_CPU_X64)
     if (mHypercallPage != NULL)
     {
+        //
+        // Clear the EFI_MEMORY_RO attribute that was applied to this page
+        // after allocation before returning it to the page allocator, so a
+        // later allocator consumer does not get a still-read-only page.
+        //
+        status = mCpu->SetMemoryAttributes(mCpu, (EFI_PHYSICAL_ADDRESS)mHypercallPage, EFI_PAGE_SIZE, 0);
+        if (EFI_ERROR(status))
+        {
+            DEBUG((DEBUG_ERROR, "--- %a: failed to clear memory attributes - %r \n", __func__, status));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
         FreePages(mHypercallPage, 1);
         mHypercallPage = NULL;
     }
