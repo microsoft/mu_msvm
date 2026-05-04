@@ -107,6 +107,7 @@
   EmclLib|MsvmPkg/Library/EmclLib/EmclLib.inf
   FltUsedLib|MsCorePkg/Library/FltUsedLib/FltUsedLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
+  Hash2CryptoLib|SecurityPkg/Library/DxeHash2CryptoLib/DxeHash2CryptoLib.inf
   HwResetSystemLib|ArmPkg/Library/ArmPsciResetSystemLib/ArmPsciResetSystemLib.inf
   ImagePropertiesRecordLib|MdeModulePkg/Library/ImagePropertiesRecordLib/ImagePropertiesRecordLib.inf
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsicArmVirt.inf
@@ -845,6 +846,9 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
 
   MsGraphicsPkg/DisplayEngineDxe/DisplayEngineDxe.inf
+
+  # Security components
+  SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
 
  # Networking components
 

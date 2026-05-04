@@ -245,6 +245,8 @@ INF PrmPkg/PrmLoaderDxe/PrmLoaderDxe.inf
 INF PrmPkg/PrmSsdtInstallDxe/PrmSsdtInstallDxe.inf
 !endif
 
+INF SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
+
 INF NetworkPkg/ArpDxe/ArpDxe.inf
 INF NetworkPkg/Dhcp4Dxe/Dhcp4Dxe.inf
 INF NetworkPkg/Dhcp6Dxe/Dhcp6Dxe.inf
