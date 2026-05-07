@@ -1,0 +1,24 @@
+# Diagnostic pipeline whose PRIMARY source is microsoft/mu_msvm.
+# Tests whether push events on this repo can trigger an ADO pipeline at all
+# (independent of resources.repositories trigger semantics).
+trigger:
+  branches:
+    include:
+      - user/maheeraeron/sync-trigger-test
+
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- checkout: none
+- pwsh: |
+    Write-Host "===================================================="
+    Write-Host "PRIMARY-REPO TRIGGER TEST FIRED"
+    Write-Host "----------------------------------------------------"
+    Write-Host "Build reason        : $env:BUILD_REASON"
+    Write-Host "Build sourceVersion : $env:BUILD_SOURCEVERSION"
+    Write-Host "Build sourceBranch  : $env:BUILD_SOURCEBRANCH"
+    Write-Host "===================================================="
+  displayName: 'Show trigger metadata'
