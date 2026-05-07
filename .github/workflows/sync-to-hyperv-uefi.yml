@@ -1,0 +1,65 @@
+# Triggers the ADO sync pipeline that merges mu_msvm/main into hyperv.uefi/official/main.
+#
+# Auth: GitHub OIDC -> Entra ID federated credential -> service principal "hyperv.uefi ADO access"
+#       -> ADO REST API. No PAT, no stored secrets.
+#
+# Required GitHub repo variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   AZURE_CLIENT_ID    Application (client) ID of "hyperv.uefi ADO access" app registration.
+#   AZURE_TENANT_ID    Microsoft tenant ID (72f988bf-86f1-41af-91ab-2d7cd011db47).
+#   ADO_ORG_URL        https://dev.azure.com/microsoft
+#   ADO_PROJECT        OS
+#   ADO_PIPELINE_ID    Numeric ID of the Sync-MuMsvm pipeline in microsoft/OS.
+
+name: Sync to hyperv.uefi
+
+on:
+  push:
+    branches:
+      - main
+      - user/maheeraeron/sync-trigger-test  # remove after validation
+    paths-ignore:
+      - 'MU_BASECORE'
+      - 'Common/MU'
+      - 'Feature/DEBUGGER'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # required for OIDC token issuance
+  contents: read
+
+jobs:
+  trigger-ado-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Queue ADO sync pipeline
+        shell: bash
+        env:
+          ADO_ORG_URL: ${{ vars.ADO_ORG_URL }}
+          ADO_PROJECT: ${{ vars.ADO_PROJECT }}
+          ADO_PIPELINE_ID: ${{ vars.ADO_PIPELINE_ID }}
+          UPSTREAM_SHA: ${{ github.sha }}
+          UPSTREAM_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          echo "Triggering ADO sync pipeline ${ADO_PIPELINE_ID} for upstream ${UPSTREAM_REF}@${UPSTREAM_SHA}"
+
+          # Mint an Entra access token scoped to the Azure DevOps resource.
+          # 499b84ac-1321-427f-aa17-267ca6975798 is the well-known Azure DevOps app ID.
+          ADO_TOKEN=$(az account get-access-token \
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
+            --query accessToken -o tsv)
+
+          # POST to the ADO REST API to queue a run of the sync pipeline.
+          # https://learn.microsoft.com/rest/api/azure/devops/pipelines/runs/run-pipeline
+          curl --fail-with-body -sS -X POST \
+            "${ADO_ORG_URL}/${ADO_PROJECT}/_apis/pipelines/${ADO_PIPELINE_ID}/runs?api-version=7.1" \
+            -H "Authorization: Bearer ${ADO_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
