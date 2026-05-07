@@ -47,6 +47,12 @@
   # BaseTools/Conf: Make ASLCC_FLAGS independent of CC_FLAGS
   # GenFW:ConvertELF fails otherwise.
   # Ideal, but does not work: *_GCC_AARCH64_ASLCC_FLAGS = $(GCC_AARCH64_CC_FLAGS)
+  *_GCC_AARCH64_ASLCC_FLAGS = -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char -ffunction-sections -fdata-sections -Wno-address -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-pic -fno-pie -ffixed-x18 -mstack-protector-guard=global
+
+  # Workaround https://github.com/tianocore/edk2/pull/11535/changes/38760819a84de03127e0d93abd238eee2ce7a6e8
+  # BaseTools/Conf: Make ASLCC_FLAGS independent of CC_FLAGS
+  # GenFW:ConvertELF fails otherwise.
+  # Ideal, but does not work: *_GCC_AARCH64_ASLCC_FLAGS = $(GCC_AARCH64_CC_FLAGS)
   *_GCC_AARCH64_ASLCC_FLAGS = -mlittle-endian -fno-short-enums -fverbose-asm -funsigned-char  -ffunction-sections -fdata-sections -Wno-address -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-pic -fno-pie -ffixed-x18 -mstack-protector-guard=global
 
 # ARM64 has a UEFI spec requirement that RuntimeServiceCode/Data is 64K aligned
