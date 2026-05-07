@@ -56,10 +56,11 @@ jobs:
             --resource 499b84ac-1321-427f-aa17-267ca6975798 \
             --query accessToken -o tsv)
 
-          # POST to the ADO REST API to queue a run of the sync pipeline.
-          # https://learn.microsoft.com/rest/api/azure/devops/pipelines/runs/run-pipeline
+          # POST to the ADO REST API to queue a build of the sync pipeline.
+          # Use the Builds API (older) since ADO_PIPELINE_ID is a build definitionId.
+          # https://learn.microsoft.com/rest/api/azure/devops/build/builds/queue
           curl --fail-with-body -sS -X POST \
-            "${ADO_ORG_URL}/${ADO_PROJECT}/_apis/pipelines/${ADO_PIPELINE_ID}/runs?api-version=7.1" \
+            "${ADO_ORG_URL}/${ADO_PROJECT}/_apis/build/builds?api-version=7.1" \
             -H "Authorization: Bearer ${ADO_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{}'
+            -d "{\"definition\":{\"id\":${ADO_PIPELINE_ID}}}"
