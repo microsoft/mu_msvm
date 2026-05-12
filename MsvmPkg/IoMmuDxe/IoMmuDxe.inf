@@ -1,0 +1,49 @@
+## @file
+#  Hyper-V IOMMU DXE Driver
+#
+#  Implements the EDKII_IOMMU_PROTOCOL for Hyper-V isolated virtual machines.
+#  Provides generic bounce buffering for DMA operations so that any driver
+#  using PciIo/IoMmuLib can transparently perform DMA in isolated VMs.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = IoMmuDxe
+    FILE_GUID                      = 7E3B4F5A-1C2D-4E8F-9A0B-D6C5E4F3A2B1
+    MODULE_TYPE                    = DXE_DRIVER
+    VERSION_STRING                 = 1.0
+    ENTRY_POINT                    = IoMmuDxeEntryPoint
+
+[Sources]
+    IoMmuBounce.c
+    IoMmuDxe.c
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    BaseLib
+    BaseMemoryLib
+    DebugLib
+    IsolationLib
+    MemoryAllocationLib
+    PcdLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+
+[Protocols]
+    gEdkiiIoMmuProtocolGuid         ## PRODUCES
+    gEfiHvIvmProtocolGuid           ## CONSUMES
+
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
+    gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+
+[Depex]
+    TRUE
