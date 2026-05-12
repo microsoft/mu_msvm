@@ -1,0 +1,21 @@
+# Force CRLF line endings for all text files in MsvmPkg on every platform.
+# This ensures developers on Linux/macOS don't silently get LF-normalized
+# checkouts that would produce massive diffs when committed back.
+* text=auto eol=crlf
+
+# Binary assets - never normalize.
+*.bmp  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.exe  binary
+*.bin  binary
+*.zip  binary
+
+# Native iasl binaries shipped under Tools/edk2-acpica-iasl_extdep/ have no
+# extension on Linux/macOS - mark them as binary explicitly.
+Tools/edk2-acpica-iasl_extdep/Linux-ARM/iasl   binary
+Tools/edk2-acpica-iasl_extdep/Linux-x86/iasl   binary
+Tools/edk2-acpica-iasl_extdep/MacOs-x86/iasl   binary
