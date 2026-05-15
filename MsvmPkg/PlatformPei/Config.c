@@ -942,7 +942,7 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdWatchdogEnabled, (UINT8) ConfigFlags->Flags.WatchdogEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
-    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, ConfigFlags->Flags.VmbusDisabled ? FALSE : TRUE));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, !ConfigFlags->Flags.VmbusDisabled));
 
     //
     // If memory protections are enabled, configure the value into the HOB.
@@ -1797,8 +1797,9 @@ Return Value:
     }
 
     //
-    // If VMBus is disabled, MMIO ranges are not required since they are
-    // VMBus MMIO gaps.
+    // If VMBus is disabled, MMIO ranges are not required since they describe
+    // VMBus MMIO gaps. Mark the structure as found so the validation below
+    // does not fail.
     //
     if (!PcdGetBool(PcdVmbusEnabled))
     {
