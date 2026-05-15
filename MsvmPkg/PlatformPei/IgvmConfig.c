@@ -17,11 +17,13 @@
 #endif
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
+#include <Library/HobLib.h>
 #include <Library/IoLib.h>
 #include <Library/PeiServicesLib.h>
 #include <Library/ResourcePublicationLib.h>
 #include <Hv.h>
 #include <Config.h>
+#include <AcpiReplacementTable.h>
 #include <IsolationTypes.h>
 #include <UefiConstants.h>
 
@@ -492,8 +494,11 @@ Return Value:
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
-    PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSratPtr, (UINT64)sratHdr));
-    PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSratSize, sratHdr->Length));
+    //
+    // Install the SRAT as a replacement table HOB so the generic DXE ACPI
+    // path picks it up.
+    //
+    BuildGuidDataHob(&gAcpiReplacementTableHobGuid, (VOID *)sratHdr, sratHdr->Length);
 
     //
     // Parse the command line to obtain debug parameters.

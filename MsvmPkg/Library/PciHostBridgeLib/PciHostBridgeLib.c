@@ -1,8 +1,8 @@
 /** @file
   Platform PCI Host Bridge Library for Hyper-V Gen2 VMs.
 
-  Reads MCFG + PcieBarApertures from config blob PCDs and returns
-  a PCI_ROOT_BRIDGE array for PciHostBridgeDxe.
+  Reads MCFG from the ACPI replacement table HOB + PcieBarApertures from
+  config blob PCDs and returns a PCI_ROOT_BRIDGE array for PciHostBridgeDxe.
 
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -12,6 +12,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
+#include <Library/HobLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PciHostBridgeLib.h>
@@ -19,6 +20,7 @@
 #include <Protocol/PciHostBridgeResourceAllocation.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <AcpiReplacementTable.h>
 #include <BiosInterface.h>
 #include <PciConstants.h>
 
@@ -62,9 +64,6 @@ PciHostBridgeGetRootBridges (
     OUT UINTN  *Count
     )
 {
-    UINT64                       McfgPtr;
-    UINT32                       McfgSize;
-    MCFG_TABLE_HEADER            *McfgHdr;
     UINT32                       McfgDataLen;
     UINT32                       McfgEntryCount;
     MCFG_ALLOCATION_ENTRY        *McfgEntries;
@@ -80,24 +79,27 @@ PciHostBridgeGetRootBridges (
     *Count = 0;
 
     //
-    // Read MCFG from PCD.
+    // Find MCFG table from HOB list.
     //
-    McfgPtr  = PcdGet64 (PcdMcfgPtr);
-    McfgSize = PcdGet32 (PcdMcfgSize);
+    EFI_PEI_HOB_POINTERS          hob;
+    MCFG_TABLE_HEADER            *McfgHdr = NULL;
 
-    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
-
-    if (McfgPtr == 0 || McfgSize < sizeof (MCFG_TABLE_HEADER)) {
-        DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
-        return NULL;
+    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+    while (hob.Raw != NULL)
+    {
+        EFI_ACPI_DESCRIPTION_HEADER *acpiHdr = (EFI_ACPI_DESCRIPTION_HEADER *)GET_GUID_HOB_DATA(hob.Guid);
+        if (acpiHdr->Signature == EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE)
+        {
+            McfgHdr = (MCFG_TABLE_HEADER *)acpiHdr;
+            break;
+        }
+        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
     }
 
-    McfgHdr = (MCFG_TABLE_HEADER *)(UINTN)McfgPtr;
+    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgHdr=%p\n", McfgHdr));
 
-    if (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER) ||
-        McfgHdr->Header.Length > McfgSize) {
-        DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG Length %u (PCD size %u)\n",
-                McfgHdr->Header.Length, McfgSize));
+    if (McfgHdr == NULL || McfgHdr->Header.Length < sizeof(MCFG_TABLE_HEADER)) {
+        DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
         return NULL;
     }
 

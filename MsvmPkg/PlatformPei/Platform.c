@@ -13,6 +13,7 @@
 #include <Config.h>
 #include <Hob.h>
 #include <Hv.h>
+#include <AcpiReplacementTable.h>
 #include <Guid/MemoryTypeInformation.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
@@ -763,60 +764,69 @@ Return Value:
     // in page tables for PciSegmentLib MMIO access, while keeping
     // non-enumerated ECAM ranges out of GCD entirely.
     //
-    UINT64 McfgPtr = PcdGet64(PcdMcfgPtr);
-    UINT32 McfgSize = PcdGet32(PcdMcfgSize);
-    if (McfgPtr != 0 && McfgSize >= sizeof(MCFG_TABLE_HEADER)) {
-        MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)(UINTN) McfgPtr;
-
-        if (McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER) &&
-            McfgHdr->Header.Length <= McfgSize) {
-            UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
-            UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
-            MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
-
-            for (UINT32 i = 0; i < NumEntries; i++) {
-                if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
-                    continue;
-                }
-
-                //
-                // Only create ECAM HOB if this segment has a matching
-                // PcieBarApertures entry.
-                //
-                BOOLEAN HasAperture = FALSE;
-                for (UINT32 j = 0; j < ApertureCount; j++) {
-                    if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
-                        HasAperture = TRUE;
-                        break;
-                    }
-                }
-                if (!HasAperture) {
-                    continue;
-                }
-
-                UINT64 EcamBase = Entries[i].BaseAddress
-                    + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
-                UINT64 EcamSize =
-                    (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
-                    * PCIE_ECAM_BYTES_PER_BUS;
-
-                if (EcamBase + EcamSize < EcamBase) {
-                    DEBUG((DEBUG_ERROR,
-                           "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
-                           Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
-                    continue;
-                }
-
-                HobAddMmioRange(EcamBase, EcamSize);
-
-                //
-                // Also create a memory allocation HOB so the GCD marks this
-                // ECAM range as allocated during DxeCore init. This prevents
-                // other DXE drivers (e.g., VideoDxe) from accidentally
-                // allocating MMIO space that overlaps the ECAM region.
-                //
-                BuildMemoryAllocationHob(EcamBase, EcamSize, EfiMemoryMappedIO);
+    MCFG_TABLE_HEADER *McfgHdr = NULL;
+    {
+        EFI_PEI_HOB_POINTERS hob;
+        hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+        while (hob.Raw != NULL)
+        {
+            EFI_ACPI_DESCRIPTION_HEADER *acpiHdr = (EFI_ACPI_DESCRIPTION_HEADER *)GET_GUID_HOB_DATA(hob.Guid);
+            if (acpiHdr->Signature == EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE)
+            {
+                McfgHdr = (MCFG_TABLE_HEADER *)acpiHdr;
+                break;
             }
+            hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
+        }
+    }
+
+    if (McfgHdr != NULL && McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER)) {
+        UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
+        UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
+        MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
+
+        for (UINT32 i = 0; i < NumEntries; i++) {
+            if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
+                continue;
+            }
+
+            //
+            // Only create ECAM HOB if this segment has a matching
+            // PcieBarApertures entry.
+            //
+            BOOLEAN HasAperture = FALSE;
+            for (UINT32 j = 0; j < ApertureCount; j++) {
+                if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
+                    HasAperture = TRUE;
+                    break;
+                }
+            }
+            if (!HasAperture) {
+                continue;
+            }
+
+            UINT64 EcamBase = Entries[i].BaseAddress
+                + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
+            UINT64 EcamSize =
+                (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
+                * PCIE_ECAM_BYTES_PER_BUS;
+
+            if (EcamBase + EcamSize < EcamBase) {
+                DEBUG((DEBUG_ERROR,
+                       "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
+                       Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
+                continue;
+            }
+
+            HobAddMmioRange(EcamBase, EcamSize);
+
+            //
+            // Also create a memory allocation HOB so the GCD marks this
+            // ECAM range as allocated during DxeCore init. This prevents
+            // other DXE drivers (e.g., VideoDxe) from accidentally
+            // allocating MMIO space that overlaps the ECAM region.
+            //
+            BuildMemoryAllocationHob(EcamBase, EcamSize, EfiMemoryMappedIO);
         }
     }
 

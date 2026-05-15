@@ -12,12 +12,14 @@
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/CrashLib.h>
+#include <Library/HobLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/DebugLib.h>
 #include <Library/PcdLib.h>
 #include <Library/IoLib.h>
 #include <Guid/Acpi.h>
 #include <AcpiPlatform.h>
+#include <AcpiReplacementTable.h>
 #include <IsolationTypes.h>
 
 typedef EFI_STATUS (*INIT_ROUTINE)(EFI_ACPI_DESCRIPTION_HEADER*);
@@ -76,6 +78,99 @@ Return Value:
         {
             return entry->initRoutine(Table);
         }
+    }
+
+    return EFI_SUCCESS;
+}
+
+
+BOOLEAN
+AcpiSignatureHasReplacementHob(
+    IN UINT32 Signature
+    )
+/*++
+
+Routine Description:
+
+    Checks whether a VMM-provided replacement table exists in the HOB list
+    for the given ACPI table signature.
+
+Arguments:
+
+    Signature - The 4-byte ACPI table signature to look for.
+
+Return Value:
+
+    TRUE if a replacement HOB exists, FALSE otherwise.
+
+--*/
+{
+    EFI_PEI_HOB_POINTERS hob;
+
+    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+    while (hob.Raw != NULL)
+    {
+        EFI_ACPI_DESCRIPTION_HEADER *table =
+            (EFI_ACPI_DESCRIPTION_HEADER *) GET_GUID_HOB_DATA(hob.Guid);
+
+        if (table->Signature == Signature)
+        {
+            return TRUE;
+        }
+
+        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
+    }
+
+    return FALSE;
+}
+
+
+EFI_STATUS
+AcpiInstallReplacementTables(
+    IN EFI_ACPI_TABLE_PROTOCOL *AcpiTable
+    )
+/*++
+
+Routine Description:
+
+    Installs all VMM-provided ACPI replacement tables found in the HOB list.
+
+Arguments:
+
+    AcpiTable - A pointer to the ACPI table protocol.
+
+Return Value:
+
+    EFI_STATUS.
+
+--*/
+{
+    EFI_PEI_HOB_POINTERS hob;
+    EFI_STATUS status;
+    UINTN tableHandle;
+
+    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+    while (hob.Raw != NULL)
+    {
+        EFI_ACPI_DESCRIPTION_HEADER *table =
+            (EFI_ACPI_DESCRIPTION_HEADER *) GET_GUID_HOB_DATA(hob.Guid);
+
+        DEBUG((DEBUG_INFO, "Installing VMM-provided ACPI table: %.4a (0x%08x)\n",
+               (CHAR8 *)&table->Signature, table->Signature));
+
+        status = AcpiTable->InstallAcpiTable(AcpiTable,
+                                             table,
+                                             table->Length,
+                                             &tableHandle);
+
+        if (EFI_ERROR(status))
+        {
+            DEBUG((DEBUG_ERROR, "Failed to install VMM replacement table 0x%08x: %r\n",
+                   table->Signature, status));
+            return status;
+        }
+
+        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
     }
 
     return EFI_SUCCESS;
@@ -218,9 +313,17 @@ Return Value:
 
 
     //
-    // Get the MADT from the config blob parsed in PEI.
+    // Get the MADT from the IGVM config parsed in PEI. This is only set for
+    // hardware-isolated VMs (TDX); non-isolated VMs provide the MADT via the
+    // generic ACPI table HOB path instead.
     //
     madtSize = PcdGet32(PcdMadtSize);
+
+    if (madtSize == 0)
+    {
+        return EFI_SUCCESS;
+    }
+
     table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdMadtPtr);
 
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(table->Length == madtSize);
@@ -326,195 +429,6 @@ Cleanup:
 
 
 EFI_STATUS
-AcpiInstallSratTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the SRAT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 sratSize;
-
-    //
-    // Get the SRAT from the config blob parsed in PEI.
-    //
-    sratSize = PcdGet32(PcdSratSize);
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdSratPtr);
-
-    ASSERT(table->Length == sratSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallHmatTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the HMAT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    tableSize = PcdGet32(PcdHmatSize);
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdHmatPtr);
-
-    if (tableSize == 0)
-    {
-        ASSERT(table == NULL);
-        DEBUG((EFI_D_INFO, "HMAT not installed.\n"));
-        return EFI_SUCCESS;
-    }
-
-    ASSERT(table->Length == tableSize);
-
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallPpttTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the PPTT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    tableSize = PcdGet32(PcdPpttSize);
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdPpttPtr);
-
-    if (tableSize == 0)
-    {
-        ASSERT(table == NULL);
-        DEBUG((EFI_D_INFO, "PPTT not installed.\n"));
-        return EFI_SUCCESS;
-    }
-
-    ASSERT(table->Length == tableSize);
-
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallSlitTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the SLIT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 slitSize;
-
-    //
-    // Get the SLIT from the config blob parsed in PEI.
-    //
-    slitSize = PcdGet32(PcdSlitSize);
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdSlitPtr);
-
-    if (slitSize == 0)
-    {
-        ASSERT(table == NULL);
-        DEBUG((EFI_D_INFO, "SLIT not installed.\n"));
-        return EFI_SUCCESS;
-    }
-
-    ASSERT(table->Length == slitSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
 AcpiInstallNfitTable(
     IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
     )
@@ -584,281 +498,6 @@ AcpiInstallNfitTable(
     }
 
 Cleanup:
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallConfigStructTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the config struct table if present and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    //
-    // Get the table from the config blob parsed in PEI. It may not be present.
-    //
-    tableSize = PcdGet32(PcdAcpiTableSize);
-
-    if (tableSize == 0)
-    {
-        return EFI_SUCCESS;
-    }
-
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdAcpiTablePtr);
-
-    ASSERT(table->Length == tableSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-#if defined(MDE_CPU_X64)
-EFI_STATUS
-AcpiInstallAsptTable(
-    IN OUT  EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the ASPT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 asptSize;
-
-    //
-    // Get the ASPT from the config blob parsed in PEI.
-    //
-    asptSize = PcdGet32(PcdAsptSize);
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdAsptPtr);
-
-    if (asptSize == 0)
-    {
-        //
-        // The ASPT will not be provided if no compatible AMD Secure Processor
-        // is enabled.
-        //
-        return EFI_SUCCESS;
-    }
-
-    ASSERT(table->Length == asptSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-#endif
-
-
-EFI_STATUS
-AcpiInstallMcfgTable(
-    EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the MCFG table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    //
-    // Get the table from the config blob parsed in PEI. It may not be present.
-    //
-    tableSize = PcdGet32(PcdMcfgSize);
-
-    if (tableSize == 0)
-    {
-        return EFI_SUCCESS;
-    }
-
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdMcfgPtr);
-
-    if (table == NULL)
-    {
-        return EFI_NOT_FOUND;
-    }
-
-    ASSERT(table->Length == tableSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallSsdtTable(
-    EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the SSDT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    //
-    // Get the table from the config blob parsed in PEI. It may not be present.
-    //
-    tableSize = PcdGet32(PcdSsdtSize);
-
-    if (tableSize == 0)
-    {
-        return EFI_SUCCESS;
-    }
-
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdSsdtPtr);
-
-    if (table == NULL)
-    {
-        return EFI_NOT_FOUND;
-    }
-
-    ASSERT(table->Length == tableSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
-
-    return status;
-}
-
-
-EFI_STATUS
-AcpiInstallIortTable(
-    EFI_ACPI_TABLE_PROTOCOL *AcpiTable
-    )
-/*++
-
-Routine Description:
-
-    Retrieves the IORT table from the worker process and installs it.
-
-Arguments:
-
-    AcpiTable - A pointer to the ACPI table protocol.
-
-Return Value:
-
-    EFI_STATUS.
-
---*/
-{
-    EFI_STATUS status;
-    EFI_ACPI_DESCRIPTION_HEADER *table;
-    UINTN tableHandle;
-    UINT32 tableSize;
-
-    //
-    // Get the table from the config blob parsed in PEI. It may not be present.
-    //
-    tableSize = PcdGet32(PcdIortSize);
-
-    if (tableSize == 0)
-    {
-        return EFI_SUCCESS;
-    }
-
-    table = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) PcdGet64(PcdIortPtr);
-
-    if (table == NULL)
-    {
-        return EFI_NOT_FOUND;
-    }
-
-    ASSERT(table->Length == tableSize);
-
-    //
-    // Install it into the published tables.
-    //
-    status = AcpiTable->InstallAcpiTable(AcpiTable,
-                                         table,
-                                         table->Length,
-                                         &tableHandle);
 
     return status;
 }
@@ -944,6 +583,17 @@ Return Value:
         //
         ASSERT(size >= currentTable->Length);
 
+        //
+        // If the VMM provided a replacement for this table, skip the FV version.
+        //
+        if (AcpiSignatureHasReplacementHob(currentTable->Signature))
+        {
+            DEBUG((DEBUG_INFO, "Skipping FV table %.4a (0x%08x): VMM replacement provided\n",
+                   (CHAR8 *)&currentTable->Signature, currentTable->Signature));
+            gBS->FreePool(currentTable);
+            continue;
+        }
+
         status = RuntimeInitializeTableIfNecessary(currentTable);
 
         if (EFI_ERROR(status))
@@ -980,6 +630,15 @@ Return Value:
     }
 
     //
+    // Install all VMM-provided replacement tables from HOBs.
+    //
+    status = AcpiInstallReplacementTables(acpiTable);
+    if (EFI_ERROR(status))
+    {
+        goto Cleanup;
+    }
+
+    //
     // Add the MADT table.
     //
     status = AcpiInstallMadtTable(acpiTable);
@@ -989,92 +648,9 @@ Return Value:
     }
 
     //
-    // Add the SRAT table.
-    //
-    status = AcpiInstallSratTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Add the PPTT table.
-    //
-    status = AcpiInstallPpttTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Add the SLIT table.
-    //
-    status = AcpiInstallSlitTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
     // Add the NFIT table.
     //
     status = AcpiInstallNfitTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-#if defined(MDE_CPU_X64)
-    //
-    // Add the ASPT table.
-    //
-    status = AcpiInstallAsptTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-#endif
-
-    //
-    // Add the dynamic config struct table if present.
-    //
-    status = AcpiInstallConfigStructTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Add the MCFG table if present.
-    //
-    status = AcpiInstallMcfgTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Add the SSDT table if present.
-    //
-    status = AcpiInstallSsdtTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Install the IORT table if present
-    //
-    status = AcpiInstallIortTable(acpiTable);
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    //
-    // Add the HMAT table if present.
-    //
-    status = AcpiInstallHmatTable(acpiTable);
     if (EFI_ERROR(status))
     {
         goto Cleanup;
