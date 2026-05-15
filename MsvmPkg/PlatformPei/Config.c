@@ -762,6 +762,7 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tWatchdogEnabled: %u\n", flags->Flags.WatchdogEnabled));
             DEBUG((DEBUG_VERBOSE, "\tTpmLocalityRegsEnabled: %u\n", flags->Flags.TpmLocalityRegsEnabled));
             DEBUG((DEBUG_VERBOSE, "\tMtrrsInitializedAtLoad: %u\n", flags->Flags.MtrrsInitializedAtLoad));
+            DEBUG((DEBUG_VERBOSE, "\tVmbusDisabled: %u\n", flags->Flags.VmbusDisabled));
             break;
         }
         case UefiConfigProcessorInformation:
@@ -941,6 +942,7 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdWatchdogEnabled, (UINT8) ConfigFlags->Flags.WatchdogEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, ConfigFlags->Flags.VmbusDisabled ? FALSE : TRUE));
 
     //
     // If memory protections are enabled, configure the value into the HOB.
@@ -1792,6 +1794,15 @@ Return Value:
 
         calculatedConfigSize += header->Length;
         header = (UEFI_CONFIG_HEADER*) ((UINT64) header + header->Length);
+    }
+
+    //
+    // If VMBus is disabled, MMIO ranges are not required since they are
+    // VMBus MMIO gaps.
+    //
+    if (!PcdGetBool(PcdVmbusEnabled))
+    {
+        requiredStructures.UefiConfigMmioRanges = 1;
     }
 
     if (requiredStructures.AsUINT64 != AllStructuresFound)

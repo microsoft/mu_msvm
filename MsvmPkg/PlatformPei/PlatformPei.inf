@@ -196,6 +196,7 @@
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
+    gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 

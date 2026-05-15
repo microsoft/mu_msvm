@@ -56,6 +56,7 @@
     gInternalEventServicesProtocolGuid  ## CONSUMES
 
 [Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                                   ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector                               ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVmbusSintIndex                                ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                    ## CONSUMES

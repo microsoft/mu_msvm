@@ -406,6 +406,30 @@ ConfigureMmu(
     ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
 
     //
+    // When VMBus is disabled, there are no MMIO gaps to carve out. Use a
+    // simple flat memory map covering the entire address space as write-back.
+    // This is safe because the hypervisor's stage-2 page tables enforce the
+    // correct memory type for device regions regardless of stage-1 attributes.
+    // TODO: Consider adopting a more precise strategy (similar to QEMU virt)
+    // that only maps known RAM and leaves device regions unmapped or marked
+    // as DEVICE in stage-1.
+    //
+    if (!PcdGetBool(PcdVmbusEnabled))
+    {
+        virtualMemoryTable[0].PhysicalBase = 0;
+        virtualMemoryTable[0].VirtualBase = 0;
+        virtualMemoryTable[0].Length = MaxAddress + 1;
+        virtualMemoryTable[0].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+
+        virtualMemoryTable[1].PhysicalBase = 0;
+        virtualMemoryTable[1].VirtualBase = 0;
+        virtualMemoryTable[1].Length = 0;
+        virtualMemoryTable[1].Attributes = 0;
+
+        goto SetupMmu;
+    }
+
+    //
     // Convert PCD page counts to byte addresses/sizes using safe
     // multiplication to catch overflow from host-supplied values.
     //
@@ -504,6 +528,7 @@ ConfigureMmu(
     virtualMemoryTable[5].Length = 0;
     virtualMemoryTable[5].Attributes = 0;
 
+SetupMmu:
     // Lookup the Table Level to get the information
     LookupAddresstoRootTable(MaxAddress, &T0SZ, &RootTableEntryCount);
 
