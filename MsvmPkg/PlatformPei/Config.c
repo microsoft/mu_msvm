@@ -1288,8 +1288,7 @@ Return Value:
 
                 {
                     ACPI_REPLACEMENT_TABLE_HOB_DATA hobData;
-                    hobData.TableAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)acpiTable->AcpiTableData;
-                    hobData.TableLength = acpiHeader->Length;
+                    hobData.Table = (EFI_ACPI_DESCRIPTION_HEADER *)acpiTable->AcpiTableData;
                     BuildGuidDataHob(&gAcpiReplacementTableHobGuid,
                                      &hobData,
                                      sizeof(hobData));

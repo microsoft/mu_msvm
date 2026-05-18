@@ -9,6 +9,8 @@
 #pragma once
 
 #include <Uefi.h>
+#include <Library/HobLib.h>
+#include <IndustryStandard/Acpi.h>
 
 //
 // GUID used to identify ACPI replacement table HOBs.
@@ -24,9 +26,70 @@
 extern EFI_GUID gAcpiReplacementTableHobGuid;
 
 //
-// HOB payload: pointer and length of an ACPI table in persistent memory.
+// HOB payload: pointer to an ACPI table in persistent memory.
 //
 typedef struct {
-    EFI_PHYSICAL_ADDRESS TableAddress;
-    UINT32               TableLength;
+    EFI_ACPI_DESCRIPTION_HEADER *Table;
 } ACPI_REPLACEMENT_TABLE_HOB_DATA;
+
+//
+// Helper: get the ACPI table header from a replacement table HOB.
+// HobRaw must point to a valid GUIDed HOB with gAcpiReplacementTableHobGuid.
+//
+static inline EFI_ACPI_DESCRIPTION_HEADER *
+AcpiReplacementTableFromHob(
+    IN VOID *HobRaw
+    )
+{
+    EFI_HOB_GUID_TYPE *GuidHob = (EFI_HOB_GUID_TYPE *)HobRaw;
+    ACPI_REPLACEMENT_TABLE_HOB_DATA *Data =
+        (ACPI_REPLACEMENT_TABLE_HOB_DATA *)GET_GUID_HOB_DATA(GuidHob);
+    return Data->Table;
+}
+
+//
+// Helper: get the first replacement table HOB, returning the raw HOB pointer.
+// Returns NULL if none exist. Use with AcpiReplacementTableFromHob() and
+// GetNextAcpiReplacementTableHob() to iterate.
+//
+static inline VOID *
+GetFirstAcpiReplacementTableHob(
+    VOID
+    )
+{
+    return GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+}
+
+//
+// Helper: get the next replacement table HOB after CurrentHob.
+// Returns NULL if no more exist.
+//
+static inline VOID *
+GetNextAcpiReplacementTableHob(
+    IN VOID *CurrentHob
+    )
+{
+    return GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(CurrentHob));
+}
+
+//
+// Helper: find the first replacement table matching a given ACPI signature.
+// Returns the table header pointer, or NULL if not found.
+//
+static inline EFI_ACPI_DESCRIPTION_HEADER *
+FindAcpiReplacementTable(
+    IN UINT32 Signature
+    )
+{
+    VOID *Hob = GetFirstAcpiReplacementTableHob();
+    while (Hob != NULL)
+    {
+        EFI_ACPI_DESCRIPTION_HEADER *Table = AcpiReplacementTableFromHob(Hob);
+        if (Table->Signature == Signature)
+        {
+            return Table;
+        }
+        Hob = GetNextAcpiReplacementTableHob(Hob);
+    }
+    return NULL;
+}

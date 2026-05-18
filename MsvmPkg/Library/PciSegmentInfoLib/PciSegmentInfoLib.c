@@ -48,21 +48,8 @@ GetPciSegmentInfo (
     //
     // Find MCFG table from HOB list.
     //
-    EFI_PEI_HOB_POINTERS          hob;
-    MCFG_TABLE_HEADER            *McfgHdr = NULL;
-
-    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
-    while (hob.Raw != NULL)
-    {
-        ACPI_REPLACEMENT_TABLE_HOB_DATA *hobData = (ACPI_REPLACEMENT_TABLE_HOB_DATA *)GET_GUID_HOB_DATA(hob.Guid);
-        EFI_ACPI_DESCRIPTION_HEADER *acpiHdr = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN)hobData->TableAddress;
-        if (acpiHdr->Signature == EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE)
-        {
-            McfgHdr = (MCFG_TABLE_HEADER *)acpiHdr;
-            break;
-        }
-        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
-    }
+    MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable(
+        EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE);
 
     if (McfgHdr == NULL || McfgHdr->Header.Length < sizeof(MCFG_TABLE_HEADER)) {
         DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: No MCFG table in HOBs\n"));

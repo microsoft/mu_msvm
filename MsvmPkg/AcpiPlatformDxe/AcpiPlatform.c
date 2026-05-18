@@ -105,25 +105,7 @@ Return Value:
 
 --*/
 {
-    EFI_PEI_HOB_POINTERS hob;
-
-    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
-    while (hob.Raw != NULL)
-    {
-        ACPI_REPLACEMENT_TABLE_HOB_DATA *hobData =
-            (ACPI_REPLACEMENT_TABLE_HOB_DATA *) GET_GUID_HOB_DATA(hob.Guid);
-        EFI_ACPI_DESCRIPTION_HEADER *table =
-            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) hobData->TableAddress;
-
-        if (table->Signature == Signature)
-        {
-            return TRUE;
-        }
-
-        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
-    }
-
-    return FALSE;
+    return FindAcpiReplacementTable(Signature) != NULL;
 }
 
 
@@ -147,17 +129,14 @@ Return Value:
 
 --*/
 {
-    EFI_PEI_HOB_POINTERS hob;
     EFI_STATUS status;
     UINTN tableHandle;
+    VOID *hob;
 
-    hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
-    while (hob.Raw != NULL)
+    hob = GetFirstAcpiReplacementTableHob();
+    while (hob != NULL)
     {
-        ACPI_REPLACEMENT_TABLE_HOB_DATA *hobData =
-            (ACPI_REPLACEMENT_TABLE_HOB_DATA *) GET_GUID_HOB_DATA(hob.Guid);
-        EFI_ACPI_DESCRIPTION_HEADER *table =
-            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) hobData->TableAddress;
+        EFI_ACPI_DESCRIPTION_HEADER *table = AcpiReplacementTableFromHob(hob);
 
         DEBUG((DEBUG_INFO, "Installing VMM-provided ACPI table: %.4a (0x%08x)\n",
                (CHAR8 *)&table->Signature, table->Signature));
@@ -174,7 +153,7 @@ Return Value:
             return status;
         }
 
-        hob.Raw = GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(hob));
+        hob = GetNextAcpiReplacementTableHob(hob);
     }
 
     return EFI_SUCCESS;

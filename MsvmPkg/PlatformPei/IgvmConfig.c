@@ -500,8 +500,7 @@ Return Value:
     //
     {
         ACPI_REPLACEMENT_TABLE_HOB_DATA hobData;
-        hobData.TableAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)sratHdr;
-        hobData.TableLength = sratHdr->Length;
+        hobData.Table = sratHdr;
         BuildGuidDataHob(&gAcpiReplacementTableHobGuid, &hobData, sizeof(hobData));
     }
 
