@@ -59,8 +59,15 @@ jobs:
           # POST to the ADO REST API to queue a build of the sync pipeline.
           # Use the Builds API (older) since ADO_PIPELINE_ID is a build definitionId.
           # https://learn.microsoft.com/rest/api/azure/devops/build/builds/queue
+          #
+          # sourceBranch tells ADO which branch of the pipeline's source repo
+          # (hyperv.uefi) to load the YAML from and check out for the run.
+          # While validating, point at the dev branch where Sync-MuMsvm-Test.yml
+          # lives. After the YAML is merged into hyperv.uefi/official/main,
+          # this override can be removed (pipeline default will be used).
+          ADO_SOURCE_BRANCH="refs/heads/user/maheeraeron/sync-trigger-test"
           curl --fail-with-body -sS -X POST \
             "${ADO_ORG_URL}/${ADO_PROJECT}/_apis/build/builds?api-version=7.1" \
             -H "Authorization: Bearer ${ADO_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"definition\":{\"id\":${ADO_PIPELINE_ID}}}"
+            -d "{\"definition\":{\"id\":${ADO_PIPELINE_ID}},\"sourceBranch\":\"${ADO_SOURCE_BRANCH}\"}"
