@@ -110,8 +110,10 @@ Return Value:
     hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
     while (hob.Raw != NULL)
     {
+        ACPI_REPLACEMENT_TABLE_HOB_DATA *hobData =
+            (ACPI_REPLACEMENT_TABLE_HOB_DATA *) GET_GUID_HOB_DATA(hob.Guid);
         EFI_ACPI_DESCRIPTION_HEADER *table =
-            (EFI_ACPI_DESCRIPTION_HEADER *) GET_GUID_HOB_DATA(hob.Guid);
+            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) hobData->TableAddress;
 
         if (table->Signature == Signature)
         {
@@ -152,8 +154,10 @@ Return Value:
     hob.Raw = GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
     while (hob.Raw != NULL)
     {
+        ACPI_REPLACEMENT_TABLE_HOB_DATA *hobData =
+            (ACPI_REPLACEMENT_TABLE_HOB_DATA *) GET_GUID_HOB_DATA(hob.Guid);
         EFI_ACPI_DESCRIPTION_HEADER *table =
-            (EFI_ACPI_DESCRIPTION_HEADER *) GET_GUID_HOB_DATA(hob.Guid);
+            (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN) hobData->TableAddress;
 
         DEBUG((DEBUG_INFO, "Installing VMM-provided ACPI table: %.4a (0x%08x)\n",
                (CHAR8 *)&table->Signature, table->Signature));

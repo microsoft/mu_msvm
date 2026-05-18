@@ -1286,9 +1286,14 @@ Return Value:
                     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
                 }
 
-                BuildGuidDataHob(&gAcpiReplacementTableHobGuid,
-                                 acpiTable->AcpiTableData,
-                                 acpiHeader->Length);
+                {
+                    ACPI_REPLACEMENT_TABLE_HOB_DATA hobData;
+                    hobData.TableAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)acpiTable->AcpiTableData;
+                    hobData.TableLength = acpiHeader->Length;
+                    BuildGuidDataHob(&gAcpiReplacementTableHobGuid,
+                                     &hobData,
+                                     sizeof(hobData));
+                }
                 break;
             }
             case UefiConfigMemoryMap:

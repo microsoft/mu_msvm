@@ -498,7 +498,12 @@ Return Value:
     // Install the SRAT as a replacement table HOB so the generic DXE ACPI
     // path picks it up.
     //
-    BuildGuidDataHob(&gAcpiReplacementTableHobGuid, (VOID *)sratHdr, sratHdr->Length);
+    {
+        ACPI_REPLACEMENT_TABLE_HOB_DATA hobData;
+        hobData.TableAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)sratHdr;
+        hobData.TableLength = sratHdr->Length;
+        BuildGuidDataHob(&gAcpiReplacementTableHobGuid, &hobData, sizeof(hobData));
+    }
 
     //
     // Parse the command line to obtain debug parameters.
