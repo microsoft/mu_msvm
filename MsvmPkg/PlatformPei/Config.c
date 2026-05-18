@@ -1587,35 +1587,37 @@ Return Value:
                     UINT64 highGapEnd;
 
                     //
-                    // Low gap size (in pages) must not exceed 4GB worth of pages,
-                    // and the low gap must end at or before the 4GB boundary.
+                    // Low gap: if size is nonzero, it must not exceed 4GB worth
+                    // of pages, and must end at or before the 4GB boundary.
                     //
-                    if ((lowGapSize > (SIZE_4GB / SIZE_4KB)) ||
-                        RETURN_ERROR(SafeUint64Add(lowGapBase, lowGapSize, &lowGapEnd)) ||
-                        (lowGapEnd > (SIZE_4GB / SIZE_4KB)))
+                    if (lowGapSize > 0)
                     {
-                        DEBUG((DEBUG_ERROR, "***Invalid low MMIO gap range\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        if ((lowGapSize > (SIZE_4GB / SIZE_4KB)) ||
+                            RETURN_ERROR(SafeUint64Add(lowGapBase, lowGapSize, &lowGapEnd)) ||
+                            (lowGapEnd > (SIZE_4GB / SIZE_4KB)))
+                        {
+                            DEBUG((DEBUG_ERROR, "***Invalid low MMIO gap range\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
                     }
 
                     //
-                    // High gap must start at or above the 4GB boundary (in pages)
-                    // to avoid unsigned underflow when computing memory region
-                    // lengths in ConfigureMmu().
+                    // High gap: if size is nonzero, it must start at or above
+                    // the 4GB boundary and must not overflow the address space.
                     //
-                    if (highGapBase < (SIZE_4GB / SIZE_4KB))
+                    if (highGapSize > 0)
                     {
-                        DEBUG((DEBUG_ERROR, "***Invalid high MMIO gap base below 4GB\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                    }
+                        if (highGapBase < (SIZE_4GB / SIZE_4KB))
+                        {
+                            DEBUG((DEBUG_ERROR, "***Invalid high MMIO gap base below 4GB\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
 
-                    //
-                    // High gap must not overflow the address space.
-                    //
-                    if (RETURN_ERROR(SafeUint64Add(highGapBase, highGapSize, &highGapEnd)))
-                    {
-                        DEBUG((DEBUG_ERROR, "***High MMIO gap range overflow\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        if (RETURN_ERROR(SafeUint64Add(highGapBase, highGapSize, &highGapEnd)))
+                        {
+                            DEBUG((DEBUG_ERROR, "***High MMIO gap range overflow\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
                     }
                 }
 
@@ -1796,15 +1798,7 @@ Return Value:
         header = (UEFI_CONFIG_HEADER*) ((UINT64) header + header->Length);
     }
 
-    //
-    // If VMBus is disabled, MMIO ranges are not required since they describe
-    // VMBus MMIO gaps. Mark the structure as found so the validation below
-    // does not fail.
-    //
-    if (!PcdGetBool(PcdVmbusEnabled))
-    {
-        requiredStructures.UefiConfigMmioRanges = 1;
-    }
+
 
     if (requiredStructures.AsUINT64 != AllStructuresFound)
     {

@@ -142,46 +142,46 @@ DefinitionBlock (
         Name(_HID, "ACPI0004")
         Name(_UID, 0)
 
-        //
-        // MMIO resources are only needed when VMBus is enabled; they describe
-        // the VMBus MMIO gaps that the resource arbiter hands out to VMBus
-        // children (virtual PCI, SR-IOV, synthetic video, etc.).
-        //
-        If(LGreater(VCFG, 0))
-        {
-            Name(_CRS,
-                ResourceTemplate()
-                {
-                    // MMIO space below 4GB.
-                    DWORDMemory(ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
-                    // Granularity Min Max Translation Range (Length = Max-Min+1)
-                       0,          0,  0,  0,          0,,,
-                       MEM6)   // Name declaration for this descriptor
-                    // MMIO above 4GB
-                    QWORDMemory( ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
-                    //  Granularity Min Max Translation Range (Length = Max-Min+1)
-                        0,          0,  0,  0,          0,,,
-                        MEM7)
-                }
-            )
-
-            CreateDwordField(_CRS, MEM6._MIN, MIN6)  // Min
-            CreateDwordField(_CRS, MEM6._MAX, MAX6)  // Max
-            CreateDwordField(_CRS, MEM6._LEN, LEN6)  // Memory length
-
-            CreateQwordField(_CRS, MEM7._MIN, MIN7)  // Min
-            CreateQwordField(_CRS, MEM7._MAX, MAX7)  // Max
-            CreateQwordField(_CRS, MEM7._LEN, LEN7)  // Memory length
-
-            Method(_INI, 0)
+        Name(_CRS,
+            ResourceTemplate()
             {
-                // Update the DWORDMemory resource descriptor with the low MMIO region.
+                // MMIO space below 4GB.
+                DWORDMemory(ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
+                // Granularity Min Max Translation Range (Length = Max-Min+1)
+                   0,          0,  0,  0,          0,,,
+                   MEM6)   // Name declaration for this descriptor
+                // MMIO above 4GB
+                QWORDMemory( ResourceProducer, PosDecode, MinFixed, MaxFixed, Cacheable, ReadWrite,
+                //  Granularity Min Max Translation Range (Length = Max-Min+1)
+                    0,          0,  0,  0,          0,,,
+                    MEM7)
+            }
+        )
+
+        CreateDwordField(_CRS, MEM6._MIN, MIN6)  // Min
+        CreateDwordField(_CRS, MEM6._MAX, MAX6)  // Max
+        CreateDwordField(_CRS, MEM6._LEN, LEN6)  // Memory length
+
+        CreateQwordField(_CRS, MEM7._MIN, MIN7)  // Min
+        CreateQwordField(_CRS, MEM7._MAX, MAX7)  // Max
+        CreateQwordField(_CRS, MEM7._LEN, LEN7)  // Memory length
+
+        Method(_INI, 0)
+        {
+            // Update the DWORDMemory descriptor with the low MMIO region
+            // only if the region has nonzero size.
+            If(LGreater(MG2L, 0))
+            {
                 Store(MG2B, MIN6)
                 Store(MG2L, LEN6)
                 Store(MG2L, Local0)
                 Add(MIN6, Decrement(Local0), MAX6)
+            }
 
-                // Update the QWORDMemory resource descriptor with the high MMIO region.
+            // Update the QWORDMemory descriptor with the high MMIO region
+            // only if the region has nonzero size.
+            If(LGreater(HMIL, 0))
+            {
                 ShiftLeft (HMIB, 20, Local1)
                 ShiftLeft (HMIL, 20, Local2)
                 Store(Local1, MIN7)

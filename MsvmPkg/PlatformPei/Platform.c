@@ -701,9 +701,11 @@ Return Value:
 #endif
 
     //
-    // Low and high MMIO range. Only present when VMBus is enabled.
+    // Low and high MMIO ranges. Declared based on nonzero size rather than
+    // VMBus state, since chipset devices (e.g. TPM) may need low MMIO even
+    // without VMBus.
     //
-    if (PcdGetBool(PcdVmbusEnabled))
+    if (PcdGet64(PcdLowMmioGapSizeInPages) > 0)
     {
 #if defined (MDE_CPU_X64)
         HobAddMmioRange(
@@ -738,6 +740,10 @@ Return Value:
             SecondRangeSize
             );
 #endif
+    }
+
+    if (PcdGet64(PcdHighMmioGapSizeInPages) > 0)
+    {
         HobAddMmioRange(
             PcdGet64(PcdHighMmioGapBasePageNumber) * SIZE_4KB,
             PcdGet64(PcdHighMmioGapSizeInPages) * SIZE_4KB
