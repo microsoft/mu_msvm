@@ -27,7 +27,9 @@
 #include <UefiConstants.h>
 #include <Hob.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/HobLib.h>
 #include <Library/SafeIntLib.h>
+#include <AcpiReplacementTable.h>
 #include "AllowNamelessAggregate.h"
 #include "AssignStruct.h"
 
@@ -1164,36 +1166,33 @@ Return Value:
     // Tracking to see if the config blob has all the required structures.
     //
 #if defined(MDE_CPU_X64)
-    static const UINT64 AllStructuresFound = 0x1FF;
+    static const UINT64 AllStructuresFound = 0x7F;
     union {
         UINT64 AsUINT64;
         struct {
             UINT64 UefiConfigBiosInformation:1;
-            UINT64 UefiConfigMadt:1;
-            UINT64 UefiConfigSrat:1;
             UINT64 UefiConfigMemoryMap:1;
             UINT64 UefiConfigEntropy:1;
             UINT64 UefiConfigBiosGuid:1;
             UINT64 UefiConfigFlags:1;
             UINT64 UefiConfigProcessorInformation:1;
             UINT64 UefiConfigMmioRanges:1;
-            UINT64 Reserved:55;
+            UINT64 Reserved:57;
         };
     } requiredStructures={0};
 #elif defined(MDE_CPU_AARCH64)
-    static const UINT64 AllStructuresFound = 0xFF;
+    static const UINT64 AllStructuresFound = 0x7F;
     union {
         UINT64 AsUINT64;
         struct {
             UINT64 UefiConfigBiosInformation:1;
-            UINT64 UefiConfigSrat:1;
             UINT64 UefiConfigMemoryMap:1;
             UINT64 UefiConfigEntropy:1;
             UINT64 UefiConfigBiosGuid:1;
             UINT64 UefiConfigFlags:1;
             UINT64 UefiConfigProcessorInformation:1;
             UINT64 UefiConfigMmioRanges:1;
-            UINT64 Reserved:56;
+            UINT64 Reserved:57;
         };
     } requiredStructures={0};
 #endif
@@ -1262,97 +1261,38 @@ Return Value:
                 break;
             }
             case UefiConfigMadt:
-            {
-                UEFI_CONFIG_MADT * madtStructure = (UEFI_CONFIG_MADT*)header;
-                EFI_ACPI_DESCRIPTION_HEADER *madtHdr = (EFI_ACPI_DESCRIPTION_HEADER*)madtStructure->Madt;
-
-                if (madtStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    madtHdr->Signature != EFI_ACPI_6_2_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE ||
-                    madtHdr->Length >(madtStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed MADT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdMadtPtr, (UINT64)madtStructure->Madt));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdMadtSize, madtHdr->Length));
-#if defined(MDE_CPU_X64)
-                requiredStructures.UefiConfigMadt = 1;
-#endif
-                break;
-            }
             case UefiConfigSrat:
-            {
-                UEFI_CONFIG_SRAT *sratStructure = (UEFI_CONFIG_SRAT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *sratHdr = (EFI_ACPI_DESCRIPTION_HEADER*) sratStructure->Srat;
-
-                //
-                // NOTE: Because ARM GICC affinity structures are not aligned to 8 bytes,
-                // this structure may be padded. Thus, the table described by the ACPI header
-                // just needs to be less than the overall length.
-                //
-                if (sratStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    sratHdr->Signature != EFI_ACPI_6_2_SYSTEM_RESOURCE_AFFINITY_TABLE_SIGNATURE ||
-                    sratHdr->Length > (sratStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed SRAT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSratPtr, (UINT64)sratStructure->Srat));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSratSize, sratHdr->Length));
-                requiredStructures.UefiConfigSrat = 1;
-                break;
-            }
             case UefiConfigSlit:
-            {
-                UEFI_CONFIG_SLIT *slitStructure = (UEFI_CONFIG_SLIT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *slitHdr = (EFI_ACPI_DESCRIPTION_HEADER*) slitStructure->Slit;
-
-                if (slitStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    slitHdr->Signature != EFI_ACPI_6_2_SYSTEM_LOCALITY_INFORMATION_TABLE_SIGNATURE ||
-                    slitHdr->Length > (slitStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed SLIT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSlitPtr, (UINT64)slitStructure->Slit));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSlitSize, slitHdr->Length));
-                break;
-            }
             case UefiConfigPptt:
-            {
-                UEFI_CONFIG_PPTT *ppttStructure = (UEFI_CONFIG_PPTT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *ppttHdr = (EFI_ACPI_DESCRIPTION_HEADER*) ppttStructure->Pptt;
-
-                if (ppttStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    ppttHdr->Signature != EFI_ACPI_6_2_PROCESSOR_PROPERTIES_TOPOLOGY_TABLE_STRUCTURE_SIGNATURE ||
-                    ppttHdr->Length > (ppttStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed PPTT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdPpttPtr, (UINT64)ppttStructure->Pptt));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdPpttSize, ppttHdr->Length));
-                break;
-            }
             case UefiConfigHmat:
+            case UefiConfigAcpiTable:
+#if defined(MDE_CPU_X64)
+            case UefiConfigAspt:
+#endif
+            case UefiConfigMcfg:
+            case UefiConfigSsdt:
+            case UefiConfigIort:
             {
-                UEFI_CONFIG_HMAT *hmatStructure = (UEFI_CONFIG_HMAT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *hmatHdr = (EFI_ACPI_DESCRIPTION_HEADER*) hmatStructure->Hmat;
+                UEFI_CONFIG_ACPI_TABLE *acpiTable = (UEFI_CONFIG_ACPI_TABLE*) header;
+                EFI_ACPI_DESCRIPTION_HEADER *acpiHeader = (EFI_ACPI_DESCRIPTION_HEADER*) acpiTable->AcpiTableData;
 
-                if (hmatStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    hmatHdr->Signature != EFI_ACPI_6_5_HETEROGENEOUS_MEMORY_ATTRIBUTE_TABLE_SIGNATURE ||
-                    hmatHdr->Length > (hmatStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
+                //
+                // Verify ACPI table header is completely within the config structure.
+                //
+                if (header->Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
+                    acpiHeader->Length > (header->Length - sizeof(UEFI_CONFIG_HEADER)))
                 {
-                    DEBUG((DEBUG_ERROR, "*** Malformed HMAT\n"));
+                    DEBUG((DEBUG_ERROR, "***ACPI table is not contained within config structure size.\n"));
                     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
                 }
 
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdHmatPtr, (UINT64)hmatStructure->Hmat));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdHmatSize, hmatHdr->Length));
+                {
+                    ACPI_REPLACEMENT_TABLE_HOB_DATA hobData;
+                    hobData.Table = (EFI_ACPI_DESCRIPTION_HEADER *)acpiTable->AcpiTableData;
+                    BuildGuidDataHob(&gAcpiReplacementTableHobGuid,
+                                     &hobData,
+                                     sizeof(hobData));
+                }
                 break;
             }
             case UefiConfigMemoryMap:
@@ -1624,25 +1564,6 @@ Return Value:
                 requiredStructures.UefiConfigMmioRanges = 1;
                 break;
             }
-            case UefiConfigAcpiTable:
-            {
-                UEFI_CONFIG_ACPI_TABLE *acpiTable = (UEFI_CONFIG_ACPI_TABLE*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *acpiHeader = (EFI_ACPI_DESCRIPTION_HEADER*) acpiTable->AcpiTableData;
-
-                //
-                // Verify ACPI table header is completely within the config structure.
-                //
-                if (acpiTable->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    acpiHeader->Length > (acpiTable->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "***ACPI table is not contained within config structure size.\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdAcpiTablePtr, (UINT64) acpiTable->AcpiTableData));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdAcpiTableSize, acpiHeader->Length));
-                break;
-            }
             case UefiConfigNvdimmCount:
             {
                 UEFI_CONFIG_NVDIMM_COUNT *cfg = (UEFI_CONFIG_NVDIMM_COUNT*) header;
@@ -1656,25 +1577,6 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdNvmeNamespaceFilterId, 1));
                 break;
             }
-#if defined(MDE_CPU_X64)
-            case UefiConfigAspt:
-            {
-                UEFI_CONFIG_AMD_ASPT *asptStructure = (UEFI_CONFIG_AMD_ASPT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *asptHdr = (EFI_ACPI_DESCRIPTION_HEADER*) asptStructure->Aspt;
-
-                if (asptStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    asptHdr->Signature != AMD_ACPI_ASPT_TABLE_SIGNATURE ||
-                    asptHdr->Length > (asptStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "***Malformed ASPT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdAsptPtr, (UINT64)asptStructure->Aspt));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdAsptSize, asptHdr->Length));
-                break;
-            }
-#endif
 
 #if defined(MDE_CPU_AARCH64)
             case UefiConfigGic:
@@ -1685,57 +1587,6 @@ Return Value:
                 break;
             }
 #endif
-            case UefiConfigMcfg:
-            {
-                UEFI_CONFIG_MCFG *mcfgStructure = (UEFI_CONFIG_MCFG*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *mcfgHdr = (EFI_ACPI_DESCRIPTION_HEADER*) mcfgStructure->Mcfg;
-
-                if (mcfgStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    mcfgHdr->Signature != EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE ||
-                    mcfgHdr->Length > (mcfgStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed MCFG\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdMcfgPtr, (UINT64)mcfgStructure->Mcfg));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdMcfgSize, mcfgHdr->Length));
-                break;
-            }
-            case UefiConfigSsdt:
-            {
-                UEFI_CONFIG_SSDT *ssdtStructure = (UEFI_CONFIG_SSDT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *ssdtHdr = (EFI_ACPI_DESCRIPTION_HEADER*) ssdtStructure->Ssdt;
-
-                if (ssdtStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    ssdtHdr->Signature != EFI_ACPI_6_2_SECONDARY_SYSTEM_DESCRIPTION_TABLE_SIGNATURE ||
-                    ssdtHdr->Length > (ssdtStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed SSDT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdSsdtPtr, (UINT64)ssdtStructure->Ssdt));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdSsdtSize, ssdtHdr->Length));
-                break;
-            }
-            case UefiConfigIort:
-            {
-                UEFI_CONFIG_IORT *iortStructure = (UEFI_CONFIG_IORT*) header;
-                EFI_ACPI_DESCRIPTION_HEADER *iortHdr = (EFI_ACPI_DESCRIPTION_HEADER*) iortStructure->Iort;
-
-                if (iortStructure->Header.Length < (sizeof(UEFI_CONFIG_HEADER) + sizeof(EFI_ACPI_DESCRIPTION_HEADER)) ||
-                    iortHdr->Signature != EFI_ACPI_6_2_IO_REMAPPING_TABLE_SIGNATURE ||
-                    iortHdr->Length > (iortStructure->Header.Length - sizeof(UEFI_CONFIG_HEADER)))
-                {
-                    DEBUG((DEBUG_ERROR, "*** Malformed IORT\n"));
-                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                }
-
-                PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdIortPtr, (UINT64)iortStructure->Iort));
-                PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdIortSize, iortHdr->Length));
-                break;
-            }
 
             case UefiConfigPcieBarApertures:
             {

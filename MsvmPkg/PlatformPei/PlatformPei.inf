@@ -71,6 +71,7 @@
     ArmLib
 
 [Guids]
+    gAcpiReplacementTableHobGuid
     gAdvancedLoggerHobGuid
     gDxeMemoryProtectionSettingsGuid
     gEfiMemoryTypeInformationGuid
@@ -91,22 +92,8 @@
     gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
     gMsvmPkgTokenSpaceGuid.PcdConfigBlobSize
     gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap
-    gMsvmPkgTokenSpaceGuid.PcdIortPtr
-    gMsvmPkgTokenSpaceGuid.PcdIortSize
     gMsvmPkgTokenSpaceGuid.PcdMadtPtr
     gMsvmPkgTokenSpaceGuid.PcdMadtSize
-    gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
-    gMsvmPkgTokenSpaceGuid.PcdMcfgSize
-    gMsvmPkgTokenSpaceGuid.PcdSratPtr
-    gMsvmPkgTokenSpaceGuid.PcdSratSize
-    gMsvmPkgTokenSpaceGuid.PcdSlitPtr
-    gMsvmPkgTokenSpaceGuid.PcdSlitSize
-    gMsvmPkgTokenSpaceGuid.PcdSsdtPtr
-    gMsvmPkgTokenSpaceGuid.PcdSsdtSize
-    gMsvmPkgTokenSpaceGuid.PcdPpttPtr
-    gMsvmPkgTokenSpaceGuid.PcdPpttSize
-    gMsvmPkgTokenSpaceGuid.PcdHmatPtr
-    gMsvmPkgTokenSpaceGuid.PcdHmatSize
     gMsvmPkgTokenSpaceGuid.PcdMemoryMapPtr
     gMsvmPkgTokenSpaceGuid.PcdMemoryMapSize
     gMsvmPkgTokenSpaceGuid.PcdEntropyPtr
@@ -182,8 +169,6 @@
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages
     gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize
     gMsvmPkgTokenSpaceGuid.PcdNvdimmCount
     gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr
     gMsvmPkgTokenSpaceGuid.PcdIsolationArchitecture
@@ -210,8 +195,6 @@
     gEfiMdeModulePkgTokenSpaceGuid.PcdUse1GPageTable
     gEfiSecurityPkgTokenSpaceGuid.TcgMeasureBootStringsInPcr4
     gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
-    gMsvmPkgTokenSpaceGuid.PcdAsptPtr
-    gMsvmPkgTokenSpaceGuid.PcdAsptSize
     gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements
 
 [Ppis]

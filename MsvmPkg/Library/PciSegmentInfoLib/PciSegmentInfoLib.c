@@ -1,7 +1,7 @@
 /** @file
   Platform PCI Segment Info Library for Hyper-V Gen2 VMs.
 
-  Reads MCFG from config blob PCD and provides segment-to-ECAM-base
+  Reads MCFG from the ACPI replacement table HOB and provides segment-to-ECAM-base
   mapping for BasePciSegmentLibSegmentInfo.
 
   Copyright (c) Microsoft Corporation.
@@ -11,11 +11,12 @@
 #include <PiDxe.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
+#include <Library/HobLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/PcdLib.h>
 #include <Library/PciSegmentInfoLib.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <AcpiReplacementTable.h>
 #include <PciConstants.h>
 
 STATIC
@@ -34,9 +35,6 @@ GetPciSegmentInfo (
     OUT UINTN  *Count
     )
 {
-    UINT64                       McfgPtr;
-    UINT32                       McfgSize;
-    MCFG_TABLE_HEADER            *McfgHdr;
     UINT32                       DataLen;
     UINT32                       EntryCount;
     MCFG_ALLOCATION_ENTRY        *Entries;
@@ -48,23 +46,13 @@ GetPciSegmentInfo (
     }
 
     //
-    // Parse MCFG table from PCD (same data PlatformPei extracted from config blob).
+    // Find MCFG table from HOB list.
     //
-    McfgPtr  = PcdGet64 (PcdMcfgPtr);
-    McfgSize = PcdGet32 (PcdMcfgSize);
+    MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable(
+        EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE);
 
-    if (McfgPtr == 0 || McfgSize < sizeof (MCFG_TABLE_HEADER)) {
-        DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: No MCFG table\n"));
-        *Count = 0;
-        return NULL;
-    }
-
-    McfgHdr = (MCFG_TABLE_HEADER *)(UINTN)McfgPtr;
-
-    if (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER) ||
-        McfgHdr->Header.Length > McfgSize) {
-        DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Invalid MCFG Length %u (PCD size %u)\n",
-                McfgHdr->Header.Length, McfgSize));
+    if (McfgHdr == NULL || McfgHdr->Header.Length < sizeof(MCFG_TABLE_HEADER)) {
+        DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: No MCFG table in HOBs\n"));
         *Count = 0;
         return NULL;
     }

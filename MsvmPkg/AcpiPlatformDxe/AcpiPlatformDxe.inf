@@ -37,12 +37,16 @@
     CrashLib
     DebugLib
     DxeServicesLib
+    HobLib
     IoLib
     IsolationLib
     PcdLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiLib
+
+[Guids]
+    gAcpiReplacementTableHobGuid                      ## CONSUMES
 
 [Protocols]
     gEfiAcpiTableProtocolGuid                     ## CONSUMES
@@ -53,8 +57,6 @@
     gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate             ## CONSUMES
     gEfiMdePkgTokenSpaceGuid.PcdUartDefaultParity               ## CONSUMES
     gEfiMdePkgTokenSpaceGuid.PcdUartDefaultStopBits             ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr                      ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize                     ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress                   ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCom1RegisterBase                  ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCom1Vector                        ## CONSUMES
@@ -73,34 +75,18 @@
     gMsvmPkgTokenSpaceGuid.PcdLowPowerS0IdleEnabled             ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdMadtPtr                           ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdMadtSize                          ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdMcfgPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdMcfgSize                          ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSsdtPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSsdtSize                          ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdIortPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdIortSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdNvdimmCount                       ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdPpttPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdPpttSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcessorCount                    ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcIdleEnabled                   ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCxlMemoryEnabled                  ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSerialControllersEnabled          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled                  ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSlitPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSlitSize                          ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSratPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdSratSize                          ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdHmatPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdHmatSize                          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdTpmEnabled                        ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled             ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled                   ## CONSUMES
 
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress          ## PRODUCES
-    gMsvmPkgTokenSpaceGuid.PcdAsptPtr                           ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdAsptSize                          ## CONSUMES
 
 [Depex]
     gEfiAcpiTableProtocolGuid
