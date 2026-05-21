@@ -83,6 +83,7 @@
     gMsvmPkgTokenSpaceGuid.PcdSgxMemoryEnabled                  ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdTpmEnabled                        ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled             ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                      ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled                   ## CONSUMES
 
 [Pcd.X64]
