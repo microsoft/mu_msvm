@@ -1560,16 +1560,20 @@ Return Value:
 
                 //
                 // Figure out which entry is the low gap, and which is the high.
+                // Use base >= 4GB as the indicator for the high gap. When an
+                // entry is empty (size=0) its base is typically 0, so it will
+                // naturally fall into the "low" bucket and be skipped downstream.
                 //
-                if (mmioRanges->Ranges[0].MmioPageNumberStart < mmioRanges->Ranges[1].MmioPageNumberStart)
+                if (mmioRanges->Ranges[0].MmioPageNumberStart >= (SIZE_4GB / SIZE_4KB) &&
+                    mmioRanges->Ranges[0].MmioSizeInPages > 0)
                 {
-                    lowGap = 0;
-                    highGap = 1;
+                    highGap = 0;
+                    lowGap = 1;
                 }
                 else
                 {
-                    lowGap = 1;
-                    highGap = 0;
+                    lowGap = 0;
+                    highGap = 1;
                 }
 
                 //

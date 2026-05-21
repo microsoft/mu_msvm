@@ -425,6 +425,10 @@ DeviceBootManagerBeforeConsole (
     *DevicePath = NULL;
     *PlatformConsoles = NULL;
 
+    if (!PcdGetBool(PcdVmbusEnabled)) {
+        goto Exit;
+    }
+
     Status = gBS->LocateHandleBuffer (
        ByProtocol,
        &gEfiVmbusProtocolGuid,
