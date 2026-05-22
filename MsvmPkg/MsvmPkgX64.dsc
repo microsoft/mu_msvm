@@ -557,6 +557,8 @@
   gMsvmPkgTokenSpaceGuid.PcdIortSize|0x0
 
   # UEFI_CONFIG_APMT
+  # AcpiPlatformDxe and PlatformPei are shared modules and consume these
+  # optional PCDs in X64 builds even though APMT is only supplied on ARM hosts.
   gMsvmPkgTokenSpaceGuid.PcdApmtPtr|0x0
   gMsvmPkgTokenSpaceGuid.PcdApmtSize|0x0
 

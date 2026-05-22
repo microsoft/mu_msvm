@@ -1637,6 +1637,7 @@ Return Value:
                 break;
 
             case UefiConfigApmt:
+            {
                 UEFI_CONFIG_APMT *apmtStructure = (UEFI_CONFIG_APMT*) header;
                 EFI_ACPI_DESCRIPTION_HEADER *apmtHdr = (EFI_ACPI_DESCRIPTION_HEADER*) apmtStructure->Apmt;
 
@@ -1651,6 +1652,7 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdApmtPtr, (UINT64)apmtStructure->Apmt));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdApmtSize, apmtHdr->Length));
                 break;
+            }
         }
 
         calculatedConfigSize += header->Length;

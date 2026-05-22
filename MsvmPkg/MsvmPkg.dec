@@ -384,5 +384,6 @@
   gMsvmPkgTokenSpaceGuid.PcdIortSize|0x0|UINT32|0x6071
 
   # UEFI_CONFIG_APMT
+  # 0x6072 is used by PcdAziHsmEnabled above.
   gMsvmPkgTokenSpaceGuid.PcdApmtPtr|0x0|UINT64|0x6073
   gMsvmPkgTokenSpaceGuid.PcdApmtSize|0x0|UINT32|0x6074
