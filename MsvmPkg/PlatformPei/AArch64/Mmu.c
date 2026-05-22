@@ -418,7 +418,7 @@ ConfigureMmu(
         return EFI_INVALID_PARAMETER;
     }
 
-    DEBUG((DEBUG_VERBOSE, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
+    DEBUG((DEBUG_INFO, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
         MaxAddress, lowMmioSize, highMmioBaseAddress, highMmioSize));
 
     //
