@@ -791,7 +791,8 @@ typedef struct _UEFI_CONFIG_FLAGS
         UINT64 MtrrsInitializedAtLoad : 1;
         UINT64 HvSintEnabled : 1;  // Reserved; used by other codebase.
         UINT64 VmbusDisabled : 1;
-        UINT64 Reserved:33;
+        UINT64 PciResourcesPreAssigned : 1;
+        UINT64 Reserved:32;
     } Flags;
 } UEFI_CONFIG_FLAGS;
 
