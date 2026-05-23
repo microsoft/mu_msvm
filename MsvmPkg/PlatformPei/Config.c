@@ -945,6 +945,7 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, !ConfigFlags->Flags.VmbusDisabled));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdPciDisableBusEnumeration, (UINT8) ConfigFlags->Flags.PciResourcesPreAssigned));
 
     //
     // If memory protections are enabled, configure the value into the HOB.

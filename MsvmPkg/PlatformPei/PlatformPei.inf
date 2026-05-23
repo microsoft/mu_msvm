@@ -83,6 +83,7 @@
 
 [Pcd]
     gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeNamespaceFilterId
+    gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration
     gEfiNetworkPkgTokenSpaceGuid.PcdDhcp6UidType
     gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdFdSize
