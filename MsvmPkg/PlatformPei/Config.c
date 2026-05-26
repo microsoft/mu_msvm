@@ -1561,47 +1561,6 @@ Return Value:
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdLowMmioGapSizeInPages, mmioRanges->Ranges[lowGap].MmioSizeInPages));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdHighMmioGapBasePageNumber, mmioRanges->Ranges[highGap].MmioPageNumberStart));
                 PEI_FAIL_FAST_IF_FAILED(PcdSet64S(PcdHighMmioGapSizeInPages, mmioRanges->Ranges[highGap].MmioSizeInPages));
-
-                // Log resolved MMIO PCDs in bytes; SafeUint64Mult guards the page-to-byte conversion.
-                {
-                    UINT64 lowBaseBytes;
-                    UINT64 lowSizeBytes;
-                    UINT64 highBaseBytes;
-                    UINT64 highSizeBytes;
-
-                    if (RETURN_ERROR(SafeUint64Mult(mmioRanges->Ranges[lowGap].MmioPageNumberStart, (UINT64)SIZE_4KB, &lowBaseBytes)) ||
-                        RETURN_ERROR(SafeUint64Mult(mmioRanges->Ranges[lowGap].MmioSizeInPages, (UINT64)SIZE_4KB, &lowSizeBytes)))
-                    {
-                        DEBUG((DEBUG_WARN,
-                            "ConfigMmio: LowGap  (pages) base=0x%lx size=0x%lx (byte conversion overflow)\n",
-                            mmioRanges->Ranges[lowGap].MmioPageNumberStart,
-                            mmioRanges->Ranges[lowGap].MmioSizeInPages));
-                    }
-                    else
-                    {
-                        DEBUG((DEBUG_INFO,
-                            "ConfigMmio: LowGap  base=0x%lx size=0x%lx\n",
-                            lowBaseBytes,
-                            lowSizeBytes));
-                    }
-
-                    if (RETURN_ERROR(SafeUint64Mult(mmioRanges->Ranges[highGap].MmioPageNumberStart, (UINT64)SIZE_4KB, &highBaseBytes)) ||
-                        RETURN_ERROR(SafeUint64Mult(mmioRanges->Ranges[highGap].MmioSizeInPages, (UINT64)SIZE_4KB, &highSizeBytes)))
-                    {
-                        DEBUG((DEBUG_WARN,
-                            "ConfigMmio: HighGap (pages) base=0x%lx size=0x%lx (byte conversion overflow)\n",
-                            mmioRanges->Ranges[highGap].MmioPageNumberStart,
-                            mmioRanges->Ranges[highGap].MmioSizeInPages));
-                    }
-                    else
-                    {
-                        DEBUG((DEBUG_INFO,
-                            "ConfigMmio: HighGap base=0x%lx size=0x%lx\n",
-                            highBaseBytes,
-                            highSizeBytes));
-                    }
-                }
-
                 requiredStructures.UefiConfigMmioRanges = 1;
                 break;
             }

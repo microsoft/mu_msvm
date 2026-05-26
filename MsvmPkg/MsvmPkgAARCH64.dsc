@@ -355,7 +355,7 @@
 
 [PcdsFixedAtBuild.common]
   # Advanced Logger Config
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|8     # Size is 32KB
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|1     # Size is 4KB
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB
 !if $(DEBUGLIB_SERIAL) == 1
   !ifdef DEBUG_NOISY
