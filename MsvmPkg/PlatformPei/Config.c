@@ -764,6 +764,7 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tWatchdogEnabled: %u\n", flags->Flags.WatchdogEnabled));
             DEBUG((DEBUG_VERBOSE, "\tTpmLocalityRegsEnabled: %u\n", flags->Flags.TpmLocalityRegsEnabled));
             DEBUG((DEBUG_VERBOSE, "\tMtrrsInitializedAtLoad: %u\n", flags->Flags.MtrrsInitializedAtLoad));
+            DEBUG((DEBUG_VERBOSE, "\tVmbusDisabled: %u\n", flags->Flags.VmbusDisabled));
             break;
         }
         case UefiConfigProcessorInformation:
@@ -943,6 +944,7 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdWatchdogEnabled, (UINT8) ConfigFlags->Flags.WatchdogEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, !ConfigFlags->Flags.VmbusDisabled));
 
     //
     // If memory protections are enabled, configure the value into the HOB.
@@ -1498,16 +1500,20 @@ Return Value:
 
                 //
                 // Figure out which entry is the low gap, and which is the high.
+                // Use base >= 4GB as the indicator for the high gap. When an
+                // entry is empty (size=0) its base is typically 0, so it will
+                // naturally fall into the "low" bucket and be skipped downstream.
                 //
-                if (mmioRanges->Ranges[0].MmioPageNumberStart < mmioRanges->Ranges[1].MmioPageNumberStart)
+                if (mmioRanges->Ranges[0].MmioPageNumberStart >= (SIZE_4GB / SIZE_4KB) &&
+                    mmioRanges->Ranges[0].MmioSizeInPages > 0)
                 {
-                    lowGap = 0;
-                    highGap = 1;
+                    highGap = 0;
+                    lowGap = 1;
                 }
                 else
                 {
-                    lowGap = 1;
-                    highGap = 0;
+                    lowGap = 0;
+                    highGap = 1;
                 }
 
                 //
@@ -1525,35 +1531,37 @@ Return Value:
                     UINT64 highGapEnd;
 
                     //
-                    // Low gap size (in pages) must not exceed 4GB worth of pages,
-                    // and the low gap must end at or before the 4GB boundary.
+                    // Low gap: if size is nonzero, it must not exceed 4GB worth
+                    // of pages, and must end at or before the 4GB boundary.
                     //
-                    if ((lowGapSize > (SIZE_4GB / SIZE_4KB)) ||
-                        RETURN_ERROR(SafeUint64Add(lowGapBase, lowGapSize, &lowGapEnd)) ||
-                        (lowGapEnd > (SIZE_4GB / SIZE_4KB)))
+                    if (lowGapSize > 0)
                     {
-                        DEBUG((DEBUG_ERROR, "***Invalid low MMIO gap range\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        if ((lowGapSize > (SIZE_4GB / SIZE_4KB)) ||
+                            RETURN_ERROR(SafeUint64Add(lowGapBase, lowGapSize, &lowGapEnd)) ||
+                            (lowGapEnd > (SIZE_4GB / SIZE_4KB)))
+                        {
+                            DEBUG((DEBUG_ERROR, "***Invalid low MMIO gap range\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
                     }
 
                     //
-                    // High gap must start at or above the 4GB boundary (in pages)
-                    // to avoid unsigned underflow when computing memory region
-                    // lengths in ConfigureMmu().
+                    // High gap: if size is nonzero, it must start at or above
+                    // the 4GB boundary and must not overflow the address space.
                     //
-                    if (highGapBase < (SIZE_4GB / SIZE_4KB))
+                    if (highGapSize > 0)
                     {
-                        DEBUG((DEBUG_ERROR, "***Invalid high MMIO gap base below 4GB\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-                    }
+                        if (highGapBase < (SIZE_4GB / SIZE_4KB))
+                        {
+                            DEBUG((DEBUG_ERROR, "***Invalid high MMIO gap base below 4GB\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
 
-                    //
-                    // High gap must not overflow the address space.
-                    //
-                    if (RETURN_ERROR(SafeUint64Add(highGapBase, highGapSize, &highGapEnd)))
-                    {
-                        DEBUG((DEBUG_ERROR, "***High MMIO gap range overflow\n"));
-                        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        if (RETURN_ERROR(SafeUint64Add(highGapBase, highGapSize, &highGapEnd)))
+                        {
+                            DEBUG((DEBUG_ERROR, "***High MMIO gap range overflow\n"));
+                            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                        }
                     }
                 }
 
@@ -1644,6 +1652,8 @@ Return Value:
         calculatedConfigSize += header->Length;
         header = (UEFI_CONFIG_HEADER*) ((UINT64) header + header->Length);
     }
+
+
 
     if (requiredStructures.AsUINT64 != AllStructuresFound)
     {

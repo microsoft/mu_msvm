@@ -69,6 +69,7 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
   gMsvmPkgTokenSpaceGuid.PcdIsVmbfsBoot
   gMsvmPkgTokenSpaceGuid.PcdLogoFile
   gMsvmPkgTokenSpaceGuid.PcdPxeIpV6
+  gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
   gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled
 
 [Depex]
