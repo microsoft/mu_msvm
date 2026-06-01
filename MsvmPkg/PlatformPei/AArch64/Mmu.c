@@ -20,6 +20,7 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/SafeIntLib.h>
+#include <Library/CrashLib.h>
 #include <BiosInterface.h>
 #include <Config.h>
 
@@ -403,6 +404,7 @@ ConfigureMmu(
     UINT64                        highMmioSize;
 #define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS 6
     ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
+    UINTN                         index = 0;
 
     //
     // Convert PCD page counts to byte addresses/sizes using safe
@@ -421,63 +423,94 @@ ConfigureMmu(
         MaxAddress, lowMmioSize, highMmioBaseAddress, highMmioSize));
 
     //
-    // Fill table that drives the mmu setup functions.
+    // Validate that MMIO regions fit within the physical address space.
     //
-    // From zero to beginning of low MMIO gap.
-    virtualMemoryTable[0].PhysicalBase = 0;
-    virtualMemoryTable[0].VirtualBase = virtualMemoryTable[0].PhysicalBase;
-    virtualMemoryTable[0].Length = (SIZE_4GB - lowMmioSize);
-    virtualMemoryTable[0].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
-
-    // First MMIO gap.
-    virtualMemoryTable[1].PhysicalBase = virtualMemoryTable[0].PhysicalBase + virtualMemoryTable[0].Length;
-    virtualMemoryTable[1].VirtualBase = virtualMemoryTable[1].PhysicalBase;
-    virtualMemoryTable[1].Length = lowMmioSize;
-    virtualMemoryTable[1].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
-
-    // From 4GB to beginning of high MMIO gap.
-    virtualMemoryTable[2].PhysicalBase = virtualMemoryTable[1].PhysicalBase + virtualMemoryTable[1].Length;
-    virtualMemoryTable[2].VirtualBase = virtualMemoryTable[2].PhysicalBase;
-
-    if (RETURN_ERROR(SafeUint64Sub(highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase, &virtualMemoryTable[2].Length)))
+    if (highMmioSize > 0)
     {
-        DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
-            highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+        UINT64 highMmioEnd;
+        if (RETURN_ERROR(SafeUint64Add(highMmioBaseAddress, highMmioSize, &highMmioEnd)))
+        {
+            DEBUG((DEBUG_ERROR,
+                "ConfigureMmu: High MMIO range overflow (base=0x%lx, size=0x%lx)\n",
+                highMmioBaseAddress, highMmioSize));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        if (highMmioEnd > MaxAddress + 1)
+        {
+            DEBUG((DEBUG_ERROR,
+                "ConfigureMmu: High MMIO end 0x%lx exceeds physical address limit 0x%lx\n",
+                highMmioEnd, MaxAddress));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
     }
 
-    virtualMemoryTable[2].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    //
+    // Build the memory map based on which MMIO gaps are present.
+    //
 
-    // Second MMIO gap.
-    virtualMemoryTable[3].PhysicalBase = virtualMemoryTable[2].PhysicalBase + virtualMemoryTable[2].Length;
-    virtualMemoryTable[3].VirtualBase = virtualMemoryTable[3].PhysicalBase;
-    virtualMemoryTable[3].Length = highMmioSize;
-    virtualMemoryTable[3].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+    // From zero to beginning of low MMIO gap (or to 4GB if no low gap).
+    virtualMemoryTable[index].PhysicalBase = 0;
+    virtualMemoryTable[index].VirtualBase = 0;
+    virtualMemoryTable[index].Length = (SIZE_4GB - lowMmioSize);
+    virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    index++;
+
+    // Low MMIO gap (only if nonzero size).
+    if (lowMmioSize > 0)
+    {
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
+        virtualMemoryTable[index].Length = lowMmioSize;
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+        index++;
+    }
+
+    if (highMmioSize > 0)
+    {
+        // From end of low gap (or 4GB) to beginning of high MMIO gap.
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
+
+        if (RETURN_ERROR(SafeUint64Sub(highMmioBaseAddress, virtualMemoryTable[index].PhysicalBase, &virtualMemoryTable[index].Length)))
+        {
+            DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
+                highMmioBaseAddress, virtualMemoryTable[index].PhysicalBase));
+            ASSERT(FALSE);
+            return EFI_INVALID_PARAMETER;
+        }
+
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+        index++;
+
+        // High MMIO gap.
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
+        virtualMemoryTable[index].Length = highMmioSize;
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+        index++;
+    }
 
     // To top of address space.
-    virtualMemoryTable[4].PhysicalBase = virtualMemoryTable[3].PhysicalBase + virtualMemoryTable[3].Length;
-    virtualMemoryTable[4].VirtualBase = virtualMemoryTable[4].PhysicalBase;
+    virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+    virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
 
-    //
-    // Validate that the final region does not underflow.
-    //
-    if (virtualMemoryTable[4].PhysicalBase > MaxAddress)
+    if (virtualMemoryTable[index].PhysicalBase > MaxAddress)
     {
         DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress (0x%lx)\n",
-            virtualMemoryTable[4].PhysicalBase, MaxAddress));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+            virtualMemoryTable[index].PhysicalBase, MaxAddress));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
-    virtualMemoryTable[4].Length = (MaxAddress - virtualMemoryTable[4].PhysicalBase) + 1;
+    virtualMemoryTable[index].Length = (MaxAddress - virtualMemoryTable[index].PhysicalBase) + 1;
+    virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    index++;
 
-    virtualMemoryTable[4].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
-
-    virtualMemoryTable[5].PhysicalBase = 0;
-    virtualMemoryTable[5].VirtualBase = 0;
-    virtualMemoryTable[5].Length = 0;
-    virtualMemoryTable[5].Attributes = 0;
+    // End-of-table sentinel.
+    virtualMemoryTable[index].PhysicalBase = 0;
+    virtualMemoryTable[index].VirtualBase = 0;
+    virtualMemoryTable[index].Length = 0;
+    virtualMemoryTable[index].Attributes = 0;
 
     // Lookup the Table Level to get the information
     LookupAddresstoRootTable(MaxAddress, &T0SZ, &RootTableEntryCount);
