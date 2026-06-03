@@ -33,6 +33,7 @@
 [Pcd]
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration
 
 [Guids]
   gAcpiReplacementTableHobGuid
