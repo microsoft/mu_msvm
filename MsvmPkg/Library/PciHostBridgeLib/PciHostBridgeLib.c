@@ -195,11 +195,12 @@ PciHostBridgeGetRootBridges (
                                                     EFI_PCI_HOST_BRIDGE_MEM64_DECODE;
 
         //
-        // ResourceAssigned = FALSE: PciHostBridgeDxe will go through the
-        // full PCI resource allocation protocol with PciBusDxe.  The ECAM
-        // ranges are reserved separately in the loop below.
+        // When PcdPciDisableBusEnumeration is TRUE, PciBusDxe uses the
+        // lightweight enumerator which requires pre-assigned resources.
+        // Setting ResourceAssigned = TRUE causes CreateRootBridge to mark
+        // apertures as ResAllocated so Configuration emits them.
         //
-        Bridges[BridgeCount].ResourceAssigned     = FALSE;
+        Bridges[BridgeCount].ResourceAssigned     = PcdGetBool(PcdPciDisableBusEnumeration);
 
         //
         // Bus aperture.
