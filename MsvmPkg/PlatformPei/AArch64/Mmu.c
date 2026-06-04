@@ -415,8 +415,8 @@ ConfigureMmu(
         RETURN_ERROR(SafeUint64Mult(PcdGet64(PcdHighMmioGapSizeInPages), SIZE_4KB, &highMmioSize)))
     {
         DEBUG((DEBUG_ERROR, "ConfigureMmu: MMIO PCD value overflow\n"));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        return EFI_INVALID_PARAMETER; // unreachable; FAIL_FAST does not return (needed to keep compiler quiet)
     }
 
     DEBUG((DEBUG_VERBOSE, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
@@ -436,11 +436,22 @@ ConfigureMmu(
             FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
 
-        if (highMmioEnd > MaxAddress + 1)
+        //
+        // highMmioEnd is exclusive (one past the last byte). The range is
+        // out of bounds iff its last byte (highMmioEnd - 1) is greater than
+        // MaxAddress. Writing the check as "highMmioEnd - 1 > MaxAddress"
+        // avoids the "MaxAddress + 1" overflow that wraps to 0 when
+        // MaxAddress == UINT64_MAX and silently passes every range.
+        //
+        // Config.c rejects highMmioBaseAddress below the 4GB boundary, and
+        // this block only runs when highMmioSize > 0, so highMmioEnd >= 4GB
+        // and highMmioEnd - 1 is well defined.
+        //
+        if (highMmioEnd - 1 > MaxAddress)
         {
             DEBUG((DEBUG_ERROR,
-                "ConfigureMmu: High MMIO end 0x%lx exceeds physical address limit 0x%lx\n",
-                highMmioEnd, MaxAddress));
+                "ConfigureMmu: High MMIO last byte 0x%lx exceeds physical address limit 0x%lx\n",
+                highMmioEnd - 1, MaxAddress));
             FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
     }
@@ -476,8 +487,7 @@ ConfigureMmu(
         {
             DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
                 highMmioBaseAddress, virtualMemoryTable[index].PhysicalBase));
-            ASSERT(FALSE);
-            return EFI_INVALID_PARAMETER;
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
 
         virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
@@ -495,13 +505,28 @@ ConfigureMmu(
     virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
     virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
 
-    if (virtualMemoryTable[index].PhysicalBase > MaxAddress)
+    //
+    // PhysicalBase == MaxAddress + 1 is legal and represents a zero-length
+    // tail region (the high MMIO gap ends exactly at the top of the
+    // architectural PA range, e.g. 36-bit PA with high MMIO ending at 64GB).
+    // Use "PhysicalBase - 1 > MaxAddress" to avoid the "MaxAddress + 1"
+    // overflow and to accept that boundary case. PhysicalBase here is
+    // built up from prior regions and is >= 4GB on any path that reaches
+    // here, so the subtraction is well defined.
+    //
+    if (virtualMemoryTable[index].PhysicalBase - 1 > MaxAddress)
     {
-        DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress (0x%lx)\n",
-            virtualMemoryTable[index].PhysicalBase, MaxAddress));
+        DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress + 1 (last byte 0x%lx > 0x%lx)\n",
+            virtualMemoryTable[index].PhysicalBase, virtualMemoryTable[index].PhysicalBase - 1, MaxAddress));
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
+    //
+    // Length = (MaxAddress + 1) - PhysicalBase. Computed as
+    // (MaxAddress - PhysicalBase) + 1; when PhysicalBase == MaxAddress + 1
+    // the inner subtract wraps to UINT64_MAX and the + 1 wraps back to 0,
+    // which is the correct zero-length result.
+    //
     virtualMemoryTable[index].Length = (MaxAddress - virtualMemoryTable[index].PhysicalBase) + 1;
     virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
     index++;
