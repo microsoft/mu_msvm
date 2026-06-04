@@ -1,0 +1,40 @@
+## @file
+#  DXE driver that registers RAM disks declared in the config blob.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = RamDiskConfigDxe
+  FILE_GUID                      = 4bcbeb49-b83c-41e0-9987-e09cd00d2467
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = RamDiskConfigDxeEntry
+
+[Sources]
+  RamDiskConfigDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  HobLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Guids]
+  gMsvmRamDiskConfigHobGuid
+  gEfiVirtualDiskGuid
+
+[Protocols]
+  gEfiRamDiskProtocolGuid
+
+[Depex]
+  gEfiRamDiskProtocolGuid

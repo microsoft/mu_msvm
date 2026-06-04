@@ -30,6 +30,7 @@
 #include <Library/HobLib.h>
 #include <Library/SafeIntLib.h>
 #include <AcpiReplacementTable.h>
+#include <RamDiskConfigHob.h>
 #include "AllowNamelessAggregate.h"
 #include "AssignStruct.h"
 
@@ -822,6 +823,13 @@ DebugDumpUefiConfigStruct(
             UINT32 dataSize = Header->Length - sizeof(UEFI_CONFIG_HEADER);
             UINT32 entryCount = dataSize / sizeof(PCIE_BAR_APERTURE_ENTRY);
             DEBUG((DEBUG_INFO, "PcieBarApertures: %u entries\n", entryCount));
+            break;
+        }
+
+        case UefiConfigRamDisk:
+        {
+            UEFI_CONFIG_RAM_DISK *ramDisk = (UEFI_CONFIG_RAM_DISK*) Header;
+            DEBUG((DEBUG_VERBOSE, "\tRamDisk GPA: 0x%lx  Size: 0x%lx\n", ramDisk->RamDiskGpa, ramDisk->RamDiskSize));
             break;
         }
 
@@ -1646,6 +1654,52 @@ Return Value:
                     PcdSet64S(PcdPcieBarAperturesPtr, (UINT64) apertures->Entries));
                 PEI_FAIL_FAST_IF_FAILED(
                     PcdSet32S(PcdPcieBarAperturesSize, dataSize));
+                break;
+            }
+
+            case UefiConfigRamDisk:
+            {
+                UEFI_CONFIG_RAM_DISK *ramDisk = (UEFI_CONFIG_RAM_DISK*) header;
+
+                if (header->Length != sizeof(UEFI_CONFIG_RAM_DISK))
+                {
+                    DEBUG((DEBUG_ERROR, "*** Malformed RamDisk structure length\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                if (ramDisk->RamDiskGpa == 0 || ramDisk->RamDiskSize == 0)
+                {
+                    DEBUG((DEBUG_ERROR, "*** RamDisk: GPA or Size is zero\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                if ((ramDisk->RamDiskGpa % EFI_PAGE_SIZE) != 0 ||
+                    (ramDisk->RamDiskSize % EFI_PAGE_SIZE) != 0)
+                {
+                    DEBUG((DEBUG_ERROR, "*** RamDisk: GPA or Size not page-aligned\n"));
+                    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+                }
+
+                //
+                // Mark the RAM disk memory as allocated boot services data so
+                // the DXE allocator won't hand it out.
+                //
+                HobAddAllocatedMemoryRange(ramDisk->RamDiskGpa, ramDisk->RamDiskSize);
+
+                //
+                // Create a GUIDed HOB for DXE to consume.
+                //
+                {
+                    RAM_DISK_CONFIG_HOB_DATA hobData;
+                    hobData.RamDiskGpa = ramDisk->RamDiskGpa;
+                    hobData.RamDiskSize = ramDisk->RamDiskSize;
+                    BuildGuidDataHob(&gMsvmRamDiskConfigHobGuid,
+                                     &hobData,
+                                     sizeof(hobData));
+                }
+
+                DEBUG((DEBUG_INFO, "RamDisk: registered HOB for GPA 0x%lx Size 0x%lx\n",
+                       ramDisk->RamDiskGpa, ramDisk->RamDiskSize));
                 break;
             }
         }
