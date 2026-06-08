@@ -585,12 +585,19 @@ IoMmuDxeEntryPoint (
 {
     EFI_STATUS  Status;
 
+    //
+    // Resolve the bounce dispatch mode up front so the
+    // IoMmuIsBounceActive() / IoMmuRequiresHostVisibility() predicates
+    // read meaningful state for the rest of init (and for any later Map()
+    // calls that gate on them). Without this, the cached mode reads its
+    // default of IOMMU_BOUNCE_MODE_NONE and the driver short-circuits.
+    //
+    mBounceMode = IoMmuComputeBounceMode ();
+
     if (IoMmuIsBounceActive ()) {
-        //
-        // Bounce buffering is required: initialize the bounce buffer
-        // subsystem (caches PCDs, locates the HV IVM protocol, initializes
-        // list heads).
-        //
+        PIOMMU_BOUNCE_BLOCK  InitialBlock;
+        EFI_STATUS           BlockStatus;
+
         Status = IoMmuInitializeBounce ();
         if (EFI_ERROR (Status)) {
             DEBUG ((DEBUG_ERROR, "IoMmuDxe: Failed to initialize bounce buffers: %r\n", Status));
@@ -603,32 +610,22 @@ IoMmuDxeEntryPoint (
         // Failure here is non-fatal: subsequent Map() calls will lazily
         // allocate a block on demand.
         //
-        {
-            PIOMMU_BOUNCE_BLOCK  InitialBlock;
-            EFI_STATUS           BlockStatus;
-
-            BlockStatus = IoMmuPreAllocateBounceBlock (
-                              IOMMU_BOUNCE_INITIAL_BLOCK_PAGES,
-                              &InitialBlock
-                              );
-            if (EFI_ERROR (BlockStatus)) {
-                DEBUG ((DEBUG_WARN,
-                    "IoMmuDxe: Failed to pre-allocate initial bounce block: %r\n",
-                    BlockStatus));
-            } else {
-                DEBUG ((DEBUG_INFO,
-                    "IoMmuDxe: Pre-allocated initial bounce block (%d pages)\n",
-                    IOMMU_BOUNCE_INITIAL_BLOCK_PAGES));
-            }
+        BlockStatus = IoMmuPreAllocateBounceBlock (
+                          IOMMU_BOUNCE_INITIAL_BLOCK_PAGES,
+                          &InitialBlock
+                          );
+        if (EFI_ERROR (BlockStatus)) {
+            DEBUG ((DEBUG_WARN,
+                "IoMmuDxe: Failed to pre-allocate initial bounce block: %r\n",
+                BlockStatus));
+        } else {
+            DEBUG ((DEBUG_INFO,
+                "IoMmuDxe: Pre-allocated initial bounce block (%d pages)\n",
+                IOMMU_BOUNCE_INITIAL_BLOCK_PAGES));
         }
 
         DEBUG ((DEBUG_INFO, "IoMmuDxe: Bounce buffers initialized\n"));
     } else {
-        //
-        // Bounce buffering not required: initialize allocation tracking
-        // list head only. No bounce blocks or HV protocol needed.
-        //
-        InitializeListHead (&mAllocContextListHead);
         DEBUG ((DEBUG_INFO, "IoMmuDxe: Bounce buffering inactive, installing pass-through IOMMU protocol\n"));
     }
 

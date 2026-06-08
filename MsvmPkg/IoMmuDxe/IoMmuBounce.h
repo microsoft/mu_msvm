@@ -24,6 +24,56 @@
 #include <IsolationTypes.h>
 
 //
+// IOMMU_BOUNCE_MODE - dispatch state for the bounce subsystem. Resolved
+// once at driver init by IoMmuComputeBounceMode and consulted by the
+// per-region helpers to decide which hypercalls (if any) wrap the DMA.
+//
+// Composed from two tiers:
+//   - Hard requirements: VM-property predicates (IsIsolated, IsVaBacked)
+//     each OR in the obligations their property implies. Each predicate
+//     hides its own source of truth (PCD today, capability register
+//     tomorrow).
+//   - Soft override: PcdForceDmaBounceEnabled, read directly because it
+//     *is* VMM configuration, not a VM property. When set, force BOUNCE
+//     on; PINNING is left to the hard-requirement predicates above.
+//
+// Bitflags because the obligations are independent and compose - e.g. a
+// paravisor-isolated VA-backed VM ends up with
+// BOUNCE | HOST_VISIBILITY | PINNING.
+//
+typedef UINT32 IOMMU_BOUNCE_MODE;
+
+//
+// No bounce, no hypercalls. DMA hits guest memory directly and the
+// bounce pool is never allocated.
+//
+#define IOMMU_BOUNCE_MODE_NONE              0x00000000
+
+//
+// Funnel DMA through the pre-allocated bounce pool (pages allocated
+// below 4GB so they satisfy both 32-bit and 64-bit DMA). Set by
+// IsIsolated() and by the soft PcdForceDmaBounceEnabled override.
+//
+#define IOMMU_BOUNCE_MODE_BOUNCE            BIT0
+
+//
+// Make each bounce region host-visible via the HV IVM protocol
+// (MakeAddressRangeHostVisible / NotHostVisible). Set when IsIsolated().
+//
+#define IOMMU_BOUNCE_MODE_HOST_VISIBILITY   BIT1
+
+//
+// TODO: Reserved for Phase 2 (VA-backed VMs). Will pin each DMA region
+// via HvCallPinGpaPageRanges before the host accesses it and unpin on
+// release. Independent of BOUNCE: a VA-backed VM that supports pinning
+// can pin guest pages and DMA directly into them, no bouncing required.
+// Set when IsVaBacked() and the hypervisor advertises pin-hypercall
+// support. Composes with BOUNCE | HOST_VISIBILITY for VA-backed
+// paravisor-isolated VMs.
+//
+// #define IOMMU_BOUNCE_MODE_PINNING        BIT2
+
+//
 // Context for tracking host visibility of an address range.
 //
 typedef struct _IOMMU_HOST_VISIBILITY_CONTEXT
@@ -102,7 +152,26 @@ typedef struct _IOMMU_ALLOC_CONTEXT
 
 
 //
-// Bounce buffer initialization.
+// Bounce dispatch state, resolved once at driver entry. Consulted by
+// IoMmuIsBounceActive() / IoMmuRequiresHostVisibility() and by the
+// dispatch sites in IoMmuDxe.c. Assign via IoMmuComputeBounceMode().
+//
+extern IOMMU_BOUNCE_MODE  mBounceMode;
+
+//
+// Resolve the bounce dispatch flags from VM-property predicates and the
+// PcdForceDmaBounceEnabled soft override. The driver entry point assigns
+// the result to mBounceMode before any IoMmuIsBounceActive() consumer.
+//
+IOMMU_BOUNCE_MODE
+IoMmuComputeBounceMode (
+    VOID
+    );
+
+//
+// Bounce buffer initialization. Allocates pool tracking state and locates
+// the HV IVM protocol when host visibility is required. Assumes mBounceMode
+// has already been assigned.
 //
 EFI_STATUS
 IoMmuInitializeBounce (
@@ -114,6 +183,16 @@ IoMmuInitializeBounce (
 //
 BOOLEAN
 IoMmuIsBounceActive (
+    VOID
+    );
+
+//
+// Returns TRUE if bounce regions must be made host-visible via the HV
+// IVM protocol (i.e. the HOST_VISIBILITY obligation is set in the
+// resolved bounce mode).
+//
+BOOLEAN
+IoMmuRequiresHostVisibility (
     VOID
     );
 
