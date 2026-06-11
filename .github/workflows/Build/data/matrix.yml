@@ -1,0 +1,21 @@
+# =============================================================================
+# matrix.yml -- Build matrix for the Build pipeline.
+# =============================================================================
+#
+# Single source of truth for which (arch, target, tools) tuples we build.
+#
+# Consumed by:
+#   - scripts/generate_matrix.py  -> emits JSON for GitHub Actions matrix
+#   - scripts/invoke_ci_locally.py  -> lists/selects variants for local runs
+#
+# Each entry produces one parallel CI job. To add a variant: append a row.
+# To drop one: delete the row. Do not edit Build.yml for variant changes.
+# =============================================================================
+
+variants:
+  - {arch: X64,     target: DEBUG,   tools: VS2022}
+  - {arch: X64,     target: RELEASE, tools: VS2022}
+  - {arch: X64,     target: DEBUG,   tools: CLANGPDB}
+  - {arch: X64,     target: RELEASE, tools: CLANGPDB}
+  - {arch: AARCH64, target: DEBUG,   tools: CLANGPDB}
+  - {arch: AARCH64, target: RELEASE, tools: CLANGPDB}
