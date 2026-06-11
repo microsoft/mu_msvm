@@ -85,8 +85,7 @@ Return Value:
 
     if (BufferLength > VMBFS_MAXIMUM_MESSAGE_SIZE)
     {
-        VMBFS_BAD_HOST;
-        BufferLength = MIN(BufferLength, VMBFS_MAXIMUM_MESSAGE_SIZE);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     CopyMem(fileSystemInformation->PacketBuffer, Buffer, BufferLength);
@@ -381,10 +380,7 @@ Return Value:
     if (bytesRead != sizeof(*getFileInfoResponseMessage) ||
         getFileInfoResponseMessage->Header.Type != VmbfsMessageTypeGetFileInfoResponse)
     {
-
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     if (getFileInfoResponseMessage->Status == VmbfsFileNotFound)
@@ -591,9 +587,7 @@ Return Value:
     if (bytesReceived < sizeof(*readFileResponseMessage) ||
         readFileResponseMessage->Header.Type != VmbfsMessageTypeReadFileResponse)
     {
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     status = VmbfsErrorToEfiError(readFileResponseMessage->Status);
@@ -605,9 +599,7 @@ Return Value:
     bytesReceived -= sizeof(VMBFS_MESSAGE_READ_FILE_RESPONSE);
     if (bytesReceived > bytesRequested)
     {
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     CopyMem((UINT8*)Buffer,
@@ -702,9 +694,7 @@ Return Value:
     if (bytesReceived < sizeof(*readFileResponseMessage) ||
         readFileResponseMessage->Header.Type != VmbfsMessageTypeReadFileRdmaResponse)
     {
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     status = VmbfsErrorToEfiError(readFileResponseMessage->Status);
@@ -715,9 +705,7 @@ Return Value:
 
     if (readFileResponseMessage->ByteCount > bytesRequested)
     {
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     *BytesRead = readFileResponseMessage->ByteCount;
