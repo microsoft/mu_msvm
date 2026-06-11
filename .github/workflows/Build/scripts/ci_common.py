@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import shlex
 from pathlib import Path
 from typing import Literal
 
@@ -42,9 +43,15 @@ def build_dir_for(arch: Arch, target: Target, tools: ToolChainTag) -> Path:
 # ---------------------------------------------------------------------------
 
 
+def format_command(cmd: list[str]) -> str:
+    """Return a shell-readable command line for logging."""
+    return subprocess.list2cmdline(cmd) if sys.platform == "win32" else shlex.join(cmd)
+
+
 def run(label: str, cmd: list[str], **kwargs) -> None:
-    """Print *label*, execute *cmd*, and raise CalledProcessError on failure."""
+    """Print *label* and exact command, execute it, and fail on non-zero exit."""
     print(f"== {label} ==", flush=True)
+    print(f"> {format_command(cmd)}", flush=True)
     subprocess.run(cmd, check=True, **kwargs)
 
 

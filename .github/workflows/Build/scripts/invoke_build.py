@@ -25,6 +25,7 @@ from ci_common import (
     Target,
     ToolChainTag,
     die,
+    run,
 )
 
 # Fixed Stuart args appended to every build invocation.
@@ -108,10 +109,8 @@ def run_build(
         f"BUILD_ARCH={arch}",
         *_FIXED_BUILD_ARGS,
     ]
-    print(f"== {' '.join(cmd)} ==", flush=True)
-
     try:
-        subprocess.run(cmd, check=True, env=env, cwd=REPO_ROOT)
+        run("stuart_build", cmd, env=env, cwd=REPO_ROOT)
     except subprocess.CalledProcessError as e:
         sys.exit(e.returncode)
     finally:
