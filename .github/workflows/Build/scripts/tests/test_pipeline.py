@@ -96,23 +96,3 @@ class TestCliRejectsBadArgs:
             capture_output=True, text=True,
         )
         assert result.returncode != 0
-        assert "include" in data
-        assert len(data["include"]) == len(load_variants())
-        for row in data["include"]:
-            assert set(row.keys()) == {"arch", "target", "tools"}
-
-
-class TestCliRejectsBadArgs:
-    """Each entrypoint script rejects missing required args (exit != 0)."""
-
-    @pytest.mark.parametrize("script", [
-        "invoke_build.py",
-        "stage_artifacts.py",
-        "install_vs_components.py",
-    ])
-    def test_no_args_fails(self, script: str) -> None:
-        result = subprocess.run(
-            [sys.executable, str(_SCRIPTS_DIR / script)],
-            capture_output=True, text=True,
-        )
-        assert result.returncode != 0

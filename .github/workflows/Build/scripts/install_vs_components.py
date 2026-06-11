@@ -9,8 +9,9 @@ Dispatch:
     arch=AARCH64                   -> requires VC.Tools.ARM64
     tools=CLANGPDB (any arch)      -> requires VC.Llvm.Clang + the Clang component group
 
-We install the *union* of required components for the requested variant in
-one `vs_installer modify` call, then verify everything is on disk.
+We verify first, then install the *union* of required components only if
+something is missing. This avoids calling `vs_installer modify` on GitHub
+hosted images that already include the requested toolchain.
 
 Local dev machines normally have all of these already; the script is a no-op
 in that case (vs_installer exits 0 when components are already installed).
@@ -104,30 +105,49 @@ def _install(arch: Arch, tools: ToolChainTag) -> None:
     time.sleep(10)
 
 
-def _verify(arch: Arch, tools: ToolChainTag) -> None:
+def _verify(arch: Arch, tools: ToolChainTag, *, fatal: bool = True) -> bool:
     vs_path = _vs_install_path()
+
+    missing: list[str] = []
+
+    def fail(message: str) -> None:
+        if fatal:
+            die(message)
+        missing.append(message)
 
     vc_tools = vs_path / "VC" / "Tools" / "MSVC"
     if not vc_tools.exists():
-        die(f"VC++ tools directory missing: {vc_tools}")
-    print(f"OK: VC++ tools at {vc_tools}")
+        fail(f"VC++ tools directory missing: {vc_tools}")
+    else:
+        print(f"OK: VC++ tools at {vc_tools}")
 
     win_sdk = Path(r"C:\Program Files (x86)\Windows Kits\10")
     if not win_sdk.exists():
-        die(f"Windows SDK missing: {win_sdk}")
-    print(f"OK: Windows SDK at {win_sdk}")
+        fail(f"Windows SDK missing: {win_sdk}")
+    else:
+        print(f"OK: Windows SDK at {win_sdk}")
 
     if arch == "AARCH64":
         arm_glob = list(vc_tools.glob("*/bin/Hostx64/arm64"))
         if not arm_glob:
-            die(f"AARCH64 cross-compiler missing under {vc_tools}/*/bin/Hostx64/arm64")
-        print(f"OK: AARCH64 tools at {arm_glob[0]}")
+            fail(f"AARCH64 cross-compiler missing under {vc_tools}/*/bin/Hostx64/arm64")
+        else:
+            print(f"OK: AARCH64 tools at {arm_glob[0]}")
 
     if tools == "CLANGPDB":
         clang_exe = vs_path / "VC" / "Tools" / "Llvm" / "x64" / "bin" / "clang.exe"
         if not clang_exe.exists():
-            die(f"clang.exe missing: {clang_exe}")
-        print(f"OK: clang.exe at {clang_exe}")
+            fail(f"clang.exe missing: {clang_exe}")
+        else:
+            print(f"OK: clang.exe at {clang_exe}")
+
+    if missing:
+        print("Missing required build components:", flush=True)
+        for item in missing:
+            print(f"  - {item}")
+        return False
+
+    return True
 
 
 def main() -> None:
@@ -140,8 +160,15 @@ def main() -> None:
                         help="Only check that components are present; do not invoke vs_installer.")
     args = parser.parse_args()
 
-    if not args.verify_only:
-        _install(args.arch, args.tools)
+    if args.verify_only:
+        _verify(args.arch, args.tools)
+        return
+
+    if _verify(args.arch, args.tools, fatal=False):
+        print("All required Visual Studio components are already present; skipping installer.")
+        return
+
+    _install(args.arch, args.tools)
     _verify(args.arch, args.tools)
 
 
