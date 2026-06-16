@@ -1,8 +1,9 @@
 ## @file
 #  EFI Diagnostics DXE driver.
 #
-#  Advertises the Advanced Logger buffer GPA to the host VMM for EFI
-#  diagnostics collection.
+#  Registers callbacks that tell the host VMM to process the AdvancedLogger
+#  buffer at ExitBootServices and on ResetSystem(). Publishing the buffer's
+#  GPA to the host is handled by MsvmPkg/EfiDiagnosticsPei in PEI.
 #
 #  Copyright (c) Microsoft Corporation.
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -20,11 +21,9 @@
   EfiDiagnosticsDxe.c
 
 [LibraryClasses]
-  AdvancedLoggerLib
   BaseLib
-  BiosDeviceLib
   DebugLib
-  HobLib
+  EfiDiagnosticsLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   UefiLib
@@ -33,12 +32,15 @@
   MsvmPkg/MsvmPkg.dec
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  MsCorePkg/MsCorePkg.dec
-  AdvLoggerPkg/AdvLoggerPkg.dec
 
 [Guids]
-  gAdvancedLoggerHobGuid                                  ## CONSUMES
+  gEfiEventBeforeExitBootServicesGuid                     ## CONSUMES
   gEfiEventExitBootServicesGuid                           ## CONSUMES
+  gEfiEventReadyToBootGuid                                ## CONSUMES
+  gMsvmUnableToBootEventGuid                              ## CONSUMES
+
+[Protocols]
+  gEfiResetNotificationProtocolGuid                       ## CONSUMES
 
 [Depex]
   TRUE

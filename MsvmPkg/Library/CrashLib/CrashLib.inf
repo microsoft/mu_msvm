@@ -34,8 +34,8 @@
 
 [LibraryClasses]
   BaseLib
-  BiosDeviceLib
   DebugLib
+  EfiDiagnosticsLib
   MsBaseLib
   PrintLib
 
