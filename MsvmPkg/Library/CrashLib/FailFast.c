@@ -10,6 +10,7 @@
 #include <Library/BaseLib.h>
 #include <Library/CrashLib.h>
 #include <Library/DebugLib.h>
+#include <Library/EfiDiagnosticsLib.h>
 #include <Library/PrintLib.h>
 
 #include <Hv/HvGuestMsr.h>
@@ -38,6 +39,14 @@ FailFast(
     ASSERT(FALSE);
 
     ReportCrash(ErrorCode, Param1, Param2, MessageBuffer, MessageLength);
+
+    //
+    // Tell the host to collect EFI diagnostics. Done unconditionally here
+    // (rather than from ReportCrash) so it runs even on hosts that don't
+    // expose the Hyper-V GuestCrashRegs enlightenment. Placed after
+    // ReportCrash so its DEBUG output is in the buffer the host reads.
+    //
+    NotifyHostToProcessEfiDiagnostics();
 
     ResetAfterCrash(ErrorCode, Param1, Param2);
 }

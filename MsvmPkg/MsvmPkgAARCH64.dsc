@@ -105,6 +105,7 @@
   DefaultExceptionHandlerLib|MsvmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf
   DeviceStateLib|MdeModulePkg/Library/DeviceStateLib/DeviceStateLib.inf
   DisplayDeviceStateLib|MsGraphicsPkg/Library/ColorBarDisplayDeviceStateLib/ColorBarDisplayDeviceStateLib.inf
+  EfiDiagnosticsLib|MsvmPkg/Library/EfiDiagnosticsLib/EfiDiagnosticsLib.inf
   EmclLib|MsvmPkg/Library/EmclLib/EmclLib.inf
   FltUsedLib|MsCorePkg/Library/FltUsedLib/FltUsedLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
@@ -356,7 +357,10 @@
 
 [PcdsFixedAtBuild.common]
   # Advanced Logger Config
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|1     # Size is 4KB
+  # PreMemPages comes from the SEC temp-RAM PEI heap. On X64, 6 is the
+  # ceiling (7+ exhausts temp RAM) and 2 is the empirical minimum that
+  # still captures early-PEI failure logs. Kept symmetric with X64.
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|2     # Size is 8KB
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB
 !if $(DEBUGLIB_SERIAL) == 1
   !ifdef DEBUG_NOISY
@@ -464,7 +468,13 @@
   # NOTE: Additional debug levels may cause the in-memory advanced logger
   # buffer to exceed its defined limit (see PcdAdvancedLoggerPages)
   #
+  # 0x80000042 = DEBUG_ERROR | DEBUG_INFO | DEBUG_WARN
+  # 0x804FEF4B = DEBUG_ERROR | DEBUG_VERBOSE | other noisy debug levels
+!ifdef DEBUG_NOISY
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x804FEF4B
+!else
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
+!endif
 
 # Disable asserts when not building debug
 !if $(TARGET) == DEBUG
@@ -786,6 +796,7 @@
   MdeModulePkg/Core/Pei/PeiMain.inf
   MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
   MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
   MsvmPkg/PlatformPei/PlatformPei.inf
   MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
   SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf {

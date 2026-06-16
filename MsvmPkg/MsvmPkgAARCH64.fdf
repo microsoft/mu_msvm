@@ -111,6 +111,7 @@ READ_LOCK_STATUS   = TRUE
 #
 APRIORI PEI {
   INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 }
 
 #
@@ -124,6 +125,7 @@ INF MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
 INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 INF MdeModulePkg/Core/Pei/PeiMain.inf
 INF MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
+INF MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 INF MsvmPkg/PlatformPei/PlatformPei.inf
 INF SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf
 INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf

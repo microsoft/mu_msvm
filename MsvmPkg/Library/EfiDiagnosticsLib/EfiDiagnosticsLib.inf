@@ -1,0 +1,25 @@
+## @file
+#  Library for host EFI diagnostics notifications.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = EfiDiagnosticsLib
+  FILE_GUID                      = 5fe95e0c-6828-47fc-a908-b7e64d6b57d0
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = EfiDiagnosticsLib
+
+[Sources]
+  EfiDiagnosticsLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+  BiosDeviceLib

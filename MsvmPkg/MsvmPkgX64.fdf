@@ -155,6 +155,7 @@ READ_LOCK_STATUS   = TRUE
 #
 APRIORI PEI {
   INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 }
 
 #
@@ -164,6 +165,7 @@ INF MdeModulePkg/Core/Pei/PeiMain.inf
 INF MdeModulePkg/Universal/PCD/Pei/Pcd.inf
 INF MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
 INF SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf
+INF MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 INF RuleOverride = PLATFORM_PEI MsvmPkg/PlatformPei/PlatformPei.inf
 INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf

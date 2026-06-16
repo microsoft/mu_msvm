@@ -9,7 +9,7 @@
 
 **/
 
-#include <Base.h>
+#include <Uefi.h>
 
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>

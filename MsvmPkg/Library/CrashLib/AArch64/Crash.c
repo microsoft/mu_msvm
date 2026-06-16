@@ -9,13 +9,11 @@
 #include <IndustryStandard/ArmStdSmc.h>
 #include <Library/ArmSmcLib.h>
 #include <Library/BaseLib.h>
-#include <Library/BiosDeviceLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HvHypercallLib.h>
 #include <Library/PcdLib.h>
 #include <Hv/HvGuestCpuid.h>
 #include <Hv/HvGuestMsr.h>
-#include <BiosInterface.h>
 
 #include "CrashLibConstants.h"
 
@@ -121,10 +119,4 @@ ReportCrash(
             DEBUG((EFI_D_INFO, "GuestCrashRegister enlightenment is not available.\n"));
         }
     }
-
-    //
-    // Tell the host to collect EFI diagnostics.
-    //
-    DEBUG((EFI_D_INFO, "Signaling BIOS device to collect EFI diagnostics...\n"));
-    WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
 }

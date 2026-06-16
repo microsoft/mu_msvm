@@ -72,7 +72,6 @@
 
 [Guids]
     gAcpiReplacementTableHobGuid
-    gAdvancedLoggerHobGuid
     gDxeMemoryProtectionSettingsGuid
     gEfiMemoryTypeInformationGuid
     gMsvmDebuggerEnabledGuid
