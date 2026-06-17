@@ -67,8 +67,26 @@ GetPciSegmentInfo (
         return NULL;
     }
 
-    DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: %u segments from MCFG\n", EntryCount));
+    DEBUG ((DEBUG_INFO, "PCIe: PciSegmentInfoLib: %u MCFG entries\n", EntryCount));
 
+    Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
+
+    //
+    // Coalesce MCFG entries that share a PCI Segment Group Number into a single
+    // PCI_SEGMENT_INFO.  The upstream consumer (PciSegmentLibCommon.c) expects
+    // exactly one entry per segment and matches by segment number alone, and
+    // PCI_SEGMENT_INFO can hold only one ECAM base per segment.
+    //
+    // The PCI Firmware Spec (§4.1.1, §4.1.2 Table 4-3) DOES permit multiple
+    // same-segment host bridges with distinct, discontinuous ECAM base
+    // addresses.  We do not support that here: this platform's VMM always lays
+    // same-segment host bridges over a single contiguous ECAM, so every
+    // same-segment entry carries the same bus-0-relative BaseAddress.  We assert
+    // that invariant and fail loudly if it is ever violated, rather than
+    // silently dropping a distinct base we cannot represent.
+    //
+    // Allocate up to EntryCount slots (upper bound on unique segments).
+    //
     mSegmentInfo = AllocateZeroPool (EntryCount * sizeof (PCI_SEGMENT_INFO));
     if (mSegmentInfo == NULL) {
         DEBUG ((DEBUG_ERROR, "PCIe: PciSegmentInfoLib: Failed to allocate segment info\n"));
@@ -76,20 +94,65 @@ GetPciSegmentInfo (
         return NULL;
     }
 
-    Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
-
+    //
+    // Build coalesced entries in a single pass.
+    //
+    UINT32 SegIdx = 0;
     for (i = 0; i < EntryCount; i++) {
-        mSegmentInfo[i].SegmentNumber  = Entries[i].PciSegmentGroupNumber;
-        mSegmentInfo[i].BaseAddress    = Entries[i].BaseAddress;
-        mSegmentInfo[i].StartBusNumber = Entries[i].StartBusNumber;
-        mSegmentInfo[i].EndBusNumber   = Entries[i].EndBusNumber;
+        UINT32  k;
+        BOOLEAN Found = FALSE;
 
-        DEBUG ((DEBUG_INFO, "PCIe:   SegmentInfo[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
-                i, Entries[i].PciSegmentGroupNumber, Entries[i].BaseAddress,
-                Entries[i].StartBusNumber, Entries[i].EndBusNumber));
+        //
+        // Check if we already have an entry for this segment.
+        //
+        for (k = 0; k < SegIdx; k++) {
+            if (mSegmentInfo[k].SegmentNumber == Entries[i].PciSegmentGroupNumber) {
+                Found = TRUE;
+                //
+                // Validate that the BaseAddress matches the existing entry.
+                //
+                if (mSegmentInfo[k].BaseAddress != Entries[i].BaseAddress) {
+                    DEBUG ((DEBUG_ERROR,
+                            "PCIe: PciSegmentInfoLib: Segment %u has conflicting ECAM bases: "
+                            "%016lx vs %016lx\n",
+                            Entries[i].PciSegmentGroupNumber,
+                            mSegmentInfo[k].BaseAddress,
+                            Entries[i].BaseAddress));
+                    ASSERT (FALSE);
+                    FreePool (mSegmentInfo);
+                    mSegmentInfo = NULL;
+                    *Count = 0;
+                    return NULL;
+                }
+                //
+                // Widen the bus range to encompass this entry.
+                //
+                if (Entries[i].StartBusNumber < mSegmentInfo[k].StartBusNumber) {
+                    mSegmentInfo[k].StartBusNumber = Entries[i].StartBusNumber;
+                }
+                if (Entries[i].EndBusNumber > mSegmentInfo[k].EndBusNumber) {
+                    mSegmentInfo[k].EndBusNumber = Entries[i].EndBusNumber;
+                }
+                break;
+            }
+        }
+
+        if (!Found) {
+            mSegmentInfo[SegIdx].SegmentNumber  = Entries[i].PciSegmentGroupNumber;
+            mSegmentInfo[SegIdx].BaseAddress    = Entries[i].BaseAddress;
+            mSegmentInfo[SegIdx].StartBusNumber = Entries[i].StartBusNumber;
+            mSegmentInfo[SegIdx].EndBusNumber   = Entries[i].EndBusNumber;
+            SegIdx++;
+        }
     }
 
-    mSegmentCount = EntryCount;
+    for (i = 0; i < SegIdx; i++) {
+        DEBUG ((DEBUG_INFO, "PCIe:   SegmentInfo[%u]: Seg=%u ECAM=%016lx Bus=%u..%u\n",
+                i, mSegmentInfo[i].SegmentNumber, mSegmentInfo[i].BaseAddress,
+                mSegmentInfo[i].StartBusNumber, mSegmentInfo[i].EndBusNumber));
+    }
+
+    mSegmentCount = SegIdx;
     *Count = mSegmentCount;
     return mSegmentInfo;
 }
