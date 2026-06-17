@@ -54,6 +54,20 @@ class TestVariantsYaml:
                 f"AARCH64 + VS2022 is not a supported variant: {v}"
 
 
+class TestWorkflowYaml:
+    """Build workflow stays pinned to the runner image that carries VS 2022."""
+
+    def test_windows_build_uses_windows_2022(self) -> None:
+        workflow = (_BUILD_PIPELINE_DIR.parent / "Build.yml").read_text()
+        assert "runs-on: windows-2022" in workflow
+        assert "runs-on: windows-latest" not in workflow
+
+    def test_vswhere_discovery_is_limited_to_vs2022(self) -> None:
+        for script in ("install_vs_components.py", "invoke_build.py"):
+            text = (_SCRIPTS_DIR / script).read_text()
+            assert '"-version", "[17.0,18.0)"' in text
+
+
 class TestBuildDirFor:
     """build_dir_for() naming must match Stuart's output layout."""
 

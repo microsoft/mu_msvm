@@ -1,7 +1,7 @@
 """
 Install / verify the Visual Studio components required for a Build variant.
 
-Designed to run on GitHub-hosted windows-latest runners (where VS 2022 is
+Designed to run on GitHub-hosted windows-2022 runners (where VS 2022 is
 pre-installed but missing some components we need).
 
 Dispatch:
@@ -60,12 +60,18 @@ def _vs_install_path() -> Path:
     if not vswhere.exists():
         die(f"vswhere.exe not found: {vswhere}")
     result = subprocess.run(
-        [str(vswhere), "-latest", "-products", "*", "-property", "installationPath"],
+        [
+            str(vswhere),
+            "-latest",
+            "-products", "*",
+            "-version", "[17.0,18.0)",
+            "-property", "installationPath",
+        ],
         check=True, capture_output=True, text=True,
     )
     path = Path(result.stdout.strip())
     if not path.exists():
-        die(f"Visual Studio installation path not found: {path}")
+        die(f"Visual Studio 2022 installation path not found: {path}")
     return path
 
 

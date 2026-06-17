@@ -45,7 +45,7 @@ jobs:
   # ---------------------------------------------------------------------------
   build:
     needs: generate-matrix
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}

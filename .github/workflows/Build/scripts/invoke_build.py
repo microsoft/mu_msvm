@@ -67,14 +67,20 @@ def _resolve_clang_bin() -> str:
         die(f"vswhere.exe not found: {vswhere}")
 
     result = subprocess.run(
-        [str(vswhere), "-latest", "-products", "*", "-property", "installationPath"],
+        [
+            str(vswhere),
+            "-latest",
+            "-products", "*",
+            "-version", "[17.0,18.0)",
+            "-property", "installationPath",
+        ],
         check=True,
         capture_output=True,
         text=True,
     )
     vs_path = Path(result.stdout.strip())
     if not vs_path.exists():
-        die(f"Visual Studio installation path not found: {vs_path}")
+        die(f"Visual Studio 2022 installation path not found: {vs_path}")
 
     clang_bin = vs_path / "VC" / "Tools" / "Llvm" / "x64" / "bin"
     if not (clang_bin / "clang.exe").exists():
