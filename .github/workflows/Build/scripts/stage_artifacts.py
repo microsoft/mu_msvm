@@ -5,7 +5,7 @@ Lays out:
     <out_dir>/MSVM.fd
     <out_dir>/MAP/
     <out_dir>/PDB/
-    <out_dir>/Build Logs/  (flattened)
+    <out_dir>/Build Logs/  (logs preserved under their build-relative paths)
 
 The matching upload-artifact step just points at <out_dir>.
 """
@@ -80,12 +80,15 @@ def stage(arch: Arch, target: Target, tools: ToolChainTag, out_dir: Path) -> Non
     log_dest = out_dir / "Build Logs"
     log_dest.mkdir(parents=True, exist_ok=True)
     if build_dir.exists():
-        for f in build_dir.rglob("*"):
-            if f.is_file() and _is_log_file(f.name):
+        for log_file in build_dir.rglob("*"):
+            if log_file.is_file() and _is_log_file(log_file.name):
                 try:
-                    shutil.copy2(f, log_dest / f.name)
+                    relative_log_path = log_file.relative_to(build_dir)
+                    destination = log_dest / relative_log_path
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(log_file, destination)
                 except OSError as exc:
-                    print(f"WARNING: failed to stage log {f}: {exc}")
+                    print(f"WARNING: failed to stage log {log_file}: {exc}")
 
     print(f"\nStaging complete: {out_dir}")
 

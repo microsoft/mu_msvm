@@ -58,6 +58,10 @@ jobs:
                               --status success \
                               --limit 1 \
                               --json databaseId --jq '.[0].databaseId')
+            if [ -z "$id" ] || [ "$id" = "null" ]; then
+              echo "No successful Build run found on main." >&2
+              exit 1
+            fi
             echo "run_id=$id" >> "$GITHUB_OUTPUT"
           fi
 

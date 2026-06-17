@@ -28,6 +28,7 @@ from ci_common import (  # noqa: E402
     build_dir_for,
     load_variants,
 )
+import stage_artifacts  # noqa: E402
 
 
 class TestVariantsYaml:
@@ -96,3 +97,25 @@ class TestCliRejectsBadArgs:
             capture_output=True, text=True,
         )
         assert result.returncode != 0
+
+
+class TestStageArtifacts:
+    """Staged logs retain enough path context to avoid basename collisions."""
+
+    def test_preserves_relative_log_paths(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        repo_root = tmp_path / "repo"
+        build_dir = repo_root / "Build" / "MsvmX64" / "DEBUG_VS2022"
+        module_a = build_dir / "ModuleA"
+        module_b = build_dir / "ModuleB"
+        module_a.mkdir(parents=True)
+        module_b.mkdir(parents=True)
+        (module_a / "BuildLog.txt").write_text("module a")
+        (module_b / "BuildLog.txt").write_text("module b")
+
+        monkeypatch.setattr(stage_artifacts, "REPO_ROOT", repo_root)
+        out_dir = tmp_path / "staged"
+
+        stage_artifacts.stage("X64", "DEBUG", "VS2022", out_dir)
+
+        assert (out_dir / "Build Logs" / "ModuleA" / "BuildLog.txt").read_text() == "module a"
+        assert (out_dir / "Build Logs" / "ModuleB" / "BuildLog.txt").read_text() == "module b"
