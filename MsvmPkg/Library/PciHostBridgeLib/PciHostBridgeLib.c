@@ -144,26 +144,20 @@ PciHostBridgeGetRootBridges (
         UINT32  j;
 
         //
-        // Find the matching MCFG entry to get the ECAM base address
-        // and validate that the aperture bus range fits within it.
+        // Find the matching MCFG entry to get the ECAM base address.
+        // Match by segment number AND bus range containment — multiple MCFG
+        // entries per segment are allowed (PCI Firmware Spec §4.1.2) with
+        // disjoint bus ranges.
         //
         BOOLEAN McfgFound = FALSE;
         UINT64  EcamBase  = 0;
         for (j = 0; j < McfgEntryCount; j++) {
-            if (McfgEntries[j].PciSegmentGroupNumber == Segment) {
+            if (McfgEntries[j].PciSegmentGroupNumber == Segment &&
+                StartBus >= McfgEntries[j].StartBusNumber &&
+                EndBus   <= McfgEntries[j].EndBusNumber) {
                 McfgFound = TRUE;
                 EcamBase = McfgEntries[j].BaseAddress
                     + (UINT64)McfgEntries[j].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
-
-                if (StartBus < McfgEntries[j].StartBusNumber ||
-                    EndBus  > McfgEntries[j].EndBusNumber) {
-                    DEBUG ((DEBUG_ERROR,
-                            "PCIe: Aperture bus range %u..%u exceeds MCFG range %u..%u for segment %u\n",
-                            StartBus, EndBus,
-                            McfgEntries[j].StartBusNumber, McfgEntries[j].EndBusNumber,
-                            Segment));
-                    goto Cleanup;
-                }
                 break;
             }
         }
