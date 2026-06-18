@@ -28,6 +28,7 @@ from ci_common import (  # noqa: E402
     build_dir_for,
     load_variants,
 )
+import install_vs_components  # noqa: E402
 import stage_artifacts  # noqa: E402
 
 
@@ -66,6 +67,12 @@ class TestWorkflowYaml:
         for script in ("install_vs_components.py", "invoke_build.py"):
             text = (_SCRIPTS_DIR / script).read_text()
             assert '"-version", "[17.0,18.0)"' in text
+
+    def test_vs_components_include_asan(self) -> None:
+        for arch in VALID_ARCHS:
+            for tools in VALID_TOOLCHAINS:
+                components = install_vs_components._required_components(arch, tools)
+                assert "Microsoft.VisualStudio.Component.VC.ASAN" in components
 
 
 class TestBuildDirFor:

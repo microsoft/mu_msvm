@@ -30,6 +30,7 @@ from ci_common import VALID_ARCHS, VALID_TOOLCHAINS, Arch, ToolChainTag, die
 # Component IDs are stable across VS 2022 minor versions.
 _COMPONENTS_COMMON: tuple[str, ...] = (
     "Microsoft.VisualStudio.Component.VC.CoreBuildTools",
+    "Microsoft.VisualStudio.Component.VC.ASAN",
     "Microsoft.VisualStudio.Component.Windows11SDK.22621",
 )
 _COMPONENTS_X64: tuple[str, ...] = (
