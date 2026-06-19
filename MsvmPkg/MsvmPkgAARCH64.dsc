@@ -699,6 +699,7 @@
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE
   gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled|TRUE
+  gMsvmPkgTokenSpaceGuid.PcdHvEnabled|TRUE
   gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION

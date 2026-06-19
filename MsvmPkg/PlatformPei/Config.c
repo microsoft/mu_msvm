@@ -946,6 +946,17 @@ ConfigSetUefiConfigFlags(
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdTpmLocalityRegsEnabled, (UINT8) ConfigFlags->Flags.TpmLocalityRegsEnabled));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdMtrrsInitializedAtLoad, (UINT8) ConfigFlags->Flags.MtrrsInitializedAtLoad));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdVmbusEnabled, !ConfigFlags->Flags.VmbusDisabled));
+
+    //
+    // VMBus requires Hv. PcdHvEnabled was already set from the SEC platform
+    // type PPI in InitializePlatform(). Validate consistency here.
+    //
+    if (!PcdGetBool(PcdHvEnabled) && !ConfigFlags->Flags.VmbusDisabled)
+    {
+        DEBUG((DEBUG_ERROR, "Invalid config: VMBus enabled but Hv disabled.\n"));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+    }
+
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdPciDisableBusEnumeration, (UINT8) ConfigFlags->Flags.PciResourcesPreAssigned));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdForceDmaBounceEnabled, (UINT8) ConfigFlags->Flags.ForceDmaBounceEnabled));
 

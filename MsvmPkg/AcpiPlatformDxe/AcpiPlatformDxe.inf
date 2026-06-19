@@ -69,6 +69,7 @@
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber         ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages            ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdHvEnabled                         ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdLoadOempTable                     ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdLowMmioGapBasePageNumber          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdLowMmioGapSizeInPages             ## CONSUMES

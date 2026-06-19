@@ -11,12 +11,11 @@ ASM_FUNC(_ModuleEntryPoint)
     // Loader sets register state that become inputs to this function
     //  x0 - Firmware Volume Base Address
     //  x1 - Stack Base Address
+    //  x2 - Platform Type (MSVM_SEC_PLATFORM_TYPE; 0 = HyperV, 1 = Generic)
 
     // bl SerialWriteBanner             // print banner to COM2
 
     mov     sp, x1                      // Establish stack - leave x1 as second arg to C code
-
-    ldr     x2, [x0, #8]                // Get PEI Core entry from second entry in FV reset vector
 
     bl      SecStartupWithStack         // jump to C code with 3 args (x0,x1,x2)
 

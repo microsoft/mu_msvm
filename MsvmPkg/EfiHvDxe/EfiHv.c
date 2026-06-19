@@ -17,6 +17,7 @@
 #include <Library/CrashLib.h>
 #include <Library/DebugLib.h>
 #include <Library/HostVisibilityLib.h>
+#include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/HvHypercallLib.h>
@@ -2319,6 +2320,11 @@ EfiHvInitialize (
 --*/
 {
     EFI_STATUS status;
+
+    if (!PcdGetBool(PcdHvEnabled))
+    {
+        return EFI_UNSUPPORTED;
+    }
 
     InitializeListHead(&mHostVisiblePageList);
 

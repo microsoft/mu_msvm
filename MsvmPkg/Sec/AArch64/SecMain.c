@@ -14,6 +14,7 @@
 #include <Library/ArmLib.h>
 #include <Library/DebugAgentLib.h>
 #include <Ppi/TemporaryRamSupport.h>
+#include <Ppi/SecPlatformType.h>
 
 VOID
 SetGuestOsId();
@@ -37,13 +38,22 @@ EFI_PEI_TEMPORARY_RAM_SUPPORT_PPI mTemporaryRamSupportPpi =
     TemporaryRamMigration
 };
 
+MSVM_SEC_PLATFORM_TYPE_PPI mSecPlatformTypePpi =
+{
+    MsvmSecPlatformHyperV
+};
 
 EFI_PEI_PPI_DESCRIPTOR mPrivateDispatchTable[] =
 {
     {
-        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        EFI_PEI_PPI_DESCRIPTOR_PPI,
         &gEfiTemporaryRamSupportPpiGuid,
         &mTemporaryRamSupportPpi
+    },
+    {
+        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        &gMsvmSecPlatformTypePpiGuid,
+        &mSecPlatformTypePpi
     },
 };
 
@@ -110,7 +120,8 @@ VOID
 EFIAPI
 SecStartupWithStack (
     IN  EFI_FIRMWARE_VOLUME_HEADER  *BootFv,
-    IN  VOID                        *TopOfCurrentStack
+    IN  VOID                        *TopOfCurrentStack,
+    IN  UINT64                      PlatformType
     )
 /*++
 
@@ -125,6 +136,9 @@ Arguments:
 
     TopOfCurrentStack - the top of the current stack
 
+    PlatformType - Platform type from the loader (MSVM_SEC_PLATFORM_TYPE).
+                   0 = HyperV (default), 1 = Generic.
+
 Return Value:
 
     None.
@@ -138,11 +152,25 @@ Return Value:
     DEBUG((DEBUG_VERBOSE, sequence));
 
     DEBUG((DEBUG_VERBOSE,
-           ">>> SecStartupWithStack @ %p (%p, %p)\n",
+           ">>> SecStartupWithStack @ %p (%p, %p, 0x%llx)\n",
            SecStartupWithStack,
            BootFv,
-           TopOfCurrentStack
+           TopOfCurrentStack,
+           PlatformType
            ));
+
+    //
+    // Store the platform type for the PPI so PEI modules can access it.
+    // Fail immediately if the loader passed an unrecognized platform type.
+    //
+    if (PlatformType != MsvmSecPlatformHyperV &&
+        PlatformType != MsvmSecPlatformGeneric)
+    {
+        DEBUG((DEBUG_ERROR, "Unrecognized platform type: 0x%llx\n", PlatformType));
+        ASSERT(FALSE);
+        CpuDeadLoop();
+    }
+    mSecPlatformTypePpi.PlatformType = (MSVM_SEC_PLATFORM_TYPE)PlatformType;
 
     //
     // Initialize floating point operating environment
@@ -181,8 +209,12 @@ Return Value:
 
     //
     // Set the guest OS ID so that hypercalls are possible.
+    // Only do this when running under Hyper-V.
     //
-    SetGuestOsId();
+    if (PlatformType == MsvmSecPlatformHyperV)
+    {
+        SetGuestOsId();
+    }
 
     //
     // Initialize Debug Agent to support source level debug in SEC/PEI phases

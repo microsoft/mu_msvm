@@ -42,3 +42,6 @@
 [LibraryClasses.AARCH64]
   ArmSmcLib
   HvHypercallLib
+
+[Pcd.AARCH64]
+  gMsvmPkgTokenSpaceGuid.PcdHvEnabled                                          ## CONSUMES
