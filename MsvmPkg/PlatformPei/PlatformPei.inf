@@ -183,6 +183,7 @@
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
+    gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 

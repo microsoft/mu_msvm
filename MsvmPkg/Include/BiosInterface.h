@@ -792,7 +792,8 @@ typedef struct _UEFI_CONFIG_FLAGS
         UINT64 HvSintEnabled : 1;  // Reserved; used by other codebase.
         UINT64 VmbusDisabled : 1;
         UINT64 PciResourcesPreAssigned : 1;
-        UINT64 Reserved:32;
+        UINT64 ForceDmaBounceEnabled : 1;
+        UINT64 Reserved:31;
     } Flags;
 } UEFI_CONFIG_FLAGS;
 
