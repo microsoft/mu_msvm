@@ -84,6 +84,7 @@
 [LibraryClasses]
   AdvancedLoggerAccessLib|AdvLoggerPkg/Library/AdvancedLoggerAccessLib/AdvancedLoggerAccessLib.inf
   AdvancedLoggerHdwPortLib|AdvLoggerPkg/Library/AdvancedLoggerHdwPortLib/AdvancedLoggerHdwPortLib.inf
+  ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmMmuLib|UefiCpuPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
   ArmMonitorLib|ArmPkg/Library/ArmMonitorLib/ArmMonitorLib.inf
@@ -136,7 +137,7 @@
   SynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
   Tpm2CommandLib|SecurityPkg/Library/Tpm2CommandLib/Tpm2CommandLib.inf
   Tpm2HelpLib|SecurityPkg/Library/Tpm2HelpLib/Tpm2HelpLib.inf
-  TimerLib|MsvmPkg/Library/HvTimerLib/HvTimerLib.inf
+  TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
   UefiDecompressLib|MdePkg/Library/BaseUefiDecompressLib/BaseUefiDecompressLib.inf
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
@@ -429,6 +430,15 @@
   gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV|19
   gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV|20
   gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV|21
+
+  # ARM architectural timer interrupt numbers for ArmPkg TimerDxe.
+  gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|19
+  gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum|20
+  gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum|21
+  # This is actually the reserved PPI for SINT for Linux L1VH use. But it's
+  # not in use during UEFI boot, and the upstream code demands a valid value
+  # here, so use this since it's guaranteed not to be used by something else.
+  gArmTokenSpaceGuid.PcdArmArchTimerSecIntrNum|22
 
   #
   # Static initial memory config - presumes minimum 64MB in VM
@@ -801,12 +811,10 @@
   MdeModulePkg/Core/Dxe/DxeMain.inf {
     <LibraryClasses>
       NULL|MsCorePkg/Library/DebugPortProtocolInstallLib/DebugPortProtocolInstallLib.inf
-      ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
       DebugTransportLib|MsvmPkg/Library/DebugTransportLibMsvm/DebugTransportLibMsvm.inf
       DebugAgentLib|DebuggerFeaturePkg/Library/DebugAgent/DebugAgentDxe.inf
       PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
       SerialPortLib|ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf
-      TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
       TransportLogControlLib|DebuggerFeaturePkg/Library/TransportLogControlLibNull/TransportLogControlLibNull.inf
   }
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
@@ -889,7 +897,7 @@
   MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
   MsvmPkg/StorvscDxe/StorvscDxe.inf
   MsvmPkg/SynthKeyDxe/SynthKeyDxe.inf
-  MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
+  ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   MsvmPkg/VariableDxe/VariableDxe.inf
   MsvmPkg/VideoDxe/VideoDxe.inf
   MsvmPkg/VmbfsDxe/VmbfsDxe.inf

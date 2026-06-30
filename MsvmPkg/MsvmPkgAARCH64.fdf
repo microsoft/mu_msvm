@@ -162,10 +162,10 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
   INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
   INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
   INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   INF MsvmPkg/EventLogDxe/EventLogDxe.inf
-  INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
   INF MsvmPkg/VariableDxe/VariableDxe.inf
   INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
   INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
@@ -173,6 +173,7 @@ APRIORI DXE {
 
 INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
 INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf
@@ -228,7 +229,6 @@ INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
 INF MsvmPkg/SerialDxe/SerialDxe.inf
 INF MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
 INF MsvmPkg/StorvscDxe/StorvscDxe.inf
-INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
 INF MsvmPkg/SynthKeyDxe/SynthKeyDxe.inf
 INF MsvmPkg/VariableDxe/VariableDxe.inf
 INF MsvmPkg/VideoDxe/VideoDxe.inf
