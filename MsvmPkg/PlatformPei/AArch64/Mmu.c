@@ -29,32 +29,65 @@
 // We use this index definition to define an invalid block entry
 #define TT_ATTR_INDX_INVALID    ((UINT32)~0)
 
+/**
+  Whether the current translation regime is either EL1&0 or EL2&0.
+  It is usually the EL1&0.
+ **/
+STATIC
+BOOLEAN
+TranslationRegimeIsDual (
+  VOID
+  )
+{
+  return ArmReadCurrentEL () == AARCH64_EL1 || (ArmReadHcr () & ARM_HCR_E2H);
+}
+
 STATIC
 UINT64
 ArmMemoryAttributeToPageAttribute(
     IN ARM_MEMORY_REGION_ATTRIBUTES  Attributes
 )
 {
-    switch (Attributes)
-    {
+  UINT64 Permissions = 0;
+
+  switch (Attributes) {
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO:
+      Permissions = TT_AP_NO_RO;
+      break;
+
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_XP:
+    case ARM_MEMORY_REGION_ATTRIBUTE_DEVICE:
+      if (!TranslationRegimeIsDual ()) {
+        Permissions = TT_XN_MASK;
+      } else {
+        Permissions = TT_UXN_MASK | TT_PXN_MASK;
+      }
+      break;
+    default:
+      break;
+  }
+
+  switch (Attributes) {
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_NONSHAREABLE:
+      return TT_ATTR_INDX_MEMORY_WRITE_BACK | Permissions;
+
     case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK:
-        return TT_ATTR_INDX_MEMORY_WRITE_BACK | TT_SH_INNER_SHAREABLE;
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO:
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_XP:
+      return TT_ATTR_INDX_MEMORY_WRITE_BACK | TT_SH_INNER_SHAREABLE | Permissions;
 
     case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_THROUGH:
-        return TT_ATTR_INDX_MEMORY_WRITE_THROUGH | TT_SH_INNER_SHAREABLE;
+      return TT_ATTR_INDX_MEMORY_WRITE_THROUGH | TT_SH_INNER_SHAREABLE;
 
-        // Uncached and device mappings are treated as outer shareable by default,
+    // Uncached and device mappings are treated as outer shareable by default,
     case ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED:
-        return TT_ATTR_INDX_MEMORY_NON_CACHEABLE;
+      return TT_ATTR_INDX_MEMORY_NON_CACHEABLE | Permissions;
 
     default:
-        ASSERT(0);
+      ASSERT (0);
     case ARM_MEMORY_REGION_ATTRIBUTE_DEVICE:
-        if (ArmReadCurrentEL() == AARCH64_EL2)
-            return TT_ATTR_INDX_DEVICE_MEMORY | TT_XN_MASK;
-        else
-            return TT_ATTR_INDX_DEVICE_MEMORY | TT_UXN_MASK | TT_PXN_MASK;
-    }
+      return TT_ATTR_INDX_DEVICE_MEMORY | Permissions;
+  }
 }
 
 #define MIN_T0SZ        16
@@ -392,18 +425,18 @@ ConfigureMmu(
     UINT64  MaxAddress
 )
 {
-    VOID*                         TranslationTable;
-    UINT32                        TranslationTableAttribute;
-    UINTN                         T0SZ;
-    UINTN                         RootTableEntryCount;
-    UINT64                        TCR;
-    EFI_STATUS                    Status;
-    ARM_MEMORY_REGION_DESCRIPTOR* MemoryTable;
-    UINT64                        lowMmioSize;
-    UINT64                        highMmioBaseAddress;
-    UINT64                        highMmioSize;
+    VOID*                         TranslationTable = 0;
+    UINT32                        TranslationTableAttribute = 0;
+    UINTN                         T0SZ = 0;
+    UINTN                         RootTableEntryCount = 0;
+    UINT64                        TCR = 0;
+    EFI_STATUS                    Status = 0;
+    ARM_MEMORY_REGION_DESCRIPTOR* MemoryTable = 0;
+    UINT64                        lowMmioSize = 0;
+    UINT64                        highMmioBaseAddress = 0;
+    UINT64                        highMmioSize = 0;
 #define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS 6
-    ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
+    ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS] = {0};
     UINTN                         index = 0;
 
     //
@@ -543,9 +576,7 @@ ConfigureMmu(
     //
     // Calculate new TCR value
     //
-    // Ideally we will be running at EL2, but should support EL1 as well.
-    // UEFI should not run at EL3.
-    if (ArmReadCurrentEL() == AARCH64_EL2)
+    if (!TranslationRegimeIsDual ())
     {
         //Note: Bits 23 and 31 are reserved(RES1) bits in TCR_EL2
         TCR = T0SZ | (1UL << 31) | (1UL << 23) | TCR_TG0_4KB;
@@ -575,6 +606,10 @@ ConfigureMmu(
         {
             TCR |= TCR_PS_256TB;
         }
+        else if ((MaxAddress < SIZE_4PB) && ArmHas52BitTgran4 ())
+        {
+            TCR |= TCR_PS_4PB | TCR_DS_NVHE;
+        }
         else
         {
             DEBUG((EFI_D_ERROR, "ArmConfigureMmu: The MaxAddress 0x%lX is not supported by this MMU configuration.\n", MaxAddress));
@@ -582,7 +617,7 @@ ConfigureMmu(
             return EFI_UNSUPPORTED;
         }
     }
-    else if (ArmReadCurrentEL() == AARCH64_EL1)
+    else
     {
         // Due to Cortex-A57 erratum #822227 we must set TG1[1] == 1, regardless of EPD1.
         TCR = T0SZ | TCR_TG0_4KB | TCR_TG1_4KB | TCR_EPD1;
@@ -612,17 +647,16 @@ ConfigureMmu(
         {
             TCR |= TCR_IPS_256TB;
         }
+        else if ((MaxAddress < SIZE_4PB) && ArmHas52BitTgran4 ())
+        {
+            TCR |= TCR_IPS_4PB | TCR_DS;
+        }
         else
         {
             DEBUG((EFI_D_ERROR, "ArmConfigureMmu: The MaxAddress 0x%lX is not supported by this MMU configuration.\n", MaxAddress));
-            ASSERT(0); // Bigger than 48-bit memory space are not supported
+            ASSERT (0); // Bigger than 48/52-bit memory space are not supported
             return EFI_UNSUPPORTED;
         }
-    }
-    else
-    {
-        ASSERT(0); // UEFI is only expected to run at EL2 and EL1, not EL3.
-        return EFI_UNSUPPORTED;
     }
 
     //
@@ -637,8 +671,6 @@ ConfigureMmu(
     TCR |= TCR_SH_INNER_SHAREABLE |
         TCR_RGN_OUTER_WRITE_BACK_ALLOC |
         TCR_RGN_INNER_WRITE_BACK_ALLOC;
-
-
 
     // Allocate page for root translation table
     TranslationTable = AllocatePages(1);
@@ -690,3 +722,23 @@ FREE_TRANSLATION_TABLE:
     return Status;
 }
 
+/**
+  Check whether a 52-bit output address can be described
+  by the translation tables (FEAT_LPA2).
+  @retval  TRUE    52-bit output address is enabled (LPA2 enabled).
+  @retval  FALSE   52-bit output address is disabled (LPA2 disabled).
+
+**/
+BOOLEAN
+ArmLpa2Enabled (
+  VOID
+  )
+{
+  UINT64 TCR;
+
+  TCR = ArmGetTCR ();
+
+  return !TranslationRegimeIsDual () ?
+         ((TCR & TCR_DS_NVHE) != 0) :
+         ((TCR & TCR_DS) != 0);
+}
