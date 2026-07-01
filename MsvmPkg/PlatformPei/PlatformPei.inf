@@ -183,6 +183,7 @@
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
+    gMsvmPkgTokenSpaceGuid.PcdHvEnabled
     gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
@@ -202,6 +203,9 @@
 
 [Ppis]
     gEfiPeiMasterBootModePpiGuid
+
+[Ppis.AARCH64]
+    gMsvmSecPlatformTypePpiGuid                   ## CONSUMES
 
 [Depex]
     TRUE

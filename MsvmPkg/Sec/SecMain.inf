@@ -28,7 +28,6 @@
   X64/SecMain.c
 
 [Sources.AARCH64]
-  AArch64/SecEntry.masm
   AArch64/SecEntry.S
   AArch64/SecMain.c
 
@@ -62,6 +61,9 @@
 
 [Ppis]
   gEfiTemporaryRamSupportPpiGuid                # PPI ALWAYS_PRODUCED
+
+[Ppis.AARCH64]
+  gMsvmSecPlatformTypePpiGuid                   # PPI ALWAYS_PRODUCED
 
 [FixedPcd]
   gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress

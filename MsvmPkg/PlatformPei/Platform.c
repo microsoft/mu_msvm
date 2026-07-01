@@ -27,6 +27,7 @@
 
 #if defined(MDE_CPU_AARCH64)
 #include <Mmu.h>
+#include <Ppi/SecPlatformType.h>
 #endif
 #if defined (MDE_CPU_X64)
 #include <Library/MtrrLib.h>
@@ -1039,6 +1040,44 @@ Return Value:
     }
 
     ZeroMem(&context, sizeof(context));
+
+#if defined(MDE_CPU_AARCH64)
+    //
+    // On AARCH64, determine HV presence from the platform type passed by the
+    // loader via the SEC platform type PPI. This is the single source of truth.
+    //
+    {
+        MSVM_SEC_PLATFORM_TYPE_PPI  *SecPlatformTypePpi;
+        BOOLEAN                     HvEnabled;
+
+        status = PeiServicesLocatePpi(
+            &gMsvmSecPlatformTypePpiGuid,
+            0,
+            NULL,
+            (VOID **)&SecPlatformTypePpi
+            );
+        if (EFI_ERROR(status))
+        {
+            DEBUG((DEBUG_ERROR, "Failed to locate SEC Platform Type PPI: %r\n", status));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        switch (SecPlatformTypePpi->PlatformType)
+        {
+        case MsvmSecPlatformHyperV:
+            HvEnabled = TRUE;
+            break;
+        case MsvmSecPlatformGeneric:
+            HvEnabled = FALSE;
+            break;
+        default:
+            DEBUG((DEBUG_ERROR, "Unrecognized platform type: %d\n", SecPlatformTypePpi->PlatformType));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdHvEnabled, HvEnabled));
+    }
+#endif
 
     //
     // Determine whether this system is running isolated in order to determine

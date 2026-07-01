@@ -59,6 +59,9 @@
 [Protocols.AARCH64]
     gHardwareInterruptProtocolGuid                                              ## CONSUMES
 
+[Pcd]
+    gMsvmPkgTokenSpaceGuid.PcdHvEnabled                                         ## CONSUMES
+
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary                        ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask         ## CONSUMES
