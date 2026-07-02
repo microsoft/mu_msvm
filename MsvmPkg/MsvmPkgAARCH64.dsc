@@ -770,6 +770,9 @@
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary|0x0
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask|0x0
 
+  # DMA configuration
+  gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired|FALSE
+
   # UEFI_CONFIG_PCIE_BAR_APERTURES
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0

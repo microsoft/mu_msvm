@@ -69,6 +69,7 @@
 
 [LibraryClasses.AARCH64]
     ArmLib
+    HvHypercallLib
 
 [Guids]
     gAcpiReplacementTableHobGuid
@@ -175,6 +176,7 @@
     gMsvmPkgTokenSpaceGuid.PcdIsolationParavisorPresent
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+    gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired
     gMsvmPkgTokenSpaceGuid.PcdSvsmCallingArea
     gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled

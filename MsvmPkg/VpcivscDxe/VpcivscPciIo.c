@@ -454,7 +454,7 @@ VpcivscPciIoConfigRead(
 {
     PVPCI_DEVICE_CONTEXT context = NULL;
 
-    DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoConfigRead called with offset 0x%x and count 0x%x\n", Offset, Count));
+    DEBUG((DEBUG_VERBOSE, "VpcivscPciIoConfigRead called with offset 0x%x and count 0x%x\n", Offset, Count));
 
     if (Buffer == NULL)
     {
@@ -680,7 +680,7 @@ VpcivscPciIoAllocateBuffer(
     IN  UINT64                Attributes
     )
 {
-    DEBUG ((DEBUG_VPCI_INFO, "VpcivscPciIoAllocateBuffer called with pages %x\n", Pages));
+    DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoAllocateBuffer called with pages %x\n", Pages));
 
     if (IoMmuIsPresent ()) {
         //
@@ -722,7 +722,7 @@ VpcivscPciIoFreeBuffer(
     IN  VOID                  *HostAddress
     )
 {
-    DEBUG ((DEBUG_VPCI_INFO, "VpcivscPciIoFreeBuffer called with addr %llx pages %x\n", HostAddress, Pages));
+    DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoFreeBuffer called with addr %llx pages %x\n", HostAddress, Pages));
 
     if (IoMmuIsPresent ()) {
         //
@@ -789,7 +789,7 @@ VpcivscPciIoAttributes(
     OUT UINT64                                   *Result OPTIONAL
     )
 {
-    DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoAttributes called\n"));
+    DEBUG((DEBUG_VERBOSE, "VpcivscPciIoAttributes called\n"));
 
     // These are meaningless for VPCI. Our VSC pretends to be a Windows VSC, so
     // the PdoD0Entry packet handles the correct bus enable on the host side.
