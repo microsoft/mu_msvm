@@ -29,13 +29,13 @@
 // per-region helpers to decide which hypercalls (if any) wrap the DMA.
 //
 // Composed from two tiers:
-//   - Hard requirements: VM-property predicates (IsIsolated, IsVaBacked)
-//     each OR in the obligations their property implies. Each predicate
-//     hides its own source of truth (PCD today, capability register
-//     tomorrow).
+//   - Hard requirements: independent VM-property inputs (IsIsolated()
+//     and PcdDmaPinningRequired) each OR in the obligations they
+//     imply. Each input hides its own source of truth (PCD today,
+//     capability register tomorrow).
 //   - Soft override: PcdForceDmaBounceEnabled, read directly because it
 //     *is* VMM configuration, not a VM property. When set, force BOUNCE
-//     on; PINNING is left to the hard-requirement predicates above.
+//     on; PINNING is left to the hard-requirement inputs above.
 //
 // Bitflags because the obligations are independent and compose - e.g. a
 // paravisor-isolated VA-backed VM ends up with
@@ -63,27 +63,29 @@ typedef UINT32 IOMMU_BOUNCE_MODE;
 #define IOMMU_BOUNCE_MODE_HOST_VISIBILITY   BIT1
 
 //
-// TODO: Reserved for Phase 2 (VA-backed VMs). Will pin each DMA region
-// via HvCallPinGpaPageRanges before the host accesses it and unpin on
-// release. Independent of BOUNCE: a VA-backed VM that supports pinning
-// can pin guest pages and DMA directly into them, no bouncing required.
-// Set when IsVaBacked() and the hypervisor advertises pin-hypercall
-// support. Composes with BOUNCE | HOST_VISIBILITY for VA-backed
-// paravisor-isolated VMs.
+// Pin each bounce region via HvCallPinGpaPageRanges before the host
+// accesses it and unpin on release. Set with BOUNCE when
+// PcdDmaPinningRequired is TRUE, so pinning is amortized over
+// pre-allocated bounce regions instead of applied per caller DMA
+// buffer. Composes with HOST_VISIBILITY for VA-backed paravisor-
+// isolated VMs.
 //
-// #define IOMMU_BOUNCE_MODE_PINNING        BIT2
+#define IOMMU_BOUNCE_MODE_PINNING          BIT2
 
 //
-// Context for tracking host visibility of an address range.
+// Context for tracking per-range DMA preparation state.
 //
-typedef struct _IOMMU_HOST_VISIBILITY_CONTEXT
+typedef struct _IOMMU_DMA_RANGE_CONTEXT
 {
     EFI_HV_PROTECTION_HANDLE     RangeProtectionHandle;
-} IOMMU_HOST_VISIBILITY_CONTEXT;
+    VOID                         *BaseAddress;
+    UINT32                       PageCount;
+    BOOLEAN                      PinApplied;
+} IOMMU_DMA_RANGE_CONTEXT;
 
 //
 // Page counts for bounce blocks. Each block is allocated as a contiguous,
-// host-visible region below 4GB. Map() requests are satisfied by
+// DMA-prepared region below 4GB. Map() requests are satisfied by
 // sub-allocating contiguous page runs from a block.
 //
 // IOMMU_BOUNCE_INITIAL_BLOCK_PAGES: size of the single block pre-allocated
@@ -99,10 +101,10 @@ typedef struct _IOMMU_HOST_VISIBILITY_CONTEXT
 #define IOMMU_BOUNCE_GROWTH_BLOCK_PAGES   32
 
 //
-// IOMMU_BOUNCE_BLOCK - a contiguous, host-visible region of pages backing
-// Map() requests. The block is kept (and stays host-visible) for the
-// lifetime of the driver. Per-page in-use state is tracked via a bitmap
-// sized to BlockPageCount.
+// IOMMU_BOUNCE_BLOCK - a contiguous, DMA-prepared region of pages backing
+// Map() requests. The block is kept prepared for the lifetime of the
+// driver. Per-page in-use state is tracked via a bitmap sized to
+// BlockPageCount.
 //
 #define IOMMU_BOUNCE_BLOCK_SIGNATURE  SIGNATURE_32('i','o','m','b')
 
@@ -115,8 +117,8 @@ typedef struct _IOMMU_BOUNCE_BLOCK
     UINT32                        BitmapWordCount;     // number of UINT64 words in AllocBitmap
     UINT64                        *AllocBitmap;        // 1 bit per page; 1 = in use
     UINT32                        InUsePageCount;
-    BOOLEAN                       IsHostVisible;
-    IOMMU_HOST_VISIBILITY_CONTEXT VisibilityContext;
+    BOOLEAN                       IsPreparedForDma;
+    IOMMU_DMA_RANGE_CONTEXT       DmaContext;
 } IOMMU_BOUNCE_BLOCK, *PIOMMU_BOUNCE_BLOCK;
 
 //
@@ -147,7 +149,7 @@ typedef struct _IOMMU_ALLOC_CONTEXT
     LIST_ENTRY                    Link;
     VOID                          *OriginalAddress;
     UINTN                         Pages;
-    IOMMU_HOST_VISIBILITY_CONTEXT VisibilityContext;
+    IOMMU_DMA_RANGE_CONTEXT       DmaContext;
 } IOMMU_ALLOC_CONTEXT, *PIOMMU_ALLOC_CONTEXT;
 
 
@@ -197,6 +199,14 @@ IoMmuRequiresHostVisibility (
     );
 
 //
+// Returns TRUE if bounce regions must be pinned via the HV IVM protocol.
+//
+BOOLEAN
+IoMmuRequiresPinning (
+    VOID
+    );
+
+//
 // Address translation helpers for shared GPA.
 //
 EFI_PHYSICAL_ADDRESS
@@ -210,22 +220,22 @@ IoMmuGetSharedVa (
     );
 
 //
-// Host visibility management.
+// DMA range preparation and release.
 //
 EFI_STATUS
-IoMmuMakeAddressRangeShared (
+IoMmuPrepareAddressRangeForDma (
     IN VOID                             *BaseAddress,
     IN UINT32                           PageCount,
-    OUT IOMMU_HOST_VISIBILITY_CONTEXT   *VisibilityContext
+    OUT IOMMU_DMA_RANGE_CONTEXT         *DmaContext
     );
 
 VOID
-IoMmuMakeAddressRangePrivate (
-    IN IOMMU_HOST_VISIBILITY_CONTEXT    *VisibilityContext
+IoMmuReleaseAddressRangeFromDma (
+    IN IOMMU_DMA_RANGE_CONTEXT          *DmaContext
     );
 
 //
-// Bounce block pool - pre-allocated, host-visible contiguous regions used
+// Bounce block pool - pre-allocated, DMA-prepared contiguous regions used
 // to satisfy Map() requests without per-Map hypercalls.
 //
 

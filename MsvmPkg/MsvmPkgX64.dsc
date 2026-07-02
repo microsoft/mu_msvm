@@ -789,6 +789,9 @@
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary|0x0
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask|0x0
 
+  # DMA configuration
+  gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired|FALSE
+
   # UEFI_CONFIG_AMD_ASPT
   gMsvmPkgTokenSpaceGuid.PcdAsptPtr|0x0
   gMsvmPkgTokenSpaceGuid.PcdAsptSize|0x0

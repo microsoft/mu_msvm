@@ -1039,6 +1039,11 @@ Return Value:
     HvDetectIsolation();
 
     //
+    // Detect whether the hypervisor requires UEFI to pin DMA buffers.
+    //
+    HvDetectDmaPinningRequired();
+
+    //
     // Get the configuration from the loader.
     //
     status = GetConfiguration(PeiServices, &context.PhysicalAddressWidth);

@@ -181,11 +181,30 @@ VOID
     IN OUT  EFI_HV_PROTECTION_HANDLE *ProtectionHandle
     );
 
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HV_PIN_ADDRESS_RANGE)(
+    IN              EFI_HV_IVM_PROTOCOL *This,
+    IN              VOID                *BaseAddress,
+    IN              UINT32              ByteCount,
+    OUT OPTIONAL    BOOLEAN             *PinApplied
+    );
+
+typedef
+VOID
+(EFIAPI *EFI_HV_UNPIN_ADDRESS_RANGE)(
+    IN  EFI_HV_IVM_PROTOCOL *This,
+    IN  VOID                *BaseAddress,
+    IN  UINT32              ByteCount
+    );
+
 // Interface to Hypervisor for the Isolated VM (IVM) calls
 struct _EFI_HV_IVM_PROTOCOL
 {
     EFI_HV_MAKE_ADDRESS_RANGE_HOST_VISIBLE MakeAddressRangeHostVisible;
     EFI_HV_MAKE_ADDRESS_RANGE_NOT_HOST_VISIBLE MakeAddressRangeNotHostVisible;
+    EFI_HV_PIN_ADDRESS_RANGE PinAddressRange;
+    EFI_HV_UNPIN_ADDRESS_RANGE UnpinAddressRange;
 };
 
 extern GUID gEfiHvIvmProtocolGuid;
