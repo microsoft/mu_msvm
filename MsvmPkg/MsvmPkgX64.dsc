@@ -41,14 +41,13 @@
   DEBUG_*_*_CC_FLAGS = -D DEBUG_PLATFORM
 
   # Generate PDBs on release builds with full debugging, with linker and CC flags
-  MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
+  MSFT:*_*_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb /FILEALIGN:32
   *_CLANGPDB_*_DLINK_FLAGS = /DEBUG:FULL /PDBALTPATH:$(MODULE_NAME).pdb
   MSFT:*_*_*_CC_FLAGS = /Z7
   *_CLANGPDB_*_CC_FLAGS = -g -gcodeview -gcodeview-ghash -gcodeview-command-line
 
   *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
   *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
-  *_CLANGPDB_X64_DLINK_FLAGS = -align:4096
 
 # Set MSFT file alignment and (memory) alignment to 4K. CLANGPDB X64 uses 4K
 # section alignment with compact file alignment for normal modules and 32-byte
@@ -61,12 +60,9 @@
 # File==memory for execute in place, or loader perf/simplicity otherwise.
 # The linker defaults to -align:4096, but this could be preceded by a lower -align specified
 # elsewhere in EFI build system.
-[BuildOptions.common.EDKII.DXE_CORE]
-  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
-
-[BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
+[BuildOptions.common.EDKII.DXE_CORE, BuildOptions.common.EDKII.DXE_RUNTIME_DRIVER, BuildOptions.common.EDKII.DXE_DRIVER, BuildOptions.common.EDKII.UEFI_DRIVER, BuildOptions.common.EDKII.UEFI_APPLICATION]
+  MSFT:*_*_*_DLINK_FLAGS   = -align:4096
+  *_CLANGPDB_*_DLINK_FLAGS = -align:4096
 
 ################################################################################
 #
