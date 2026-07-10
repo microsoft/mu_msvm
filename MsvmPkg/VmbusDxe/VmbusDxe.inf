@@ -30,11 +30,13 @@
     BaseLib
     BaseMemoryLib
     CrashLib
+    CpuLib
     DebugLib
     DevicePathLib
     IsolationLib
     MemoryAllocationLib
     MsBaseLib
+    MsEventSleepLib
     SynchronizationLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
@@ -53,7 +55,6 @@
     gEfiVmbusProtocolGuid               ## PRODUCES
     gEfiVmbusLegacyProtocolGuid         ## PRODUCES
     gEfiVmbusLegacyProtocolIvmGuid      ## PRODUCES
-    gInternalEventServicesProtocolGuid  ## CONSUMES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                                  ## CONSUMES

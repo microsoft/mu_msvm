@@ -115,6 +115,7 @@
   MathLib|MsCorePkg/Library/MathLib/MathLib.inf
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
   MsBaseLib|MsvmPkg/Library/MsBaseLib/MsBaseLib.inf
+  MsEventSleepLib|MsvmPkg/Library/MsEventSleepLib/MsEventSleepLib.inf
   MtrrLib|UefiCpuPkg/Library/MtrrLib/MtrrLib.inf
   MpInitLib|UefiCpuPkg/Library/MpInitLibUp/MpInitLibUp.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
@@ -558,7 +559,6 @@
 [PcdsFeatureFlag.common]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplBuildPageTables|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwarePerformanceDataTableS3Support|FALSE
-  gEfiMdeModulePkgTokenSpaceGuid.PcdInternalEventServicesEnabled|TRUE
 
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerFixedInRAM|FALSE
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedFileLoggerForceEnable|TRUE
