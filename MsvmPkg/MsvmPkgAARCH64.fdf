@@ -107,14 +107,6 @@ READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
 #
-# Dispatch these components first in PEI
-#
-APRIORI PEI {
-  INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
-  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
-}
-
-#
 # SEC and PEI components
 #
 INF MsvmPkg/Sec/SecMain.inf
@@ -157,21 +149,6 @@ READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
-#
-# Dispatch these components first in DXE
-#
-APRIORI DXE {
-  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
-  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
-  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
-  INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
-  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
-  INF MsvmPkg/EventLogDxe/EventLogDxe.inf
-  INF MsvmPkg/VariableDxe/VariableDxe.inf
-  INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
-  INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
-}
 
 INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
 INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
