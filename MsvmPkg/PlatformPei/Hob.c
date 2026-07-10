@@ -16,6 +16,7 @@
 #include <Library/HostVisibilityLib.h>
 #include <IsolationTypes.h>
 #include <Library/CrashDumpAgentLib.h>
+#include <Uefi/UefiSpec.h>
 
 
 #define BASIC_FLAGS                                     \
@@ -146,10 +147,12 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_MEMORY_MAPPED_IO,
+    BuildResourceDescriptorV2(EFI_RESOURCE_MEMORY_MAPPED_IO,
                                STANDARD_FLAGS,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_UC,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -189,10 +192,12 @@ Return Value:
 
     HobpAcceptRamPages(Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
 
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
+    BuildResourceDescriptorV2(EFI_RESOURCE_SYSTEM_MEMORY,
                                MEMORY_FLAGS,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_WB,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -224,10 +229,12 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
+    BuildResourceDescriptorV2(EFI_RESOURCE_SYSTEM_MEMORY,
                                PERSISTENT_MEMORY_FLAGS,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_WB,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -258,10 +265,12 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
+    BuildResourceDescriptorV2(EFI_RESOURCE_SYSTEM_MEMORY,
                                SP_MEMORY_FLAGS,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_WB,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -293,10 +302,12 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_MEMORY_RESERVED,
+    BuildResourceDescriptorV2(EFI_RESOURCE_MEMORY_RESERVED,
                                STANDARD_FLAGS,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_UC,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -334,10 +345,12 @@ Return Value:
 
     HobpAcceptRamPages(Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
 
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
+    BuildResourceDescriptorV2(EFI_RESOURCE_SYSTEM_MEMORY,
                                MEMORY_FLAGS & ~EFI_RESOURCE_ATTRIBUTE_TESTED,
                                BaseAddress,
-                               Size);
+                               Size,
+                               EFI_MEMORY_WB,
+                               NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
@@ -432,7 +445,7 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_IO, BASIC_FLAGS, BaseAddress, Size);
+    BuildResourceDescriptorV2(EFI_RESOURCE_IO, BASIC_FLAGS, BaseAddress, Size, 0, NULL);
     DEBUG((DEBUG_VERBOSE,
            "HOB Start % 17lx End %17lx %s\n",
            BaseAddress,
