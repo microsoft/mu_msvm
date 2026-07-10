@@ -151,14 +151,6 @@ READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
 #
-# Dispatch these components first in PEI.
-#
-APRIORI PEI {
-  INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
-  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
-}
-
-#
 # PEI components
 #
 INF MdeModulePkg/Core/Pei/PeiMain.inf
@@ -199,24 +191,6 @@ READ_ENABLED_CAP   = TRUE
 READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
-
-#
-# Dispatch these components first in DXE.
-#
-APRIORI DXE {
-  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
-  INF MsvmPkg/CpuDxe/CpuDxe.inf
-  INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
-  INF MdeModulePkg/Universal/Metronome/Metronome.inf
-  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
-  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
-  INF MsvmPkg/EventLogDxe/EventLogDxe.inf
-  INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
-  INF MsvmPkg/VariableDxe/VariableDxe.inf
-  INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
-  INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
-}
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf
