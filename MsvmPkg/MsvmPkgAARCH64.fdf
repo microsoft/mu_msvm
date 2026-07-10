@@ -128,7 +128,18 @@ INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
 #
 # DXE Components
 #
-INF MdeModulePkg/Core/Dxe/DxeMain.inf
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF MdeModulePkg/Core/Dxe/DxeMain.inf
+!else
+  FILE DXE_CORE = 23C9322F-2AF2-476A-BC4C-26BC88266C71 {
+    !if $(TARGET) == RELEASE
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\release\msvm_aarch64_dxe_core.efi
+    !else
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\debug\msvm_aarch64_dxe_core.efi
+    !endif
+    SECTION UI = "DxeCore"
+  }
+!endif
 
 [FV.DXE]
 BlockSize          = 0x1000
@@ -150,9 +161,11 @@ READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
+  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+!endif
 
-INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
 INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
 
 !if $(FILE_LOGGER) == 1
