@@ -1,0 +1,38 @@
+## @file
+#  Library that blocks on an EFI_EVENT at an elevated TPL by sleeping the
+#  processor between checks, using a per-architecture "enable interrupts and
+#  sleep" primitive implemented in assembly.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+    INF_VERSION                    = 0x00010005
+    BASE_NAME                      = MsEventSleepLib
+    FILE_GUID                      = 4B4F9E21-2C3D-4E8A-9F1B-7A6C5D8E0F32
+    MODULE_TYPE                    = BASE
+    VERSION_STRING                 = 1.0
+    LIBRARY_CLASS                  = MsEventSleepLib
+
+#
+#  VALID_ARCHITECTURES           = X64 AARCH64
+#
+
+[Sources]
+    MsEventSleepLib.c
+
+[Sources.X64]
+    X64/MsEnableInterruptsAndSleep.nasm
+
+[Sources.AARCH64]
+    AArch64/MsEnableInterruptsAndSleep.S           | GCC
+    AArch64/MsEnableInterruptsAndSleep.asm         | MSFT
+
+[Packages]
+    MdePkg/MdePkg.dec
+    MsvmPkg/MsvmPkg.dec
+
+[LibraryClasses]
+    UefiBootServicesTableLib

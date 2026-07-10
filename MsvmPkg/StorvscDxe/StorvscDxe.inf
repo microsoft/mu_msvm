@@ -37,6 +37,7 @@
     EmclLib
     MemoryAllocationLib
     MsBaseLib
+    MsEventSleepLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiLib
@@ -45,7 +46,6 @@
     gEfiVmbusProtocolGuid               ## CONSUMES
     gEfiEmclV2ProtocolGuid              ## CONSUMES
     gEfiExtScsiPassThruProtocolGuid     ## PRODUCES
-    gInternalEventServicesProtocolGuid  ## CONSUMES
 
 [Guids]
     gEfiVmbusChannelDevicePathGuid      ## CONSUMES

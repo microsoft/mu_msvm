@@ -12,11 +12,8 @@
 #include <Library/DebugLib.h>
 #include <Protocol/Emcl.h>
 #include <Protocol/Vmbus.h>
-#include <Protocol/InternalEventServices.h>
 #include <Library/EmclLib.h>
-
-// MsBaseLib does not work here, without forking BdsDxe.inf.
-static INTERNAL_EVENT_SERVICES_PROTOCOL *mInternalEventServices;
+#include <Library/MsEventSleepLib.h>
 
 typedef struct _EMCL_LIB_COMPLETION_CONTEXT
 {
@@ -215,19 +212,9 @@ Return Value:
 --*/
 {
     EFI_STATUS status;
-    UINTN signaledEventIndex;
     EMCL_LIB_COMPLETION_CONTEXT context;
 
     ZeroMem(&context, sizeof(EMCL_LIB_COMPLETION_CONTEXT));
-
-    if (mInternalEventServices == NULL)
-    {
-        status = gBS->LocateProtocol(
-                        &gInternalEventServicesProtocolGuid,
-                        NULL,
-                        (VOID **)&mInternalEventServices);
-        ASSERT_EFI_ERROR(status);
-    }
 
     status = gBS->CreateEvent(
         0,
@@ -258,9 +245,10 @@ Return Value:
         goto Cleanup;
     }
 
-    // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-    // which enforces a TPL check for TPL_APPLICATION.
-    status = mInternalEventServices->WaitForEventInternal(1, &context.Event, &signaledEventIndex);
+    // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+    // allowed. Sleep until the completion event is signaled by the SINT
+    // interrupt handler instead.
+    status = MsWaitForEventSleep(context.Event);
 
     if (EFI_ERROR(status))
     {

@@ -114,6 +114,7 @@
   MmuLib|ArmPkg/Library/MmuLib/BaseMmuLib.inf
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
   MsBaseLib|MsvmPkg/Library/MsBaseLib/MsBaseLib.inf
+  MsEventSleepLib|MsvmPkg/Library/MsEventSleepLib/MsEventSleepLib.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   PanicLib|MdePkg/Library/BasePanicLibNull/BasePanicLibNull.inf
@@ -545,8 +546,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerInBootOrder|FALSE
 
 [PcdsFeatureFlag.common]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdInternalEventServicesEnabled|TRUE
-
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerFixedInRAM|FALSE
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedFileLoggerForceEnable|TRUE
 

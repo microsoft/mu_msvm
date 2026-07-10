@@ -17,6 +17,10 @@
 [Sources]
     EmclLib.c
 
+[LibraryClasses]
+    BaseLib
+    MsEventSleepLib
+
 [Packages]
     MdePkg/MdePkg.dec
     MdeModulePkg/MdeModulePkg.dec
@@ -25,4 +29,3 @@
 [Protocols]
     gEfiEmclProtocolGuid                #PRODUCES
     gEfiEmclTagProtocolGuid             #PRODUCES
-    gInternalEventServicesProtocolGuid  #CONSUMES
