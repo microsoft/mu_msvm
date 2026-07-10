@@ -66,7 +66,7 @@ NumBlocks     = 0x600
 !if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
 0x00000000|0x00500000
 !else
-0x00000000|0x004E0000
+0x00000000|0x00493000
 !endif
 gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
 FV = DXE
@@ -75,7 +75,7 @@ FV = DXE
 !if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
 0x00500000|0x100000
 !else
-0x004E0000|0x100000
+0x00493000|0x0014D000
 !endif
 gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAINFV
@@ -171,7 +171,19 @@ INF DebuggerFeaturePkg/DebugConfigPei/DebugConfigPei.inf
 #
 # DXE components.
 #
-INF MdeModulePkg/Core/Dxe/DxeMain.inf
+
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF MdeModulePkg/Core/Dxe/DxeMain.inf
+!else
+  FILE DXE_CORE = 23C9322F-2AF2-476A-BC4C-26BC88266C71 {
+    !if $(TARGET) == RELEASE
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\release\msvm_x64_dxe_core.efi
+    !else
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\debug\msvm_x64_dxe_core.efi
+    !endif
+    SECTION UI = "DxeCore"
+  }
+!endif
 
 [FV.DXE]
 BlockSize          = 0x1000
@@ -238,7 +250,11 @@ INF MsGraphicsPkg/DisplayEngineDxe/DisplayEngineDxe.inf
 INF MsvmPkg/AcpiPlatformDxe/AcpiPlatformDxe.inf
 INF RuleOverride=ACPITABLE MsvmPkg/AcpiTables/AcpiTables.inf
 INF MsvmPkg/AziHsmDxe/AziHsmDxe.inf
-INF MsvmPkg/CpuDxe/CpuDxe.inf
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF MsvmPkg/CpuDxe/CpuDxe.inf
+!else
+  INF PatinaPkg/MpDxe/MpDxe.inf
+!endif
 INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
 INF MsvmPkg/EmclDxe/EmclDxe.inf
 INF MsvmPkg/EventLogDxe/EventLogDxe.inf
