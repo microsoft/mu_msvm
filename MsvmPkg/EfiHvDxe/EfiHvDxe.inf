@@ -19,6 +19,13 @@
 
 [Sources]
     EfiHv.c
+    EfiHvCommon.c
+    EfiHvConnection.c
+    EfiHvPageVisibility.c
+    EfiHvPinning.c
+    EfiHvProtocol.c
+    EfiHvSynic.c
+    EfiHvTimer.c
 
 [Packages]
     MdePkg/MdePkg.dec
