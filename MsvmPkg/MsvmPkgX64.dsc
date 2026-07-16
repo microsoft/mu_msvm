@@ -938,7 +938,6 @@
   MsvmPkg/VpcivscDxe/VpcivscDxe.inf
 
   # VirtIo (virtio-blk over PCI) support, ported from OvmfPkg
-  MsvmPkg/VirtioPciDeviceDxe/VirtioPciDeviceDxe.inf
   MsvmPkg/Virtio10Dxe/Virtio10.inf
   MsvmPkg/VirtioBlkDxe/VirtioBlk.inf
   MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
