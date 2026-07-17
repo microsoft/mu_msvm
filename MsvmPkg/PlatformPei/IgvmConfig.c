@@ -367,7 +367,8 @@ Return Value:
 
 EFI_STATUS
 GetIgvmConfigInfo(
-    VOID
+    IN VOID     *ParameterConfigHeader,
+    IN BOOLEAN  HardwareIsolatedNoParavisor
     )
 /*++
 
@@ -377,7 +378,10 @@ Routine Description:
 
 Arguments:
 
-    None.
+    ParameterConfigHeader - Supplies the parameter area base.
+
+    HardwareIsolatedNoParavisor - Supplies whether the VM is hardware
+        isolated without a paravisor.
 
 Return Value:
 
@@ -398,7 +402,12 @@ Return Value:
     // area.
     //
 
-    parameterInfo = (UEFI_IGVM_PARAMETER_INFO *)GetStartOfConfigBlob();
+    if (ParameterConfigHeader == NULL)
+    {
+        return EFI_INVALID_PARAMETER;
+    }
+
+    parameterInfo = (UEFI_IGVM_PARAMETER_INFO *)ParameterConfigHeader;
 
     //
     // Capture the total size of config information.
@@ -515,10 +524,26 @@ Return Value:
     //
 
     ZeroMem(&configFlags, sizeof(configFlags));
-    configFlags.Flags.MeasureAdditionalPcrs = 1;
-    configFlags.Flags.DefaultBootAlwaysAttempt = 1;
-    configFlags.Flags.VpciBootEnabled = 1;
-    configFlags.Flags.MemoryProtectionMode = ConfigLibMemoryProtectionModeDefault;
+    if (HardwareIsolatedNoParavisor)
+    {
+        configFlags.Flags.MeasureAdditionalPcrs = 1;
+        configFlags.Flags.DefaultBootAlwaysAttempt = 1;
+        configFlags.Flags.VpciBootEnabled = 1;
+        configFlags.Flags.MemoryProtectionMode = ConfigLibMemoryProtectionModeDefault;
+    }
+    else
+    {
+        //
+        // Match the legacy OpenVMM defaults for a directly launched UEFI VM.
+        // Isolated guests retain the existing IGVM defaults above.
+        //
+        configFlags.Flags.SerialControllersEnabled = 1;
+        configFlags.Flags.HibernateEnabled = 1;
+        configFlags.Flags.ConsoleMode = ConfigLibConsoleModeCOM1;
+        configFlags.Flags.MemoryProtectionMode = ConfigLibMemoryProtectionModeDisabled;
+        configFlags.Flags.MtrrsInitializedAtLoad = 1;
+        configFlags.Flags.PciResourcesPreAssigned = 1;
+    }
 
     ConfigSetUefiConfigFlags(&configFlags);
 

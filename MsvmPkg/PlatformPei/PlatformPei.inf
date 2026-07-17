@@ -204,6 +204,7 @@
 
 [Ppis]
     gEfiPeiMasterBootModePpiGuid
+    gMsvmParameterConfigPpiGuid                   ## CONSUMES
 
 [Ppis.AARCH64]
     gMsvmSecPlatformTypePpiGuid                   ## CONSUMES

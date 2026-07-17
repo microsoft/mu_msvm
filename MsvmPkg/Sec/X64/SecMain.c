@@ -20,6 +20,7 @@
 #include <Library/PeCoffGetEntryPointLib.h>
 #include <Library/PeCoffExtraActionLib.h>
 #include <Ppi/TemporaryRamSupport.h>
+#include <Ppi/ParameterConfig.h>
 #include <BiosInterface.h>
 #include <IsolationTypes.h>
 #include "SecP.h"
@@ -48,12 +49,20 @@ EFI_PEI_TEMPORARY_RAM_SUPPORT_PPI mTemporaryRamSupportPpi =
 };
 
 
+MSVM_PARAMETER_CONFIG_PPI mParameterConfigPpi;
+
+
 EFI_PEI_PPI_DESCRIPTOR mPrivateDispatchTable[] =
 {
     {
-        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        EFI_PEI_PPI_DESCRIPTOR_PPI,
         &gEfiTemporaryRamSupportPpiGuid,
         &mTemporaryRamSupportPpi
+    },
+    {
+        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        &gMsvmParameterConfigPpiGuid,
+        &mParameterConfigPpi
     },
 };
 
@@ -1079,6 +1088,9 @@ Arguments:
     IsolationConfiguration - Supplies the isolation configuration of the
         current partition.
 
+    UefiIgvmConfigHeader - Supplies the optional IGVM parameter configuration
+        header provided by the loader.
+
 Return Value:
 
     None.
@@ -1124,6 +1136,7 @@ Return Value:
     //
 
     mIsolationConfiguration = *IsolationConfiguration;
+    mParameterConfigPpi.ParameterConfigHeader = UefiIgvmConfigHeader;
 
     Handler = 0;
     Vector = 0;
