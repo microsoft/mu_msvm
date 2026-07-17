@@ -143,6 +143,11 @@
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
   VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
 
+  # VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+  VirtioLib|VirtioPkg/Library/VirtioLib/VirtioLib.inf
+  PciCapLib|VirtioPkg/Library/BasePciCapLib/BasePciCapLib.inf
+  PciCapPciIoLib|VirtioPkg/Library/UefiPciCapPciIoLib/UefiPciCapPciIoLib.inf
+
 !if $(DEBUGLIB_SERIAL) == 1
   SerialPortLib|PcAtChipsetPkg/Library/SerialIoLib/SerialIoLib.inf
 !endif
@@ -946,6 +951,10 @@
   MsvmPkg/VideoDxe/VideoDxe.inf
   MsvmPkg/VmbusDxe/VmbusDxe.inf
   MsvmPkg/VpcivscDxe/VpcivscDxe.inf
+
+  # VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+  VirtioPkg/Virtio10Dxe/Virtio10.inf
+  VirtioPkg/VirtioBlkDxe/VirtioBlk.inf
   MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
   MsvmPkg/SerialDxe/SerialDxe.inf
   MsvmPkg/VmbfsDxe/VmbfsDxe.inf

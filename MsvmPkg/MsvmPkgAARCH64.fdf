@@ -240,6 +240,10 @@ INF MsvmPkg/VmMeasurementDxe/VmMeasurementDxe.inf
 INF MsvmPkg/VpcivscDxe/VpcivscDxe.inf
 INF MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
 
+# VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+INF VirtioPkg/Virtio10Dxe/Virtio10.inf
+INF VirtioPkg/VirtioBlkDxe/VirtioBlk.inf
+
 !if $(PRM_ENABLE) == TRUE
 INF PrmPkg/PrmConfigDxe/PrmConfigDxe.inf
 INF PrmPkg/Samples/PrmSampleAcpiParameterBufferModule/PrmSampleAcpiParameterBufferModule.inf

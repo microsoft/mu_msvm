@@ -1,0 +1,26 @@
+## @file
+#  VirtIo (virtio-blk over PCI) support package, ported verbatim from EDK2 OvmfPkg.
+#
+#  See ReadMe / README.md for upstream provenance (repo, tag, commit) and the
+#  "only [Packages] retargeted, .c/.h verbatim" porting rule.
+#
+#  Copyright (C) Microsoft.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = VirtioPkg
+  PACKAGE_GUID                   = 891eb724-5205-457c-a6f1-a127b7c1557c
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include
+
+[Guids]
+  gVirtioPkgTokenSpaceGuid        = {0xf897040f, 0xba7b, 0x494e, {0xa3, 0x83, 0x5e, 0xc2, 0xb6, 0x2d, 0x9d, 0x80}}
+
+[Protocols]
+  # VirtIo Device Protocol (GUID value preserved from OvmfPkg)
+  gVirtioDeviceProtocolGuid       = {0xfa920010, 0x6785, 0x4941, {0xb6, 0xec, 0x49, 0x8c, 0x57, 0x9f, 0x16, 0x0a}}
