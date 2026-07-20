@@ -4,7 +4,7 @@
 ## Copyright (C) Microsoft.
 ##  SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
-import os, sys, logging
+import os, sys, logging, struct, subprocess
 from edk2toolext.environment.uefi_build import UefiBuilder
 from edk2toolext.invocables.edk2_platform_build import BuildSettingsManager
 from edk2toolext.invocables.edk2_setup import SetupSettingsManager
@@ -88,18 +88,121 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
         logging.debug("PlatformBuilder SetPlatformEnvAfterTarget")
         return 0
 
-    def PlatformPostBuild(self):
+    #
+    # Layout of MSVM_FIRMWARE_VERSION_INFO (see
+    # MsvmPkg/Include/MsvmFirmwareVersion.h). All integers are little-endian;
+    # string fields are NUL-terminated ASCII.
+    #   UINT32 Signature ('MVFW'), UINT16 StructVersion, UINT16 HeaderSize,
+    #   UINT32 Flags, UINT16 InterfaceVersionMajor, UINT16 InterfaceVersionMinor,
+    #   CHAR8 BaseVersion[16], CHAR8 GitCommit[48]
+    #
+    FW_VERSION_SIGNATURE = 0x5746564D       # 'MVFW' little-endian
+    FW_VERSION_STRUCT_VERSION = 1
+    FW_VERSION_FLAG_DIRTY = 0x1             # MSVM_FIRMWARE_VERSION_FLAG_DIRTY
+    # Human-curated firmware/VMM compatibility contract version. Keep in sync
+    # with MSVM_FIRMWARE_INTERFACE_VERSION_MAJOR/_MINOR in MsvmFirmwareVersion.h.
+    FW_VERSION_INTERFACE_MAJOR = 1
+    FW_VERSION_INTERFACE_MINOR = 0
+    FW_VERSION_BASE_VERSION_SIZE = 16
+    FW_VERSION_GIT_COMMIT_SIZE = 48
+    FW_VERSION_STRUCT_FORMAT = "<IHHIHH16s48s"
+    # Path of the generated blob, relative to the per-build output directory
+    # (<OUTPUT_DIRECTORY>/<TARGET>_<TOOL_CHAIN_TAG>). The FDF references the same
+    # location via $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG).
+    FW_VERSION_BLOB_SUBPATH = os.path.join("FwVersion", "FwVersionBlob.bin")
+
+    def _GetOutputDirectory(self, workspace, arch):
+        # The build output root is the DSC [Defines] OUTPUT_DIRECTORY value (it is
+        # not necessarily "Build"). Read it from the active DSC so this stays in
+        # sync with what GenFds uses; fall back to the BaseTools default of
+        # Build/<PlatformName> when it cannot be determined.
+        active_platform = self.env.GetValue("ACTIVE_PLATFORM")
+        if active_platform:
+            dsc_path = os.path.join(workspace, active_platform)
+            try:
+                with open(dsc_path, "r") as dsc:
+                    for line in dsc:
+                        stripped = line.strip()
+                        if stripped.startswith("OUTPUT_DIRECTORY") and "=" in stripped:
+                            return stripped.split("=", 1)[1].strip()
+            except OSError as e:
+                logging.warning(f"Could not read OUTPUT_DIRECTORY from {dsc_path}: {e}")
+        return os.path.join("Build", f"Msvm{arch}")
+
+    def _GetGitCommit(self, workspace):
+        def _git(args):
+            return subprocess.run(
+                ["git"] + args,
+                cwd=workspace,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+
+        try:
+            commit = _git(["rev-parse", "HEAD"])
+            # Only tracked, uncommitted changes mark the build dirty; untracked
+            # files (and gitignored build outputs) are intentionally ignored.
+            dirty = bool(_git(["status", "--porcelain", "--untracked-files=no"]))
+            return commit, dirty
+        except Exception as e:
+            logging.warning(f"Could not determine git commit for firmware version blob: {e}")
+            return "unknown", False
+
+    def _GenerateFirmwareVersionBlob(self):
+        workspace = self.GetWorkspaceRoot()
+
+        arch = "AARCH64" if self.env.GetValue("BUILD_ARCH") == "AARCH64" else "X64"
+        target = self.env.GetValue("TARGET")
+        toolchain = self.env.GetValue("TOOL_CHAIN_TAG")
+        if not target or not toolchain:
+            logging.error(
+                "TARGET/TOOL_CHAIN_TAG not set; cannot place firmware version blob"
+            )
+            return -1
+
+        # Static major.minor release prefix. The GitHub release workflow owns
+        # this value (env BASE_VERSION) and assigns the patch number later, so
+        # only the prefix is embedded here.
+        base_version = os.environ.get("BASE_VERSION", "26.0")
+        commit, dirty = self._GetGitCommit(workspace)
+        flags = self.FW_VERSION_FLAG_DIRTY if dirty else 0
+
+        blob = struct.pack(
+            self.FW_VERSION_STRUCT_FORMAT,
+            self.FW_VERSION_SIGNATURE,
+            self.FW_VERSION_STRUCT_VERSION,
+            struct.calcsize(self.FW_VERSION_STRUCT_FORMAT),
+            flags,
+            self.FW_VERSION_INTERFACE_MAJOR,
+            self.FW_VERSION_INTERFACE_MINOR,
+            base_version.encode("ascii", "replace"),
+            commit.encode("ascii", "replace"),
+        )
+
+        # Emit into the per-build output directory so the artifact stays out of
+        # the source tree. Must match the FDF SECTION RAW path, which is derived
+        # from the same OUTPUT_DIRECTORY / TARGET / TOOL_CHAIN_TAG values.
+        output_directory = self._GetOutputDirectory(workspace, arch)
+        out_dir = os.path.join(workspace, output_directory, f"{target}_{toolchain}")
+        out_path = os.path.join(out_dir, self.FW_VERSION_BLOB_SUBPATH)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "wb") as f:
+            f.write(blob)
+
+        logging.info(
+            f"Firmware version blob written: base={base_version} commit={commit}"
+            f"{' (dirty)' if dirty else ''}"
+            f" interface={self.FW_VERSION_INTERFACE_MAJOR}.{self.FW_VERSION_INTERFACE_MINOR}"
+            f" -> {out_path}"
+        )
         return 0
 
-
-    #------------------------------------------------------------------
-    #
-    # Method to do stuff pre build.
-    # This is part of the build flow.
-    # Currently do nothing.
-    #
-    #------------------------------------------------------------------
     def PlatformPreBuild(self):
+        logging.debug("PlatformBuilder PlatformPreBuild")
+        return self._GenerateFirmwareVersionBlob()
+
+    def PlatformPostBuild(self):
         return 0
 
     #
