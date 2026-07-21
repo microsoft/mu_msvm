@@ -13,6 +13,7 @@
 #include <Hv/HvGuestCpuid.h>
 #include <Library/DebugLib.h>
 #include <Library/CrashDumpAgentLib.h>
+#include <Library/PcdLib.h>
 #include <Library/HvHypercallLib.h>
 #include "MsCpuid.h"
 #include "StaticAssert1.h"
@@ -174,6 +175,17 @@ Return Value:
 --*/
 {
     EFI_STATUS status;
+
+    //
+    // When Hyper-V is disabled (e.g. the loader reported a Generic platform via
+    // the SEC platform type PPI) no hypervisor is present to service hypercalls.
+    // Issuing one here during PEI - before the exception vectors are installed -
+    // hard hangs the system, so skip the detection entirely.
+    //
+    if (!PcdGetBool(PcdHvEnabled))
+    {
+        return;
+    }
 
 #if defined(MDE_CPU_X64)
 
