@@ -1,0 +1,22 @@
+# Single source of truth for the firmware version numbers.
+#
+# Bump these by hand in code review. The build (see
+# MsvmPkg/BuildPlugins/FirmwareVersionBlob) embeds them into the DXE FV version
+# record (MSVM_FIRMWARE_VERSION_INFO) *and* into the FixedAtBuild PCDs that the
+# firmware reads at runtime, so there is exactly one place to edit.
+
+# Firmware<->VMM interface (compatibility) contract version. Independent of the
+# release below and of git state. It is a machine-comparable gate the VMM uses
+# to decide whether it can talk to this firmware.
+#   - Bump major for a breaking change (an older VMM would malfunction). Reset
+#     minor to 0 on a major bump.
+#   - Bump minor for a backward-compatible addition the VMM can degrade without.
+[interface]
+major = 1
+minor = 0
+
+# Release version prefix ("major.minor"). The GitHub release workflow may
+# override this via the BASE_VERSION environment variable and assigns the patch
+# number later, so only the prefix lives here.
+[release]
+version = "26.0"

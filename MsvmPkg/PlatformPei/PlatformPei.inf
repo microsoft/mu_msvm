@@ -91,6 +91,11 @@
     gMsvmPkgTokenSpaceGuid.PcdFvSize
     gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
+    gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMajor
+    gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMinor
+    gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareBaseVersion
+    gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareGitCommit
+    gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareFlags
     gMsvmPkgTokenSpaceGuid.PcdConfigBlobSize
     gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap
     gMsvmPkgTokenSpaceGuid.PcdMadtPtr

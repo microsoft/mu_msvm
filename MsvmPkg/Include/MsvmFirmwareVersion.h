@@ -38,8 +38,13 @@
 //
 // Firmware/VMM interface (compatibility) version. This is a human-curated
 // semantic contract version that is deliberately independent of the release
-// (BaseVersion) and of git state: bump it by hand, in code review, whenever the
-// contract between this firmware and the host/VMM changes.
+// (BaseVersion) and of git state.
+//
+// The value is NOT defined here. It lives in MsvmPkg/FirmwareVersion.toml (the
+// single source of truth) and is embedded into this record and into the
+// PcdMsvmFirmwareInterfaceVersionMajor/Minor FixedAtBuild PCDs at build time.
+// Bump it there, by hand, in code review, whenever the contract between this
+// firmware and the host/VMM changes:
 //
 //   - Bump MAJOR for any breaking change: one where an existing VMM built
 //     against an older major would malfunction. This includes the firmware
@@ -53,18 +58,21 @@
 // proceed on; the VMM may additionally require a minimum minor for features it
 // depends on.
 //
-#define MSVM_FIRMWARE_INTERFACE_VERSION_MAJOR  1
-#define MSVM_FIRMWARE_INTERFACE_VERSION_MINOR  0
 
 //
 // Bit definitions for the Flags field.
 //
 // MSVM_FIRMWARE_VERSION_FLAG_DIRTY: the build was produced from a tree with
-// uncommitted tracked changes, so GitCommit identifies the base commit but not
-// the exact source that was built. When clear, GitCommit identifies the exact
-// committed source state.
+// uncommitted changes (modified tracked files or untracked files present), so
+// GitCommit identifies the base commit but not the exact source that was built.
+// When clear, GitCommit identifies the exact committed source state.
 //
-#define MSVM_FIRMWARE_VERSION_FLAG_DIRTY  BIT0
+// MSVM_FIRMWARE_VERSION_FLAG_OFFICIAL: the build was produced by the official
+// CI pipeline (e.g. building main), as opposed to a developer or pull-request
+// build. Set from the OFFICIAL_BUILD build environment; clear otherwise.
+//
+#define MSVM_FIRMWARE_VERSION_FLAG_DIRTY     BIT0
+#define MSVM_FIRMWARE_VERSION_FLAG_OFFICIAL  BIT1
 
 //
 // Maximum sizes (including the terminating NUL) for the string fields.
@@ -101,8 +109,9 @@ typedef struct {
   // MSVM_FIRMWARE_INTERFACE_VERSION_MAJOR / _MINOR: the human-curated
   // firmware/VMM compatibility contract version. Unlike BaseVersion this is a
   // machine-comparable gate: the VMM checks these to decide whether it can talk
-  // to this firmware and should warn/bail early if not. See the header comment
-  // above the MSVM_FIRMWARE_INTERFACE_VERSION_* defines for the bump rules.
+  // to this firmware and should warn/bail early if not. The values live in
+  // MsvmPkg/FirmwareVersion.toml; see the interface version comment above for
+  // the bump rules.
   //
   UINT16    InterfaceVersionMajor;
   UINT16    InterfaceVersionMinor;
