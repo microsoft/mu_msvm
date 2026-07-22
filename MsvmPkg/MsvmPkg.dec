@@ -93,6 +93,17 @@
   gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|0x0|UINT64|0x6
   gMsvmPkgTokenSpaceGuid.PcdDxeFvSize|0x0|UINT32|0x7
 
+  # Firmware version record. These declare the PCD contract only; the values are
+  # injected at build time by MsvmPkg/BuildPlugins/FirmwareVersionBlob from the
+  # single source of truth (MsvmPkg/FirmwareVersion.toml + git), the same way
+  # PcdFdBaseAddress above gets its real value from the build. The defaults here
+  # are throwaway sentinels. See MsvmPkg/Include/MsvmFirmwareVersion.h.
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMajor|0|UINT16|0x7000
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMinor|0|UINT16|0x7001
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareBaseVersion|"unknown"|VOID*|0x7002
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareGitCommit|"unknown"|VOID*|0x7003
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareFlags|0x0|UINT32|0x7004
+
   # Synthetic Timer Configuration
   gMsvmPkgTokenSpaceGuid.PcdSynicTimerSintIndex|0x1|UINT8|0x2000
   gMsvmPkgTokenSpaceGuid.PcdSynicTimerTimerIndex|0x0|UINT8|0x2001
