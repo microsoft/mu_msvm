@@ -64,6 +64,7 @@ DefinitionBlock (
         CCFG,8,         // CXL memory support enabled/disabled
         NCNT,16,        // NVDIMM count
         VCFG,8,         // VMBus enabled/disabled
+        ICFG,8,         // IPMI (emulated BMC) enabled/disabled
     }
 
     // Supported machine sleep states =========================================
@@ -313,6 +314,38 @@ DefinitionBlock (
 #endif
 
     }
+
+    // IPMI KCS BMC ===========================================================
+    // Emulated IPMI BMC exposed over the KCS system interface at I/O ports
+    // 0x0CA2 (data) / 0x0CA3 (status/command). The device is only declared when
+    // the host enabled the emulated IPMI device (ICFG). Advertising the ACPI
+    // IPI0001 device lets the Windows IPMI driver (ipmidrv) discover and bind to
+    // the KCS interface; Linux discovers the same BMC via SMBIOS Type 38.
+    //
+    // This is x64-only: the emulated BMC is reachable exclusively through legacy
+    // port-mapped I/O (0x0CA2/0x0CA3), and AArch64 has no I/O port space, so the
+    // IO() resource descriptor below is meaningful only on x86.
+
+#if defined(_DSDT_INTEL_)
+
+    If(LGreater(ICFG, 0))
+    {
+        Device(\_SB.IPMI)
+        {
+            Name(_HID, "IPI0001")           // ACPI IPMI device
+            Name(_STR, Unicode("IPMI KCS Device"))
+            Name(_UID, 0x0)
+            Name(_IFT, 0x1)                 // Interface type: 1 = KCS
+            Name(_SRV, 0x0200)              // IPMI specification revision 2.0
+            Name(_CRS, ResourceTemplate()
+            {
+                // KCS data register (0x0CA2) and status/command register (0x0CA3).
+                IO(Decode16, 0x0CA2, 0x0CA2, 0x01, 0x02)
+            })
+        }
+    }
+
+#endif
 
     // VMBus ==================================================================
 

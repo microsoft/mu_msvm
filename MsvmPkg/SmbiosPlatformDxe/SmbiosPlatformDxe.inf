@@ -98,6 +98,7 @@
     gMsvmPkgTokenSpaceGuid.PcdProcessorCount                    ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcessorsPerVirtualSocket        ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdThreadsPerProcessor               ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled                       ## CONSUMES
 
 [Depex]
     gEfiSmbiosProtocolGuid

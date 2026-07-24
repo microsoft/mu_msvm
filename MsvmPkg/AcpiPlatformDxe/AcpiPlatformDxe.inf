@@ -86,6 +86,7 @@
     gMsvmPkgTokenSpaceGuid.PcdVirtualBatteryEnabled             ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                      ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled                   ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled                       ## CONSUMES
 
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress          ## PRODUCES

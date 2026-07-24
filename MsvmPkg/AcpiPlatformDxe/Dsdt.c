@@ -34,6 +34,7 @@ typedef struct _DSDT_AML_DATA
     UINT8  CxlMemoryEnabled;
     UINT16 NvdimmCount;
     UINT8  VmbusEnabled;
+    UINT8  IpmiEnabled;
 } DSDT_AML_DATA;
 
 typedef struct _DSDT_AML_DESCRIPTOR
@@ -140,6 +141,7 @@ Return Value:
     data->CxlMemoryEnabled = PcdGetBool(PcdCxlMemoryEnabled);
     data->NvdimmCount = PcdGet16(PcdNvdimmCount);
     data->VmbusEnabled = PcdGetBool(PcdVmbusEnabled);
+    data->IpmiEnabled = PcdGetBool(PcdIpmiEnabled);
 
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Start               0x%lx\n", __func__, data->Mmio1Start));
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __func__, data->Mmio1Length));
@@ -154,6 +156,7 @@ Return Value:
     DEBUG((DEBUG_VERBOSE, "--- %a: ProcIdleEnabled          0x%x\n", __func__, data->ProcIdleEnabled));
     DEBUG((DEBUG_VERBOSE, "--- %a: CxlMemoryEnabled         0x%x\n", __func__, data->CxlMemoryEnabled));
     DEBUG((DEBUG_VERBOSE, "--- %a: NvdimmCount              0x%x\n", __func__, data->NvdimmCount));
+    DEBUG((DEBUG_VERBOSE, "--- %a: IpmiEnabled              0x%x\n", __func__, data->IpmiEnabled));
 
     //
     // Allocate space for the NVDIMM IO Buffer if VPMEM is enabled.
