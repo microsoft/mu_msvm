@@ -56,7 +56,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
     # Single source of truth for the version numbers, relative to the workspace.
     FW_VERSION_TOML_SUBPATH = os.path.join("MsvmPkg", "FirmwareVersion.toml")
 
-    def _ReadVersionToml(self, workspace):
+    def _ReadVersionToml(self, workspace, env):
         toml_path = os.path.join(workspace, self.FW_VERSION_TOML_SUBPATH)
         with open(toml_path, "rb") as f:
             data = tomllib.load(f)
@@ -64,7 +64,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
         minor = int(data["interface"]["minor"])
         # The CI BASE_VERSION env override wins so the release workflow can own
         # the released value; the TOML provides the in-tree default.
-        release = os.environ.get("BASE_VERSION") or str(data["release"]["version"])
+        release = env.GetValue("BASE_VERSION", "") or str(data["release"]["version"])
         return major, minor, release
 
     def _GetGitCommit(self, workspace):
@@ -82,7 +82,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
     def do_pre_build(self, thebuilder):
         workspace = thebuilder.GetWorkspaceRoot()
 
-        major, minor, base_version = self._ReadVersionToml(workspace)
+        major, minor, base_version = self._ReadVersionToml(workspace, thebuilder.env)
         commit, dirty = self._GetGitCommit(workspace)
         flags = 0
         if dirty:
@@ -90,7 +90,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
         # Official builds are marked by the CI pipeline (e.g. building main, not
         # a PR) via the OFFICIAL_BUILD environment variable. Any non-empty value
         # other than "0"/"false" counts as official.
-        if os.environ.get("OFFICIAL_BUILD", "").strip().lower() not in ("", "0", "false"):
+        if thebuilder.env.GetValue("OFFICIAL_BUILD", "").strip().lower() not in ("", "0", "false"):
             flags |= self.FW_VERSION_FLAG_OFFICIAL
 
         # (1) Expose the values to the firmware as FixedAtBuild PCDs. Setting
