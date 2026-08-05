@@ -35,7 +35,6 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
 
 [LibraryClasses]
   BaseMemoryLib
-  BiosDeviceLib
   DebugLib
   DevicePathLib
   DxeServicesTableLib
@@ -69,6 +68,7 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
   gMsvmPkgTokenSpaceGuid.PcdIsVmbfsBoot
   gMsvmPkgTokenSpaceGuid.PcdLogoFile
   gMsvmPkgTokenSpaceGuid.PcdPxeIpV6
+  gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
   gMsvmPkgTokenSpaceGuid.PcdVpciBootEnabled
 
 [Depex]

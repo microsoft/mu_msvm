@@ -44,6 +44,8 @@
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+    gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled
+    gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired
 
 [Depex]
     TRUE

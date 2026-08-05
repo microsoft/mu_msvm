@@ -29,32 +29,65 @@
 // We use this index definition to define an invalid block entry
 #define TT_ATTR_INDX_INVALID    ((UINT32)~0)
 
+/**
+  Whether the current translation regime is either EL1&0 or EL2&0.
+  It is usually the EL1&0.
+ **/
+STATIC
+BOOLEAN
+TranslationRegimeIsDual (
+  VOID
+  )
+{
+  return ArmReadCurrentEL () == AARCH64_EL1 || (ArmReadHcr () & ARM_HCR_E2H);
+}
+
 STATIC
 UINT64
 ArmMemoryAttributeToPageAttribute(
     IN ARM_MEMORY_REGION_ATTRIBUTES  Attributes
 )
 {
-    switch (Attributes)
-    {
+  UINT64 Permissions = 0;
+
+  switch (Attributes) {
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO:
+      Permissions = TT_AP_NO_RO;
+      break;
+
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_XP:
+    case ARM_MEMORY_REGION_ATTRIBUTE_DEVICE:
+      if (!TranslationRegimeIsDual ()) {
+        Permissions = TT_XN_MASK;
+      } else {
+        Permissions = TT_UXN_MASK | TT_PXN_MASK;
+      }
+      break;
+    default:
+      break;
+  }
+
+  switch (Attributes) {
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_NONSHAREABLE:
+      return TT_ATTR_INDX_MEMORY_WRITE_BACK | Permissions;
+
     case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK:
-        return TT_ATTR_INDX_MEMORY_WRITE_BACK | TT_SH_INNER_SHAREABLE;
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO:
+    case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_XP:
+      return TT_ATTR_INDX_MEMORY_WRITE_BACK | TT_SH_INNER_SHAREABLE | Permissions;
 
     case ARM_MEMORY_REGION_ATTRIBUTE_WRITE_THROUGH:
-        return TT_ATTR_INDX_MEMORY_WRITE_THROUGH | TT_SH_INNER_SHAREABLE;
+      return TT_ATTR_INDX_MEMORY_WRITE_THROUGH | TT_SH_INNER_SHAREABLE;
 
-        // Uncached and device mappings are treated as outer shareable by default,
+    // Uncached and device mappings are treated as outer shareable by default,
     case ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED:
-        return TT_ATTR_INDX_MEMORY_NON_CACHEABLE;
+      return TT_ATTR_INDX_MEMORY_NON_CACHEABLE | Permissions;
 
     default:
-        ASSERT(0);
+      ASSERT (0);
     case ARM_MEMORY_REGION_ATTRIBUTE_DEVICE:
-        if (ArmReadCurrentEL() == AARCH64_EL2)
-            return TT_ATTR_INDX_DEVICE_MEMORY | TT_XN_MASK;
-        else
-            return TT_ATTR_INDX_DEVICE_MEMORY | TT_UXN_MASK | TT_PXN_MASK;
-    }
+      return TT_ATTR_INDX_DEVICE_MEMORY | Permissions;
+  }
 }
 
 #define MIN_T0SZ        16
@@ -392,18 +425,19 @@ ConfigureMmu(
     UINT64  MaxAddress
 )
 {
-    VOID*                         TranslationTable;
-    UINT32                        TranslationTableAttribute;
-    UINTN                         T0SZ;
-    UINTN                         RootTableEntryCount;
-    UINT64                        TCR;
-    EFI_STATUS                    Status;
-    ARM_MEMORY_REGION_DESCRIPTOR* MemoryTable;
-    UINT64                        lowMmioSize;
-    UINT64                        highMmioBaseAddress;
-    UINT64                        highMmioSize;
+    VOID*                         TranslationTable = 0;
+    UINT32                        TranslationTableAttribute = 0;
+    UINTN                         T0SZ = 0;
+    UINTN                         RootTableEntryCount = 0;
+    UINT64                        TCR = 0;
+    EFI_STATUS                    Status = 0;
+    ARM_MEMORY_REGION_DESCRIPTOR* MemoryTable = 0;
+    UINT64                        lowMmioSize = 0;
+    UINT64                        highMmioBaseAddress = 0;
+    UINT64                        highMmioSize = 0;
 #define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS 6
-    ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
+    ARM_MEMORY_REGION_DESCRIPTOR virtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS] = {0};
+    UINTN                         index = 0;
 
     //
     // Convert PCD page counts to byte addresses/sizes using safe
@@ -414,8 +448,8 @@ ConfigureMmu(
         RETURN_ERROR(SafeUint64Mult(PcdGet64(PcdHighMmioGapSizeInPages), SIZE_4KB, &highMmioSize)))
     {
         DEBUG((DEBUG_ERROR, "ConfigureMmu: MMIO PCD value overflow\n"));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        return EFI_INVALID_PARAMETER; // unreachable; FAIL_FAST does not return (needed to keep compiler quiet)
     }
 
     DEBUG((DEBUG_VERBOSE, "ConfigureMmu(0x%lx, 0x%lx, 0x%lx, 0x%lx)\n",
@@ -423,10 +457,8 @@ ConfigureMmu(
 
     //
     // Validate that MMIO regions fit within the physical address space.
-    // The host may provide MMIO ranges that extend beyond the CPU's
-    // physical address width, which would cause page table entries for
-    // unmappable addresses.
     //
+    if (highMmioSize > 0)
     {
         UINT64 highMmioEnd;
         if (RETURN_ERROR(SafeUint64Add(highMmioBaseAddress, highMmioSize, &highMmioEnd)))
@@ -437,72 +469,106 @@ ConfigureMmu(
             FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
 
-        if (highMmioEnd > MaxAddress + 1)
+        //
+        // highMmioEnd is exclusive (one past the last byte). The range is
+        // out of bounds iff its last byte (highMmioEnd - 1) is greater than
+        // MaxAddress. Writing the check as "highMmioEnd - 1 > MaxAddress"
+        // avoids the "MaxAddress + 1" overflow that wraps to 0 when
+        // MaxAddress == UINT64_MAX and silently passes every range.
+        //
+        // Config.c rejects highMmioBaseAddress below the 4GB boundary, and
+        // this block only runs when highMmioSize > 0, so highMmioEnd >= 4GB
+        // and highMmioEnd - 1 is well defined.
+        //
+        if (highMmioEnd - 1 > MaxAddress)
         {
             DEBUG((DEBUG_ERROR,
-                "ConfigureMmu: High MMIO end 0x%lx exceeds physical address limit 0x%lx\n",
-                highMmioEnd, MaxAddress));
+                "ConfigureMmu: High MMIO last byte 0x%lx exceeds physical address limit 0x%lx\n",
+                highMmioEnd - 1, MaxAddress));
             FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
         }
     }
 
     //
-    // Fill table that drives the mmu setup functions.
+    // Build the memory map based on which MMIO gaps are present.
     //
-    // From zero to beginning of low MMIO gap.
-    virtualMemoryTable[0].PhysicalBase = 0;
-    virtualMemoryTable[0].VirtualBase = virtualMemoryTable[0].PhysicalBase;
-    virtualMemoryTable[0].Length = (SIZE_4GB - lowMmioSize);
-    virtualMemoryTable[0].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
-    // First MMIO gap.
-    virtualMemoryTable[1].PhysicalBase = virtualMemoryTable[0].PhysicalBase + virtualMemoryTable[0].Length;
-    virtualMemoryTable[1].VirtualBase = virtualMemoryTable[1].PhysicalBase;
-    virtualMemoryTable[1].Length = lowMmioSize;
-    virtualMemoryTable[1].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+    // From zero to beginning of low MMIO gap (or to 4GB if no low gap).
+    virtualMemoryTable[index].PhysicalBase = 0;
+    virtualMemoryTable[index].VirtualBase = 0;
+    virtualMemoryTable[index].Length = (SIZE_4GB - lowMmioSize);
+    virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    index++;
 
-    // From 4GB to beginning of high MMIO gap.
-    virtualMemoryTable[2].PhysicalBase = virtualMemoryTable[1].PhysicalBase + virtualMemoryTable[1].Length;
-    virtualMemoryTable[2].VirtualBase = virtualMemoryTable[2].PhysicalBase;
-
-    if (RETURN_ERROR(SafeUint64Sub(highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase, &virtualMemoryTable[2].Length)))
+    // Low MMIO gap (only if nonzero size).
+    if (lowMmioSize > 0)
     {
-        DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
-            highMmioBaseAddress, virtualMemoryTable[2].PhysicalBase));
-        ASSERT(FALSE);
-        return EFI_INVALID_PARAMETER;
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
+        virtualMemoryTable[index].Length = lowMmioSize;
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+        index++;
     }
 
-    virtualMemoryTable[2].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    if (highMmioSize > 0)
+    {
+        // From end of low gap (or 4GB) to beginning of high MMIO gap.
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
 
-    // Second MMIO gap.
-    virtualMemoryTable[3].PhysicalBase = virtualMemoryTable[2].PhysicalBase + virtualMemoryTable[2].Length;
-    virtualMemoryTable[3].VirtualBase = virtualMemoryTable[3].PhysicalBase;
-    virtualMemoryTable[3].Length = highMmioSize;
-    virtualMemoryTable[3].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+        if (RETURN_ERROR(SafeUint64Sub(highMmioBaseAddress, virtualMemoryTable[index].PhysicalBase, &virtualMemoryTable[index].Length)))
+        {
+            DEBUG((DEBUG_ERROR, "ConfigureMmu: highMmioBaseAddress (0x%lx) < PhysicalBase (0x%lx)\n",
+                highMmioBaseAddress, virtualMemoryTable[index].PhysicalBase));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+        index++;
+
+        // High MMIO gap.
+        virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+        virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
+        virtualMemoryTable[index].Length = highMmioSize;
+        virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+        index++;
+    }
 
     // To top of address space.
-    virtualMemoryTable[4].PhysicalBase = virtualMemoryTable[3].PhysicalBase + virtualMemoryTable[3].Length;
-    virtualMemoryTable[4].VirtualBase = virtualMemoryTable[4].PhysicalBase;
+    virtualMemoryTable[index].PhysicalBase = virtualMemoryTable[index - 1].PhysicalBase + virtualMemoryTable[index - 1].Length;
+    virtualMemoryTable[index].VirtualBase = virtualMemoryTable[index].PhysicalBase;
 
     //
-    // Validate that the final region does not underflow. This should
-    // not happen given the MMIO validation above, but check defensively.
+    // PhysicalBase == MaxAddress + 1 is legal and represents a zero-length
+    // tail region (the high MMIO gap ends exactly at the top of the
+    // architectural PA range, e.g. 36-bit PA with high MMIO ending at 64GB).
+    // Use "PhysicalBase - 1 > MaxAddress" to avoid the "MaxAddress + 1"
+    // overflow and to accept that boundary case. PhysicalBase here is
+    // built up from prior regions and is >= 4GB on any path that reaches
+    // here, so the subtraction is well defined.
     //
-    if (virtualMemoryTable[4].PhysicalBase > MaxAddress)
+    if (virtualMemoryTable[index].PhysicalBase - 1 > MaxAddress)
     {
-        DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress (0x%lx)\n",
-            virtualMemoryTable[4].PhysicalBase, MaxAddress));
+        DEBUG((DEBUG_ERROR, "ConfigureMmu: PhysicalBase (0x%lx) > MaxAddress + 1 (last byte 0x%lx > 0x%lx)\n",
+            virtualMemoryTable[index].PhysicalBase, virtualMemoryTable[index].PhysicalBase - 1, MaxAddress));
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
-    virtualMemoryTable[4].Length = (MaxAddress - virtualMemoryTable[4].PhysicalBase) + 1;
-    virtualMemoryTable[4].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    //
+    // Length = (MaxAddress + 1) - PhysicalBase. Computed as
+    // (MaxAddress - PhysicalBase) + 1; when PhysicalBase == MaxAddress + 1
+    // the inner subtract wraps to UINT64_MAX and the + 1 wraps back to 0,
+    // which is the correct zero-length result.
+    //
+    virtualMemoryTable[index].Length = (MaxAddress - virtualMemoryTable[index].PhysicalBase) + 1;
+    virtualMemoryTable[index].Attributes = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    index++;
 
-    virtualMemoryTable[5].PhysicalBase = 0;
-    virtualMemoryTable[5].VirtualBase = 0;
-    virtualMemoryTable[5].Length = 0;
-    virtualMemoryTable[5].Attributes = 0;
+    // End-of-table sentinel.
+    virtualMemoryTable[index].PhysicalBase = 0;
+    virtualMemoryTable[index].VirtualBase = 0;
+    virtualMemoryTable[index].Length = 0;
+    virtualMemoryTable[index].Attributes = 0;
 
     // Lookup the Table Level to get the information
     LookupAddresstoRootTable(MaxAddress, &T0SZ, &RootTableEntryCount);
@@ -510,9 +576,7 @@ ConfigureMmu(
     //
     // Calculate new TCR value
     //
-    // Ideally we will be running at EL2, but should support EL1 as well.
-    // UEFI should not run at EL3.
-    if (ArmReadCurrentEL() == AARCH64_EL2)
+    if (!TranslationRegimeIsDual ())
     {
         //Note: Bits 23 and 31 are reserved(RES1) bits in TCR_EL2
         TCR = T0SZ | (1UL << 31) | (1UL << 23) | TCR_TG0_4KB;
@@ -542,6 +606,10 @@ ConfigureMmu(
         {
             TCR |= TCR_PS_256TB;
         }
+        else if ((MaxAddress < SIZE_4PB) && ArmHas52BitTgran4 ())
+        {
+            TCR |= TCR_PS_4PB | TCR_DS_NVHE;
+        }
         else
         {
             DEBUG((EFI_D_ERROR, "ArmConfigureMmu: The MaxAddress 0x%lX is not supported by this MMU configuration.\n", MaxAddress));
@@ -549,7 +617,7 @@ ConfigureMmu(
             return EFI_UNSUPPORTED;
         }
     }
-    else if (ArmReadCurrentEL() == AARCH64_EL1)
+    else
     {
         // Due to Cortex-A57 erratum #822227 we must set TG1[1] == 1, regardless of EPD1.
         TCR = T0SZ | TCR_TG0_4KB | TCR_TG1_4KB | TCR_EPD1;
@@ -579,17 +647,16 @@ ConfigureMmu(
         {
             TCR |= TCR_IPS_256TB;
         }
+        else if ((MaxAddress < SIZE_4PB) && ArmHas52BitTgran4 ())
+        {
+            TCR |= TCR_IPS_4PB | TCR_DS;
+        }
         else
         {
             DEBUG((EFI_D_ERROR, "ArmConfigureMmu: The MaxAddress 0x%lX is not supported by this MMU configuration.\n", MaxAddress));
-            ASSERT(0); // Bigger than 48-bit memory space are not supported
+            ASSERT (0); // Bigger than 48/52-bit memory space are not supported
             return EFI_UNSUPPORTED;
         }
-    }
-    else
-    {
-        ASSERT(0); // UEFI is only expected to run at EL2 and EL1, not EL3.
-        return EFI_UNSUPPORTED;
     }
 
     //
@@ -604,8 +671,6 @@ ConfigureMmu(
     TCR |= TCR_SH_INNER_SHAREABLE |
         TCR_RGN_OUTER_WRITE_BACK_ALLOC |
         TCR_RGN_INNER_WRITE_BACK_ALLOC;
-
-
 
     // Allocate page for root translation table
     TranslationTable = AllocatePages(1);
@@ -657,3 +722,23 @@ FREE_TRANSLATION_TABLE:
     return Status;
 }
 
+/**
+  Check whether a 52-bit output address can be described
+  by the translation tables (FEAT_LPA2).
+  @retval  TRUE    52-bit output address is enabled (LPA2 enabled).
+  @retval  FALSE   52-bit output address is disabled (LPA2 disabled).
+
+**/
+BOOLEAN
+ArmLpa2Enabled (
+  VOID
+  )
+{
+  UINT64 TCR;
+
+  TCR = ArmGetTCR ();
+
+  return !TranslationRegimeIsDual () ?
+         ((TCR & TCR_DS_NVHE) != 0) :
+         ((TCR & TCR_DS) != 0);
+}

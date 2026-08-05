@@ -155,6 +155,7 @@ READ_LOCK_STATUS   = TRUE
 #
 APRIORI PEI {
   INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 }
 
 #
@@ -164,6 +165,7 @@ INF MdeModulePkg/Core/Pei/PeiMain.inf
 INF MdeModulePkg/Universal/PCD/Pei/Pcd.inf
 INF MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
 INF SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf
+INF MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 INF RuleOverride = PLATFORM_PEI MsvmPkg/PlatformPei/PlatformPei.inf
 INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
@@ -283,6 +285,10 @@ INF MsvmPkg/VmMeasurementDxe/VmMeasurementDxe.inf
 INF MsvmPkg/VpcivscDxe/VpcivscDxe.inf
 INF MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
 
+# VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+INF VirtioPkg/Virtio10Dxe/Virtio10.inf
+INF VirtioPkg/VirtioBlkDxe/VirtioBlk.inf
+
 !if $(PRM_ENABLE) == TRUE
 INF PrmPkg/PrmConfigDxe/PrmConfigDxe.inf
 INF PrmPkg/Samples/PrmSampleAcpiParameterBufferModule/PrmSampleAcpiParameterBufferModule.inf
@@ -361,7 +367,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 
 [Rule.Common.PEI_CORE]
   FILE PEI_CORE = $(NAMED_GUID) {
-    PE32     PE32   Align=Auto  $(INF_OUTPUT)/$(MODULE_NAME).efi
+    PE32     PE32   Align=Auto    $(INF_OUTPUT)/$(MODULE_NAME).efi
     UI       STRING ="$(MODULE_NAME)" Optional
     VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
@@ -369,7 +375,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 [Rule.Common.PEIM]
   FILE PEIM = $(NAMED_GUID) {
      PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
-     PE32      PE32   Align=Auto         $(INF_OUTPUT)/$(MODULE_NAME).efi
+     PE32      PE32   Align=Auto           $(INF_OUTPUT)/$(MODULE_NAME).efi
      UI       STRING="$(MODULE_NAME)" Optional
      VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
@@ -385,7 +391,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 [Rule.Common.PEIM.PLATFORM_PEI]
   FILE PEIM = $(NAMED_GUID) {
      PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
-     PE32      PE32   Align=Auto         $(INF_OUTPUT)/$(MODULE_NAME).efi
+     PE32      PE32   Align=Auto           $(INF_OUTPUT)/$(MODULE_NAME).efi
      UI       STRING="$(MODULE_NAME)" Optional
      VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }

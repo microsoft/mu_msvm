@@ -63,6 +63,7 @@ DefinitionBlock (
         PADE,8,         // Processor Aggregator Device enabled/disabled
         CCFG,8,         // CXL memory support enabled/disabled
         NCNT,16,        // NVDIMM count
+        VCFG,8,         // VMBus enabled/disabled
     }
 
     // Supported machine sleep states =========================================
@@ -140,6 +141,7 @@ DefinitionBlock (
     {
         Name(_HID, "ACPI0004")
         Name(_UID, 0)
+
         Name(_CRS,
             ResourceTemplate()
             {
@@ -166,19 +168,27 @@ DefinitionBlock (
 
         Method(_INI, 0)
         {
-            // Update the DWORDMemory resource descriptor with the low MMIO region.
-            Store(MG2B, MIN6)
-            Store(MG2L, LEN6)
-            Store(MG2L, Local0)
-            Add(MIN6, Decrement(Local0), MAX6)
+            // Update the DWORDMemory descriptor with the low MMIO region
+            // only if the region has nonzero size.
+            If(LGreater(MG2L, 0))
+            {
+                Store(MG2B, MIN6)
+                Store(MG2L, LEN6)
+                Store(MG2L, Local0)
+                Add(MIN6, Decrement(Local0), MAX6)
+            }
 
-            // Update the QWORDMemory resource descriptor with the high MMIO region.
-            ShiftLeft (HMIB, 20, Local1)
-            ShiftLeft (HMIL, 20, Local2)
-            Store(Local1, MIN7)
-            Store(Local2, LEN7)
-            Store(Local2, Local0)
-            Add(MIN7, Decrement(Local0), MAX7)
+            // Update the QWORDMemory descriptor with the high MMIO region
+            // only if the region has nonzero size.
+            If(LGreater(HMIL, 0))
+            {
+                ShiftLeft (HMIB, 20, Local1)
+                ShiftLeft (HMIL, 20, Local2)
+                Store(Local1, MIN7)
+                Store(Local2, LEN7)
+                Store(Local2, Local0)
+                Add(MIN7, Decrement(Local0), MAX7)
+            }
         }
     }
 
@@ -306,74 +316,77 @@ DefinitionBlock (
 
     // VMBus ==================================================================
 
-    Device(\_SB.VMOD.VMBS)
+    If(LGreater(VCFG, 0))
     {
-        Name(STA, 0xF)
-        Name(_ADR, 0x00)
-#if defined(_DSDT_ARM_)
-        Name(_CCA, One)
-#endif
-        Name(_DDN, "VMBUS")
-        Name(_HID, "MSFT1000")
-        Name(_CID, "VMBus")
-        Name(_UID, 0)
-        Method(_DIS, 0) { And(STA, 0xD, STA) }
-        Method(_PS0, 0) { Or(STA, 0xF, STA) }
-        Method(_STA, 0)
+        Device(\_SB.VMOD.VMBS)
         {
-            return(STA)
-        }
-
-        // Older versions of this DSDT implemented _PS3 improperly, as:
-        //     Name(_PS3, 0)
-        // This is intentionally a do-nothing method in case any version of Windows requires _PS3 to be implemented
-
-        Method(_PS3, 0) { return(STA) }
-
-        // TODO: SPIs are not available to the guest on AARCH64, which is what
-        // PcdVmbusVector is currently defined as. Supposedly it should use a PPI,
-        // but those are strange because they're reserved for hypervisor devices.
-        //
-        // Windows doesn't boot when VmBus is given an SPI, since it's unable to
-        // allocate any since none exist in guests. Thus, leave it out on AARCH64
-        // for now.
-        //
-        // Linux may need this field if it's not hardcoded, unsure.
-        //
-        // Additionally, no Interrupt-Signaled event devices currently work either,
-        // due to SPIs not being available to guests.
-        Name(_CRS,
-
-            // Include an interrupt resource so that Linux VMs can get IDT
-            // entries.
-            //
-            // N.B. All Windows VMs that support UEFI also support
-            // getting IDT entries via other mechanisms, so this is not
-            // necessary for Windows.
-
-            ResourceTemplate()
+            Name(STA, 0xF)
+            Name(_ADR, 0x00)
+#if defined(_DSDT_ARM_)
+            Name(_CCA, One)
+#endif
+            Name(_DDN, "VMBUS")
+            Name(_HID, "MSFT1000")
+            Name(_CID, "VMBus")
+            Name(_UID, 0)
+            Method(_DIS, 0) { And(STA, 0xD, STA) }
+            Method(_PS0, 0) { Or(STA, 0xF, STA) }
+            Method(_STA, 0)
             {
+                return(STA)
+            }
+
+            // Older versions of this DSDT implemented _PS3 improperly, as:
+            //     Name(_PS3, 0)
+            // This is intentionally a do-nothing method in case any version of Windows requires _PS3 to be implemented
+
+            Method(_PS3, 0) { return(STA) }
+
+            // TODO: SPIs are not available to the guest on AARCH64, which is what
+            // PcdVmbusVector is currently defined as. Supposedly it should use a PPI,
+            // but those are strange because they're reserved for hypervisor devices.
+            //
+            // Windows doesn't boot when VmBus is given an SPI, since it's unable to
+            // allocate any since none exist in guests. Thus, leave it out on AARCH64
+            // for now.
+            //
+            // Linux may need this field if it's not hardcoded, unsure.
+            //
+            // Additionally, no Interrupt-Signaled event devices currently work either,
+            // due to SPIs not being available to guests.
+            Name(_CRS,
+
+                // Include an interrupt resource so that Linux VMs can get IDT
+                // entries.
+                //
+                // N.B. All Windows VMs that support UEFI also support
+                // getting IDT entries via other mechanisms, so this is not
+                // necessary for Windows.
+
+                ResourceTemplate()
+                {
 
 #if defined(_DSDT_INTEL_)
 
-                // Older Linux kernels like RHEL/CentOS don't seem to be able to
-                // parse the new Extended Interrupt Descriptor resource type (see ACPI Section 6.4.3.6),
-                // so we instead use the old legacy IRQ description which
-                // becomes the short form of Interrupt Descriptor (ACPI Section 5.4.2.1)
-                // which only supports legacy PIC devices to describe up to 15
-                // interrupts. VMBUS is interrupt 5 on X64, so this is okay.
-                IRQ(Edge,ActiveHigh,Exclusive)
-                    {FixedPcdGet8(PcdVmbusVector)}
+                    // Older Linux kernels like RHEL/CentOS don't seem to be able to
+                    // parse the new Extended Interrupt Descriptor resource type (see ACPI Section 6.4.3.6),
+                    // so we instead use the old legacy IRQ description which
+                    // becomes the short form of Interrupt Descriptor (ACPI Section 5.4.2.1)
+                    // which only supports legacy PIC devices to describe up to 15
+                    // interrupts. VMBUS is interrupt 5 on X64, so this is okay.
+                    IRQ(Edge,ActiveHigh,Exclusive)
+                        {FixedPcdGet8(PcdVmbusVector)}
 
 #else
-                // On AArch64, we select a PPI (16) because Linux expects it to
-                // be available to all CPUs.
-                Interrupt(ResourceConsumer, Edge, ActiveHigh, Exclusive)
-                   {FixedPcdGet8(PcdVmbusVector)}
+                    // On AArch64, we select a PPI (16) because Linux expects it to
+                    // be available to all CPUs.
+                    Interrupt(ResourceConsumer, Edge, ActiveHigh, Exclusive)
+                       {FixedPcdGet8(PcdVmbusVector)}
 
 #endif
-            }
-        )
+                }
+            )
+        }
     }
 
     // TPM ====================================================================

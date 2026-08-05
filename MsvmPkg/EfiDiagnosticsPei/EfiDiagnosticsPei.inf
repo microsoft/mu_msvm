@@ -1,0 +1,43 @@
+## @file
+#  EFI Diagnostics PEI module.
+#
+#  Publishes the AdvancedLogger buffer GPA to the host VMM so host-side
+#  diagnostics can find the in-memory log. Must be placed before PlatformPei
+#  in the FDF so it covers early-PEI crashes.
+#
+#  Copyright (c) Microsoft Corporation.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010017
+  BASE_NAME      = EfiDiagnosticsPei
+  FILE_GUID      = D7B6C7B8-5A9F-4B2E-9F4C-1D8E6A3B5C72
+  VERSION_STRING = 1.0
+  MODULE_TYPE    = PEIM
+  ENTRY_POINT    = EfiDiagnosticsPeiEntry
+
+[Sources]
+  EfiDiagnosticsPei.c
+
+[LibraryClasses]
+  DebugLib
+  EfiDiagnosticsLib
+  HobLib
+  PeimEntryPoint
+  PeiServicesLib
+
+[Packages]
+  AdvLoggerPkg/AdvLoggerPkg.dec
+  MdePkg/MdePkg.dec
+  MsvmPkg/MsvmPkg.dec
+
+[Guids]
+  gAdvancedLoggerHobGuid                                  ## CONSUMES
+
+[Ppis]
+  gEfiPeiMemoryDiscoveredPpiGuid                          ## NOTIFY
+  gEfiEndOfPeiSignalPpiGuid                               ## NOTIFY
+
+[Depex]
+  TRUE

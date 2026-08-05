@@ -111,6 +111,7 @@ READ_LOCK_STATUS   = TRUE
 #
 APRIORI PEI {
   INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 }
 
 #
@@ -124,6 +125,7 @@ INF MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
 INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
 INF MdeModulePkg/Core/Pei/PeiMain.inf
 INF MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
+INF MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
 INF MsvmPkg/PlatformPei/PlatformPei.inf
 INF SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf
 INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
@@ -162,10 +164,10 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
   INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
   INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
   INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   INF MsvmPkg/EventLogDxe/EventLogDxe.inf
-  INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
   INF MsvmPkg/VariableDxe/VariableDxe.inf
   INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
   INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
@@ -173,6 +175,7 @@ APRIORI DXE {
 
 INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
 INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf
@@ -228,7 +231,6 @@ INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
 INF MsvmPkg/SerialDxe/SerialDxe.inf
 INF MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
 INF MsvmPkg/StorvscDxe/StorvscDxe.inf
-INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
 INF MsvmPkg/SynthKeyDxe/SynthKeyDxe.inf
 INF MsvmPkg/VariableDxe/VariableDxe.inf
 INF MsvmPkg/VideoDxe/VideoDxe.inf
@@ -237,6 +239,10 @@ INF MsvmPkg/VmbusDxe/VmbusDxe.inf
 INF MsvmPkg/VmMeasurementDxe/VmMeasurementDxe.inf
 INF MsvmPkg/VpcivscDxe/VpcivscDxe.inf
 INF MsvmPkg/WatchdogTimerDxe/WatchdogTimerDxe.inf
+
+# VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+INF VirtioPkg/Virtio10Dxe/Virtio10.inf
+INF VirtioPkg/VirtioBlkDxe/VirtioBlk.inf
 
 !if $(PRM_ENABLE) == TRUE
 INF PrmPkg/PrmConfigDxe/PrmConfigDxe.inf
@@ -307,7 +313,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 
 [Rule.Common.PEI_CORE]
   FILE PEI_CORE = $(NAMED_GUID) {
-    PE32     PE32   Align=4K    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    PE32     PE32   Align=Auto    $(INF_OUTPUT)/$(MODULE_NAME).efi
     UI       STRING ="$(MODULE_NAME)" Optional
     VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
@@ -315,7 +321,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 [Rule.Common.PEIM]
   FILE PEIM = $(NAMED_GUID) {
      PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
-     PE32      PE32   Align=4K          $(INF_OUTPUT)/$(MODULE_NAME).efi
+     PE32      PE32   Align=Auto          $(INF_OUTPUT)/$(MODULE_NAME).efi
      UI       STRING="$(MODULE_NAME)" Optional
      VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }

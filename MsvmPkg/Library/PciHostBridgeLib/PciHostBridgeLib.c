@@ -1,8 +1,8 @@
 /** @file
   Platform PCI Host Bridge Library for Hyper-V Gen2 VMs.
 
-  Reads MCFG + PcieBarApertures from config blob PCDs and returns
-  a PCI_ROOT_BRIDGE array for PciHostBridgeDxe.
+  Reads MCFG from the ACPI replacement table HOB + PcieBarApertures from
+  config blob PCDs and returns a PCI_ROOT_BRIDGE array for PciHostBridgeDxe.
 
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -12,6 +12,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
+#include <Library/HobLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PciHostBridgeLib.h>
@@ -19,6 +20,7 @@
 #include <Protocol/PciHostBridgeResourceAllocation.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+#include <AcpiReplacementTable.h>
 #include <BiosInterface.h>
 #include <PciConstants.h>
 
@@ -62,9 +64,6 @@ PciHostBridgeGetRootBridges (
     OUT UINTN  *Count
     )
 {
-    UINT64                       McfgPtr;
-    UINT32                       McfgSize;
-    MCFG_TABLE_HEADER            *McfgHdr;
     UINT32                       McfgDataLen;
     UINT32                       McfgEntryCount;
     MCFG_ALLOCATION_ENTRY        *McfgEntries;
@@ -80,24 +79,15 @@ PciHostBridgeGetRootBridges (
     *Count = 0;
 
     //
-    // Read MCFG from PCD.
+    // Find MCFG table from HOB list.
     //
-    McfgPtr  = PcdGet64 (PcdMcfgPtr);
-    McfgSize = PcdGet32 (PcdMcfgSize);
+    MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable(
+        EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE);
 
-    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgPtr=0x%lx McfgSize=%u\n", McfgPtr, McfgSize));
+    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgHdr=%p\n", McfgHdr));
 
-    if (McfgPtr == 0 || McfgSize < sizeof (MCFG_TABLE_HEADER)) {
+    if (McfgHdr == NULL || McfgHdr->Header.Length < sizeof(MCFG_TABLE_HEADER)) {
         DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
-        return NULL;
-    }
-
-    McfgHdr = (MCFG_TABLE_HEADER *)(UINTN)McfgPtr;
-
-    if (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER) ||
-        McfgHdr->Header.Length > McfgSize) {
-        DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG Length %u (PCD size %u)\n",
-                McfgHdr->Header.Length, McfgSize));
         return NULL;
     }
 
@@ -154,26 +144,20 @@ PciHostBridgeGetRootBridges (
         UINT32  j;
 
         //
-        // Find the matching MCFG entry to get the ECAM base address
-        // and validate that the aperture bus range fits within it.
+        // Find the matching MCFG entry to get the ECAM base address.
+        // Match by segment number AND bus range containment — multiple MCFG
+        // entries per segment are allowed (PCI Firmware Spec §4.1.2) with
+        // disjoint bus ranges.
         //
         BOOLEAN McfgFound = FALSE;
         UINT64  EcamBase  = 0;
         for (j = 0; j < McfgEntryCount; j++) {
-            if (McfgEntries[j].PciSegmentGroupNumber == Segment) {
+            if (McfgEntries[j].PciSegmentGroupNumber == Segment &&
+                StartBus >= McfgEntries[j].StartBusNumber &&
+                EndBus   <= McfgEntries[j].EndBusNumber) {
                 McfgFound = TRUE;
                 EcamBase = McfgEntries[j].BaseAddress
                     + (UINT64)McfgEntries[j].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
-
-                if (StartBus < McfgEntries[j].StartBusNumber ||
-                    EndBus  > McfgEntries[j].EndBusNumber) {
-                    DEBUG ((DEBUG_ERROR,
-                            "PCIe: Aperture bus range %u..%u exceeds MCFG range %u..%u for segment %u\n",
-                            StartBus, EndBus,
-                            McfgEntries[j].StartBusNumber, McfgEntries[j].EndBusNumber,
-                            Segment));
-                    goto Cleanup;
-                }
                 break;
             }
         }
@@ -205,11 +189,12 @@ PciHostBridgeGetRootBridges (
                                                     EFI_PCI_HOST_BRIDGE_MEM64_DECODE;
 
         //
-        // ResourceAssigned = FALSE: PciHostBridgeDxe will go through the
-        // full PCI resource allocation protocol with PciBusDxe.  The ECAM
-        // ranges are reserved separately in the loop below.
+        // When PcdPciDisableBusEnumeration is TRUE, PciBusDxe uses the
+        // lightweight enumerator which requires pre-assigned resources.
+        // Setting ResourceAssigned = TRUE causes CreateRootBridge to mark
+        // apertures as ResAllocated so Configuration emits them.
         //
-        Bridges[BridgeCount].ResourceAssigned     = FALSE;
+        Bridges[BridgeCount].ResourceAssigned     = PcdGetBool(PcdPciDisableBusEnumeration);
 
         //
         // Bus aperture.

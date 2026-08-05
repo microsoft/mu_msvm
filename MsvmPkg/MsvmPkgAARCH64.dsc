@@ -84,6 +84,7 @@
 [LibraryClasses]
   AdvancedLoggerAccessLib|AdvLoggerPkg/Library/AdvancedLoggerAccessLib/AdvancedLoggerAccessLib.inf
   AdvancedLoggerHdwPortLib|AdvLoggerPkg/Library/AdvancedLoggerHdwPortLib/AdvancedLoggerHdwPortLib.inf
+  ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmMmuLib|UefiCpuPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
   ArmMonitorLib|ArmPkg/Library/ArmMonitorLib/ArmMonitorLib.inf
@@ -104,6 +105,7 @@
   DefaultExceptionHandlerLib|MsvmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf
   DeviceStateLib|MdeModulePkg/Library/DeviceStateLib/DeviceStateLib.inf
   DisplayDeviceStateLib|MsGraphicsPkg/Library/ColorBarDisplayDeviceStateLib/ColorBarDisplayDeviceStateLib.inf
+  EfiDiagnosticsLib|MsvmPkg/Library/EfiDiagnosticsLib/EfiDiagnosticsLib.inf
   EmclLib|MsvmPkg/Library/EmclLib/EmclLib.inf
   FltUsedLib|MsCorePkg/Library/FltUsedLib/FltUsedLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
@@ -136,12 +138,17 @@
   SynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
   Tpm2CommandLib|SecurityPkg/Library/Tpm2CommandLib/Tpm2CommandLib.inf
   Tpm2HelpLib|SecurityPkg/Library/Tpm2HelpLib/Tpm2HelpLib.inf
-  TimerLib|MsvmPkg/Library/HvTimerLib/HvTimerLib.inf
+  TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
   UefiDecompressLib|MdePkg/Library/BaseUefiDecompressLib/BaseUefiDecompressLib.inf
   UefiScsiLib|MdePkg/Library/UefiScsiLib/UefiScsiLib.inf
   UiRectangleLib|MsGraphicsPkg/Library/BaseUiRectangleLib/BaseUiRectangleLib.inf
   VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
+
+  # VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+  VirtioLib|VirtioPkg/Library/VirtioLib/VirtioLib.inf
+  PciCapLib|VirtioPkg/Library/BasePciCapLib/BasePciCapLib.inf
+  PciCapPciIoLib|VirtioPkg/Library/UefiPciCapPciIoLib/UefiPciCapPciIoLib.inf
 
 !if $(DEBUGLIB_SERIAL) == 1
   SerialPortLib|ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf
@@ -355,7 +362,10 @@
 
 [PcdsFixedAtBuild.common]
   # Advanced Logger Config
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|1     # Size is 4KB
+  # PreMemPages comes from the SEC temp-RAM PEI heap. On X64, 6 is the
+  # ceiling (7+ exhausts temp RAM) and 2 is the empirical minimum that
+  # still captures early-PEI failure logs. Kept symmetric with X64.
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPreMemPages|2     # Size is 8KB
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerPages|1024        # Size is 4MB
 !if $(DEBUGLIB_SERIAL) == 1
   !ifdef DEBUG_NOISY
@@ -430,6 +440,15 @@
   gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV|20
   gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV|21
 
+  # ARM architectural timer interrupt numbers for ArmPkg TimerDxe.
+  gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|19
+  gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum|20
+  gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum|21
+  # This is actually the reserved PPI for SINT for Linux L1VH use. But it's
+  # not in use during UEFI boot, and the upstream code demands a valid value
+  # here, so use this since it's guaranteed not to be used by something else.
+  gArmTokenSpaceGuid.PcdArmArchTimerSecIntrNum|22
+
   #
   # Static initial memory config - presumes minimum 64MB in VM
   # Page table, stack, and heap are hard-coded in host worker process.
@@ -454,7 +473,13 @@
   # NOTE: Additional debug levels may cause the in-memory advanced logger
   # buffer to exceed its defined limit (see PcdAdvancedLoggerPages)
   #
+  # 0x80000042 = DEBUG_ERROR | DEBUG_INFO | DEBUG_WARN
+  # 0x804FEF4B = DEBUG_ERROR | DEBUG_VERBOSE | other noisy debug levels
+!ifdef DEBUG_NOISY
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x804FEF4B
+!else
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
+!endif
 
 # Disable asserts when not building debug
 !if $(TARGET) == DEBUG
@@ -537,6 +562,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeUseMemory|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeUseSerial|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformRecoverySupport|FALSE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration|FALSE
 
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|0x0
 
@@ -697,6 +723,9 @@
   gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated|FALSE
   gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled|TRUE
+  gMsvmPkgTokenSpaceGuid.PcdHvEnabled|TRUE
+  gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0
@@ -746,6 +775,9 @@
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary|0x0
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask|0x0
 
+  # DMA configuration
+  gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired|FALSE
+
   # UEFI_CONFIG_PCIE_BAR_APERTURES
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0
@@ -772,6 +804,7 @@
   MdeModulePkg/Core/Pei/PeiMain.inf
   MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
   MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
   MsvmPkg/PlatformPei/PlatformPei.inf
   MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
   SecurityPkg/RandomNumberGenerator/RngPei/RngPei.inf {
@@ -798,12 +831,10 @@
   MdeModulePkg/Core/Dxe/DxeMain.inf {
     <LibraryClasses>
       NULL|MsCorePkg/Library/DebugPortProtocolInstallLib/DebugPortProtocolInstallLib.inf
-      ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
       DebugTransportLib|MsvmPkg/Library/DebugTransportLibMsvm/DebugTransportLibMsvm.inf
       DebugAgentLib|DebuggerFeaturePkg/Library/DebugAgent/DebugAgentDxe.inf
       PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
       SerialPortLib|ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf
-      TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
       TransportLogControlLib|DebuggerFeaturePkg/Library/TransportLogControlLibNull/TransportLogControlLibNull.inf
   }
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
@@ -886,10 +917,14 @@
   MsvmPkg/SmbiosPlatformDxe/SmbiosPlatformDxe.inf
   MsvmPkg/StorvscDxe/StorvscDxe.inf
   MsvmPkg/SynthKeyDxe/SynthKeyDxe.inf
-  MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
+  ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   MsvmPkg/VariableDxe/VariableDxe.inf
   MsvmPkg/VideoDxe/VideoDxe.inf
   MsvmPkg/VmbfsDxe/VmbfsDxe.inf
+
+  # VirtIo (virtio-blk over PCI) support, ported from OvmfPkg (VirtioPkg)
+  VirtioPkg/Virtio10Dxe/Virtio10.inf
+  VirtioPkg/VirtioBlkDxe/VirtioBlk.inf
   MsvmPkg/VmbusDxe/VmbusDxe.inf
   MsvmPkg/VmMeasurementDxe/VmMeasurementDxe.inf
   MsvmPkg/VpcivscDxe/VpcivscDxe.inf

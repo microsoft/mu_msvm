@@ -14,7 +14,7 @@
 
 #include <IsolationTypes.h>
 #include <Library/PcdLib.h>
-
+#include <UefiConstants.h>
 //
 // Module globals for host visibility and shared GPA translation.
 //
@@ -34,10 +34,73 @@ LIST_ENTRY           mAllocContextListHead;
 //
 LIST_ENTRY           mBounceBlockListHead;
 
+//
+// Bounce dispatch state, resolved once at driver entry. A set of
+// IOMMU_BOUNCE_MODE_* flags describing which per-region obligations
+// (host visibility, pinning) wrap the bounced DMA. See
+// IoMmuComputeBounceMode for the resolution policy and IOMMU_BOUNCE_MODE
+// in IoMmuBounce.h for why this is a bitmask rather than an enum.
+//
+IOMMU_BOUNCE_MODE  mBounceMode = IOMMU_BOUNCE_MODE_NONE;
 
 /**
-  Initialize the bounce buffer subsystem. Caches PCDs and locates
-  the hypervisor IVM protocol.
+  Resolve the bounce dispatch flags. Cached in mBounceMode at init and
+  consulted by all subsequent dispatch decisions. See IOMMU_BOUNCE_MODE
+  in IoMmuBounce.h for the two-tier composition model.
+
+  Hard-requirement predicates (compose):
+    - IsIsolated() -> BOUNCE | HOST_VISIBILITY
+    - PcdDmaPinningRequired -> BOUNCE | PINNING
+
+  Soft override from PcdForceDmaBounceEnabled: when TRUE, force BOUNCE on 
+  regardless of the hard-requirement predicates above.
+
+  @retval IOMMU_BOUNCE_MODE   Bitmask of resolved dispatch flags.
+**/
+IOMMU_BOUNCE_MODE
+IoMmuComputeBounceMode (
+    VOID
+    )
+{
+    IOMMU_BOUNCE_MODE  Mode;
+
+    Mode = IOMMU_BOUNCE_MODE_NONE;
+
+    //
+    // Hard requirement: isolated VM.
+    //
+    if (IsIsolated ()) {
+        DEBUG((DEBUG_INFO, "%a: VM is isolated\n", __FUNCTION__));
+        Mode |= IOMMU_BOUNCE_MODE_BOUNCE | IOMMU_BOUNCE_MODE_HOST_VISIBILITY;
+    }
+
+    //
+    // Hard requirement: hypervisor requires DMA buffers to be pinned.
+    // PcdDmaPinningRequired is set at PEI by the hypervisor capability
+    // probe (e.g. VA-backed VMs advertising HvCallPin/UnpinGpaPageRanges).
+    //
+    if (PcdGetBool (PcdDmaPinningRequired)) {
+        DEBUG((DEBUG_INFO, "%a: Hypervisor requires DMA pinning\n", __FUNCTION__));
+        Mode |= IOMMU_BOUNCE_MODE_BOUNCE | IOMMU_BOUNCE_MODE_PINNING;
+    }
+
+    //
+    // Soft override: VMM-configured intent.
+    //
+    if (PcdGetBool (PcdForceDmaBounceEnabled)) {
+        DEBUG((DEBUG_INFO, "%a: Forcing DMA bounce\n", __FUNCTION__));
+        Mode |= IOMMU_BOUNCE_MODE_BOUNCE;
+    }
+
+    return Mode;
+}
+
+
+/**
+  Initialize the bounce buffer subsystem. Allocates pool tracking state
+  and locates the hypervisor IVM protocol when isolation visibility is
+  required. The caller must have already assigned mBounceMode (via
+  IoMmuComputeBounceMode) before invoking this.
 
   @retval EFI_SUCCESS           Initialization successful.
   @retval other                 Failed to locate the HV IVM protocol.
@@ -53,10 +116,12 @@ IoMmuInitializeBounce (
     mSharedGpaBoundary = (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdIsolationSharedGpaBoundary);
     mCanonicalizationMask = PcdGet64 (PcdIsolationSharedGpaCanonicalizationBitmask);
 
-    if (!IsIsolated ()) {
+    if (!IoMmuRequiresHostVisibility () && !IoMmuRequiresPinning ()) {
         //
-        // Bounce buffering and host-visibility hypercalls are not used when the
-        // VM is not isolated, so don't require the HV IVM protocol.
+        // The HV IVM protocol is only used for per-range host visibility
+        // and pinning. Skip the locate when neither obligation is set so
+        // the driver can come up in pure-bounce and pass-through modes
+        // even when no provider exposes the protocol.
         //
         mHvIvm = NULL;
         return EFI_SUCCESS;
@@ -68,16 +133,53 @@ IoMmuInitializeBounce (
 
 /**
   Return TRUE if bounce buffering should be used for DMA operations.
+  Callers should not assume the VM is isolated when this returns TRUE
+  (bouncing also runs in non-isolated VA-backed scenarios).
 
-  @retval TRUE    The VM is isolated and bounce buffering is required.
-  @retval FALSE   No isolation; DMA can access all memory directly.
+  @retval TRUE    Bounce buffering is active.
+  @retval FALSE   DMA can access guest memory directly; no bouncing needed.
 **/
 BOOLEAN
 IoMmuIsBounceActive (
     VOID
     )
 {
-    return IsIsolated ();
+    return (mBounceMode & IOMMU_BOUNCE_MODE_BOUNCE) != 0;
+}
+
+
+/**
+  Return TRUE if bounce regions must be made host-visible via the HV
+  IVM protocol. Mirrors IoMmuIsBounceActive for the HOST_VISIBILITY
+  obligation bit so dispatch sites read as a policy question rather
+  than a raw bitmask test.
+
+  @retval TRUE    Bounce regions require host-visibility hypercalls.
+  @retval FALSE   No host-visibility obligation; the HV IVM protocol
+                  is not consulted.
+**/
+BOOLEAN
+IoMmuRequiresHostVisibility (
+    VOID
+    )
+{
+    return (mBounceMode & IOMMU_BOUNCE_MODE_HOST_VISIBILITY) != 0;
+}
+
+
+/**
+  Return TRUE if bounce regions must be pinned via the HV IVM protocol.
+
+  @retval TRUE    Bounce regions require pinning hypercalls.
+  @retval FALSE   No pinning obligation; the HV IVM protocol is not
+                  consulted for pinning.
+**/
+BOOLEAN
+IoMmuRequiresPinning (
+    VOID
+    )
+{
+    return (mBounceMode & IOMMU_BOUNCE_MODE_PINNING) != 0;
 }
 
 
@@ -124,67 +226,104 @@ IoMmuGetSharedVa (
 
 
 /**
-  Make an address range host-visible for DMA.
+  Apply the configured hypervisor obligations for DMA over an address range.
 
-  @param[in]  BaseAddress         Base address of the range.
-  @param[in]  PageCount           Number of pages in the range.
-  @param[out] VisibilityContext   Context for revoking visibility later.
+  @param[in]  BaseAddress   Base address of the range.
+  @param[in]  PageCount     Number of pages in the range.
+  @param[out] DmaContext    Context for releasing DMA preparation later.
 
-  @retval EFI_SUCCESS             Range is now host-visible.
-  @retval other                   Hypervisor call failed.
+  @retval EFI_SUCCESS              Range is ready for host DMA.
+  @retval EFI_INVALID_PARAMETER    DmaContext is NULL.
+  @retval other                    Hypervisor call failed.
 **/
 EFI_STATUS
-IoMmuMakeAddressRangeShared (
+IoMmuPrepareAddressRangeForDma (
     IN  VOID                            *BaseAddress,
     IN  UINT32                          PageCount,
-    OUT IOMMU_HOST_VISIBILITY_CONTEXT   *VisibilityContext
+    OUT IOMMU_DMA_RANGE_CONTEXT         *DmaContext
     )
 {
     EFI_STATUS  Status;
 
-    if (!IsIsolated ()) {
-        //
-        // No isolation: host already has access to all guest memory, so
-        // there is no visibility hypercall to make. Clear the protection
-        // handle so a later IoMmuMakeAddressRangePrivate is a no-op too.
-        //
-        if (VisibilityContext != NULL) {
-            VisibilityContext->RangeProtectionHandle = NULL;
-        }
-        return EFI_SUCCESS;
+    if (DmaContext == NULL) {
+        return EFI_INVALID_PARAMETER;
     }
 
-    Status = mHvIvm->MakeAddressRangeHostVisible (
-                 mHvIvm,
-                 HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE,
-                 BaseAddress,
-                 PageCount * EFI_PAGE_SIZE,
-                 FALSE,
-                 &VisibilityContext->RangeProtectionHandle
-                 );
+    //
+    // Always clear the hypervisor state first so the matching
+    // IoMmuReleaseAddressRangeFromDma call unwinds only obligations that
+    // were applied successfully.
+    //
+    DmaContext->RangeProtectionHandle = NULL;
+    DmaContext->BaseAddress = BaseAddress;
+    DmaContext->PageCount = PageCount;
+    DmaContext->PinApplied = FALSE;
 
-    return Status;
+    if (IoMmuRequiresHostVisibility ()) {
+        Status = mHvIvm->MakeAddressRangeHostVisible (
+                     mHvIvm,
+                     HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE,
+                     BaseAddress,
+                     PageCount * EFI_PAGE_SIZE,
+                     FALSE,
+                     &DmaContext->RangeProtectionHandle
+                     );
+        if (EFI_ERROR (Status)) {
+            return Status;
+        }
+    }
+
+    if (IoMmuRequiresPinning ()) {
+        Status = mHvIvm->PinAddressRange (
+                     mHvIvm,
+                     BaseAddress,
+                     PageCount * EFI_PAGE_SIZE,
+                     &DmaContext->PinApplied
+                     );
+        if (EFI_ERROR (Status)) {
+            DEBUG ((DEBUG_ERROR, "%a: Failed to pin address range: %r\n", __func__, Status));
+            if (IoMmuRequiresHostVisibility ()) {
+                mHvIvm->MakeAddressRangeNotHostVisible (
+                           mHvIvm,
+                           &DmaContext->RangeProtectionHandle
+                           );
+            }
+
+            return Status;
+        }
+    }
+
+    return EFI_SUCCESS;
 }
 
 
 /**
-  Revoke host visibility for an address range.
+  Release the configured hypervisor obligations for a DMA address range.
 
-  @param[in]  VisibilityContext   Context from a prior MakeAddressRangeShared call.
+  @param[in]  DmaContext   Context from a prior IoMmuPrepareAddressRangeForDma call.
 **/
 VOID
-IoMmuMakeAddressRangePrivate (
-    IN IOMMU_HOST_VISIBILITY_CONTEXT    *VisibilityContext
+IoMmuReleaseAddressRangeFromDma (
+    IN IOMMU_DMA_RANGE_CONTEXT          *DmaContext
     )
 {
-    if (!IsIsolated ()) {
-        //
-        // No isolation: nothing was made host-visible, so nothing to revoke.
-        //
-        return;
+    //
+    // Symmetric to IoMmuPrepareAddressRangeForDma. Each obligation is
+    // unwound only if it was applied in the first place; unpin before
+    // revoking host visibility so the host stops touching the pages first.
+    //
+    if (DmaContext->PinApplied) {
+        mHvIvm->UnpinAddressRange (
+                   mHvIvm,
+                   DmaContext->BaseAddress,
+                   DmaContext->PageCount * EFI_PAGE_SIZE
+                   );
+        DmaContext->PinApplied = FALSE;
     }
 
-    mHvIvm->MakeAddressRangeNotHostVisible (mHvIvm, &VisibilityContext->RangeProtectionHandle);
+    if (IoMmuRequiresHostVisibility ()) {
+        mHvIvm->MakeAddressRangeNotHostVisible (mHvIvm, &DmaContext->RangeProtectionHandle);
+    }
 }
 
 
@@ -192,13 +331,13 @@ IoMmuMakeAddressRangePrivate (
 // ---------------------------------------------------------------------------
 // Pre-allocated bounce block pool.
 //
-// Each IOMMU_BOUNCE_BLOCK is a contiguous, host-visible region of pages
+// Each IOMMU_BOUNCE_BLOCK is a contiguous, DMA-prepared region of pages
 // allocated below 4GB. Map() requests are satisfied by sub-allocating a
 // contiguous run of free pages from one of the blocks (via the per-block
 // AllocBitmap). If no existing block can satisfy a request, a new block is
-// allocated and made host-visible (one hypercall per new block, not per
-// Map). Blocks are kept around for the lifetime of the driver to amortize
-// the cost of host-visibility hypercalls across many DMA operations.
+// allocated and prepared for DMA (one set of hypervisor calls per new
+// block, not per Map). Blocks are kept around for the lifetime of the
+// driver to amortize the cost across many DMA operations.
 // ---------------------------------------------------------------------------
 //
 
@@ -270,7 +409,7 @@ UpdateBitmapRun (
 
 
 /**
-  Allocate a new bounce block of `PageCount` pages, make it host-visible,
+  Allocate a new bounce block of `PageCount` pages, prepare it for DMA,
   and insert it at the tail of the bounce block list.
 
   @param[in]   PageCount   Number of pages in the new block.
@@ -329,16 +468,16 @@ IoMmuPreAllocateBounceBlock (
     Block->BlockPageCount  = PageCount;
     Block->BitmapWordCount = BitmapWordCount;
     Block->InUsePageCount  = 0;
-    Block->IsHostVisible   = FALSE;
+    Block->IsPreparedForDma = FALSE;
 
-    Status = IoMmuMakeAddressRangeShared (
+    Status = IoMmuPrepareAddressRangeForDma (
                  Block->BlockBase,
                  PageCount,
-                 &Block->VisibilityContext
+                 &Block->DmaContext
                  );
     if (EFI_ERROR (Status)) {
         DEBUG ((DEBUG_ERROR,
-            "IoMmu: AllocateBounceBlock: MakeAddressRangeShared failed: %r\n",
+            "IoMmu: AllocateBounceBlock: PrepareAddressRangeForDma failed: %r\n",
             Status));
         gBS->FreePages (PhysicalAddress, PageCount);
         FreePool (Block->AllocBitmap);
@@ -346,7 +485,7 @@ IoMmuPreAllocateBounceBlock (
         return Status;
     }
 
-    Block->IsHostVisible = TRUE;
+    Block->IsPreparedForDma = TRUE;
     InsertTailList (&mBounceBlockListHead, &Block->Link);
 
     DEBUG ((DEBUG_INFO,

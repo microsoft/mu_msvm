@@ -12,7 +12,6 @@
 #include <Protocol/SimpleFileSystem.h>
 
 #include <Library/BaseMemoryLib.h>
-#include <Library/BiosDeviceLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DeviceBootManagerLib.h>
 #include <Library/DevicePathLib.h>
@@ -26,7 +25,6 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <BiosInterface.h>
 
 #include <Guid/UnableToBootEvent.h>
 #include <VirtualDeviceId.h>
@@ -425,6 +423,10 @@ DeviceBootManagerBeforeConsole (
     *DevicePath = NULL;
     *PlatformConsoles = NULL;
 
+    if (!PcdGetBool(PcdVmbusEnabled)) {
+        goto Exit;
+    }
+
     Status = gBS->LocateHandleBuffer (
        ByProtocol,
        &gEfiVmbusProtocolGuid,
@@ -674,19 +676,14 @@ DeviceBootManagerUnableToBoot (
     }
 
     //
-    // Signal the Unable To Boot event to notify listeners
+    // Signal the Unable To Boot event to notify listeners (including
+    // EfiDiagnosticsDxe, which tells the host to process EFI diagnostics).
     //
     DEBUG ((DEBUG_INFO, "Signaling Unable To Boot event\n"));
     Status = EfiEventGroupSignal (&gMsvmUnableToBootEventGuid);
     if (EFI_ERROR (Status)) {
         DEBUG ((DEBUG_ERROR, "Failed to signal Unable To Boot event: %r\n", Status));
     }
-
-    //
-    // Tell the host to collect EFI diagnostics.
-    //
-    DEBUG((EFI_D_INFO, "Signaling BIOS device to collect EFI diagnostics...\n"));
-    WriteBiosDevice(BiosConfigProcessEfiDiagnostics, TRUE);
 
     //
     // BootManagerMenu doesn't contain the correct information when return status is EFI_NOT_FOUND.

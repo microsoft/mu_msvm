@@ -61,8 +61,7 @@
 [Protocols]
   gEfiEventLogProtocolGuid                      ## PRODUCES
   gEfiFirmwareVolume2ProtocolGuid               ## CONSUMES
-  gEfiHvIvmProtocolGuid                         ## CONSUMES
-  gEfiHvProtocolGuid                            ## CONSUMES
+  gEfiHvIvmProtocolGuid                         ## SOMETIMES_CONSUMES
   gEfiRscHandlerProtocolGuid                    ## CONSUMES
   gEfiStatusCodeRuntimeProtocolGuid             ## PRODUCES
 

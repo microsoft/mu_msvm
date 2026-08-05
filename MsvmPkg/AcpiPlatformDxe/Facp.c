@@ -48,9 +48,12 @@ Return Value:
     }
 
     //
-    // Set the hypervisor vendor identity to MsHyperV
+    // Set the hypervisor vendor identity to MsHyperV when Hv is enabled.
     //
-    CopyMem(&facp->HypervisorVendorIdentity, "MsHyperV", 8);
+    if (PcdGetBool(PcdHvEnabled))
+    {
+        CopyMem(&facp->HypervisorVendorIdentity, "MsHyperV", 8);
+    }
 
     if (PcdGetBool(PcdLowPowerS0IdleEnabled))
     {

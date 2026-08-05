@@ -69,9 +69,10 @@
 
 [LibraryClasses.AARCH64]
     ArmLib
+    HvHypercallLib
 
 [Guids]
-    gAdvancedLoggerHobGuid
+    gAcpiReplacementTableHobGuid
     gDxeMemoryProtectionSettingsGuid
     gEfiMemoryTypeInformationGuid
     gMsvmDebuggerEnabledGuid
@@ -82,6 +83,7 @@
 
 [Pcd]
     gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeNamespaceFilterId
+    gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration
     gEfiNetworkPkgTokenSpaceGuid.PcdDhcp6UidType
     gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdFdSize
@@ -91,22 +93,8 @@
     gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
     gMsvmPkgTokenSpaceGuid.PcdConfigBlobSize
     gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap
-    gMsvmPkgTokenSpaceGuid.PcdIortPtr
-    gMsvmPkgTokenSpaceGuid.PcdIortSize
     gMsvmPkgTokenSpaceGuid.PcdMadtPtr
     gMsvmPkgTokenSpaceGuid.PcdMadtSize
-    gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
-    gMsvmPkgTokenSpaceGuid.PcdMcfgSize
-    gMsvmPkgTokenSpaceGuid.PcdSratPtr
-    gMsvmPkgTokenSpaceGuid.PcdSratSize
-    gMsvmPkgTokenSpaceGuid.PcdSlitPtr
-    gMsvmPkgTokenSpaceGuid.PcdSlitSize
-    gMsvmPkgTokenSpaceGuid.PcdSsdtPtr
-    gMsvmPkgTokenSpaceGuid.PcdSsdtSize
-    gMsvmPkgTokenSpaceGuid.PcdPpttPtr
-    gMsvmPkgTokenSpaceGuid.PcdPpttSize
-    gMsvmPkgTokenSpaceGuid.PcdHmatPtr
-    gMsvmPkgTokenSpaceGuid.PcdHmatSize
     gMsvmPkgTokenSpaceGuid.PcdMemoryMapPtr
     gMsvmPkgTokenSpaceGuid.PcdMemoryMapSize
     gMsvmPkgTokenSpaceGuid.PcdEntropyPtr
@@ -182,20 +170,22 @@
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapBasePageNumber
     gMsvmPkgTokenSpaceGuid.PcdHighMmioGapSizeInPages
     gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTablePtr
-    gMsvmPkgTokenSpaceGuid.PcdAcpiTableSize
     gMsvmPkgTokenSpaceGuid.PcdNvdimmCount
     gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr
     gMsvmPkgTokenSpaceGuid.PcdIsolationArchitecture
     gMsvmPkgTokenSpaceGuid.PcdIsolationParavisorPresent
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
+    gMsvmPkgTokenSpaceGuid.PcdDmaPinningRequired
     gMsvmPkgTokenSpaceGuid.PcdSvsmCallingArea
     gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated
     gMsvmPkgTokenSpaceGuid.PcdWatchdogEnabled
     gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
     gMsvmPkgTokenSpaceGuid.PcdTpmLocalityRegsEnabled
     gMsvmPkgTokenSpaceGuid.PcdMtrrsInitializedAtLoad
+    gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled
+    gMsvmPkgTokenSpaceGuid.PcdHvEnabled
+    gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 
@@ -210,12 +200,13 @@
     gEfiMdeModulePkgTokenSpaceGuid.PcdUse1GPageTable
     gEfiSecurityPkgTokenSpaceGuid.TcgMeasureBootStringsInPcr4
     gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
-    gMsvmPkgTokenSpaceGuid.PcdAsptPtr
-    gMsvmPkgTokenSpaceGuid.PcdAsptSize
     gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements
 
 [Ppis]
     gEfiPeiMasterBootModePpiGuid
+
+[Ppis.AARCH64]
+    gMsvmSecPlatformTypePpiGuid                   ## CONSUMES
 
 [Depex]
     TRUE

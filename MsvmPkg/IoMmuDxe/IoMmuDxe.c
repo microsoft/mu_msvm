@@ -61,13 +61,13 @@ IoMmuSetAttribute (
 /**
   EDKII_IOMMU_PROTOCOL.Map - Map a host address for DMA.
 
-  For BusMasterCommonBuffer: the memory was already made host-visible by
+  For BusMasterCommonBuffer: the memory was already prepared for DMA by
   AllocateBuffer; returns the shared physical address directly.
 
-  For BusMasterRead (host→device): acquires bounce pages, copies data into
+  For BusMasterRead (host->device): acquires bounce pages, copies data into
   them, and returns the bounce physical address.
 
-  For BusMasterWrite (device→host): acquires bounce pages, zeroes them,
+  For BusMasterWrite (device->host): acquires bounce pages, zeroes them,
   and returns the bounce physical address. Data is copied back on Unmap.
 
   @param[in]      This            Protocol instance.
@@ -180,7 +180,7 @@ IoMmuMap (
     }
 
     //
-    // For BusMasterCommonBuffer, the memory was already made host-visible
+    // For BusMasterCommonBuffer, the memory was already prepared for DMA
     // via AllocateBuffer. Just return the shared PA.
     //
     if (Operation == EdkiiIoMmuOperationBusMasterCommonBuffer ||
@@ -193,8 +193,8 @@ IoMmuMap (
     //
     // For BusMasterRead/Write, sub-allocate a contiguous run of pages from
     // the pre-allocated bounce block pool. The owning block has already
-    // been made host-visible at allocation time, so this avoids the
-    // per-Map MakeAddressRangeHostVisible hypercall.
+    // been prepared for DMA at allocation time, so this avoids per-Map
+    // hypervisor calls.
     //
     {
         PIOMMU_MAP_CONTEXT              MapContext;
@@ -365,8 +365,8 @@ IoMmuUnmap (
 
     //
     // Release the bounce pages back to the pool. The owning bounce block
-    // remains host-visible for its lifetime, so no per-Unmap hypercall is
-    // required.
+    // remains prepared for DMA for its lifetime, so no per-Unmap hypervisor
+    // call is required.
     //
     if ((MapContext->Operation != EdkiiIoMmuOperationBusMasterCommonBuffer) &&
       (MapContext->Operation != EdkiiIoMmuOperationBusMasterCommonBuffer64))
@@ -387,7 +387,7 @@ IoMmuUnmap (
 /**
   EDKII_IOMMU_PROTOCOL.AllocateBuffer - Allocate DMA-capable memory.
 
-  Allocates pages and makes them host-visible so the device can DMA to them.
+  Allocates pages and prepares them for DMA.
   Returns a canonicalized shared VA that maps above the shared GPA boundary.
 
   When EDKII_IOMMU_ATTRIBUTE_DUAL_ADDRESS_CYCLE is not set the allocation is
@@ -402,9 +402,9 @@ IoMmuUnmap (
   @param[in,out]  HostAddress   On output, the shared VA pointer.
   @param[in]      Attributes    Allocation attributes (EDKII_IOMMU_ATTRIBUTE_*).
 
-  @retval EFI_SUCCESS              Memory allocated and made host-visible.
-  @retval EFI_INVALID_PARAMETER    This, HostAddress, or Pages is invalid.
-  @retval EFI_OUT_OF_RESOURCES     Allocation or visibility call failed.
+  @retval EFI_SUCCESS           Memory allocated and prepared for DMA.
+  @retval EFI_INVALID_PARAMETER This, HostAddress, or Pages is invalid.
+  @retval EFI_OUT_OF_RESOURCES  Allocation or DMA preparation failed.
 **/
 STATIC
 EFI_STATUS
@@ -419,7 +419,7 @@ IoMmuAllocateBuffer (
     )
 {
     EFI_STATUS                    Status;
-    IOMMU_HOST_VISIBILITY_CONTEXT VisibilityContext;
+    IOMMU_DMA_RANGE_CONTEXT       DmaContext;
     PIOMMU_ALLOC_CONTEXT          AllocContext;
     EFI_PHYSICAL_ADDRESS          PhysicalAddress;
 
@@ -459,12 +459,12 @@ IoMmuAllocateBuffer (
     }
 
     //
-    // Make the allocated range host-visible for DMA.
+    // Prepare the allocated range for DMA.
     //
-    Status = IoMmuMakeAddressRangeShared (
+    Status = IoMmuPrepareAddressRangeForDma (
                  (VOID *)(UINTN)PhysicalAddress,
                  (UINT32)Pages,
-                 &VisibilityContext
+                 &DmaContext
                  );
     if (EFI_ERROR (Status)) {
         gBS->FreePages (PhysicalAddress, Pages);
@@ -476,7 +476,7 @@ IoMmuAllocateBuffer (
     //
     AllocContext = AllocateZeroPool (sizeof (IOMMU_ALLOC_CONTEXT));
     if (AllocContext == NULL) {
-        IoMmuMakeAddressRangePrivate (&VisibilityContext);
+        IoMmuReleaseAddressRangeFromDma (&DmaContext);
         gBS->FreePages (PhysicalAddress, Pages);
         Status = EFI_OUT_OF_RESOURCES;
         goto End;
@@ -484,7 +484,7 @@ IoMmuAllocateBuffer (
 
     AllocContext->OriginalAddress   = (VOID *)(UINTN)PhysicalAddress;
     AllocContext->Pages             = Pages;
-    AllocContext->VisibilityContext = VisibilityContext;
+    AllocContext->DmaContext        = DmaContext;
     InsertTailList (&mAllocContextListHead, &AllocContext->Link);
 
     //
@@ -536,7 +536,7 @@ IoMmuFreeBuffer (
 
         if (IoMmuGetSharedVa (AllocContext->OriginalAddress) == HostAddress) {
             RemoveEntryList (Entry);
-            IoMmuMakeAddressRangePrivate (&AllocContext->VisibilityContext);
+            IoMmuReleaseAddressRangeFromDma (&AllocContext->DmaContext);
             FreePool (AllocContext);
             break;
         }
@@ -585,12 +585,19 @@ IoMmuDxeEntryPoint (
 {
     EFI_STATUS  Status;
 
+    //
+    // Resolve the bounce dispatch mode up front so the
+    // IoMmuIsBounceActive() / IoMmuRequiresHostVisibility() predicates
+    // read meaningful state for the rest of init (and for any later Map()
+    // calls that gate on them). Without this, the cached mode reads its
+    // default of IOMMU_BOUNCE_MODE_NONE and the driver short-circuits.
+    //
+    mBounceMode = IoMmuComputeBounceMode ();
+
     if (IoMmuIsBounceActive ()) {
-        //
-        // Bounce buffering is required: initialize the bounce buffer
-        // subsystem (caches PCDs, locates the HV IVM protocol, initializes
-        // list heads).
-        //
+        PIOMMU_BOUNCE_BLOCK  InitialBlock;
+        EFI_STATUS           BlockStatus;
+
         Status = IoMmuInitializeBounce ();
         if (EFI_ERROR (Status)) {
             DEBUG ((DEBUG_ERROR, "IoMmuDxe: Failed to initialize bounce buffers: %r\n", Status));
@@ -603,32 +610,22 @@ IoMmuDxeEntryPoint (
         // Failure here is non-fatal: subsequent Map() calls will lazily
         // allocate a block on demand.
         //
-        {
-            PIOMMU_BOUNCE_BLOCK  InitialBlock;
-            EFI_STATUS           BlockStatus;
-
-            BlockStatus = IoMmuPreAllocateBounceBlock (
-                              IOMMU_BOUNCE_INITIAL_BLOCK_PAGES,
-                              &InitialBlock
-                              );
-            if (EFI_ERROR (BlockStatus)) {
-                DEBUG ((DEBUG_WARN,
-                    "IoMmuDxe: Failed to pre-allocate initial bounce block: %r\n",
-                    BlockStatus));
-            } else {
-                DEBUG ((DEBUG_INFO,
-                    "IoMmuDxe: Pre-allocated initial bounce block (%d pages)\n",
-                    IOMMU_BOUNCE_INITIAL_BLOCK_PAGES));
-            }
+        BlockStatus = IoMmuPreAllocateBounceBlock (
+                          IOMMU_BOUNCE_INITIAL_BLOCK_PAGES,
+                          &InitialBlock
+                          );
+        if (EFI_ERROR (BlockStatus)) {
+            DEBUG ((DEBUG_WARN,
+                "IoMmuDxe: Failed to pre-allocate initial bounce block: %r\n",
+                BlockStatus));
+        } else {
+            DEBUG ((DEBUG_INFO,
+                "IoMmuDxe: Pre-allocated initial bounce block (%d pages)\n",
+                IOMMU_BOUNCE_INITIAL_BLOCK_PAGES));
         }
 
         DEBUG ((DEBUG_INFO, "IoMmuDxe: Bounce buffers initialized\n"));
     } else {
-        //
-        // Bounce buffering not required: initialize allocation tracking
-        // list head only. No bounce blocks or HV protocol needed.
-        //
-        InitializeListHead (&mAllocContextListHead);
         DEBUG ((DEBUG_INFO, "IoMmuDxe: Bounce buffering inactive, installing pass-through IOMMU protocol\n"));
     }
 

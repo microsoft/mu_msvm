@@ -13,6 +13,7 @@
 #include <Config.h>
 #include <Hob.h>
 #include <Hv.h>
+#include <AcpiReplacementTable.h>
 #include <Guid/MemoryTypeInformation.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
@@ -22,10 +23,10 @@
 #include <Library/HobLib.h>
 #include <Library/IoLib.h>
 #include <Library/DeviceStateLib.h>
-#include <AdvancedLoggerInternal.h>
 
 #if defined(MDE_CPU_AARCH64)
 #include <Mmu.h>
+#include <Ppi/SecPlatformType.h>
 #endif
 #if defined (MDE_CPU_X64)
 #include <Library/MtrrLib.h>
@@ -42,8 +43,6 @@
 #else
 #error Unsupported Architecture
 #endif
-
-extern EFI_GUID gAdvancedLoggerHobGuid;
 
 #if defined(MDE_CPU_X64)
 
@@ -701,45 +700,54 @@ Return Value:
 #endif
 
     //
-    // Low and high MMIO range
+    // Low and high MMIO ranges. Declared based on nonzero size rather than
+    // VMBus state, since chipset devices (e.g. TPM) may need low MMIO even
+    // without VMBus.
     //
+    if (PcdGet64(PcdLowMmioGapSizeInPages) > 0)
+    {
 #if defined (MDE_CPU_X64)
-    HobAddMmioRange(
-        PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB,
-        PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB
-        );
+        HobAddMmioRange(
+            PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB,
+            PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB
+            );
 #elif defined(MDE_CPU_AARCH64)
-    //
-    // For ARM64 we are still using the BiosDevice for runtime services.
-    // However the registers are now in MMIO space instead of IO space. Therefore the
-    // addresses need to be translated after the guest calls SetVirtualAddressMap.
-    // To have the address range included with the guest's call to SetVirtualAddressMap
-    // the range has to be declared as DXE runtime memory. That has to be done in DXE phase
-    // by a driver so the range can't be declared as MMIO here.  Therefore leave that page
-    // out of this early general platform declaration.
-    //
-    UINT64 GapBase = PcdGet32(PcdBiosBaseAddress);
-    UINT64 GapSize = SIZE_4KB;
-    UINT64 FirstRangeBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
-    UINT64 FirstRangeSize = GapBase - FirstRangeBase;
-    UINT64 SecondRangeBase = FirstRangeBase + FirstRangeSize + GapSize;
-    UINT64 SecondRangeSize = (PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB) -
-                             (FirstRangeSize + GapSize);
+        //
+        // For ARM64 we are still using the BiosDevice for runtime services.
+        // However the registers are now in MMIO space instead of IO space. Therefore the
+        // addresses need to be translated after the guest calls SetVirtualAddressMap.
+        // To have the address range included with the guest's call to SetVirtualAddressMap
+        // the range has to be declared as DXE runtime memory. That has to be done in DXE phase
+        // by a driver so the range can't be declared as MMIO here.  Therefore leave that page
+        // out of this early general platform declaration.
+        //
+        UINT64 GapBase = PcdGet32(PcdBiosBaseAddress);
+        UINT64 GapSize = SIZE_4KB;
+        UINT64 FirstRangeBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
+        UINT64 FirstRangeSize = GapBase - FirstRangeBase;
+        UINT64 SecondRangeBase = FirstRangeBase + FirstRangeSize + GapSize;
+        UINT64 SecondRangeSize = (PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB) -
+                                 (FirstRangeSize + GapSize);
 
-    HobAddMmioRange(
-        FirstRangeBase,
-        FirstRangeSize
-        );
+        HobAddMmioRange(
+            FirstRangeBase,
+            FirstRangeSize
+            );
 
-    HobAddMmioRange(
-        SecondRangeBase,
-        SecondRangeSize
-        );
+        HobAddMmioRange(
+            SecondRangeBase,
+            SecondRangeSize
+            );
 #endif
-    HobAddMmioRange(
-        PcdGet64(PcdHighMmioGapBasePageNumber) * SIZE_4KB,
-        PcdGet64(PcdHighMmioGapSizeInPages) * SIZE_4KB
-        );
+    }
+
+    if (PcdGet64(PcdHighMmioGapSizeInPages) > 0)
+    {
+        HobAddMmioRange(
+            PcdGet64(PcdHighMmioGapBasePageNumber) * SIZE_4KB,
+            PcdGet64(PcdHighMmioGapSizeInPages) * SIZE_4KB
+            );
+    }
 
     //
     // Read PcieBarApertures first -- these determine which bridges UEFI
@@ -763,60 +771,56 @@ Return Value:
     // in page tables for PciSegmentLib MMIO access, while keeping
     // non-enumerated ECAM ranges out of GCD entirely.
     //
-    UINT64 McfgPtr = PcdGet64(PcdMcfgPtr);
-    UINT32 McfgSize = PcdGet32(PcdMcfgSize);
-    if (McfgPtr != 0 && McfgSize >= sizeof(MCFG_TABLE_HEADER)) {
-        MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)(UINTN) McfgPtr;
+    MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable(
+        EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE);
 
-        if (McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER) &&
-            McfgHdr->Header.Length <= McfgSize) {
-            UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
-            UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
-            MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
+    if (McfgHdr != NULL && McfgHdr->Header.Length >= sizeof(MCFG_TABLE_HEADER)) {
+        UINT32 McfgDataLen = McfgHdr->Header.Length - sizeof(MCFG_TABLE_HEADER);
+        UINT32 NumEntries = McfgDataLen / sizeof(MCFG_ALLOCATION_ENTRY);
+        MCFG_ALLOCATION_ENTRY *Entries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
 
-            for (UINT32 i = 0; i < NumEntries; i++) {
-                if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
-                    continue;
-                }
-
-                //
-                // Only create ECAM HOB if this segment has a matching
-                // PcieBarApertures entry.
-                //
-                BOOLEAN HasAperture = FALSE;
-                for (UINT32 j = 0; j < ApertureCount; j++) {
-                    if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
-                        HasAperture = TRUE;
-                        break;
-                    }
-                }
-                if (!HasAperture) {
-                    continue;
-                }
-
-                UINT64 EcamBase = Entries[i].BaseAddress
-                    + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
-                UINT64 EcamSize =
-                    (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
-                    * PCIE_ECAM_BYTES_PER_BUS;
-
-                if (EcamBase + EcamSize < EcamBase) {
-                    DEBUG((DEBUG_ERROR,
-                           "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
-                           Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
-                    continue;
-                }
-
-                HobAddMmioRange(EcamBase, EcamSize);
-
-                //
-                // Also create a memory allocation HOB so the GCD marks this
-                // ECAM range as allocated during DxeCore init. This prevents
-                // other DXE drivers (e.g., VideoDxe) from accidentally
-                // allocating MMIO space that overlaps the ECAM region.
-                //
-                BuildMemoryAllocationHob(EcamBase, EcamSize, EfiMemoryMappedIO);
+        for (UINT32 i = 0; i < NumEntries; i++) {
+            if (Entries[i].EndBusNumber < Entries[i].StartBusNumber) {
+                continue;
             }
+
+            //
+            // Only create ECAM HOB if this segment has a matching
+            // PcieBarApertures entry.
+            //
+            BOOLEAN HasAperture = FALSE;
+            for (UINT32 j = 0; j < ApertureCount; j++) {
+                if (Apertures[j].Segment == Entries[i].PciSegmentGroupNumber) {
+                    HasAperture = TRUE;
+                    break;
+                }
+            }
+            if (!HasAperture) {
+                continue;
+            }
+
+            UINT64 EcamBase = Entries[i].BaseAddress
+                + (UINT64)Entries[i].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
+            UINT64 EcamSize =
+                (UINT64)(Entries[i].EndBusNumber - Entries[i].StartBusNumber + 1)
+                * PCIE_ECAM_BYTES_PER_BUS;
+
+            if (EcamBase + EcamSize < EcamBase) {
+                DEBUG((DEBUG_ERROR,
+                       "PCIe: ECAM overflow for segment %u: Base=%016lx Size=%016lx\n",
+                       Entries[i].PciSegmentGroupNumber, EcamBase, EcamSize));
+                continue;
+            }
+
+            HobAddMmioRange(EcamBase, EcamSize);
+
+            //
+            // Also create a memory allocation HOB so the GCD marks this
+            // ECAM range as allocated during DxeCore init. This prevents
+            // other DXE drivers (e.g., VideoDxe) from accidentally
+            // allocating MMIO space that overlaps the ECAM region.
+            //
+            BuildMemoryAllocationHob(EcamBase, EcamSize, EfiMemoryMappedIO);
         }
     }
 
@@ -985,60 +989,59 @@ Return Value:
 {
     PLATFORM_INIT_CONTEXT context;
     EFI_STATUS status;
-    ADVANCED_LOGGER_PTR *advancedLoggerPtr;
-    EFI_HOB_GUID_TYPE *guidHob;
 
     DEBUG((DEBUG_VERBOSE, ">>> *** Platform PEIM InitializePlatform@%p\n", InitializePlatform));
 
-    //
-    // Set the GPA of the advanced logger info header for the host.
-    //
-    // NOTE: In PEI, MsvmPkg configures the Advanced Logger to write its in-memory
-    // log to a temporary buffer before transitioning to DXE. Thus, we write the GPA
-    // again in EfiDiagnosticsDxeEntry() in EfiDiagnosticsDxe.c, which also handles
-    // the buffer relocation that occurs at EndOfDxe.
-    //
-    // NOTE: Casting the GPA to a UINT32 is safe because the advanced logger's
-    // in-memory buffer will always be below the 4GB boundary. See InitializeMemoryMap()
-    // in Platform.c for more details.
-    //
-    guidHob = GetFirstGuidHob(&gAdvancedLoggerHobGuid);
-    if (guidHob == NULL)
-    {
-        DEBUG((DEBUG_ERROR, "%a: Advanced Logger HOB not found. Setting GPA to 0.\n", __func__));
-        WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-    }
-    else
-    {
-        // Get and validate the Advanced Logger pointer.
-        advancedLoggerPtr = (ADVANCED_LOGGER_PTR *)GET_GUID_HOB_DATA (guidHob);
-        if (advancedLoggerPtr == NULL)
-        {
-            DEBUG((DEBUG_ERROR, "%a: Advanced Logger Ptr is NULL. Setting GPA to 0.\n", __func__));
-            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-        }
-        else if (advancedLoggerPtr->LogBuffer >= MAX_UINT32)
-        {
-            DEBUG((DEBUG_ERROR, "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n", __func__, advancedLoggerPtr->LogBuffer));
-            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, 0);
-        }
-        else
-        {
-            // Get the Advanced Logger info header and set the proper GPA.
-            ADVANCED_LOGGER_INFO* advancedLoggerInfo = (ADVANCED_LOGGER_INFO *)advancedLoggerPtr->LogBuffer;
-            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer address 0x%016llx\n", __func__, advancedLoggerPtr->LogBuffer));
-            DEBUG((DEBUG_INFO, "%a: Advanced Logger buffer size 0x%08x\n", __func__, advancedLoggerInfo->LogBufferSize));
-            WriteBiosDevice(BiosConfigSetEfiDiagnosticsGpa, (UINT32)(advancedLoggerPtr->LogBuffer));
-        }
-    }
-
     ZeroMem(&context, sizeof(context));
+
+#if defined(MDE_CPU_AARCH64)
+    //
+    // On AARCH64, determine HV presence from the platform type passed by the
+    // loader via the SEC platform type PPI. This is the single source of truth.
+    //
+    {
+        MSVM_SEC_PLATFORM_TYPE_PPI  *SecPlatformTypePpi;
+        BOOLEAN                     HvEnabled;
+
+        status = PeiServicesLocatePpi(
+            &gMsvmSecPlatformTypePpiGuid,
+            0,
+            NULL,
+            (VOID **)&SecPlatformTypePpi
+            );
+        if (EFI_ERROR(status))
+        {
+            DEBUG((DEBUG_ERROR, "Failed to locate SEC Platform Type PPI: %r\n", status));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        switch (SecPlatformTypePpi->PlatformType)
+        {
+        case MsvmSecPlatformHyperV:
+            HvEnabled = TRUE;
+            break;
+        case MsvmSecPlatformGeneric:
+            HvEnabled = FALSE;
+            break;
+        default:
+            DEBUG((DEBUG_ERROR, "Unrecognized platform type: %d\n", SecPlatformTypePpi->PlatformType));
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+        }
+
+        PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdHvEnabled, HvEnabled));
+    }
+#endif
 
     //
     // Determine whether this system is running isolated in order to determine
     // the correct mechanism for loading the configuration.
     //
     HvDetectIsolation();
+
+    //
+    // Detect whether the hypervisor requires UEFI to pin DMA buffers.
+    //
+    HvDetectDmaPinningRequired();
 
     //
     // Get the configuration from the loader.

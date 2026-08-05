@@ -25,12 +25,15 @@
 [LibraryClasses]
   BaseMemoryLib
   DebugLib
+  HobLib
   PcdLib
   MemoryAllocationLib
   DevicePathLib
 
 [Pcd]
-  gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
-  gMsvmPkgTokenSpaceGuid.PcdMcfgSize
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration
+
+[Guids]
+  gAcpiReplacementTableHobGuid

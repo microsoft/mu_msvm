@@ -13,6 +13,8 @@
 #include <Hv/HvGuestCpuid.h>
 #include <Library/DebugLib.h>
 #include <Library/CrashDumpAgentLib.h>
+#include <Library/PcdLib.h>
+#include <Library/HvHypercallLib.h>
 #include "MsCpuid.h"
 #include "StaticAssert1.h"
 
@@ -147,6 +149,93 @@ Return Value:
 
 #endif
     return;
+}
+
+VOID
+HvDetectDmaPinningRequired(
+    VOID
+    )
+/*++
+
+Routine Description:
+
+    Detects whether the hypervisor requires UEFI to pin DMA buffers via
+    HvCallPinGpaPageRanges (e.g. VA-backed VMs) and, if so, sets
+    PcdDmaPinningRequired so IoMmuDxe composes the PINNING obligation
+    into its bounce dispatch.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    None.
+
+--*/
+{
+    EFI_STATUS status;
+
+    //
+    // When Hyper-V is disabled (e.g. the loader reported a Generic platform via
+    // the SEC platform type PPI) no hypervisor is present to service hypercalls.
+    // Issuing one here during PEI - before the exception vectors are installed -
+    // hard hangs the system, so skip the detection entirely.
+    //
+    if (!PcdGetBool(PcdHvEnabled))
+    {
+        return;
+    }
+
+#if defined(MDE_CPU_X64)
+
+    HV_CPUID_RESULT cpuidResult;
+
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
+    if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
+    {
+        return;
+    }
+
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
+    if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
+    {
+        return;
+    }
+
+    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
+    if (!cpuidResult.MsHvEnlightenmentInformation.UseGpaPinningHypercall)
+    {
+        return;
+    }
+
+#elif defined(MDE_CPU_AARCH64)
+
+    HV_STATUS hvStatus;
+    HV_REGISTER_VALUE registerValue;
+    HV_ENLIGHTENMENT_INFORMATION enlightenmentInformation;
+
+    hvStatus = AsmGetVpRegister(HvRegisterFeaturesInfo, &registerValue);
+    if (hvStatus != HV_STATUS_SUCCESS)
+    {
+        DEBUG((DEBUG_INFO, "%a - HvRegisterFeaturesInfo is not available: 0x%x\n", __func__, hvStatus));
+        return;
+    }
+
+    *((PHV_UINT128)&enlightenmentInformation) = registerValue.Reg128;
+    if (!enlightenmentInformation.UseGpaPinningHypercall)
+    {
+        return;
+    }
+
+#endif
+
+    status = PcdSetBoolS(PcdDmaPinningRequired, TRUE);
+    if (EFI_ERROR(status))
+    {
+        DEBUG((DEBUG_ERROR, "Failed to set the PCD PcdDmaPinningRequired::0x%x \n", status));
+        PEI_FAIL_FAST_IF_FAILED(status);
+    }
 }
 
 VOID

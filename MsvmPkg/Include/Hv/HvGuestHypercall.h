@@ -675,6 +675,19 @@ typedef enum _HV_CALL_CODE
     HvCallGetInterceptData              = 0x00DF,
 
     //
+    // V14 GPA Pin/Unpin hypercalls.
+    //
+
+    HvCallPinGpaPageRanges              = 0x0112,
+    HvCallUnpinGpaPageRanges            = 0x0113,
+
+    //
+    // V16 Query information about a GPA range.
+    //
+
+    HvCallQueryInformationGpaRange      = 0x0135,
+
+    //
     // Total of all hypercalls
     //
 
@@ -1527,3 +1540,88 @@ typedef struct HV_CALL_ATTRIBUTES _HV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILI
     HV_CALL_ATTRIBUTES HV_GPA_PAGE_NUMBER GpaPageList[];
 
 } HV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILITY, *PHV_INPUT_MODIFY_SPARSE_GPA_PAGE_HOST_VISIBILITY;
+
+//
+// Defines a GPA page range as a base page number plus an additional page count.
+//
+typedef union _HV_GPA_PAGE_RANGE
+{
+    struct
+    {
+        UINT64 AdditionalPages:11;
+        UINT64 LargePage:1;
+        UINT64 BasePfn:52;
+    };
+
+    struct
+    {
+        UINT64 :12;
+        UINT64 PageSize:1;
+        UINT64 Reserved:8;
+        UINT64 BaseLargePfn:43;
+    };
+
+    UINT64 AsUINT64;
+
+} HV_GPA_PAGE_RANGE, *PHV_GPA_PAGE_RANGE;
+
+#define HV_GPA_PAGE_RANGE_PAGE_SIZE_2MB  0
+#define HV_GPA_PAGE_RANGE_PAGE_SIZE_1GB  1
+
+//
+// Definitions for the HvCallPinGpaPageRanges and HvCallUnpinGpaPageRanges
+// hypercalls.
+//
+typedef struct HV_CALL_ATTRIBUTES _HV_INPUT_GPA_PAGE_PINNING
+{
+    //
+    // Reserved for future use.
+    //
+    UINT64 Reserved;
+
+    //
+    // Supplies an array of GPA page ranges to pin/unpin.
+    //
+    HV_CALL_ATTRIBUTES HV_GPA_PAGE_RANGE GpaRangeList[];
+
+} HV_INPUT_GPA_PAGE_PINNING, *PHV_INPUT_GPA_PAGE_PINNING;
+
+#define HV_GPA_PAGE_PINNING_MAX_RANGE_COUNT \
+    ((HV_PAGE_SIZE - sizeof(HV_INPUT_GPA_PAGE_PINNING)) / \
+        sizeof(HV_GPA_PAGE_RANGE))
+
+STATIC_ASSERT(HV_GPA_PAGE_PINNING_MAX_RANGE_COUNT == 511,
+              "The maximum number of pin ranges should not change, for backwards compatibility");
+
+//
+// Definitions for the HvCallQueryInformationGpaRange hypercall.
+//
+typedef enum _HV_QUERY_GPA_RANGE_INFO_CLASS
+{
+    HvQueryGpaRangeAlwaysPinnedSubranges = 0,
+    HvQueryGpaRangeHeatHintBeneficialSubranges = 1,
+    HvQueryGpaRangeInfoClassMax
+} HV_QUERY_GPA_RANGE_INFO_CLASS, *PHV_QUERY_GPA_RANGE_INFO_CLASS;
+
+typedef struct HV_CALL_ATTRIBUTES _HV_INPUT_QUERY_GPA_RANGE
+{
+    HV_QUERY_GPA_RANGE_INFO_CLASS InfoClass;
+    UINT32 ReservedZ0;
+    UINT64 StartGpn;
+    UINT64 PageCount;
+} HV_INPUT_QUERY_GPA_RANGE, *PHV_INPUT_QUERY_GPA_RANGE;
+
+typedef struct HV_CALL_ATTRIBUTES _HV_OUTPUT_QUERY_GPA_RANGE_SUBRANGES
+{
+    UINT16 SubrangeCount;
+    UINT16 ReservedZ0;
+    UINT32 ReservedZ1;
+    UINT64 ReservedZ2;
+    HV_GPA_PAGE_RANGE SubrangeList[];
+} HV_OUTPUT_QUERY_GPA_RANGE_SUBRANGES, *PHV_OUTPUT_QUERY_GPA_RANGE_SUBRANGES;
+
+typedef union _HV_OUTPUT_QUERY_GPA_RANGE
+{
+    HV_OUTPUT_QUERY_GPA_RANGE_SUBRANGES AlwaysPinnedSubranges;
+    HV_OUTPUT_QUERY_GPA_RANGE_SUBRANGES HeatHintBeneficialSubranges;
+} HV_OUTPUT_QUERY_GPA_RANGE, *PHV_OUTPUT_QUERY_GPA_RANGE;

@@ -155,6 +155,8 @@ Return Value:
         goto Cleanup;
     }
 
+    ZeroMem(fileSystemInformation->PacketBuffer, VMBFS_MAXIMUM_MESSAGE_SIZE);
+
     status = gBS->AllocatePool(EfiBootServicesData, sizeof(*allocatedFileProtocol), (void**)&allocatedFileProtocol);
 
     if (EFI_ERROR(status))
@@ -219,10 +221,7 @@ Return Value:
     if (bytesRead != sizeof(*VersionResponseMessage) ||
         VersionResponseMessage->Header.Type != VmbfsMessageTypeVersionResponse)
     {
-
-        VMBFS_BAD_HOST;
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
     }
 
     if (VersionResponseMessage->Status != VmbfsVersionSupported)

@@ -17,6 +17,11 @@ HvDetectIsolation(
     VOID
     );
 
+VOID
+HvDetectDmaPinningRequired(
+    VOID
+    );
+
 typedef struct _SNP_SECRETS {
     UINT8   Reserved[0x140];
     UINT64  SvsmBase;

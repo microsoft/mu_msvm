@@ -2282,6 +2282,12 @@ VmbusDriverInitialize (
 
     DEBUG((DEBUG_VERBOSE, ">>> %a\n", __func__));
 
+    if (!PcdGetBool(PcdVmbusEnabled))
+    {
+        DEBUG((DEBUG_INFO, "VMBus is disabled by configuration, not starting VMBus driver.\n"));
+        return EFI_UNSUPPORTED;
+    }
+
     mVmbusImageHandle = ImageHandle;
 
     //

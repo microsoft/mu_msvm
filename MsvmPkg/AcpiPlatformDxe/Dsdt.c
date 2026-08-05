@@ -33,6 +33,7 @@ typedef struct _DSDT_AML_DATA
     UINT8  ProcIdleEnabled;
     UINT8  CxlMemoryEnabled;
     UINT16 NvdimmCount;
+    UINT8  VmbusEnabled;
 } DSDT_AML_DATA;
 
 typedef struct _DSDT_AML_DESCRIPTOR
@@ -138,6 +139,7 @@ Return Value:
     data->ProcIdleEnabled = PcdGetBool(PcdProcIdleEnabled);
     data->CxlMemoryEnabled = PcdGetBool(PcdCxlMemoryEnabled);
     data->NvdimmCount = PcdGet16(PcdNvdimmCount);
+    data->VmbusEnabled = PcdGetBool(PcdVmbusEnabled);
 
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Start               0x%lx\n", __func__, data->Mmio1Start));
     DEBUG((DEBUG_VERBOSE, "--- %a: Mmio1Length              0x%lx\n", __func__, data->Mmio1Length));

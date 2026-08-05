@@ -24,9 +24,8 @@
 [LibraryClasses]
   BaseMemoryLib
   DebugLib
-  PcdLib
+  HobLib
   MemoryAllocationLib
 
-[Pcd]
-  gMsvmPkgTokenSpaceGuid.PcdMcfgPtr
-  gMsvmPkgTokenSpaceGuid.PcdMcfgSize
+[Guids]
+  gAcpiReplacementTableHobGuid

@@ -6,11 +6,11 @@
 **/
 
 #include "EventLogDxe.h"
+#include <IsolationTypes.h>
 #include <Library/UefiDriverEntryPoint.h>
 #include "StatusCode.h"
 #include "EventLogger.h"
 
-EFI_HV_PROTOCOL *mHv;
 EFI_HV_IVM_PROTOCOL *mHvIvm;
 
 EFI_STATUS
@@ -43,24 +43,26 @@ Return Value:
     EFI_STATUS  status;
 
     DEBUG((DEBUG_INIT, "EventLog Driver Starting\n"));
+
+    //
+    // The IVM protocol is required for hardware-isolated VMs. Check this
+    // before EventLoggerInitialize, which installs protocols — returning
+    // error after that would leave dangling protocol entries.
+    //
+    if (IsHardwareIsolatedNoParavisor())
+    {
+        status = gBS->LocateProtocol(&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
+
+        if (EFI_ERROR(status))
+        {
+            goto Exit;
+        }
+    }
+
     //
     // Initialize the event channel management and then the status code protocol
     //
     status = EventLoggerInitialize();
-
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
-
-    status = gBS->LocateProtocol(&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
-
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
-
-    status = gBS->LocateProtocol(&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
 
     if (EFI_ERROR(status))
     {
