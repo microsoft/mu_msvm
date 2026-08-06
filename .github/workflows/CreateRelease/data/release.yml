@@ -1,0 +1,12 @@
+# =============================================================================
+# release.yml -- Configuration for the CreateRelease pipeline.
+# =============================================================================
+#
+# baseVersion : Bump this when releasing a new major/minor version. The patch
+#               number auto-increments from the latest existing GitHub release
+#               with this prefix.
+# tagPrefix   : Prefix for git tags. Final tag = "<tagPrefix><baseVersion>.<patch>".
+# =============================================================================
+
+baseVersion: "26.0"
+tagPrefix: "v"
