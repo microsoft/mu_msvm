@@ -50,8 +50,11 @@
   *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
   *_CLANGPDB_X64_DLINK_FLAGS = -align:4096
 
-# Set file alignment and (memory) alignment to 4K.
-# Memory alignment 4K is required for page protection.
+# Set MSFT file alignment and (memory) alignment to 4K. CLANGPDB X64 uses 4K
+# section alignment with compact file alignment for normal modules and 32-byte
+# section/file alignment for XIP modules. DxeCore is rebased by GenFv, so its
+# file alignment must match its 4K section alignment.
+# Memory alignment 4K is required for page protection of non-XIP modules.
 # i.e. So that, text/data/rdata are on different pages,
 # so that data/rdata are not executable and text/rdata are not writable.
 # This is the main reason sections exist and the main feature of the PE format.
@@ -64,7 +67,6 @@
 
 [BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
   MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
 
 ################################################################################
 #
