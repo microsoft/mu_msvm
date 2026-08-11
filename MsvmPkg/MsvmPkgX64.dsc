@@ -553,6 +553,9 @@
   # Enable NVME changes for ASAP devices
   gEfiMdeModulePkgTokenSpaceGuid.PcdSupportAlternativeQueueSize|TRUE
 
+  # Configure NVMe generic timeout to watchdog timeout limit
+  gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeGenericTimeout|120
+
 [PcdsFixedAtBuild.X64]
 !if $(PERF_TRACE_ENABLE) == TRUE
   # 16M should be enough to fit all the verbose measurements
