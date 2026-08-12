@@ -23,6 +23,8 @@
 #include <Library/HobLib.h>
 #include <Library/IoLib.h>
 #include <Library/DeviceStateLib.h>
+#include <Library/PcdLib.h>
+#include <MsvmFirmwareVersion.h>
 
 #if defined(MDE_CPU_AARCH64)
 #include <Mmu.h>
@@ -991,6 +993,20 @@ Return Value:
     EFI_STATUS status;
 
     DEBUG((DEBUG_VERBOSE, ">>> *** Platform PEIM InitializePlatform@%p\n", InitializePlatform));
+
+    //
+    // Log the firmware version as early as the logger is up. The values come
+    // from FixedAtBuild PCDs injected by the FirmwareVersionBlob build plugin
+    // from MsvmPkg/FirmwareVersion.toml + git state.
+    //
+    DEBUG((DEBUG_INFO,
+        "Hyper-V UEFI firmware: release %a interface %u.%u commit %a%a%a\n",
+        (CHAR8 *)PcdGetPtr(PcdMsvmFirmwareBaseVersion),
+        (UINT32)PcdGet16(PcdMsvmFirmwareInterfaceVersionMajor),
+        (UINT32)PcdGet16(PcdMsvmFirmwareInterfaceVersionMinor),
+        (CHAR8 *)PcdGetPtr(PcdMsvmFirmwareGitCommit),
+        ((PcdGet32(PcdMsvmFirmwareFlags) & MSVM_FIRMWARE_VERSION_FLAG_DIRTY) != 0) ? " (dirty)" : "",
+        ((PcdGet32(PcdMsvmFirmwareFlags) & MSVM_FIRMWARE_VERSION_FLAG_OFFICIAL) != 0) ? " (official)" : ""));
 
     ZeroMem(&context, sizeof(context));
 

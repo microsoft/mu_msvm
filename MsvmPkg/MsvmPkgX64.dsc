@@ -362,6 +362,8 @@
 # PERF MODULES END
 
 [PcdsFixedAtBuild.common]
+!include MsvmPkg/FirmwareVersionPcd.dsc.inc
+
   # Advanced Logger Config
   #
   # N.B PcdAdvancedLoggerBase is explicitly set to 0 for Hyper-V UEFI in order 
