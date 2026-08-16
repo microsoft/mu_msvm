@@ -559,6 +559,7 @@ enum UefiStructureType
     UefiConfigHmat                           = 0x26,
     UefiConfigIort                           = 0x27,
     UefiConfigPcieBarApertures               = 0x28,
+    UefiConfigRamDisk                        = 0x29,
 };
 
 //
@@ -908,6 +909,19 @@ typedef struct _UEFI_CONFIG_PCIE_BAR_APERTURES {
     UEFI_CONFIG_HEADER          Header;
     PCIE_BAR_APERTURE_ENTRY     Entries[];
 } UEFI_CONFIG_PCIE_BAR_APERTURES;
+
+typedef struct _UEFI_CONFIG_RAM_DISK
+{
+    UEFI_CONFIG_HEADER Header;
+    //
+    // GPA of the RAM disk image (must be page-aligned).
+    //
+    UINT64 RamDiskGpa;
+    //
+    // Size in bytes of the RAM disk image (must be page-aligned).
+    //
+    UINT64 RamDiskSize;
+} UEFI_CONFIG_RAM_DISK;
 
 //
 // UEFI configuration information for direct parsing of IGVM parameters.
