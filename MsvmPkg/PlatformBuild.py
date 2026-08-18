@@ -37,10 +37,11 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
             RequiredSubmodule("MU_BASECORE"),
             RequiredSubmodule("Common/MU"),
             RequiredSubmodule("Feature/DEBUGGER"),
+            RequiredSubmodule("Common/PATINA_EDK2"),
         ]
 
     def GetPackagesPath(self):
-        pp = ('MU_BASECORE', 'Common/MU', 'Feature/DEBUGGER')
+        pp = ('MU_BASECORE', 'Common/MU', 'Feature/DEBUGGER', 'Common/PATINA_EDK2')
         ws = self.GetWorkspaceRoot()
         return [os.path.join(ws, x) for x in pp]
 
