@@ -759,6 +759,7 @@ DebugDumpUefiConfigStruct(
             DEBUG((DEBUG_VERBOSE, "\tProcIdleEnabled: %u\n", flags->Flags.ProcIdleEnabled));
             DEBUG((DEBUG_VERBOSE, "\tCxlMemoryEnabled: %u\n", flags->Flags.CxlMemoryEnabled));
             DEBUG((DEBUG_VERBOSE, "\tDisableSha384Pcr: %u\n", flags->Flags.DisableSha384Pcr));
+            DEBUG((DEBUG_VERBOSE, "\tDisableSha1Pcr: %u\n", flags->Flags.DisableSha1Pcr));
             DEBUG((DEBUG_VERBOSE, "\tMediaPresentEnabledByDefault: %u\n", flags->Flags.MediaPresentEnabledByDefault));
             DEBUG((DEBUG_VERBOSE, "\tMemoryProtectionMode: %u\n", flags->Flags.MemoryProtectionMode));
             DEBUG((DEBUG_VERBOSE, "\tWatchdogEnabled: %u\n", flags->Flags.WatchdogEnabled));
@@ -1025,6 +1026,14 @@ ConfigSetUefiConfigFlags(
     if (ConfigFlags->Flags.DisableSha384Pcr)
     {
         PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdTpm2HashMask, (PcdGet32(PcdTpm2HashMask) & ~HASH_ALG_SHA384)));
+    }
+
+    //
+    // When DisableSha1Pcr is TRUE, we remove SHA-1 from the PCR hash mask.
+    //
+    if (ConfigFlags->Flags.DisableSha1Pcr)
+    {
+        PEI_FAIL_FAST_IF_FAILED(PcdSet32S(PcdTpm2HashMask, (PcdGet32(PcdTpm2HashMask) & ~HASH_ALG_SHA1)));
     }
 #endif
 
