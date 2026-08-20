@@ -1914,6 +1914,97 @@ Return Value:
 }
 
 
+#if defined(MDE_CPU_X64)
+
+VOID
+AddIpmiDeviceInformation(
+    IN  EFI_SMBIOS_PROTOCOL* Smbios
+    )
+/*++
+
+Routine Description:
+
+    Adds the IPMI Device Information structure (type 38) to the SMBIOS table,
+    advertising the emulated BMC's KCS system interface so the guest OS
+    (Linux ipmi_si / the Windows IPMI driver) can discover and bind to it.
+
+    Only added when the host enables the emulated IPMI device (PcdIpmiEnabled),
+    which is driven by the platform diagnostic-logging setting. The emulated BMC
+    exposes the KCS data/status registers at I/O ports 0xCA2 (data) and 0xCA3
+    (status/command).
+
+    This is x64-only: the KCS registers are reachable exclusively through legacy
+    port-mapped I/O, and the Type 38 base address below is encoded as I/O space
+    (bit 0 = 1). AArch64 has no I/O port space, so the structure is not emitted
+    there.
+
+Arguments:
+
+    Smbios - The DXE Smbios protocol.
+
+Return Value:
+
+    n/a
+
+--*/
+{
+    //
+    // Only advertise the BMC when the emulated IPMI device is enabled by the host.
+    //
+    if (!PcdGetBool(PcdIpmiEnabled))
+    {
+        return;
+    }
+
+    //
+    // Initialized structure with terminator bytes (no strings).
+    //
+    static struct
+    {
+        SMBIOS_TABLE_TYPE38 Formatted;
+        CHAR8 Unformed[2];
+    } ipmiDeviceInformation =
+
+    {
+        {
+            STANDARD_HEADER(SMBIOS_TABLE_TYPE38, EFI_SMBIOS_TYPE_IPMI_DEVICE_INFORMATION),
+            IPMIDeviceInfoInterfaceTypeKCS, // Interface Type - Keyboard Controller Style
+            0x20,   // IPMI Specification Revision (BCD): 2.0
+            0x20,   // I2C Slave Address of the BMC (IPMB address; unused for KCS discovery)
+            0xFF,   // NV Storage Device Address - not a separate device
+            //
+            // Base Address: I/O port 0xCA2. Per SMBIOS v3.1 section 7.39, the
+            // least-significant bit indicates the address space (1 = I/O), so the
+            // encoded value is 0xCA2 | 1 = 0xCA3. Consumers mask bit 0 to recover
+            // the port (0xCA2).
+            //
+            0x0000000000000CA3ULL,
+            //
+            // Base Address Modifier / Interrupt Info:
+            //   bits 7:6 = 00b -> registers on successive byte boundaries
+            //              (0xCA2 = data, 0xCA3 = status/command)
+            //   bit 3    = 0b  -> interrupt info not specified
+            //   remaining bits 0 -> KCS is polled (no interrupt)
+            //
+            0x00,
+            0x00    // Interrupt Number - none
+        },
+        {
+            0, // terminator bytes
+            0
+        }
+    };
+
+    //
+    // Add the structure to the SMBIOS table. Error is not fatal and ignored.
+    //
+    (VOID)AddStructure(Smbios, &ipmiDeviceInformation, NULL, NULL);
+}
+
+#endif
+
+
+
 VOID
 AddAllStructures(
     IN  EFI_SMBIOS_PROTOCOL* Smbios
@@ -1946,6 +2037,9 @@ Return Value:
     AddOEMStrings(Smbios);
     AddMemoryStructures(Smbios);
     AddSystemBootInformation(Smbios);
+#if defined(MDE_CPU_X64)
+    AddIpmiDeviceInformation(Smbios);
+#endif
 }
 
 

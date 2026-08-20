@@ -959,6 +959,7 @@ ConfigSetUefiConfigFlags(
 
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdPciDisableBusEnumeration, (UINT8) ConfigFlags->Flags.PciResourcesPreAssigned));
     PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdForceDmaBounceEnabled, (UINT8) ConfigFlags->Flags.ForceDmaBounceEnabled));
+    PEI_FAIL_FAST_IF_FAILED(PcdSetBoolS(PcdIpmiEnabled, (UINT8) ConfigFlags->Flags.IpmiEnabled));
 
     //
     // If memory protections are enabled, configure the value into the HOB.
