@@ -543,6 +543,9 @@
   # Disable front page auto power off
   gMsGraphicsPkgTokenSpaceGuid.PcdPowerOffDelay|0xffffffff
 
+  # Configure NVMe generic timeout to watchdog timeout limit
+  gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeGenericTimeout|120
+
   # Change PcdBootManagerMenuFile to point to the FrontPage application
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x8A, 0x70, 0x42, 0x40, 0x2D, 0x0F, 0x23, 0x48, 0xAC, 0x60, 0x0D, 0x77, 0xB3, 0x11, 0x18, 0x89 }
 
