@@ -61,6 +61,7 @@
 
 [Ppis]
   gEfiTemporaryRamSupportPpiGuid                # PPI ALWAYS_PRODUCED
+  gMsvmParameterConfigPpiGuid                   # PPI ALWAYS_PRODUCED
 
 [Ppis.AARCH64]
   gMsvmSecPlatformTypePpiGuid                   # PPI ALWAYS_PRODUCED

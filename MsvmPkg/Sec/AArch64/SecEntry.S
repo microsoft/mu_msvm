@@ -12,12 +12,13 @@ ASM_FUNC(_ModuleEntryPoint)
     //  x0 - Firmware Volume Base Address
     //  x1 - Stack Base Address
     //  x2 - Platform Type (MSVM_SEC_PLATFORM_TYPE; 0 = HyperV, 1 = Generic)
+    //  x3 - Optional parameter configuration header
 
     // bl SerialWriteBanner             // print banner to COM2
 
     mov     sp, x1                      // Establish stack - leave x1 as second arg to C code
 
-    bl      SecStartupWithStack         // jump to C code with 3 args (x0,x1,x2)
+    bl      SecStartupWithStack         // jump to C code with 4 args (x0,x1,x2,x3)
 
 ASM_FUNC(HvInvokeDebugger)
 
