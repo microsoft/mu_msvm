@@ -10,3 +10,6 @@
     path = Feature/DEBUGGER
     url = https://github.com/microsoft/mu_feature_debugger.git
     branch = main
+[submodule "Common/PATINA_EDK2"]
+	path = Common/PATINA_EDK2
+	url = https://github.com/OpenDevicePartnership/patina-edk2

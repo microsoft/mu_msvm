@@ -16,14 +16,12 @@
     Bit.c
     Cpuid.c
     Interlocked.c
-    InternalEventServices.c
     VolatileAccessors.c
 
 [Sources.AARCH64]
     AArch64/AArch64Support.S
 
 [Sources.X64]
-    X64/EnableInterrupts.nasm
     X64/VmgExit.nasm
 
 [Packages]

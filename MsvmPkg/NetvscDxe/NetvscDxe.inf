@@ -70,6 +70,7 @@
   EmclLib                       ## MS_HYP_CHANGE
   IsolationLib                  ## MS_HYP_CHANGE
   MsBaseLib                     ## MS_HYP_CHANGE
+  MsEventSleepLib               ## MS_HYP_CHANGE
   PcdLib                        ## MS_HYP_CHANGE
   PrintLib                      ## MS_HYP_CHANGE
 
@@ -86,7 +87,6 @@
   gEfiAdapterInformationProtocolGuid            # PRODUCES MS_HYP_CHANGE
   gEfiEmclProtocolGuid                          # CONSUMES MS_HYP_CHANGE
   gEfiVmbusProtocolGuid                         # CONSUMES MS_HYP_CHANGE
-  gInternalEventServicesProtocolGuid            # CONSUMES MS_HYP_CHANGE
 
 [Pcd]
   gEfiNetworkPkgTokenSpaceGuid.PcdSnpCreateExitBootServicesEvent   ## CONSUMES
