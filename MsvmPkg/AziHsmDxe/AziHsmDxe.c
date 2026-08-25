@@ -37,10 +37,8 @@ AziHsmAes256CbcEncrypt (
 STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
-  IN  AZIHSM_CONTROLLER_STATE  *State,
-  IN  CONST AZIHSM_DDI_API_REV *ApiRevisionMax,
-  IN  UINT8                    *HsmSerialData,
-  IN  UINTN                     HsmSerialDataLength
+  IN  AZIHSM_CONTROLLER_STATE    *State,
+  IN  CONST AZIHSM_DDI_API_REV  *ApiRevisionMax
 );
 
 //
@@ -214,12 +212,8 @@ AziHsmDriverBindingStart (
   EFI_DEVICE_PATH_PROTOCOL  *ParentDevicePath;
   EFI_PCI_IO_PROTOCOL       *PciIo;
   AZIHSM_CONTROLLER_STATE   *State;
-  AZI_HSM_CTRL_IDEN         HsmIdenData;
-  BOOLEAN                   IsHsmIdValid = FALSE;
   AZIHSM_DDI_API_REV        ApiRevisionMin;
   AZIHSM_DDI_API_REV        ApiRevisionMax;
-
-  ZeroMem ((VOID *)&HsmIdenData, sizeof (HsmIdenData));
 
   DEBUG ((DEBUG_INFO, "AziHsm: DriverBindingStart called for Controller: %p\n", Controller));
   Status = gBS->OpenProtocol (
@@ -294,40 +288,21 @@ AziHsmDriverBindingStart (
   }
 
   DEBUG ((DEBUG_INFO, "AziHsm: Starting BKS3 key derivation workflow\n"));
-  // Get Unique ID for the HSM
-  Status = AziHsmAdminIdentifyCtrl (State, (UINT8 *)&HsmIdenData);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Identify Controller Failed. Status: %r\n", Status));
-    goto CleanupHci;
-  } else {
-    //
-    // Check if HSM serial number is all zeros
-    //
-    IsHsmIdValid = !IsZeroBuffer (HsmIdenData.Sn, AZIHSM_CTRL_IDENT_SN_LEN);
-
-    if (!IsHsmIdValid) {
-      DEBUG ((DEBUG_ERROR, "AziHsm: Identify Controller Failed. Invalid HSM ID: All zeros\n"));
-      Status = EFI_DEVICE_ERROR;
-      goto CleanupHci;
-    }
-
-    DEBUG ((DEBUG_INFO, "AziHsm: Identify Controller Success. HSM Ctrl_Id: %d\n", HsmIdenData.Ctrl_Id));
-  }
 
   //
   // Get API revision
   //
   ZeroMem(&ApiRevisionMin, sizeof(ApiRevisionMin));
   ZeroMem(&ApiRevisionMax, sizeof(ApiRevisionMax));
-  Status         = AziHsmGetApiRevision (State, &ApiRevisionMin, &ApiRevisionMax);
+  Status = AziHsmGetApiRevision (State, &ApiRevisionMin, &ApiRevisionMax);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get API revision: %r\n", Status));
     Status = EFI_UNSUPPORTED;
     goto CleanupHci;
   }
 
-  // Perform complete BKS3 derivation and sealing workflow: Use HSM serial number as input
-  Status = AziHsmPerformBks3SealingWorkflow (State, &ApiRevisionMax, (UINT8 *)(&HsmIdenData.Sn), sizeof (HsmIdenData.Sn));
+  // Perform complete BKS3 derivation and sealing workflow
+  Status = AziHsmPerformBks3SealingWorkflow (State, &ApiRevisionMax);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: BKS3 derivation and sealing workflow failed. Status: %r\n", Status));
     Status = EFI_UNSUPPORTED;
@@ -382,10 +357,8 @@ Exit:
 STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
-  IN  AZIHSM_CONTROLLER_STATE  *State,
-  IN  CONST AZIHSM_DDI_API_REV *ApiRevisionMax,
-  IN  UINT8                    *HsmSerialData,
-  IN  UINTN                     HsmSerialDataLength
+  IN  AZIHSM_CONTROLLER_STATE    *State,
+  IN  CONST AZIHSM_DDI_API_REV  *ApiRevisionMax
 )
 {
   EFI_STATUS          Status = EFI_INVALID_PARAMETER;
@@ -411,7 +384,7 @@ AziHsmPerformBks3SealingWorkflow (
   AZIHSM_KEY_IV_RECORD KeyIvRecord;
   UINT32              ExpectedSealedDataSize;
 
-  if (State == NULL || HsmSerialData == NULL || HsmSerialDataLength == 0) {
+  if (State == NULL) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow() Invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
@@ -434,7 +407,7 @@ AziHsmPerformBks3SealingWorkflow (
   }
 
   //
-  // Copy derived key into AZIHSM_BUFFER for use by AziHsmDeriveBKS3fromId
+  // Copy derived key into AZIHSM_BUFFER for use by AziHsmDeriveBKS3fromTpmPlatSecret
   //
   if (TpmDerivedSecret.KeySize > sizeof (TpmPlatformSecret.Data)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Derived key size exceeds buffer capacity\n"));
@@ -445,7 +418,7 @@ AziHsmPerformBks3SealingWorkflow (
   CopyMem (TpmPlatformSecret.Data, TpmDerivedSecret.KeyData, TpmDerivedSecret.KeySize);
   TpmPlatformSecret.Size = (UINT16)TpmDerivedSecret.KeySize;
 
-  Status = AziHsmDeriveBKS3fromId (&TpmPlatformSecret, (UINT8 *)(HsmSerialData), HsmSerialDataLength, &BKS3Key);
+  Status = AziHsmDeriveBKS3fromTpmPlatSecret (&TpmPlatformSecret, &BKS3Key);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to derive BKS3 key from unsealed blob: %r\n", Status));
     goto Exit;
@@ -456,7 +429,7 @@ AziHsmPerformBks3SealingWorkflow (
              State,
              ApiRevisionMax,
              BKS3Key.KeyData,
-             sizeof (BKS3Key.KeyData),
+             BKS3Key.KeySize,
              WrappedBKS3,
              &WrappedBKS3KeySize,
              HsmGuid,
@@ -622,6 +595,8 @@ Cleanup:
   ZeroMem (Aes256Key, sizeof (Aes256Key));
   ZeroMem (Iv, sizeof (Iv));
   ZeroMem (WrappedBKS3, sizeof (WrappedBKS3));
+  ZeroMem (&KeyIvRecord, sizeof (KeyIvRecord));
+  ZeroMem (&KeyIvBuffer, sizeof (KeyIvBuffer));
 
   if (EncryptedData != NULL) {
     ZeroMem (EncryptedData, PaddedInputSize);
