@@ -417,10 +417,6 @@ Layer 4: Resource Errors
 ### Global State Variables
 
 ```c
-// Platform-wide sealed secret (shared across all HSM devices)
-STATIC BOOLEAN       mAziHsmSealedPlatormSecretDerived = FALSE;
-STATIC AZIHSM_BUFFER mAziHsmSealedPlatformSecret = { 0 };
-
 // Boot event handles
 STATIC EFI_EVENT mAziHsmReadyToBootEvent = NULL;
 STATIC EFI_EVENT mAziHsmUnableToBootEvent = NULL;
@@ -456,13 +452,15 @@ These globals enable:
 ### 4. AziHsm Key Derivation Flow 
 - **Block Diagram**
 
-This block diagram illustrates the key derivation flow from TPM in `AziHsmDriverEntry()` to the Derived key in `AziHsmDriverBindingStart()`.
+This block diagram illustrates the BKS3 key derivation and sealing workflow
+in `AziHsmPerformBks3SealingWorkflow()`, called from `AziHsmDriverBindingStart()`.
 
 #### Overview
 
-The key derivation process occurs in two phases:
-1. **Driver Entry Phase**: Creates a platform-wide TPM-derived key (executed once)
-2. **Driver Binding Phase**: Derives per-device unique keys (executed per HSM device)
+The key derivation and sealing process runs entirely within a single function
+(`AziHsmPerformBks3SealingWorkflow`) invoked once per HSM device during
+`DriverBindingStart`. There is no separate driver-entry phase; the TPM
+platform secret is derived fresh on each call.
 
 ---
 
@@ -470,8 +468,15 @@ The key derivation process occurs in two phases:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        AziHsmDriverEntry()                              │
-│                     (Driver Initialization)                             │
+│                    AziHsmDriverBindingStart()                           │
+│              (Per-Device Initialization - for each HSM)                 │
+│                                                                         │
+│  1. Open Device Path & PCI I/O protocols                                │
+│  2. Allocate AZIHSM_CONTROLLER_STATE                                    │
+│  3. Enable 64-bit DMA, install AziHsm protocol                         │
+│  4. AziHsmHciInitialize() + AziHsmInitHsm()                            │
+│  5. AziHsmGetApiRevision() → ApiRevisionMax                             │
+│  6. AziHsmPerformBks3SealingWorkflow(State, &ApiRevisionMax)            │
 └────────────────────────────────┬────────────────────────────────────────┘
                                  │
                                  ▼
@@ -500,137 +505,98 @@ The key derivation process occurs in two phases:
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 2: Seal to TPM Null Hierarchy                                      │
+│ Step 2: Derive BKS3 Key                                                 │
 │                                                                         │
-│ AziHsmSealToTpmNullHierarchy(TpmDerivedSecret)                          │
-│   • Create Null Hierarchy RSA Primary (TPM_RH_NULL)                     │
-│   • TPM2_Create: Seal TpmDerivedSecret (32 bytes) as KeyedHash object   │
-│   • Returns: SealedSecretBlob (contains TPM2B_PRIVATE + TPM2B_PUBLIC)   │
-│                                                                         │
-│ Store globally:                                                         │
-│   mAziHsmSealedPlatformSecret ← SealedSecretBlob                        │
-│   mAziHsmSealedPlatormSecretDerived = TRUE                              │
-│                                                                         │
-│ Note: Sealed to current boot session (Null hierarchy seed resets on     │
-│       reboot, making the sealed blob unusable after reboot)             │
-└────────────────────────────────┬────────────────────────────────────────┘
-                                 │
-                                 │ (Global variable persists in memory)
-                                 │
-┌────────────────────────────────┴────────────────────────────────────────┐
-│                    AziHsmDriverBindingStart()                           │
-│              (Per-Device Initialization - for each HSM)                 │
-└────────────────────────────────┬────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 3: Get HSM Device Identity                                         │
-│                                                                         │
-│ AziHsmAdminIdentifyCtrl(State) → HsmIdenData                            │
-│   • Returns: HsmIdenData.Sn (Serial Number, unique per device)          │
-│   • Validates: Serial number is not all zeros                           │
-└────────────────────────────────┬────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 4: Unseal Platform Secret from TPM                                 │
-│                                                                         │
-│ AziHsmUnsealUsingTpmNullHierarchy(mAziHsmSealedPlatformSecret)          │
-│                                               → TpmPlatformSecret       │
+│ AziHsmDeriveBKS3fromTpmPlatSecret(TpmPlatformSecret, BKS3Key)           │
 │                                                                         │
 │ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 4a. Create Null Hierarchy RSA Primary                               │ │
-│ │     - Same hierarchy as used for sealing (TPM_RH_NULL)              │ │
-│ │     - Recreates same primary key deterministically                  │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 4b. TPM2_Load(Primary, SealedKeyBlob)                               │ │
-│ │     - Loads sealed object into TPM → ObjectHandle                   │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 4c. TPM2_Unseal(ObjectHandle)                                       │ │
-│ │     - Extracts plaintext → TpmPlatformSecret (32 bytes)             │ │
-│ │     - This is the original TpmDerivedSecret from DriverEntry        │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────┬────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 5: Derive Per-Device BKS3 Key                                      │
-│                                                                         │
-│ AziHsmDeriveBKS3fromId(TpmPlatformSecret, HsmIdenData.Sn) → BKS3Key     │
-│                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 5a. HKDF-Expand to Generate BKS3 Key (Software Operation)           │ │
-│ │     BKS3Key = ManualHkdfSha256Expand(                               │ │
-│ │         PRK = TpmPlatformSecret (32 bytes),                         │ │
-│ │         Info = HsmSerialNumber (device-specific),                   │ │
-│ │         OutputLength = 48 bytes                                     │ │
-│ │     )                                                               │ │
+│ │ HKDF-Expand (RFC 5869) - Software Operation                         │ │
+│ │     PRK  = TpmPlatformSecret (32 bytes)                             │ │
+│ │     Info = AZIHSM_BKS3_HKDF_INFO fixed context string               │ │
+│ │            ("AZIHSM_VM_BKS3_DEVICE")                                │ │
+│ │     Output: BKS3Key (48 bytes / 384 bits)                           │ │
 │ │                                                                     │ │
-│ │     Note: Uses TpmPlatformSecret directly as PRK                    │ │
-│ │     Output: BKS3Key.KeyData (48 bytes)                              │ │
-│ │             BKS3Key.KeySize = 48                                    │ │
+│ │     Note: Info is the fixed constant AZIHSM_BKS3_HKDF_INFO,         │ │
+│ │     so the derived BKS3 key depends only on the TPM                 │ │
+│ │     platform secret, not on any device identifier.                  │ │
 │ └─────────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────┬────────────────────────────────────────┘
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Step 6: BKS3 Sealing Workflow to HSM                                    │
+│ Step 3: Initialize BKS3 with HSM                                        │
 │                                                                         │
-│ AziHsmPerformBks3SealingWorkflow()                                      │
+│ AziHsmInitBks3(State, ApiRevisionMax, BKS3Key)                          │
+│   • Sends 48-byte derived key to HSM device                             │
+│   • HSM wraps/encrypts the key → WrappedBKS3 (up to 1024 bytes)        │
+│   • Returns 16-byte GUID identifying this HSM/BKS3 pairing             │
+│   • Validates GUID size == AZIHSM_GUID_SIZE (16 bytes)                  │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 4: Generate Random AES Key and IV                                  │
 │                                                                         │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6a. Initialize BKS3 with HSM                                        │ │
-│ │     AziHsmInitBks3(BKS3Key)                                         │ │
-│ │     • Sends derived key to  HSM device                              │ │
-│ │     • HSM wraps/encrypts the key → WrappedBKS3 (up to 1024 bytes)   │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6b. Generate Random AES Key and IV                                  │ │
-│ │     • AziHsmTpmGetRandom() → Aes256Key (32 bytes)                   │ │
-│ │     • AziHsmTpmGetRandom() → Iv (16 bytes)                          │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6c. Encrypt WrappedBKS3 with AES-256-CBC                            │ │
-│ │     • Add PKCS7 padding to WrappedBKS3                              │ │
-│ │     • AziHsmAes256CbcEncrypt(WrappedBKS3, Key, IV)                  │ │
-│ │       → EncryptedWrappedKey                                         │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6d. Seal AES Key/IV to TPM Null Hierarchy                           │ │
-│ │     • Create KeyIvRecord structure (Key + IV + metadata)            │ │
-│ │     • AziHsmSealToTpmNullHierarchy(KeyIvRecord)                     │ │
-│ │       → SealedAesSecret                                             │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6e. Create Final Sealed Blob for HSM                                │ │
-│ │     SealedBKS3Buffer contains:                                      │ │
-│ │     • Size of SealedAesSecret (UINT16)                              │ │
-│ │     • SealedAesSecret data (TPM sealed AES key/IV)                  │ │
-│ │     • Size of EncryptedWrappedKey (UINT32)                          │ │
-│ │     • EncryptedWrappedKey data (AES-encrypted wrapped BKS3)         │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-│                                 │                                       │
-│                                 ▼                                       │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ 6f. Send Sealed Blob to HSM                                         │ │
-│ │     AziHsmSetSealedBks3(SealedBKS3Buffer)                           │ │
-│ │     • HSM stores the sealed blob for later retrieval                │ │
-│ │     • Blob can be unsealed only in current boot session             │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
+│ AziHsmTpmGetRandom(32) → Aes256Key                                      │
+│ AziHsmTpmGetRandom(16) → Iv                                             │
+│   • Uses TPM hardware RNG for cryptographic randomness                  │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 5: Encrypt WrappedBKS3 with AES-256-CBC                            │
+│                                                                         │
+│ • Apply PKCS7 padding to WrappedBKS3                                    │
+│ • AziHsmAes256CbcEncrypt(PaddedWrappedBKS3, Aes256Key, Iv)              │
+│   → EncryptedData                                                       │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 6: Seal AES Key/IV to TPM Null Hierarchy                           │
+│                                                                         │
+│ • Build AZIHSM_KEY_IV_RECORD {KeyVersion, Aes256Key, Iv}                │
+│ • AziHsmSealToTpmNullHierarchy(KeyIvRecord) → SealedAesSecret           │
+│                                                                         │
+│ Note: Sealed to Null hierarchy — blob cannot survive a reboot           │
+│ because the Null hierarchy seed is randomized at each boot.             │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 7: Package and Send Sealed Blob to HSM                             │
+│                                                                         │
+│ SealedBKS3Buffer layout:                                                │
+│ ┌──────────────────────────────────────────────────────────────────┐    │
+│ │ [2B: SealedAesSecret.Size]                                       │    │
+│ │ [NB: SealedAesSecret.Data — TPM-sealed AES key/IV]               │    │
+│ │ [2B: EncryptedDataSize]                                          │    │
+│ │ [MB: EncryptedData — AES-encrypted wrapped BKS3 key]             │    │
+│ └──────────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+│ AziHsmSetSealedBks3(State, ApiRevisionMax, SealedBKS3Buffer)            │
+│   • HSM stores the sealed blob for later retrieval                      │
+│   • Returns boolean success/failure                                     │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 8: Measure HSM GUID to TPM PCR 6                                   │
+│                                                                         │
+│ AziHsmMeasureGuidEvent(TcgContext)                                      │
+│   • Extends PCR 6 with JSON: {"azihsm-guid":"<GUID>"}                  │
+│   • Creates attestation trail linking boot state to HSM instance        │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Step 9: Cleanup                                                         │
+│                                                                         │
+│ ZeroMem all sensitive buffers:                                          │
+│   BKS3Key, TpmPlatformSecret, TpmDerivedSecret, Aes256Key, Iv,         │
+│   WrappedBKS3, EncryptedData, SealedBKS3Buffer, SealedAesSecret,       │
+│   HsmGuid, TcgContext                                                   │
+│ FreePool dynamically allocated buffers (InputData, EncryptedData)       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -650,309 +616,142 @@ The crypto operations occur in two distinct phases:
 
 ---
 
-##### Phase 1: Driver Entry - Platform Secret Derivation
+##### Phase 1: Driver Binding - BKS3 Derivation and Sealing
 
 ```
-┌──────────────┐         ┌──────────────┐         ┌──────────────┐
-│ UEFI Driver  │         │ AziHsmBKS3.c │         │   TPM 2.0    │
-│(AziHsmDxe.c) │         │ Crypto Module│         │              │
-└──────┬───────┘         └──────┬───────┘         └──────┬───────┘
-       │                        │                        │
-       │ AziHsmDriverEntry()    │                        │
-       │════════════════════════│                        │
-       │                        │                        │
-       │ AziHsmGetTpmPlatformSecret()                    │
-       │───────────────────────>│                        │
-       │                        │                        │
-       │                        │ AziHsmCreatePlatformPrimaryKeyedHash()
-       │                        │────┐                   │
-       │                        │    │ Prepare:          │
-       │                        │<───┘ - InSensitive     │
-       │                        │      - InPublic        │
-       │                        │      - UserData="AZIHSM_VM_BKS3_PRIMARY_KEY"
-       │                        │                        │
-       │                        │ InternalTpm2CreatePrimary()
-       │                        │───────────────────────>│
-       │                        │  TPM_CC_CreatePrimary  │
-       │                        │  Hierarchy: TPM_RH_PLATFORM
-       │                        │  Type: KeyedHash       │
-       │                        │  Scheme: HMAC-SHA256   │
-       │                        │                        │
-       │                        │                        │──┐
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐  ┌──────────────┐
+│ UEFI Driver  │         │ AziHsmBKS3.c │         │   TPM 2.0    │  │     HSM      │
+│(AziHsmDxe.c) │         │ Crypto Module│         │              │  │    Device    │
+└──────┬───────┘         └──────┬───────┘         └──────┬───────┘  └──────┬───────┘
+       │                        │                        │                 │
+       │ AziHsmDriverBindingStart()                      │                 │
+       │════════════════════════│                        │                 │
+       │                        │                        │                 │
+       │ AziHsmPerformBks3SealingWorkflow()               │                 │
+       │───────────────────────>│                        │                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 1: Derive TPM Platform Secret ────
+       │                        │                        │                 │
+       │                        │ AziHsmGetTpmPlatformSecret()              │
+       │                        │────┐                   │                 │
+       │                        │    │ AziHsmCreatePlatformPrimaryKeyedHash()
+       │                        │<───┘                   │                 │
+       │                        │                        │                 │
+       │                        │ InternalTpm2CreatePrimary()               │
+       │                        │───────────────────────>│                 │
+       │                        │  TPM_CC_CreatePrimary  │                 │
+       │                        │  Hierarchy: TPM_RH_PLATFORM              │
+       │                        │  Type: KeyedHash       │                 │
+       │                        │  Scheme: HMAC-SHA256   │                 │
+       │                        │                        │──┐              │
        │                        │                        │  │ Create Primary
-       │                        │                        │  │ Object in Platform
-       │                        │                        │<─┘ Hierarchy
-       │                        │                        │
-       │                        │<───────────────────────│
-       │                        │  Return: PrimaryHandle │
-       │                        │                        │
-       │                        │ Prepare HMAC Input     │
-       │                        │────┐                   │
-       │                        │    │ KdfInput =        │
-       │                        │<───┘ "AZIHSM_VM_BKS3_KDF"
-       │                        │                        │
-       │                        │ InternalTpm2HMAC()     │
-       │                        │───────────────────────>│
-       │                        │  TPM_CC_HMAC           │
-       │                        │  Handle: PrimaryHandle │
-       │                        │  Data: KdfInput        │
-       │                        │  HashAlg: SHA256       │
-       │                        │                        │
-       │                        │                        │──┐
-       │                        │                        │  │ Compute HMAC
-       │                        │                        │  │ using Primary Key
-       │                        │                        │<─┘ → PRK (32 bytes)
-       │                        │                        │
-       │                        │<───────────────────────│
-       │                        │  Return: HmacResult    │
-       │                        │          (32 bytes)    │
-       │                        │                        │
-       │                        │ Tpm2FlushContext()     │
-       │                        │───────────────────────>│
-       │                        │  Flush: PrimaryHandle  │
-       │                        │<───────────────────────│
-       │                        │                        │
-       │<───────────────────────│                        │
-       │ Return: TpmDerivedSecret (32 bytes)             │
-       │                        │                        │
-       │ Copy to AZIHSM_BUFFER  │                        │
-       │────┐                   │                        │
-       │    │ TpmDerivedSecretBlob.Data ← TpmDerivedSecret.KeyData
-       │    │ TpmDerivedSecretBlob.Size ← TpmDerivedSecret.KeySize (32)
-       │<───┘                   │                        │
-       │                        │                        │
-       │ AziHsmSealToTpmNullHierarchy()                  │
-       │───────────────────────>│                        │
-       │  Input: TpmDerivedSecretBlob (32 bytes)         │
-       │                        │                        │
-       │                        │ AziHsmCreateNullAesPrimary()
-       │                        │───────────────────────>│
-       │                        │  TPM_CC_CreatePrimary  │
-       │                        │  Hierarchy: TPM_RH_NULL│
-       │                        │  Type: RSA Storage     │
-       │                        │  KeyBits: 2048         │
-       │                        │  Symmetric: AES-128-CFB│
-       │                        │                        │
-       │                        │                        │──┐
-       │                        │                        │  │ Create Null
-       │                        │                        │  │ Hierarchy Primary
-       │                        │                        │<─┘ (session-bound)
-       │                        │                        │
-       │                        │<───────────────────────│
-       │                        │  Return: NullPrimary   │
-       │                        │                        │
-       │                        │ AziHsmTpmSealBuffer()  │
-       │                        │───────────────────────>│
-       │                        │  TPM_CC_Create         │
-       │                        │  Parent: NullPrimary   │
-       │                        │  Data: TpmDerivedSecretBlob (32 bytes)
-       │                        │  Type: KeyedHash (seal)│
-       │                        │                        │
-       │                        │                        │──┐
-       │                        │                        │  │ Create sealed
-       │                        │                        │  │ object with
-       │                        │                        │<─┘ TPM2B_PRIVATE
-       │                        │                        │    + TPM2B_PUBLIC
-       │                        │<───────────────────────│
-       │                        │  Return: SealedBlob    │
-       │                        │  (TPM2B_PRIVATE + TPM2B_PUBLIC)
-       │                        │                        │
-       │                        │ Tpm2FlushContext()     │
-       │                        │───────────────────────>│
-       │                        │  Flush: NullPrimary    │
-       │                        │<───────────────────────│
-       │                        │                        │
-       │<───────────────────────│                        │
-       │ Return: SealedSecretBlob                        │
-       │                        │                        │
-       │ Store in global:       │                        │
-       │ mAziHsmSealedPlatformSecret ← SealedSecretBlob  │
-       │ mAziHsmSealedPlatormSecretDerived = TRUE        │
-       │ ZeroMem sensitive data │                        │
-       │════════════════════════│                        │
-       │                        │                        │
-```
-
----
-
-##### Phase 2: Driver Binding - Per-Device BKS3 Derivation and Sealing
-
-```
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ UEFI Driver  │  │ AziHsmBKS3.c │  │   TPM 2.0    │  │     HSM      │ 
-│(AziHsmDxe.c) │  │ Crypto Module│  │              │  │    Device    │
-└──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-       │                 │                 │                 │
-       │ AziHsmDriverBindingStart()        │                 │
-       │═════════════════│                 │                 │
-       │                 │                 │                 │
-       │ AziHsmAdminIdentifyCtrl()         │                 │
-       │────────────────────────────────────────────────────>│
-       │                 │                 │  Admin Command  │
-       │                 │                 │  Get Device ID  │
-       │                 │                 │                 │──┐
-       │                 │                 │                 │  │ Return Device
-       │                 │                 │                 │<─┘ Serial Number
-       │<────────────────────────────────────────────────────│
-       │ HsmIdenData.Sn (Serial Number)    │                 │
-       │                 │                 │                 │
-       │ Validate: Serial Number != all zeros                │
-       │────┐            │                 │                 │
-       │<───┘            │                 │                 │
-       │                 │                 │                 │
-       │ AziHsmPerformBks3SealingWorkflow()                  │
-       │────────────────>│                 │                 │
-       │  Input: State, ApiRevisionMax,    │                 │
-       │         HsmSerialData             │                 │
-       │                 │                 │                 │
-       │                 │ AziHsmUnsealUsingTpmNullHierarchy()
-       │                 │────┐            │                 │
-       │                 │    │ Input:     │                 │
-       │                 │<───┘ mAziHsmSealedPlatformSecret  │
-       │                 │                 │                 │
-       │                 │ AziHsmCreateNullAesPrimary()      │
-       │                 │────────────────>│                 │
-       │                 │  TPM_CC_CreatePrimary             │
-       │                 │  Hierarchy: TPM_RH_NULL           │
-       │                 │  (same as sealing)                │
-       │                 │                 │                 │
-       │                 │                 │──┐              │
-       │                 │                 │  │ Recreate same│
-       │                 │                 │<─┘ Null Primary │
-       │                 │<────────────────│                 │
-       │                 │  Return: NullPrimary              │
-       │                 │                 │                 │
-       │                 │ AziHsmTpmLoadSealedBuffer()       │
-       │                 │────────────────>│                 │
-       │                 │  TPM_CC_Load    │                 │
-       │                 │  Parent: NullPrimary              │
-       │                 │  Private: TPM2B_PRIVATE           │
-       │                 │  Public: TPM2B_PUBLIC             │
-       │                 │                 │                 │
-       │                 │                 │──┐              │
-       │                 │                 │  │ Load sealed  │
-       │                 │                 │<─┘ object       │
-       │                 │<────────────────│                 │
-       │                 │  Return: ObjectHandle             │
-       │                 │                 │                 │
-       │                 │ AziHsmTpmUnsealBuffer()           │
-       │                 │────────────────>│                 │
-       │                 │  TPM_CC_Unseal  │                 │
-       │                 │  Handle: ObjectHandle             │
-       │                 │                 │                 │
-       │                 │                 │──┐              │
-       │                 │                 │  │ Decrypt and  │
-       │                 │                 │  │ return       │
-       │                 │                 │<─┘ plaintext    │
-       │                 │<────────────────│                 │
-       │                 │  TpmPlatformSecret (32 bytes)     │
-       │                 │                 │                 │
-       │                 │ Tpm2FlushContext()                │
-       │                 │────────────────>│                 │
-       │                 │  Flush: ObjectHandle, NullPrimary │
-       │                 │<────────────────│                 │
-       │                 │                 │                 │
-       │                 │ AziHsmDeriveBKS3fromId()          │
-       │                 │────┐            │                 │
-       │                 │    │ Input:     │                 │
-       │                 │    │ - TpmPlatformSecret (32bytes)|
-       │                 │    │ - HsmSerialData              │
-       │                 │<───┘            │                 │
-       │                 │                 │                 │
-       │                 │ ManualHkdfSha256Expand()          │
-       │                 │────┐            │                 │
-       │                 │    │ Software:  │                 │
-       │                 │    │ HKDF-Expand(│                │
-       │                 │    │   PRK = TpmPlatformSecret    |
-       |                 |               (32 bytes)          |
-       │                 │    │   Info = HsmSerialData,      │
-       │                 │    │   Length = 48)               │
-       │                 │<───┘ → BKS3Key (48 bytes)         │
-       │                 │                 │                 │
-       │                 │ AziHsmInitBks3()│                 │
-       │                 │──────────────────────────────────>│
-       │                 │  Input: BKS3Key.KeyData (48 bytes)│
-       │                 │                 │   BKS3 Init     │
-       │                 │                 │   Command       │
-       │                 │                 │                 │──┐
-       │                 │                 │                 │  │ Wrap/encrypt
-       │                 │                 │                 │  │ BKS3 key with
-       │                 │                 │                 │<─┘ internal key
-       │                 │<──────────────────────────────────│
-       │                 │  Return: WrappedBKS3              │
-       │                 │                 │                 │
-       │                 │ AziHsmTpmGetRandom()              │
-       │                 │────────────────>│                 │
-       │                 │  TPM_CC_GetRandom                 │
-       │                 │  BytesRequested: 32               │
-       │                 │<────────────────│                 │
-       │                 │  Return: Aes256Key                │
-       │                 │                 │                 │
-       │                 │ AziHsmTpmGetRandom()              │
-       │                 │────────────────>│                 │
-       │                 │  TPM_CC_GetRandom                 │
-       │                 │  BytesRequested: 16               │
-       │                 │<────────────────│                 │
-       │                 │  Return: Iv     │                 │
-       │                 │                 │                 │
-       │                 │ Apply PKCS7 Padding               │
-       │                 │────┐            │                 │
-       │                 │    │ Pad WrappedBKS3 to           │
-       │                 │<───┘ AES block size (16 bytes)    │
-       │                 │                 │                 │
-       │                 │ AziHsmAes256CbcEncrypt()          │
-       │                 │────┐            │                 │
-       │                 │    │ Software:  │                 │
-       │                 │    │ AES-256-CBC│                 │
-       │                 │    │ (BaseCryptLib)               │
-       │                 │<───┘ → EncryptedData              │
-       │                 │                 │                 │
-       │                 │ Prepare KeyIvRecord               │
-       │                 │────┐            │                 │
-       │                 │    │ - Copy Aes256Key             │
-       │                 │    │ - Copy Iv  │                 │
-       │                 │<───┘ - Set KeyVersion             │
-       │                 │                 │                 │
-       │                 │ AziHsmSealToTpmNullHierarchy()    │
-       │                 │────────────────>│                 │
-       │                 │  Input: KeyIvRecord               │
-       │                 │  (AES key + IV) │                 │
-       │                 │                 │                 │
-       │                 │ [Same sealing process as Phase 1] │
-       │                 │<────────────────│                 │
-       │                 │  Return: SealedAesSecret          │
-       │                 │                 │                 │
-       │                 │ Build SealedBKS3Buffer            │
-       │                 │────┐            │                 │
-       │                 │    │ -SealedAesSecret.Size(UINT16)|
-       │                 │    │ - SealedAesSecret.Data       │
-       │                 │    │ - EncryptedData.Size (UINT32)|
-       │                 │<───┘ - EncryptedData              │
-       │                 │                 │                 │
-       │                 │ AziHsmSetSealedBks3()             │
-       │                 │──────────────────────────────────>│
-       │                 │  Input: SealedBKS3Buffer          │
-       │                 │                 │   SetSealedBks3 │
-       │                 │                 │   Command       │
-       │                 │                 │                 │──┐
-       │                 │                 │                 │  │ Store sealed
-       │                 │                 │                 │<─┘ blob for later
-       │                 │<──────────────────────────────────│
-       │                 │  Return: Success                  │
-       │                 │                 │                 │
-       │                 │ ZeroMem all sensitive data        │
-       │                 │────┐            │                 │
-       │                 │    │ - BKS3Key  │                 │
-       │                 │    │ - TpmPlatformSecret          │
-       │                 │    │ - Aes256Key│                 │
-       │                 │    │ - Iv       │                 │
-       │                 │    │ - WrappedBKS3                │
-       │                 │<───┘ - EncryptedData              │
-       │                 │                 │                 │
-       │<────────────────│                 │                 │
-       │ Return: EFI_SUCCESS               │                 │
-       │════════════════ │                 │                 │
-       │                 │                 │                 │
+       │                        │                        │<─┘              │
+       │                        │<───────────────────────│                 │
+       │                        │  Return: PrimaryHandle │                 │
+       │                        │                        │                 │
+       │                        │ InternalTpm2HMAC()     │                 │
+       │                        │───────────────────────>│                 │
+       │                        │  Data: "AZIHSM_VM_BKS3_KDF"             │
+       │                        │  HashAlg: SHA256       │                 │
+       │                        │                        │──┐              │
+       │                        │                        │  │ HMAC → PRK   │
+       │                        │                        │<─┘ (32 bytes)   │
+       │                        │<───────────────────────│                 │
+       │                        │  Return: TpmDerivedSecret (32 bytes)     │
+       │                        │                        │                 │
+       │                        │ Tpm2FlushContext()     │                 │
+       │                        │───────────────────────>│                 │
+       │                        │<───────────────────────│                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 2: Derive BKS3 Key ────────────
+       │                        │                        │                 │
+       │                        │ AziHsmDeriveBKS3fromTpmPlatSecret()      │
+       │                        │────┐                   │                 │
+       │                        │    │ ManualHkdfSha256Expand()            │
+       │                        │    │   PRK  = TpmDerivedSecret (32B)     │
+       │                        │    │   Info = "AZIHSM_VM_BKS3_DEVICE"    │
+       │                        │    │   Output = BKS3Key (48B)            │
+       │                        │<───┘                   │                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 3: Init BKS3 with HSM ─────────
+       │                        │                        │                 │
+       │                        │ AziHsmInitBks3()       │                 │
+       │                        │──────────────────────────────────────────>│
+       │                        │  Input: BKS3Key (48B)  │                 │
+       │                        │                        │                 │──┐
+       │                        │                        │                 │  │ Wrap key
+       │                        │                        │                 │<─┘
+       │                        │<──────────────────────────────────────────│
+       │                        │  Return: WrappedBKS3 + GUID (16B)       │
+       │                        │                        │                 │
+       │                        │ ──── Step 4: Generate Random AES Key ─────
+       │                        │                        │                 │
+       │                        │ AziHsmTpmGetRandom(32) │                 │
+       │                        │───────────────────────>│                 │
+       │                        │<───────────────────────│                 │
+       │                        │  Return: Aes256Key     │                 │
+       │                        │                        │                 │
+       │                        │ AziHsmTpmGetRandom(16) │                 │
+       │                        │───────────────────────>│                 │
+       │                        │<───────────────────────│                 │
+       │                        │  Return: Iv            │                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 5: Encrypt WrappedBKS3 ─────────
+       │                        │                        │                 │
+       │                        │ AziHsmAes256CbcEncrypt()                 │
+       │                        │────┐                   │                 │
+       │                        │    │ AES-256-CBC       │                 │
+       │                        │    │ + PKCS7 padding   │                 │
+       │                        │<───┘ → EncryptedData   │                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 6: Seal AES Key/IV ─────────────
+       │                        │                        │                 │
+       │                        │ AziHsmSealToTpmNullHierarchy()           │
+       │                        │───────────────────────>│                 │
+       │                        │  Input: KeyIvRecord    │                 │
+       │                        │  Hierarchy: TPM_RH_NULL│                 │
+       │                        │                        │──┐              │
+       │                        │                        │  │ Create Null  │
+       │                        │                        │  │ Primary +    │
+       │                        │                        │<─┘ Seal object  │
+       │                        │<───────────────────────│                 │
+       │                        │  Return: SealedAesSecret                │
+       │                        │                        │                 │
+       │                        │ ──── Step 7: Send Sealed Blob to HSM ─────
+       │                        │                        │                 │
+       │                        │ Build SealedBKS3Buffer │                 │
+       │                        │────┐                   │                 │
+       │                        │    │ Pack: SealedAesSecret               │
+       │                        │<───┘     + EncryptedData                 │
+       │                        │                        │                 │
+       │                        │ AziHsmSetSealedBks3()  │                 │
+       │                        │──────────────────────────────────────────>│
+       │                        │  Input: SealedBKS3Buffer                 │
+       │                        │                        │                 │──┐
+       │                        │                        │                 │  │ Store
+       │                        │                        │                 │<─┘ blob
+       │                        │<──────────────────────────────────────────│
+       │                        │  Return: IsHSMSealSuccess = TRUE        │
+       │                        │                        │                 │
+       │                        │ ──── Step 8: Measure GUID to PCR 6 ──────
+       │                        │                        │                 │
+       │                        │ AziHsmMeasureGuidEvent()                 │
+       │                        │───────────────────────>│                 │
+       │                        │  PCR 6 ← {"azihsm-guid":"<GUID>"}      │
+       │                        │<───────────────────────│                 │
+       │                        │                        │                 │
+       │                        │ ──── Step 9: Cleanup ─────────────────────
+       │                        │                        │                 │
+       │                        │ ZeroMem all sensitive data               │
+       │                        │────┐                   │                 │
+       │                        │    │ BKS3Key, TpmPlatformSecret,         │
+       │                        │    │ Aes256Key, Iv, WrappedBKS3,         │
+       │                        │<───┘ EncryptedData, etc.                 │
+       │                        │                        │                 │
+       │<───────────────────────│                        │                 │
+       │ Return: EFI_SUCCESS    │                        │                 │
+       │════════════════════════│                        │                 │
+       │                        │                        │                 │
 ```
 
 ---
@@ -965,18 +764,19 @@ The crypto operations occur in two distinct phases:
 |----------|-------|---------|
 | `AZIHSM_PRIMARY_KEY_USER_DATA` | "AZIHSM_VM_BKS3_PRIMARY_KEY" | Seeds platform hierarchy primary key |
 | `AZIHSM_HASH_USER_INPUT` | "AZIHSM_VM_BKS3_KDF" | Input for HKDF PRK generation via TPM2_HMAC |
-| `AZIHSM_APPLICATION_INFO` | "AZIHSM_VM_BKS3_HASH_INFO" | Context info for HKDF-Expand |
 | `AZIHSM_DERIVED_KEY_SIZE` | 48 bytes | Output key size (384 bits for BKS3) |
+| `AZIHSM_BKS3_HKDF_INFO` | "AZIHSM_VM_BKS3_DEVICE" | Fixed HKDF-Expand Info context string for BKS3 derivation |
 | `AZIHSM_AES256_KEY_SIZE` | 32 bytes | AES-256 key size for encrypting wrapped keys |
 | `AZIHSM_AES_IV_SIZE` | 16 bytes | AES initialization vector size |
+| `AZIHSM_TCG_PCR_INDEX` | 6 | TPM PCR index for HSM GUID measurement |
 
 ##### TPM Hierarchies Used
 
-1. **TPM_RH_PLATFORM**: Used in DriverEntry for initial key derivation
+1. **TPM_RH_PLATFORM**: Used in `AziHsmGetTpmPlatformSecret()` for key derivation
    - Platform hierarchy provides platform-wide secrets
    - Requires platform authorization (typically available during firmware execution)
 
-2. **TPM_RH_NULL**: Used for sealing/unsealing
+2. **TPM_RH_NULL**: Used for sealing AES key/IV
    - Null hierarchy seed resets on every reboot
    - Perfect for session-bound secrets that shouldn't persist
    - No authorization required
@@ -988,18 +788,11 @@ The crypto operations occur in two distinct phases:
 
 ```
 AziHsmDriverEntry()
-├── 1. TPM-Based Secret Derivation
-│   ├── AziHsmGetTpmPlatformSecret() - Generate platform secret from TPM
-│   ├── AziHsmSealToTpmNullHierarchy() - Seal secret to current boot session
-│   └── Store sealed secret globally (mAziHsmSealedPlatformSecret)
-├── 2. Protocol Installation
+├── 1. Protocol Installation
 │   ├── Install Driver Binding Protocol
 │   ├── Install Component Name Protocols
 │   └── Install Driver Supported EFI Version Protocol
-├── 3. Event Registration
-│   ├── Register Ready-to-Boot event (successful boot scenarios)
-│   └── Register Unable-to-Boot event (boot failure scenarios)
-└── 4. Return success status
+└── 2. Return success status
 ```
 
 ### Device Discovery and Binding
@@ -1033,19 +826,18 @@ Device Start Sequence:
 ├── 4. Hardware Initialization
 │   ├── AziHsmHciInitialize() - Initialize Host Controller Interface
 │   └── AziHsmInitHsm() - Initialize HSM device
-├── 5. HSM Identity and Authentication
-│   ├── AziHsmAdminIdentifyCtrl() - Get HSM unique identifier
-│   ├── Validate HSM serial number (non-zero check)
+├── 5. API Version Negotiation
 │   └── AziHsmGetApiRevision() - Determine API capabilities
 ├── 6. BKS3 Key Derivation and Sealing Workflow
-│   ├── Unseal platform secret (mAziHsmSealedPlatformSecret)
-│   ├── AziHsmDeriveBKS3fromId() - Derive device-specific BKS3 key
-│   ├── AziHsmPerformBks3SealingWorkflow() - Complete sealing workflow:
-│   │   ├── AziHsmInitBks3() - Get wrapped key from HSM
-│   │   ├── Generate random AES key/IV from TPM
-│   │   ├── Encrypt wrapped key with AES-256-CBC
-│   │   ├── Seal AES key/IV to TPM Null hierarchy
-│   │   └── AziHsmSetSealedBks3() - Send sealed blob to HSM
+│   └── AziHsmPerformBks3SealingWorkflow(State, &ApiRevisionMax):
+│       ├── AziHsmGetTpmPlatformSecret() - Derive TPM platform secret
+│       ├── AziHsmDeriveBKS3fromTpmPlatSecret() - Derive BKS3 key via HKDF-Expand
+│       ├── AziHsmInitBks3() - Get wrapped key from HSM
+│       ├── Generate random AES key/IV from TPM
+│       ├── Encrypt wrapped key with AES-256-CBC
+│       ├── Seal AES key/IV to TPM Null hierarchy
+│       ├── AziHsmSetSealedBks3() - Send sealed blob to HSM
+│       └── AziHsmMeasureGuidEvent() - Measure HSM GUID to PCR 6
 └── 7. Cleanup and Return
     └── Zero all temporary key material
 ```
@@ -1057,21 +849,23 @@ The Boot Key Storage System 3 (BKS3) provides hierarchical key management:
 #### Key Derivation Hierarchy
 ```
 TPM Platform Hierarchy
-├── AziHsmDeriveSecretFromTpm()
-│   └── Base Platform Key (unique per boot)
-├── AziHsmSealToNullHierarchy()
-│   └── Sealed Platform Key (persistent during boot session)
-├── Device-Specific Derivation
-│   ├── Input: Sealed Platform Key + HSM Serial Number
-│   ├── AziHsmDeriveSecretFromBlob()
-│   └── Output: Device-Specific BKS3 Key
+├── AziHsmGetTpmPlatformSecret()
+│   └── 32-byte PRK derived via HMAC-SHA256
+├── BKS3 Key Derivation
+│   ├── Input: PRK + fixed context string (AZIHSM_BKS3_HKDF_INFO)
+│   ├── HKDF-Expand (RFC 5869)
+│   └── Output: 48-byte BKS3 Key
 └── HSM Integration
-    └── AziHsmInitBks3() - Provision key to HSM hardware
+    ├── AziHsmInitBks3() - Provision key to HSM hardware
+    ├── AES-256-CBC encryption of wrapped key
+    ├── TPM Null hierarchy sealing of AES key/IV
+    ├── AziHsmSetSealedBks3() - Store sealed blob in HSM
+    └── AziHsmMeasureGuidEvent() - Extend PCR 6 with HSM GUID
 ```
 
 #### Security Properties
 - **Boot Session Binding**: Keys are sealed to TPM null hierarchy, ensuring they don't persist across reboots
-- **Device Uniqueness**: Each HSM device gets a unique key derived from its serial number
+- **Context Binding**: BKS3 key is derived via HKDF-Expand using the fixed context string `AZIHSM_BKS3_HKDF_INFO` ("AZIHSM_VM_BKS3_DEVICE")
 - **Forward Secrecy**: Key material is automatically invalidated at boot transition
 
 ### Sensitive Data Cleanup System
