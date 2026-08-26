@@ -1,0 +1,13 @@
+## @file
+# CI configuration for MsvmPkg source checks.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+{
+    "UncrustifyCheck": {
+        "AuditOnly": true,
+        "IgnoreFiles": [],
+        "OutputFileDiffs": false
+    }
+}
