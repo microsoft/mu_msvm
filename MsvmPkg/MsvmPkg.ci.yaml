@@ -6,7 +6,7 @@
 ##
 {
     "UncrustifyCheck": {
-        "AuditOnly": true,
+        "AuditOnly": false,
         "IgnoreFiles": [],
         "OutputFileDiffs": false
     }

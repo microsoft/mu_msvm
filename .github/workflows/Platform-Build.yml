@@ -15,6 +15,39 @@ env:
   BASE_VERSION: "26.0"
 
 jobs:
+  uncrustify:
+    name: Uncrustify
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r pip_requirement_stable.txt
+
+      - name: Download Uncrustify
+        run: stuart_update -c .pytool/CISettings.py
+
+      - name: Check C Formatting
+        run: >-
+          stuart_ci_build
+          -c .pytool/CISettings.py
+          -p MsvmPkg
+          -t NO-TARGET
+          -a X64,AARCH64
+          --disable-all
+          UncrustifyCheck=run
+
   build:
     runs-on: windows-2022
 
@@ -145,7 +178,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build]
+    needs: [uncrustify, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
