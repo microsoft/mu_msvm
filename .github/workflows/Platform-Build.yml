@@ -15,11 +15,14 @@ env:
   BASE_VERSION: "26.0"
 
 jobs:
-  uncrustify:
-    name: Uncrustify
+  source-checks:
+    name: Source Checks
     runs-on: windows-2022
 
     steps:
+      - name: Disable Automatic Line Ending Conversion
+        run: git config --global core.autocrlf false
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -35,10 +38,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r pip_requirement_stable.txt
 
-      - name: Download Uncrustify
+      - name: Download Source Check Dependencies
         run: stuart_update -c .pytool/CISettings.py
 
-      - name: Check C Formatting
+      - name: Run Source Checks
         run: >-
           stuart_ci_build
           -c .pytool/CISettings.py
@@ -46,6 +49,8 @@ jobs:
           -t NO-TARGET
           -a X64,AARCH64
           --disable-all
+          GuidCheck=run
+          LineEndingCheck=run
           UncrustifyCheck=run
 
   build:
@@ -178,7 +183,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [uncrustify, build]
+    needs: [source-checks, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
