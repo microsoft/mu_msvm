@@ -247,14 +247,14 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmInitBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE *State,
-  IN CONST AZIHSM_DDI_API_REV      *ApiRevision,
-  IN CONST UINT8                   *DerivedKey,
+  IN CONST AZIHSM_CONTROLLER_STATE  *State,
+  IN CONST AZIHSM_DDI_API_REV       *ApiRevision,
+  IN CONST UINT8                    *DerivedKey,
   IN       UINTN                    KeySize,
-  OUT      UINT8                   *WrappedKey,
-  IN OUT   UINT16                  *WrappedKeySize, // Should pass max memory, and returns wrapped key size
-  OUT      UINT8                   *Guid,
-  IN OUT   UINT16                  *GuidSize
+  OUT      UINT8                    *WrappedKey,
+  IN OUT   UINT16                   *WrappedKeySize, // Should pass max memory, and returns wrapped key size
+  OUT      UINT8                    *Guid,
+  IN OUT   UINT16                   *GuidSize
   )
 {
   /*
@@ -492,19 +492,19 @@ Cleanup:
 
 /**
   Set sealed BKS3 (Boot Key Store 3) data in the Azure Integrated HSM device.
-  
+
   This function encodes a SetSealedBks3 request with the provided sealed data blob,
   sends it to the Azure Integrated HSM device via HSM command interface, and
   returns whether the sealing operation was successful.
-  
+
   @param[in]  State           Pointer to the Azure Integrated HSM controller state.
   @param[in]  ApiRevision     DDI API revision structure containing major and minor version.
   @param[in]  DataBlob        Pointer to the sealed data blob to be set in HSM.
-  @param[in]  DataSize        Size of the data blob in bytes. Must not exceed 
+  @param[in]  DataSize        Size of the data blob in bytes. Must not exceed
                               AZIHSM_DDI_SET_SEALED_BKS3_REQ_MAX_DATA_LENGTH and must be greater than 0.
   @param[out] IsSealSuccess   Pointer to boolean to receive the sealing operation result.
                               TRUE if sealing was successful, FALSE otherwise.
-  
+
   @retval EFI_SUCCESS           SetSealedBks3 operation completed successfully.
   @retval EFI_INVALID_PARAMETER One or more input parameters are invalid:
                                 - State is NULL
@@ -524,201 +524,215 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmSetSealedBks3 (
-  IN CONST AZIHSM_CONTROLLER_STATE *State,
-  IN CONST AZIHSM_DDI_API_REV      *ApiRevision,
-  IN CONST UINT8                   *DataBlob,
+  IN CONST AZIHSM_CONTROLLER_STATE  *State,
+  IN CONST AZIHSM_DDI_API_REV       *ApiRevision,
+  IN CONST UINT8                    *DataBlob,
   IN       UINTN                    DataSize,
-  OUT      BOOLEAN                 *IsSealSuccess
-  ){
-    /*
-    Function for BKS3 sealing.
-    1. Encode SetSeal request
-    2. Fire hsmcommand for setseal
-    3. return seal is success or fail 
+  OUT      BOOLEAN                  *IsSealSuccess
+  )
+{
+  /*
+  Function for BKS3 sealing.
+  1. Encode SetSeal request
+  2. Fire hsmcommand for setseal
+  3. return seal is success or fail
 
-    */
+  */
 
-    // Local variable
-    AZIHSM_MBOR_ENCODER         Encoder            = {0};
-    AZIHSM_MBOR_DECODER         Decoder            = {0};
-    AZIHSM_DMA_BUFFER           InBuffer           = {0};
-    AZIHSM_DMA_BUFFER           OutBuffer          = {0};
-    DDI_OPERATION_CODE          OpCode             = 0;
-    UINTN                       EncodedSize        = 0;
-    UINTN                       DecodedSize        = 0;
-    EFI_STATUS                  Status             = EFI_SUCCESS;
-    UINT32                      FwSts              = 0;
-    BOOLEAN                     InBufferAllocated  = FALSE;
-    BOOLEAN                     OutBufferAllocated = FALSE;
-    UINT32                      ResponseSize       = 0;
+  // Local variable
+  AZIHSM_MBOR_ENCODER  Encoder            = { 0 };
+  AZIHSM_MBOR_DECODER  Decoder            = { 0 };
+  AZIHSM_DMA_BUFFER    InBuffer           = { 0 };
+  AZIHSM_DMA_BUFFER    OutBuffer          = { 0 };
+  DDI_OPERATION_CODE   OpCode             = 0;
+  UINTN                EncodedSize        = 0;
+  UINTN                DecodedSize        = 0;
+  EFI_STATUS           Status             = EFI_SUCCESS;
+  UINT32               FwSts              = 0;
+  BOOLEAN              InBufferAllocated  = FALSE;
+  BOOLEAN              OutBufferAllocated = FALSE;
+  UINT32               ResponseSize       = 0;
 
-    AZIHSM_CP_CMD_SQE_SRC_DATA  SessionData        = {0};
-    // Local variables for SetSealedBks3 
-    AZIHSM_DDI_SET_SEALED_BKS3_REQ  SetSealedBks3Req  = {0};
-    AZIHSM_DDI_SET_SEALED_BKS3_RESP SetSealedBks3Resp = FALSE; // Boolean response
-    UINT8 SetSealedBks3Data[AZIHSM_DDI_SET_SEALED_BKS3_REQ_MAX_DATA_LENGTH];
-    
-    // Initialize SetSealedBks3 data
-    ZeroMem(SetSealedBks3Data, sizeof(SetSealedBks3Data));
+  AZIHSM_CP_CMD_SQE_SRC_DATA  SessionData = { 0 };
+  // Local variables for SetSealedBks3
+  AZIHSM_DDI_SET_SEALED_BKS3_REQ   SetSealedBks3Req  = { 0 };
+  AZIHSM_DDI_SET_SEALED_BKS3_RESP  SetSealedBks3Resp = FALSE;  // Boolean response
+  UINT8                            SetSealedBks3Data[AZIHSM_DDI_SET_SEALED_BKS3_REQ_MAX_DATA_LENGTH];
 
-    //log test started
-    DEBUG((DEBUG_INFO, "AzihsmDdiApi: AziHsmSetSealedBks3 started\n"));
+  // Initialize SetSealedBks3 data
+  ZeroMem (SetSealedBks3Data, sizeof (SetSealedBks3Data));
 
-    // Validate input parameter
-    if (State == NULL) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Invalid State parameter in AziHsmSetSealedBks3\n"));
-        return EFI_INVALID_PARAMETER;
-    }
+  // log test started
+  DEBUG ((DEBUG_INFO, "AzihsmDdiApi: AziHsmSetSealedBks3 started\n"));
 
-    // Ensure PciIo is available
-    if (State->PciIo == NULL) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: PciIo is not initialized in State\n"));
-        return EFI_DEVICE_ERROR;
-    }
-    //check datablob is null or not
-    if((DataBlob == NULL) || IsSealSuccess == NULL) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Invalid DataBlob or IsSealSuccess parameter in AziHsmSetSealedBks3\n"));
-        return EFI_INVALID_PARAMETER;
-    }
-    //check if datasize is valid, else return error
-    if((DataSize == 0) || (DataSize > AZIHSM_DDI_SET_SEALED_BKS3_REQ_MAX_DATA_LENGTH)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Invalid data size for SetSealedBks3 request\n"));
-        return EFI_INVALID_PARAMETER;
-    }
+  // Validate input parameter
+  if (State == NULL) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Invalid State parameter in AziHsmSetSealedBks3\n"));
+    return EFI_INVALID_PARAMETER;
+  }
 
-    // Init DMA buffers first
-    Status = AziHsmDmaBufferAlloc(State->PciIo,  EFI_SIZE_TO_PAGES(AZIHSM_DDI_DMA_BUFFER_SIZE), &InBuffer);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize InBuffer: %r\n", Status));
-        goto Cleanup;
-    } else {
-        InBufferAllocated = TRUE;
-    }
+  // Ensure PciIo is available
+  if (State->PciIo == NULL) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: PciIo is not initialized in State\n"));
+    return EFI_DEVICE_ERROR;
+  }
 
-    //Init DMA out buffer
-    Status = AziHsmDmaBufferAlloc(State->PciIo,  EFI_SIZE_TO_PAGES(AZIHSM_DDI_DMA_BUFFER_SIZE), &OutBuffer);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: AziHsmSetSealedBks3 Failed to initialize OutBuffer: %r\n", Status));
-        goto Cleanup;
-    } else {
-        OutBufferAllocated = TRUE;
-    }
+  // check datablob is null or not
+  if ((DataBlob == NULL) || (IsSealSuccess == NULL)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Invalid DataBlob or IsSealSuccess parameter in AziHsmSetSealedBks3\n"));
+    return EFI_INVALID_PARAMETER;
+  }
 
-    // Clear the DMA input buffer
-    ZeroMem(InBuffer.HostAddress, InBuffer.NumberOfBytes);
+  // check if datasize is valid, else return error
+  if ((DataSize == 0) || (DataSize > AZIHSM_DDI_SET_SEALED_BKS3_REQ_MAX_DATA_LENGTH)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Invalid data size for SetSealedBks3 request\n"));
+    return EFI_INVALID_PARAMETER;
+  }
 
-    // Init MBOR encoder using DMA buffer directly
-    if(InBuffer.NumberOfBytes > MAX_UINT16) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: InBuffer size exceeds MAX_UINT16\n"));
-        goto Cleanup;
-    }
-    Status = AziHsmMborEncoderInit(&Encoder, InBuffer.HostAddress, (UINT16)InBuffer.NumberOfBytes);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: AziHsmSetSealedBks3 Failed to initialize MBOR encoder: %r\n", Status));
-        goto Cleanup;
-    }
+  // Init DMA buffers first
+  Status = AziHsmDmaBufferAlloc (State->PciIo, EFI_SIZE_TO_PAGES (AZIHSM_DDI_DMA_BUFFER_SIZE), &InBuffer);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize InBuffer: %r\n", Status));
+    goto Cleanup;
+  } else {
+    InBufferAllocated = TRUE;
+  }
 
-    
-    // Use the  response data from tpm  for SetSealedBks3
-    CopyMem(SetSealedBks3Data, DataBlob, DataSize);
-    SetSealedBks3Req.SealedBks3.Length = (UINT16)DataSize;
-    DEBUG((DEBUG_INFO, "AzihsmDdiApi: Copied %d bytes for SetSealedBks3 request\n", SetSealedBks3Req.SealedBks3.Length));
-   
-    // Prepare SetSealedBks3 request with the data we got from InitBks3 response
-    SetSealedBks3Req.SealedBks3.Data = SetSealedBks3Data;
+  // Init DMA out buffer
+  Status = AziHsmDmaBufferAlloc (State->PciIo, EFI_SIZE_TO_PAGES (AZIHSM_DDI_DMA_BUFFER_SIZE), &OutBuffer);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: AziHsmSetSealedBks3 Failed to initialize OutBuffer: %r\n", Status));
+    goto Cleanup;
+  } else {
+    OutBufferAllocated = TRUE;
+  }
 
-    // Encode SetSealedBks3 request (Session ID is null for now)
-    Status = AzihsmEncodeSetSealedBks3Req(&Encoder, ApiRevision, NULL, &SetSealedBks3Req, &EncodedSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to encode SetSealedBks3 request: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Set operation code for SetSealedBks3
-    OpCode = 0;
-    ResponseSize = (UINT32)OutBuffer.NumberOfBytes;
-    
-    // Fire HSM command for SetSealedBks3
-    Status = AziHsmFireHsmCmd((AZIHSM_CONTROLLER_STATE *)State, &InBuffer, (UINT32 *)&EncodedSize, &OutBuffer, &ResponseSize, OpCode, &SessionData, &FwSts);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to fire SetSealedBks3 HSM command: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Validate response size doesn't exceed buffer capacity
-    if (ResponseSize > OutBuffer.NumberOfBytes) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Response size (%d) exceeds OutBuffer capacity (%d)\n", ResponseSize, OutBuffer.NumberOfBytes));
-        Status = EFI_PROTOCOL_ERROR;
-        goto Cleanup;
-    }
-    
-    // Check FwSts for success (0 means success)
-    DEBUG((DEBUG_INFO, "AzihsmDdiApi: SetSealedBks3 HSM command FwSts: %d\n", FwSts));
-    
-    // Handle firmware error status
-    if (FwSts != 0) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: SetSealedBks3 HSM command failed with FwSts: %d\n", FwSts));
-        Status = EFI_DEVICE_ERROR;
-        goto Cleanup;
-    }
-    
-    // Initialize decoder with received buffer for SetSealedBks3
-    if (ResponseSize > MAX_UINT16) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Response size exceeds MAX_UINT16: %d\n", ResponseSize));
-        Status = EFI_PROTOCOL_ERROR;
-        goto Cleanup;
-    }
-    Status = AziHsmMborDecoderInit(&Decoder, OutBuffer.HostAddress, (UINT16)ResponseSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize MBOR decoder for SetSealedBks3: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Decode SetSealedBks3 response (now returns boolean based on DDI status)
-    Status = AzihsmDecodeSetSealedBks3Resp(&Decoder, &SetSealedBks3Resp, &DecodedSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to decode SetSealedBks3 response: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Check if decoded size matches response size
-    if (DecodedSize != ResponseSize) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: SetSealedBks3 decoded size (%d) does not match response size (%d)\n", DecodedSize, ResponseSize));
-        Status = EFI_PROTOCOL_ERROR;
-        goto Cleanup;
-    }
-    
-    // Validate that FwSts and decoded response are consistent
-    BOOLEAN ExpectedResponse = (FwSts == 0) ? TRUE : FALSE;
-    if (SetSealedBks3Resp == ExpectedResponse) {
-        DEBUG((DEBUG_INFO, "AzihsmDdiApi: SetSealedBks3 response  successful - FwSts: %d, Response: %a\n", 
-               FwSts, SetSealedBks3Resp ? "TRUE" : "FALSE"));
-    } else {
-        DEBUG((DEBUG_WARN, "AzihsmDdiApi: SetSealedBks3 response mismatch - FwSts: %d, Response: %a, Expected: %a\n",
-               FwSts, SetSealedBks3Resp ? "TRUE" : "FALSE", ExpectedResponse ? "TRUE" : "FALSE"));
-    }
-    
-    // Set the output parameter to indicate sealing success
-    *IsSealSuccess = SetSealedBks3Resp;
+  // Clear the DMA input buffer
+  ZeroMem (InBuffer.HostAddress, InBuffer.NumberOfBytes);
 
-    DEBUG((DEBUG_INFO, "AzihsmDdiApi: SetSealedBks3  completed - Result: %a\n", SetSealedBks3Resp ? "SUCCESS" : "FAILURE"));
+  // Init MBOR encoder using DMA buffer directly
+  if (InBuffer.NumberOfBytes > MAX_UINT16) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: InBuffer size exceeds MAX_UINT16\n"));
+    goto Cleanup;
+  }
+
+  Status = AziHsmMborEncoderInit (&Encoder, InBuffer.HostAddress, (UINT16)InBuffer.NumberOfBytes);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: AziHsmSetSealedBks3 Failed to initialize MBOR encoder: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Use the  response data from tpm  for SetSealedBks3
+  CopyMem (SetSealedBks3Data, DataBlob, DataSize);
+  SetSealedBks3Req.SealedBks3.Length = (UINT16)DataSize;
+  DEBUG ((DEBUG_INFO, "AzihsmDdiApi: Copied %d bytes for SetSealedBks3 request\n", SetSealedBks3Req.SealedBks3.Length));
+
+  // Prepare SetSealedBks3 request with the data we got from InitBks3 response
+  SetSealedBks3Req.SealedBks3.Data = SetSealedBks3Data;
+
+  // Encode SetSealedBks3 request (Session ID is null for now)
+  Status = AzihsmEncodeSetSealedBks3Req (&Encoder, ApiRevision, NULL, &SetSealedBks3Req, &EncodedSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to encode SetSealedBks3 request: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Set operation code for SetSealedBks3
+  OpCode       = 0;
+  ResponseSize = (UINT32)OutBuffer.NumberOfBytes;
+
+  // Fire HSM command for SetSealedBks3
+  Status = AziHsmFireHsmCmd ((AZIHSM_CONTROLLER_STATE *)State, &InBuffer, (UINT32 *)&EncodedSize, &OutBuffer, &ResponseSize, OpCode, &SessionData, &FwSts);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to fire SetSealedBks3 HSM command: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Validate response size doesn't exceed buffer capacity
+  if (ResponseSize > OutBuffer.NumberOfBytes) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Response size (%d) exceeds OutBuffer capacity (%d)\n", ResponseSize, OutBuffer.NumberOfBytes));
+    Status = EFI_PROTOCOL_ERROR;
+    goto Cleanup;
+  }
+
+  // Check FwSts for success (0 means success)
+  DEBUG ((DEBUG_INFO, "AzihsmDdiApi: SetSealedBks3 HSM command FwSts: %d\n", FwSts));
+
+  // Handle firmware error status
+  if (FwSts != 0) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: SetSealedBks3 HSM command failed with FwSts: %d\n", FwSts));
+    Status = EFI_DEVICE_ERROR;
+    goto Cleanup;
+  }
+
+  // Initialize decoder with received buffer for SetSealedBks3
+  if (ResponseSize > MAX_UINT16) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Response size exceeds MAX_UINT16: %d\n", ResponseSize));
+    Status = EFI_PROTOCOL_ERROR;
+    goto Cleanup;
+  }
+
+  Status = AziHsmMborDecoderInit (&Decoder, OutBuffer.HostAddress, (UINT16)ResponseSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize MBOR decoder for SetSealedBks3: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Decode SetSealedBks3 response (now returns boolean based on DDI status)
+  Status = AzihsmDecodeSetSealedBks3Resp (&Decoder, &SetSealedBks3Resp, &DecodedSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to decode SetSealedBks3 response: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Check if decoded size matches response size
+  if (DecodedSize != ResponseSize) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: SetSealedBks3 decoded size (%d) does not match response size (%d)\n", DecodedSize, ResponseSize));
+    Status = EFI_PROTOCOL_ERROR;
+    goto Cleanup;
+  }
+
+  // Validate that FwSts and decoded response are consistent
+  BOOLEAN  ExpectedResponse = (FwSts == 0) ? TRUE : FALSE;
+
+  if (SetSealedBks3Resp == ExpectedResponse) {
+    DEBUG ((
+      DEBUG_INFO,
+      "AzihsmDdiApi: SetSealedBks3 response  successful - FwSts: %d, Response: %a\n",
+      FwSts,
+      SetSealedBks3Resp ? "TRUE" : "FALSE"
+      ));
+  } else {
+    DEBUG ((
+      DEBUG_WARN,
+      "AzihsmDdiApi: SetSealedBks3 response mismatch - FwSts: %d, Response: %a, Expected: %a\n",
+      FwSts,
+      SetSealedBks3Resp ? "TRUE" : "FALSE",
+      ExpectedResponse ? "TRUE" : "FALSE"
+      ));
+  }
+
+  // Set the output parameter to indicate sealing success
+  *IsSealSuccess = SetSealedBks3Resp;
+
+  DEBUG ((DEBUG_INFO, "AzihsmDdiApi: SetSealedBks3  completed - Result: %a\n", SetSealedBks3Resp ? "SUCCESS" : "FAILURE"));
 
 Cleanup:
-    // Clear sensitive data from DMA buffers before freeing
-    if (InBufferAllocated) {
-        ZeroMem(InBuffer.HostAddress, InBuffer.NumberOfBytes);
-        AziHsmDmaBufferFree(&InBuffer);
-    }
-    
-    if (OutBufferAllocated) {
-        ZeroMem(OutBuffer.HostAddress, OutBuffer.NumberOfBytes);
-        AziHsmDmaBufferFree(&OutBuffer);
-    }
-    
-    // Clear local sensitive data buffers
-    ZeroMem(SetSealedBks3Data, sizeof(SetSealedBks3Data));
-    
-    return Status;
+  // Clear sensitive data from DMA buffers before freeing
+  if (InBufferAllocated) {
+    ZeroMem (InBuffer.HostAddress, InBuffer.NumberOfBytes);
+    AziHsmDmaBufferFree (&InBuffer);
+  }
+
+  if (OutBufferAllocated) {
+    ZeroMem (OutBuffer.HostAddress, OutBuffer.NumberOfBytes);
+    AziHsmDmaBufferFree (&OutBuffer);
+  }
+
+  // Clear local sensitive data buffers
+  ZeroMem (SetSealedBks3Data, sizeof (SetSealedBks3Data));
+
+  return Status;
 }
 
 /**
@@ -754,167 +768,179 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 AziHsmGetSealedBks3 (
-  IN  CONST AZIHSM_CONTROLLER_STATE *State,
-  IN  CONST AZIHSM_DDI_API_REV      *ApiRevision,
-  OUT UINT8                         *DataBlob,
+  IN  CONST AZIHSM_CONTROLLER_STATE  *State,
+  IN  CONST AZIHSM_DDI_API_REV       *ApiRevision,
+  OUT UINT8                          *DataBlob,
   IN  UINTN                          DataBlobSize,
-  OUT UINTN                         *DataSize
-  ){
-    // Local variable
-    AZIHSM_MBOR_ENCODER         Encoder            = {0};
-    AZIHSM_MBOR_DECODER         Decoder            = {0};
-    AZIHSM_DMA_BUFFER           InBuffer           = {0};
-    AZIHSM_DMA_BUFFER           OutBuffer          = {0};
-    DDI_OPERATION_CODE          OpCode             = 0;
-    UINTN                       EncodedSize        = 0;
-    UINTN                       DecodedSize        = 0;
-    EFI_STATUS                  Status             = EFI_SUCCESS;
-    UINT32                      FwSts              = 0;
-    BOOLEAN                     InBufferAllocated  = FALSE;
-    BOOLEAN                     OutBufferAllocated = FALSE;
-    UINT32                      ResponseSize       = 0;
+  OUT UINTN                          *DataSize
+  )
+{
+  // Local variable
+  AZIHSM_MBOR_ENCODER  Encoder            = { 0 };
+  AZIHSM_MBOR_DECODER  Decoder            = { 0 };
+  AZIHSM_DMA_BUFFER    InBuffer           = { 0 };
+  AZIHSM_DMA_BUFFER    OutBuffer          = { 0 };
+  DDI_OPERATION_CODE   OpCode             = 0;
+  UINTN                EncodedSize        = 0;
+  UINTN                DecodedSize        = 0;
+  EFI_STATUS           Status             = EFI_SUCCESS;
+  UINT32               FwSts              = 0;
+  BOOLEAN              InBufferAllocated  = FALSE;
+  BOOLEAN              OutBufferAllocated = FALSE;
+  UINT32               ResponseSize       = 0;
 
-    AZIHSM_CP_CMD_SQE_SRC_DATA  SessionData        = {0};
-    // Local variables for GetSealedBks3 
-    AZIHSM_DDI_GET_SEALED_BKS3_RESP GetSealedBks3Resp = {0};
-    UINT8 GetSealedBks3Data[AZIHSM_DDI_GET_SEALED_BKS3_REQ_MAX_DATA_LENGTH];
-    
-    // Initialize GetSealedBks3 data
-    ZeroMem(GetSealedBks3Data, sizeof(GetSealedBks3Data));
+  AZIHSM_CP_CMD_SQE_SRC_DATA  SessionData = { 0 };
+  // Local variables for GetSealedBks3
+  AZIHSM_DDI_GET_SEALED_BKS3_RESP  GetSealedBks3Resp = { 0 };
+  UINT8                            GetSealedBks3Data[AZIHSM_DDI_GET_SEALED_BKS3_REQ_MAX_DATA_LENGTH];
 
-    DEBUG((DEBUG_INFO, "AzihsmDdiApi: GetSealedBks3 started\n"));
+  // Initialize GetSealedBks3 data
+  ZeroMem (GetSealedBks3Data, sizeof (GetSealedBks3Data));
 
-    // Validate input parameters
-    if (State == NULL) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Invalid State parameter in AziHsmGetSealedBks3\n"));
-        return EFI_INVALID_PARAMETER;
-    }
+  DEBUG ((DEBUG_INFO, "AzihsmDdiApi: GetSealedBks3 started\n"));
 
-    // Ensure PciIo is available
-    if (State->PciIo == NULL) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: PciIo is not initialized in State\n"));
-        return EFI_DEVICE_ERROR;
-    }
-    
-    // Validate output parameters
-    if((DataBlob == NULL) || (DataSize == NULL) || (DataBlobSize == 0)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Invalid output parameter in AziHsmGetSealedBks3\n"));
-        return EFI_INVALID_PARAMETER;
-    }
-    // Init DMA buffers first
-    Status = AziHsmDmaBufferAlloc(State->PciIo,  EFI_SIZE_TO_PAGES(AZIHSM_DDI_DMA_BUFFER_SIZE), &InBuffer);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize InBuffer: %r\n", Status));
-        goto Cleanup;
-    } else {
-        InBufferAllocated = TRUE;
-    }
+  // Validate input parameters
+  if (State == NULL) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Invalid State parameter in AziHsmGetSealedBks3\n"));
+    return EFI_INVALID_PARAMETER;
+  }
 
-    //Init DMA out buffer
-    Status = AziHsmDmaBufferAlloc(State->PciIo,  EFI_SIZE_TO_PAGES(AZIHSM_DDI_DMA_BUFFER_SIZE), &OutBuffer);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: AziHsmGetSealedBks3 Failed to initialize OutBuffer: %r\n", Status));
-        goto Cleanup;
-    } else {
-        OutBufferAllocated = TRUE;
-    }
+  // Ensure PciIo is available
+  if (State->PciIo == NULL) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: PciIo is not initialized in State\n"));
+    return EFI_DEVICE_ERROR;
+  }
 
-    // Clear the DMA input buffer
-    ZeroMem(InBuffer.HostAddress, InBuffer.NumberOfBytes);
+  // Validate output parameters
+  if ((DataBlob == NULL) || (DataSize == NULL) || (DataBlobSize == 0)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Invalid output parameter in AziHsmGetSealedBks3\n"));
+    return EFI_INVALID_PARAMETER;
+  }
 
-    // Init MBOR encoder using DMA buffer directly
-    if(InBuffer.NumberOfBytes > MAX_UINT16) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: InBuffer size exceeds MAX_UINT16\n"));
-        Status = EFI_PROTOCOL_ERROR;
-        goto Cleanup;
-    }
-    Status = AziHsmMborEncoderInit(&Encoder, InBuffer.HostAddress, (UINT16)InBuffer.NumberOfBytes);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AzihsmDdiApi: AziHsmGetSealedBks3 Failed to initialize MBOR encoder: %r\n", Status));
-        goto Cleanup;
-    }
-    //  // Encode GetSealedBks3 request (no data needed, just header)
-    // Function now properly handles NULL ApiRev and SessionId
-    Status = AzihsmEncodeGetSealedBks3Req(&Encoder, ApiRevision, NULL, &EncodedSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: Failed to encode GetSealedBks3 request: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Copy encoded data to InBuffer
-    CopyMem(InBuffer.HostAddress, Encoder.Buffer, EncodedSize);
-    
-    // Set operation code for GetSealedBks3
-    OpCode = 0;
-    ResponseSize = (UINT32)OutBuffer.NumberOfBytes;
-    
-    // Fire HSM command for GetSealedBks3
-    Status = AziHsmFireHsmCmd(((AZIHSM_CONTROLLER_STATE *)State), &InBuffer, (UINT32 *)&EncodedSize, &OutBuffer, &ResponseSize, OpCode, &SessionData, &FwSts);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: Failed to fire GetSealedBks3 HSM command: %r\n", Status));
-        goto Cleanup;
-    }
-     // Validate that FwSts indicates success for a proper response
-    if (FwSts != 0) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: GetSealedBks3 FW operation failed - FwSts: %d\n", FwSts));
-        Status = EFI_DEVICE_ERROR;
-        goto Cleanup;
-    }
-    
-    // Initialize decoder with received buffer for GetSealedBks3
-    Status = AziHsmMborDecoderInit(&Decoder, OutBuffer.HostAddress,  (UINT16)ResponseSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: Failed to initialize MBOR decoder for GetSealedBks3: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Decode GetSealedBks3 response
-    GetSealedBks3Resp.SealedBks3.Data = GetSealedBks3Data;
-    GetSealedBks3Resp.SealedBks3.Length = sizeof(GetSealedBks3Data);
-    Status = AzihsmDecodeGetSealedBks3Resp(&Decoder, &GetSealedBks3Resp, &DecodedSize);
-    if (EFI_ERROR(Status)) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: Failed to decode GetSealedBks3 response: %r\n", Status));
-        goto Cleanup;
-    }
-    
-    // Check if decoded size matches response size
-    if (DecodedSize != ResponseSize) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: GetSealedBks3 decoded size (%d) does not match response size (%d)\n", DecodedSize, ResponseSize));
-        Status = EFI_PROTOCOL_ERROR;
-        goto Cleanup;
-    }
-    
-    // Validate response data size and copy to output buffer
-    if (GetSealedBks3Resp.SealedBks3.Length > DataBlobSize) {
-        DEBUG((DEBUG_ERROR, "AziHsmDdi: GetSealedBks3 response length (%d) exceeds output buffer size (%d)\n", 
-               GetSealedBks3Resp.SealedBks3.Length, DataBlobSize));
-        Status = EFI_BUFFER_TOO_SMALL;
-        goto Cleanup;
-    }
-    
-    // Copy retrieved sealed data to output buffer
-    CopyMem(DataBlob, GetSealedBks3Resp.SealedBks3.Data, GetSealedBks3Resp.SealedBks3.Length);
-    *DataSize = GetSealedBks3Resp.SealedBks3.Length;
-    
-    DEBUG((DEBUG_INFO, "AziHsmDdi: GetSealedBks3 completed successfully - Retrieved %d bytes\n", 
-           GetSealedBks3Resp.SealedBks3.Length));
-    
-    Status = EFI_SUCCESS;
+  // Init DMA buffers first
+  Status = AziHsmDmaBufferAlloc (State->PciIo, EFI_SIZE_TO_PAGES (AZIHSM_DDI_DMA_BUFFER_SIZE), &InBuffer);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: Failed to initialize InBuffer: %r\n", Status));
+    goto Cleanup;
+  } else {
+    InBufferAllocated = TRUE;
+  }
 
-   Cleanup:
-    // Clear sensitive data from DMA buffers before freeing
-    if (InBufferAllocated) {
-        ZeroMem(InBuffer.HostAddress, InBuffer.NumberOfBytes);
-        AziHsmDmaBufferFree(&InBuffer);
-    }
-    
-    if (OutBufferAllocated) {
-        ZeroMem(OutBuffer.HostAddress, OutBuffer.NumberOfBytes);
-        AziHsmDmaBufferFree(&OutBuffer);
-    }
-    
-    // Clear local sensitive data buffers
-    ZeroMem(GetSealedBks3Data, sizeof(GetSealedBks3Data));
-    
-    return Status;
+  // Init DMA out buffer
+  Status = AziHsmDmaBufferAlloc (State->PciIo, EFI_SIZE_TO_PAGES (AZIHSM_DDI_DMA_BUFFER_SIZE), &OutBuffer);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: AziHsmGetSealedBks3 Failed to initialize OutBuffer: %r\n", Status));
+    goto Cleanup;
+  } else {
+    OutBufferAllocated = TRUE;
+  }
+
+  // Clear the DMA input buffer
+  ZeroMem (InBuffer.HostAddress, InBuffer.NumberOfBytes);
+
+  // Init MBOR encoder using DMA buffer directly
+  if (InBuffer.NumberOfBytes > MAX_UINT16) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: InBuffer size exceeds MAX_UINT16\n"));
+    Status = EFI_PROTOCOL_ERROR;
+    goto Cleanup;
+  }
+
+  Status = AziHsmMborEncoderInit (&Encoder, InBuffer.HostAddress, (UINT16)InBuffer.NumberOfBytes);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AzihsmDdiApi: AziHsmGetSealedBks3 Failed to initialize MBOR encoder: %r\n", Status));
+    goto Cleanup;
+  }
+
+  //  // Encode GetSealedBks3 request (no data needed, just header)
+  // Function now properly handles NULL ApiRev and SessionId
+  Status = AzihsmEncodeGetSealedBks3Req (&Encoder, ApiRevision, NULL, &EncodedSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to encode GetSealedBks3 request: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Copy encoded data to InBuffer
+  CopyMem (InBuffer.HostAddress, Encoder.Buffer, EncodedSize);
+
+  // Set operation code for GetSealedBks3
+  OpCode       = 0;
+  ResponseSize = (UINT32)OutBuffer.NumberOfBytes;
+
+  // Fire HSM command for GetSealedBks3
+  Status = AziHsmFireHsmCmd (((AZIHSM_CONTROLLER_STATE *)State), &InBuffer, (UINT32 *)&EncodedSize, &OutBuffer, &ResponseSize, OpCode, &SessionData, &FwSts);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to fire GetSealedBks3 HSM command: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Validate that FwSts indicates success for a proper response
+  if (FwSts != 0) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: GetSealedBks3 FW operation failed - FwSts: %d\n", FwSts));
+    Status = EFI_DEVICE_ERROR;
+    goto Cleanup;
+  }
+
+  // Initialize decoder with received buffer for GetSealedBks3
+  Status = AziHsmMborDecoderInit (&Decoder, OutBuffer.HostAddress, (UINT16)ResponseSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to initialize MBOR decoder for GetSealedBks3: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Decode GetSealedBks3 response
+  GetSealedBks3Resp.SealedBks3.Data   = GetSealedBks3Data;
+  GetSealedBks3Resp.SealedBks3.Length = sizeof (GetSealedBks3Data);
+  Status                              = AzihsmDecodeGetSealedBks3Resp (&Decoder, &GetSealedBks3Resp, &DecodedSize);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to decode GetSealedBks3 response: %r\n", Status));
+    goto Cleanup;
+  }
+
+  // Check if decoded size matches response size
+  if (DecodedSize != ResponseSize) {
+    DEBUG ((DEBUG_ERROR, "AziHsmDdi: GetSealedBks3 decoded size (%d) does not match response size (%d)\n", DecodedSize, ResponseSize));
+    Status = EFI_PROTOCOL_ERROR;
+    goto Cleanup;
+  }
+
+  // Validate response data size and copy to output buffer
+  if (GetSealedBks3Resp.SealedBks3.Length > DataBlobSize) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "AziHsmDdi: GetSealedBks3 response length (%d) exceeds output buffer size (%d)\n",
+      GetSealedBks3Resp.SealedBks3.Length,
+      DataBlobSize
+      ));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Cleanup;
+  }
+
+  // Copy retrieved sealed data to output buffer
+  CopyMem (DataBlob, GetSealedBks3Resp.SealedBks3.Data, GetSealedBks3Resp.SealedBks3.Length);
+  *DataSize = GetSealedBks3Resp.SealedBks3.Length;
+
+  DEBUG ((
+    DEBUG_INFO,
+    "AziHsmDdi: GetSealedBks3 completed successfully - Retrieved %d bytes\n",
+    GetSealedBks3Resp.SealedBks3.Length
+    ));
+
+  Status = EFI_SUCCESS;
+
+Cleanup:
+  // Clear sensitive data from DMA buffers before freeing
+  if (InBufferAllocated) {
+    ZeroMem (InBuffer.HostAddress, InBuffer.NumberOfBytes);
+    AziHsmDmaBufferFree (&InBuffer);
+  }
+
+  if (OutBufferAllocated) {
+    ZeroMem (OutBuffer.HostAddress, OutBuffer.NumberOfBytes);
+    AziHsmDmaBufferFree (&OutBuffer);
+  }
+
+  // Clear local sensitive data buffers
+  ZeroMem (GetSealedBks3Data, sizeof (GetSealedBks3Data));
+
+  return Status;
 }

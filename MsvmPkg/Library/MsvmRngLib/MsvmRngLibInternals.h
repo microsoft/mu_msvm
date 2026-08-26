@@ -24,7 +24,6 @@ BaseRngLibConstructor (
   VOID
   );
 
-
 /**
   Generate RNG fom the host using the BiosDevice.
 
@@ -37,6 +36,6 @@ BaseRngLibConstructor (
 **/
 BOOLEAN
 ProcessUsingHostEmulation (
-  UINTN SizeInBytes,
+  UINTN      SizeInBytes,
   OUT UINT8  *Rand
   );

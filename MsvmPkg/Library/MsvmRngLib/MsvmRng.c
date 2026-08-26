@@ -25,12 +25,10 @@
 #include "BaseRngLibInternals.h"
 #include "MsvmRngLibInternals.h"
 
-#define WITHIN_4_GB_LL (0xFFFFFFFFLL)
+#define WITHIN_4_GB_LL  (0xFFFFFFFFLL)
 
-static PCRYPTO_COMMAND_DESCRIPTOR   mCryptoCommandDescriptor;
-static EFI_PHYSICAL_ADDRESS         mCryptoCommandDescriptorGpa;
-
-
+static PCRYPTO_COMMAND_DESCRIPTOR  mCryptoCommandDescriptor;
+static EFI_PHYSICAL_ADDRESS        mCryptoCommandDescriptorGpa;
 
 /**
   Generates a random number using host emulation if host emulation is configured.
@@ -44,7 +42,7 @@ static EFI_PHYSICAL_ADDRESS         mCryptoCommandDescriptorGpa;
 **/
 BOOLEAN
 ProcessUsingHostEmulation (
-  UINTN SizeInBytes,
+  UINTN      SizeInBytes,
   OUT UINT8  *Rand
   )
 {
@@ -53,33 +51,29 @@ ProcessUsingHostEmulation (
   // Any requests coming in for larger buffers should be chunked before reaching
   // here.
   //
-  ASSERT(SizeInBytes <= 8);
+  ASSERT (SizeInBytes <= 8);
 
   //
   // Retrieve the Random Number by issuing a command to Bios device.
   //
-  ZeroMem(mCryptoCommandDescriptor, sizeof(CRYPTO_COMMAND_DESCRIPTOR));
-  mCryptoCommandDescriptor->Command = CryptoGetRandomNumber;
-  mCryptoCommandDescriptor->Status = EFI_DEVICE_ERROR;
-  mCryptoCommandDescriptor->U.GetRandomNumberParams.BufferAddress = (UINT64) Rand;
-  mCryptoCommandDescriptor->U.GetRandomNumberParams.BufferSize = (UINT32) SizeInBytes;
+  ZeroMem (mCryptoCommandDescriptor, sizeof (CRYPTO_COMMAND_DESCRIPTOR));
+  mCryptoCommandDescriptor->Command                               = CryptoGetRandomNumber;
+  mCryptoCommandDescriptor->Status                                = EFI_DEVICE_ERROR;
+  mCryptoCommandDescriptor->U.GetRandomNumberParams.BufferAddress = (UINT64)Rand;
+  mCryptoCommandDescriptor->U.GetRandomNumberParams.BufferSize    = (UINT32)SizeInBytes;
 
   //
   // Perform NVRAM command.
   // Cast of descriptor is safe because we allocated mVariableModuleGlobal below 4GB.
   //
-  WriteBiosDevice(BiosConfigCryptoCommand, (UINT32)mCryptoCommandDescriptorGpa);
+  WriteBiosDevice (BiosConfigCryptoCommand, (UINT32)mCryptoCommandDescriptorGpa);
 
-  if (mCryptoCommandDescriptor->Status == 0)
-  {
+  if (mCryptoCommandDescriptor->Status == 0) {
     return TRUE;
-  }
-  else
-  {
-    DEBUG((DEBUG_ERROR, "%a: Host emulation failed - %r \n", __func__, ENCODE_ERROR(mCryptoCommandDescriptor->Status)));
+  } else {
+    DEBUG ((DEBUG_ERROR, "%a: Host emulation failed - %r \n", __func__, ENCODE_ERROR (mCryptoCommandDescriptor->Status)));
     return FALSE;
   }
-
 }
 
 /**
@@ -98,54 +92,52 @@ ProcessUsingHostEmulation (
 RETURN_STATUS
 EFIAPI
 MsvmRngLibConstructor (
-    IN EFI_HANDLE ImageHandle,
-    IN EFI_SYSTEM_TABLE *SystemTable
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 
 {
-  BaseRngLibConstructor();
+  BaseRngLibConstructor ();
 
-  if (!ArchIsRngSupported())
-  {
+  if (!ArchIsRngSupported ()) {
     //
     // If we are running isolated, we must use hardware RNG for a secure implementation of
     // random number generation.
     //
-    if (IsHardwareIsolated())
-    {
-      DEBUG((DEBUG_ERROR, "%a: Hardware RNG is not present on an isolated guest..\n", __func__));
-      FAIL_FAST_INITIALIZATION_FAILURE(EFI_SECURITY_VIOLATION);
+    if (IsHardwareIsolated ()) {
+      DEBUG ((DEBUG_ERROR, "%a: Hardware RNG is not present on an isolated guest..\n", __func__));
+      FAIL_FAST_INITIALIZATION_FAILURE (EFI_SECURITY_VIOLATION);
     }
 
-#if defined(MDE_CPU_X64)
-    DEBUG((DEBUG_INFO, "%a: RDRAND is not present. Using host emulation.\n", __func__));
-#elif defined(MDE_CPU_AARCH64)
-    DEBUG((DEBUG_VERBOSE, "%a: RNDR is not present. Using host emulation.\n", __func__));
-#else
-#error Unsupported Architecture
-#endif
+ #if defined (MDE_CPU_X64)
+    DEBUG ((DEBUG_INFO, "%a: RDRAND is not present. Using host emulation.\n", __func__));
+ #elif defined (MDE_CPU_AARCH64)
+    DEBUG ((DEBUG_VERBOSE, "%a: RNDR is not present. Using host emulation.\n", __func__));
+ #else
+    #error Unsupported Architecture
+ #endif
 
-    EFI_PHYSICAL_ADDRESS address = WITHIN_4_GB_LL;
-    EFI_STATUS status = gBS->AllocatePages(AllocateMaxAddress,
-                                     EfiBootServicesData,
-                                     EFI_SIZE_TO_PAGES(sizeof(CRYPTO_COMMAND_DESCRIPTOR)),
-                                     &address);
+    EFI_PHYSICAL_ADDRESS  address = WITHIN_4_GB_LL;
+    EFI_STATUS            status  = gBS->AllocatePages (
+                                           AllocateMaxAddress,
+                                           EfiBootServicesData,
+                                           EFI_SIZE_TO_PAGES (sizeof (CRYPTO_COMMAND_DESCRIPTOR)),
+                                           &address
+                                           );
 
-    if (EFI_ERROR(status))
-    {
+    if (EFI_ERROR (status)) {
       // Fail fast since there is no way forward from this failure.
-      FAIL_FAST_INITIALIZATION_FAILURE(status);
+      FAIL_FAST_INITIALIZATION_FAILURE (status);
     }
 
-    mCryptoCommandDescriptor = (PCRYPTO_COMMAND_DESCRIPTOR) address;
+    mCryptoCommandDescriptor = (PCRYPTO_COMMAND_DESCRIPTOR)address;
 
-    if (mCryptoCommandDescriptor == NULL)
-    {
+    if (mCryptoCommandDescriptor == NULL) {
       // Fail fast since there is no way forward from this failure.
-      FAIL_FAST_INITIALIZATION_FAILURE(EFI_OUT_OF_RESOURCES);
+      FAIL_FAST_INITIALIZATION_FAILURE (EFI_OUT_OF_RESOURCES);
     }
 
-    mCryptoCommandDescriptorGpa = (EFI_PHYSICAL_ADDRESS) mCryptoCommandDescriptor;
+    mCryptoCommandDescriptorGpa = (EFI_PHYSICAL_ADDRESS)mCryptoCommandDescriptor;
   }
 
   return RETURN_SUCCESS;

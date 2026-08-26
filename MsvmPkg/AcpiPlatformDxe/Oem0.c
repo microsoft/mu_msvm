@@ -15,9 +15,10 @@
 //
 
 EFI_STATUS
-Oem0InitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Table
-    )
+Oem0InitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Table
+  )
+
 /*++
 
 Routine Description:
@@ -34,15 +35,14 @@ Return Value:
 
 --*/
 {
-    VM_ACPI_ENTROPY_TABLE *table;
+  VM_ACPI_ENTROPY_TABLE  *table;
 
-    //
-    // Copy the entropy data from the configuration.
-    //
-    table = (VM_ACPI_ENTROPY_TABLE *)Table;
+  //
+  // Copy the entropy data from the configuration.
+  //
+  table = (VM_ACPI_ENTROPY_TABLE *)Table;
 
-    CopyMem(table->Data, (VOID*)(UINTN) PcdGet64(PcdEntropyPtr), ConfigLibEntropyDataSize);
+  CopyMem (table->Data, (VOID *)(UINTN)PcdGet64 (PcdEntropyPtr), ConfigLibEntropyDataSize);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-

@@ -16,10 +16,11 @@
 #include <Uefi.h>
 
 VOID
-WatchdogConfigure(
-    UINT32          Count,
-    WATCHDOG_MODE   Mode
-    )
+WatchdogConfigure (
+  UINT32         Count,
+  WATCHDOG_MODE  Mode
+  )
+
 /*++
 
 Routine Description:
@@ -40,45 +41,42 @@ Return Value:
 
 --*/
 {
-    UINT32  configValue = 0;
-    BOOLEAN interruptState;
+  UINT32   configValue = 0;
+  BOOLEAN  interruptState;
 
-    if (IsHardwareIsolatedNoParavisor())
-    {
-        // No hardware watchdog when no paravisor.
-        return;
+  if (IsHardwareIsolatedNoParavisor ()) {
+    // No hardware watchdog when no paravisor.
+    return;
+  }
+
+  interruptState = SaveAndDisableInterrupts ();
+
+  if (Count != 0) {
+    configValue = BIOS_WATCHDOG_RUNNING;
+
+    ASSERT (
+      (Mode == WatchdogOneShot) ||
+      (Mode == WatchdogPeriodic)
+      );
+
+    if (Mode == WatchdogOneShot) {
+      configValue |= BIOS_WATCHDOG_ONE_SHOT;
     }
 
-    interruptState = SaveAndDisableInterrupts();
+    WriteBiosDevice (BiosConfigWatchdogCount, Count);
+  } else {
+    ASSERT (Mode == WatchdogDisabled);
+  }
 
-    if (Count != 0)
-    {
-        configValue = BIOS_WATCHDOG_RUNNING;
-
-        ASSERT((Mode == WatchdogOneShot) ||
-               (Mode == WatchdogPeriodic));
-
-        if (Mode == WatchdogOneShot)
-        {
-            configValue |= BIOS_WATCHDOG_ONE_SHOT;
-        }
-
-        WriteBiosDevice(BiosConfigWatchdogCount, Count);
-    }
-    else
-    {
-        ASSERT(Mode == WatchdogDisabled);
-    }
-
-    WriteBiosDevice(BiosConfigWatchdogConfig, configValue);
-    SetInterruptState(interruptState);
+  WriteBiosDevice (BiosConfigWatchdogConfig, configValue);
+  SetInterruptState (interruptState);
 }
 
-
 VOID
-WatchdogSetCount(
-    UINT32  Count
-    )
+WatchdogSetCount (
+  UINT32  Count
+  )
+
 /*++
 
 Routine Description:
@@ -96,23 +94,21 @@ Return Value:
 
 --*/
 {
-    BOOLEAN interruptState = SaveAndDisableInterrupts();
+  BOOLEAN  interruptState = SaveAndDisableInterrupts ();
 
-    if (Count == 0)
-    {
-        WriteBiosDevice(BiosConfigWatchdogConfig, 0);
-    }
-    else
-    {
-        WriteBiosDevice(BiosConfigWatchdogCount, Count);
-    }
+  if (Count == 0) {
+    WriteBiosDevice (BiosConfigWatchdogConfig, 0);
+  } else {
+    WriteBiosDevice (BiosConfigWatchdogCount, Count);
+  }
 
-    SetInterruptState(interruptState);
+  SetInterruptState (interruptState);
 }
 
-
 UINT32
-WatchdogGetResolution()
+WatchdogGetResolution (
+  )
+
 /*++
 
 Routine Description:
@@ -130,19 +126,20 @@ Return Value:
 
 --*/
 {
-    UINT32  resolution;
-    BOOLEAN interruptState = SaveAndDisableInterrupts();
+  UINT32   resolution;
+  BOOLEAN  interruptState = SaveAndDisableInterrupts ();
 
-    resolution = ReadBiosDevice(BiosConfigWatchdogResolution);
+  resolution = ReadBiosDevice (BiosConfigWatchdogResolution);
 
-    SetInterruptState(interruptState);
+  SetInterruptState (interruptState);
 
-    return resolution;
+  return resolution;
 }
 
-
 BOOLEAN
-WatchdogSuspend()
+WatchdogSuspend (
+  )
+
 /*++
 
 Routine Description:
@@ -164,27 +161,27 @@ Return Value:
 
 --*/
 {
-    UINT32  value;
-    BOOLEAN previousState;
-    BOOLEAN interruptState = SaveAndDisableInterrupts();
+  UINT32   value;
+  BOOLEAN  previousState;
+  BOOLEAN  interruptState = SaveAndDisableInterrupts ();
 
-    value = ReadBiosDevice(BiosConfigWatchdogConfig);
+  value = ReadBiosDevice (BiosConfigWatchdogConfig);
 
-    previousState = ((value & BIOS_WATCHDOG_RUNNING) == BIOS_WATCHDOG_RUNNING);
-    value &= ~BIOS_WATCHDOG_ENABLED;
+  previousState = ((value & BIOS_WATCHDOG_RUNNING) == BIOS_WATCHDOG_RUNNING);
+  value        &= ~BIOS_WATCHDOG_ENABLED;
 
-    WriteBiosDevice(BiosConfigWatchdogConfig, value);
+  WriteBiosDevice (BiosConfigWatchdogConfig, value);
 
-    SetInterruptState(interruptState);
+  SetInterruptState (interruptState);
 
-    return previousState;
+  return previousState;
 }
 
-
 VOID
-WatchdogResume(
-    BOOLEAN PreviouslyRunning
-    )
+WatchdogResume (
+  BOOLEAN  PreviouslyRunning
+  )
+
 /*++
 
 Routine Description:
@@ -204,19 +201,18 @@ Return Value:
 
 --*/
 {
-    UINT32  value;
-    BOOLEAN interruptState;
+  UINT32   value;
+  BOOLEAN  interruptState;
 
-    if (PreviouslyRunning == FALSE)
-    {
-        return;
-    }
+  if (PreviouslyRunning == FALSE) {
+    return;
+  }
 
-    interruptState = SaveAndDisableInterrupts();
+  interruptState = SaveAndDisableInterrupts ();
 
-    value = ReadBiosDevice(BiosConfigWatchdogConfig);
-    value |= BIOS_WATCHDOG_ENABLED;
-    WriteBiosDevice(BiosConfigWatchdogConfig, value);
+  value  = ReadBiosDevice (BiosConfigWatchdogConfig);
+  value |= BIOS_WATCHDOG_ENABLED;
+  WriteBiosDevice (BiosConfigWatchdogConfig, value);
 
-    SetInterruptState(interruptState);
+  SetInterruptState (interruptState);
 }

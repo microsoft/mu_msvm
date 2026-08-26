@@ -11,68 +11,68 @@
 
 extern
 EFI_STATUS
-NvramInitialize();
+NvramInitialize (
+  );
 
 extern
 VOID
-NvramAddressChangeHandler();
+NvramAddressChangeHandler (
+  );
 
 extern
 VOID
-NvramExitBootServicesHandler(
-    BOOLEAN VsmAware
-    );
+NvramExitBootServicesHandler (
+  BOOLEAN  VsmAware
+  );
 
 extern
 EFI_STATUS
-NvramQueryInfo(
-        UINT32  Attributes,
-    OUT UINT64* MaximumVariableStorageSize,
-    OUT UINT64* RemainingVariableStorageSize,
-    OUT UINT64* MaximumVariableSize
-    );
+NvramQueryInfo (
+  UINT32      Attributes,
+  OUT UINT64  *MaximumVariableStorageSize,
+  OUT UINT64  *RemainingVariableStorageSize,
+  OUT UINT64  *MaximumVariableSize
+  );
 
 extern
 EFI_STATUS
-NvramSetVariable(
-    IN CHAR16*   VariableName,
-    IN EFI_GUID* VendorGuid,
-    IN UINT32    Attributes,
-    IN UINTN     DataSize,
-    IN void*     Data
-    );
+NvramSetVariable (
+  IN CHAR16    *VariableName,
+  IN EFI_GUID  *VendorGuid,
+  IN UINT32    Attributes,
+  IN UINTN     DataSize,
+  IN void      *Data
+  );
 
 extern
 EFI_STATUS
-NvramGetVariable(
-    IN              CHAR16*   VariableName,
-    IN              EFI_GUID* VendorGuid,
-    OUT OPTIONAL    UINT32*   Attributes,
-    IN OUT          UINTN*    DataSize,
-    OUT             void*     Data
-    );
+NvramGetVariable (
+  IN              CHAR16    *VariableName,
+  IN              EFI_GUID  *VendorGuid,
+  OUT OPTIONAL    UINT32    *Attributes,
+  IN OUT          UINTN     *DataSize,
+  OUT             void      *Data
+  );
 
 extern
 EFI_STATUS
-NvramGetFirstVariableName(
-    OUT UINTN*    VariableNameSize,
-    OUT CHAR16*   VariableName,
-    OUT EFI_GUID* VendorGuid
-    );
+NvramGetFirstVariableName (
+  OUT UINTN     *VariableNameSize,
+  OUT CHAR16    *VariableName,
+  OUT EFI_GUID  *VendorGuid
+  );
 
 extern
 EFI_STATUS
-NvramGetNextVariableName(
-    IN OUT  UINTN*    VariableNameSize,
-    IN OUT  CHAR16*   VariableName,
-    IN OUT  EFI_GUID* VendorGuid
-    );
+NvramGetNextVariableName (
+  IN OUT  UINTN     *VariableNameSize,
+  IN OUT  CHAR16    *VariableName,
+  IN OUT  EFI_GUID  *VendorGuid
+  );
 
 extern
 VOID
-NvramDebugLog(
-    IN CONST CHAR8 *Format,
-    ...
-    );
-
-
+NvramDebugLog (
+  IN CONST CHAR8  *Format,
+  ...
+  );

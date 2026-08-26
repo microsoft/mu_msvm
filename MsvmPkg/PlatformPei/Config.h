@@ -11,28 +11,28 @@
 //
 // Functions
 //
-UEFI_CONFIG_HEADER*
-GetStartOfConfigBlob(
-    VOID
-    );
+UEFI_CONFIG_HEADER *
+GetStartOfConfigBlob (
+  VOID
+  );
 
 EFI_STATUS
-GetConfiguration(
-    IN CONST EFI_PEI_SERVICES** PeiServices,
-    OUT UINT8* PhysicalAddressWidth
-    );
+GetConfiguration (
+  IN CONST EFI_PEI_SERVICES  **PeiServices,
+  OUT UINT8                  *PhysicalAddressWidth
+  );
 
 EFI_STATUS
-GetIgvmConfigInfo(
-    VOID
-    );
+GetIgvmConfigInfo (
+  VOID
+  );
 
 VOID
-ConfigSetProcessorInfo(
-    UEFI_CONFIG_PROCESSOR_INFORMATION *ProcessorInfo
-    );
+ConfigSetProcessorInfo (
+  UEFI_CONFIG_PROCESSOR_INFORMATION  *ProcessorInfo
+  );
 
 VOID
-ConfigSetUefiConfigFlags(
-    UEFI_CONFIG_FLAGS *ConfigFlags
-    );
+ConfigSetUefiConfigFlags (
+  UEFI_CONFIG_FLAGS  *ConfigFlags
+  );

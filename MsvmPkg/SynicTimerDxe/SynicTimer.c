@@ -7,7 +7,6 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-
 #include <PiDxe.h>
 
 #include <Protocol/EfiHv.h>
@@ -20,52 +19,53 @@
 EFI_STATUS
 EFIAPI
 SynicTimerRegisterHandler (
-    IN  EFI_TIMER_ARCH_PROTOCOL  *This,
-    IN  EFI_TIMER_NOTIFY         NotifyFunction
-    );
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  IN  EFI_TIMER_NOTIFY         NotifyFunction
+  );
 
 EFI_STATUS
 EFIAPI
 SynicTimerSetTimerPeriod (
-    IN  EFI_TIMER_ARCH_PROTOCOL  *This,
-    IN  UINT64                   TimerPeriod
-    );
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  IN  UINT64                   TimerPeriod
+  );
 
 EFI_STATUS
 EFIAPI
 SynicTimerGetTimerPeriod (
-    IN  EFI_TIMER_ARCH_PROTOCOL   *This,
-    OUT UINT64                   *TimerPeriod
-    );
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  OUT UINT64                   *TimerPeriod
+  );
 
 EFI_STATUS
 EFIAPI
 SynicTimerGenerateSoftInterrupt (
-    IN  EFI_TIMER_ARCH_PROTOCOL *This
-    );
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This
+  );
 
-EFI_TIMER_ARCH_PROTOCOL mTimer = {
+EFI_TIMER_ARCH_PROTOCOL  mTimer = {
   SynicTimerRegisterHandler,
   SynicTimerSetTimerPeriod,
   SynicTimerGetTimerPeriod,
   SynicTimerGenerateSoftInterrupt
 };
 
-EFI_HANDLE mTimerHandle;
-EFI_HV_PROTOCOL *mHv;
-EFI_TIMER_NOTIFY mTimerNotifyFunction;
-UINT64 mTimerPeriod;
-UINT64 mLastTime;
-BOOLEAN mUseDirectTimer;
-BOOLEAN mSintConnected;
-BOOLEAN mTimerConfigured;
-HV_SYNIC_SINT_INDEX mSintIndex;
-UINT32 mTimerIndex;
+EFI_HANDLE           mTimerHandle;
+EFI_HV_PROTOCOL      *mHv;
+EFI_TIMER_NOTIFY     mTimerNotifyFunction;
+UINT64               mTimerPeriod;
+UINT64               mLastTime;
+BOOLEAN              mUseDirectTimer;
+BOOLEAN              mSintConnected;
+BOOLEAN              mTimerConfigured;
+HV_SYNIC_SINT_INDEX  mSintIndex;
+UINT32               mTimerIndex;
 
 VOID
 SynicTimerCallNotifyFunction (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -82,27 +82,26 @@ Return Value:
 
 --*/
 {
-    UINT64 time;
+  UINT64  time;
 
-    time = mHv->GetReferenceTime(mHv);
+  time = mHv->GetReferenceTime (mHv);
 
-    ASSERT(time > mLastTime);
+  ASSERT (time > mLastTime);
 
-    if (mTimerNotifyFunction != NULL)
-    {
-        mTimerNotifyFunction(time - mLastTime);
-    }
+  if (mTimerNotifyFunction != NULL) {
+    mTimerNotifyFunction (time - mLastTime);
+  }
 
-    mLastTime = time;
+  mLastTime = time;
 }
-
 
 EFI_STATUS
 EFIAPI
 SynicTimerRegisterHandler (
-    IN  EFI_TIMER_ARCH_PROTOCOL *This,
-    IN  EFI_TIMER_NOTIFY NotifyFunction
-    )
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  IN  EFI_TIMER_NOTIFY         NotifyFunction
+  )
+
 /*++
 
 Routine Description:
@@ -121,32 +120,31 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    if (NotifyFunction == NULL && mTimerNotifyFunction == NULL)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
-        return status;
-    }
+  EFI_STATUS  status;
 
-    if (NotifyFunction != NULL && mTimerNotifyFunction != NULL)
-    {
-        status = EFI_ALREADY_STARTED;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
-        return status;
-    }
+  if ((NotifyFunction == NULL) && (mTimerNotifyFunction == NULL)) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
+    return status;
+  }
 
-    mTimerNotifyFunction = NotifyFunction;
-    return EFI_SUCCESS;
+  if ((NotifyFunction != NULL) && (mTimerNotifyFunction != NULL)) {
+    status = EFI_ALREADY_STARTED;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
+    return status;
+  }
+
+  mTimerNotifyFunction = NotifyFunction;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 SynicTimerSetTimerPeriod (
-    IN  EFI_TIMER_ARCH_PROTOCOL *This,
-    IN  UINT64 TimerPeriod
-    )
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  IN  UINT64                   TimerPeriod
+  )
+
 /*++
 
 Routine Description:
@@ -166,18 +164,18 @@ Return Value:
 
 --*/
 {
-    mHv->SetTimer(mHv, mTimerIndex, TimerPeriod);
-    mTimerPeriod = TimerPeriod;
-    return EFI_SUCCESS;
+  mHv->SetTimer (mHv, mTimerIndex, TimerPeriod);
+  mTimerPeriod = TimerPeriod;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 SynicTimerGetTimerPeriod (
-    IN  EFI_TIMER_ARCH_PROTOCOL   *This,
-    OUT UINT64                   *TimerPeriod
-    )
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This,
+  OUT UINT64                   *TimerPeriod
+  )
+
 /*++
 
 Routine Description:
@@ -197,25 +195,24 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (TimerPeriod == NULL)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
-        return status;
-    }
+  if (TimerPeriod == NULL) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to register handler - %r \n", __func__, status));
+    return status;
+  }
 
-    *TimerPeriod = mTimerPeriod;
-    return EFI_SUCCESS;
+  *TimerPeriod = mTimerPeriod;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 SynicTimerGenerateSoftInterrupt (
-    IN  EFI_TIMER_ARCH_PROTOCOL *This
-    )
+  IN  EFI_TIMER_ARCH_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -232,20 +229,20 @@ Return Value:
 
 --*/
 {
-    EFI_TPL tpl;
+  EFI_TPL  tpl;
 
-    tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
-    SynicTimerCallNotifyFunction();
-    gBS->RestoreTPL(tpl);
-    return EFI_SUCCESS;
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+  SynicTimerCallNotifyFunction ();
+  gBS->RestoreTPL (tpl);
+  return EFI_SUCCESS;
 }
-
 
 VOID
 EFIAPI
 SynicTimerInterruptHandler (
-    IN  VOID *Context
-    )
+  IN  VOID  *Context
+  )
+
 /*++
 
 Routine Description:
@@ -262,32 +259,31 @@ Return Value:
 
 --*/
 {
-    HV_MESSAGE *message;
-    HV_MESSAGE_TYPE messageType;
+  HV_MESSAGE       *message;
+  HV_MESSAGE_TYPE  messageType;
 
-    if (mUseDirectTimer == FALSE)
-    {
-        message = mHv->GetSintMessage(mHv, mSintIndex, FALSE);
-        if (message != NULL)
-        {
-            messageType = message->Header.MessageType;
-            if (messageType != HvMessageTimerExpired)
-            {
-                DEBUG((EFI_D_ERROR, "%a: Unexpected message type 0xlx%", __func__, messageType));
-            }
-            mHv->CompleteSintMessage(mHv, mSintIndex, FALSE);
-        }
+  if (mUseDirectTimer == FALSE) {
+    message = mHv->GetSintMessage (mHv, mSintIndex, FALSE);
+    if (message != NULL) {
+      messageType = message->Header.MessageType;
+      if (messageType != HvMessageTimerExpired) {
+        DEBUG ((EFI_D_ERROR, "%a: Unexpected message type 0xlx%", __func__, messageType));
+      }
+
+      mHv->CompleteSintMessage (mHv, mSintIndex, FALSE);
     }
+  }
 
-    SynicTimerCallNotifyFunction();
+  SynicTimerCallNotifyFunction ();
 }
 
 EFI_STATUS
 EFIAPI
 SynicTimerInitialize (
-    IN  EFI_HANDLE ImageHandle,
-    IN  EFI_SYSTEM_TABLE *SystemTable
-    )
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -306,100 +302,96 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    mSintIndex = PcdGet8(PcdSynicTimerSintIndex);
-    mTimerIndex = PcdGet8(PcdSynicTimerTimerIndex);
+  mSintIndex  = PcdGet8 (PcdSynicTimerSintIndex);
+  mTimerIndex = PcdGet8 (PcdSynicTimerTimerIndex);
 
-    //
-    // Make sure the Timer Architectural Protocol is not already installed in
-    // the system
-    //
-    ASSERT_PROTOCOL_ALREADY_INSTALLED(NULL, &gEfiTimerArchProtocolGuid);
+  //
+  // Make sure the Timer Architectural Protocol is not already installed in
+  // the system
+  //
+  ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEfiTimerArchProtocolGuid);
 
-    status = gBS->LocateProtocol(&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to locate the HV protocol - %r \n", __func__, status));
-        goto Cleanup;
+  status = gBS->LocateProtocol (&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to locate the HV protocol - %r \n", __func__, status));
+    goto Cleanup;
+  }
+
+  mUseDirectTimer = mHv->DirectTimerSupported ();
+
+  if (!mUseDirectTimer) {
+    status = mHv->ConnectSint (
+                    mHv,
+                    mSintIndex,
+                    PcdGet8 (PcdSynicTimerVector),
+                    FALSE,
+                    SynicTimerInterruptHandler,
+                    NULL
+                    );
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((EFI_D_ERROR, "--- %a: failed to connect the SINT - %r \n", __func__, status));
+      goto Cleanup;
     }
 
-    mUseDirectTimer = mHv->DirectTimerSupported();
+    mSintConnected = TRUE;
+  }
 
-    if (!mUseDirectTimer)
-    {
-        status = mHv->ConnectSint(mHv,
-                                  mSintIndex,
-                                  PcdGet8(PcdSynicTimerVector),
-                                  FALSE,
-                                  SynicTimerInterruptHandler,
-                                  NULL);
+  //
+  // Enable the timer.
+  //
+  status = mHv->ConfigureTimer (
+                  mHv,
+                  mTimerIndex,
+                  mSintIndex,
+                  TRUE,                // periodic
+                  mUseDirectTimer,
+                  PcdGet8 (PcdSynicTimerVector),
+                  SynicTimerInterruptHandler
+                  );
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to configure the timer - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-        if (EFI_ERROR(status))
-        {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to connect the SINT - %r \n", __func__, status));
-            goto Cleanup;
-        }
+  mTimerConfigured = TRUE;
 
-        mSintConnected = TRUE;
-    }
+  status = SynicTimerSetTimerPeriod (&mTimer, PcdGet64 (PcdSynicTimerDefaultPeriod));
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to set the timer period - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-    //
-    // Enable the timer.
-    //
-    status = mHv->ConfigureTimer(mHv,
-                                 mTimerIndex,
-                                 mSintIndex,
-                                 TRUE, // periodic
-                                 mUseDirectTimer,
-                                 PcdGet8(PcdSynicTimerVector),
-                                 SynicTimerInterruptHandler);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to configure the timer - %r \n", __func__, status));
-        goto Cleanup;
-    }
+  //
+  // Install the Timer Architectural Protocol onto a new handle.
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &mTimerHandle,
+                  &gEfiTimerArchProtocolGuid,
+                  &mTimer,
+                  NULL
+                  );
 
-    mTimerConfigured = TRUE;
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to install the protocol - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-    status = SynicTimerSetTimerPeriod(&mTimer, PcdGet64(PcdSynicTimerDefaultPeriod));
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to set the timer period - %r \n", __func__, status));
-        goto Cleanup;
-    }
-
-    //
-    // Install the Timer Architectural Protocol onto a new handle.
-    //
-    status = gBS->InstallMultipleProtocolInterfaces(
-                    &mTimerHandle,
-                    &gEfiTimerArchProtocolGuid, &mTimer,
-                    NULL);
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to install the protocol - %r \n", __func__, status));
-        goto Cleanup;
-    }
-
-    status = EFI_SUCCESS;
+  status = EFI_SUCCESS;
 
 Cleanup:
-    if (EFI_ERROR(status))
-    {
-        if (mTimerConfigured)
-        {
-            SynicTimerSetTimerPeriod(&mTimer, 0);
-        }
-
-        if (mSintConnected)
-        {
-            mHv->DisconnectSint(mHv, mSintIndex);
-            mSintConnected = FALSE;
-        }
+  if (EFI_ERROR (status)) {
+    if (mTimerConfigured) {
+      SynicTimerSetTimerPeriod (&mTimer, 0);
     }
 
-    return status;
-}
+    if (mSintConnected) {
+      mHv->DisconnectSint (mHv, mSintIndex);
+      mSintConnected = FALSE;
+    }
+  }
 
+  return status;
+}

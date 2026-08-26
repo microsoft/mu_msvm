@@ -17,26 +17,26 @@
 // only declares a flexible array of 1.
 //
 typedef struct {
-  UINT32 Count;
-  EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_FV Fv[2];
+  UINT32                                                  Count;
+  EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_FV    Fv[2];
 } EXCLUDE_FV_PPI;
 
 STATIC
-EXCLUDE_FV_PPI mExcludedFvs = {
+EXCLUDE_FV_PPI  mExcludedFvs = {
   2, // Count
   {
     {
-      (EFI_PHYSICAL_ADDRESS) FixedPcdGet64(PcdFvBaseAddress),
-      (UINT64) FixedPcdGet32(PcdFvSize)
+      (EFI_PHYSICAL_ADDRESS)FixedPcdGet64 (PcdFvBaseAddress),
+      (UINT64)FixedPcdGet32 (PcdFvSize)
     },
     {
-      (EFI_PHYSICAL_ADDRESS) FixedPcdGet64(PcdDxeFvBaseAddress),
-      (UINT64) FixedPcdGet32(PcdDxeFvSize)
+      (EFI_PHYSICAL_ADDRESS)FixedPcdGet64 (PcdDxeFvBaseAddress),
+      (UINT64)FixedPcdGet32 (PcdDxeFvSize)
     }
   }
 };
 
-STATIC EFI_PEI_PPI_DESCRIPTOR PpiList =
+STATIC EFI_PEI_PPI_DESCRIPTOR  PpiList =
 {
   EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
   &gEfiPeiFirmwareVolumeInfoMeasurementExcludedPpiGuid,
@@ -46,19 +46,20 @@ STATIC EFI_PEI_PPI_DESCRIPTOR PpiList =
 EFI_STATUS
 EFIAPI
 ExcludeFvsFromMeasurementLibConstructor (
-  IN       EFI_PEI_FILE_HANDLE       FileHandle,
-  IN CONST EFI_PEI_SERVICES          **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 {
-  EFI_STATUS Status = EFI_SUCCESS;
+  EFI_STATUS  Status = EFI_SUCCESS;
 
-  // If this PCD is enabled, we install the PPI, which will 
+  // If this PCD is enabled, we install the PPI, which will
   // inform Tcg2Pei to exclude the MainFv and DxeFv from measurements.
-  // This means that these FVs will not be measured into PCR0, 
+  // This means that these FVs will not be measured into PCR0,
   // which is required for some legacy Hyper-V versions to boot.
-  if (PcdGetBool(PcdExcludeFvsFromMeasurements)) {
-    Status = PeiServicesInstallPpi(&PpiList);
-    ASSERT_EFI_ERROR(Status);
+  if (PcdGetBool (PcdExcludeFvsFromMeasurements)) {
+    Status = PeiServicesInstallPpi (&PpiList);
+    ASSERT_EFI_ERROR (Status);
   }
+
   return Status;
 }

@@ -7,8 +7,7 @@
 
 #pragma once
 
-
-#define EFI_INVALID_HANDLE (EFI_HANDLE)((UINTN)-1)
+#define EFI_INVALID_HANDLE  (EFI_HANDLE)((UINTN)-1)
 
 //
 // Channel handles are divided into two parts, the lower bits
@@ -16,7 +15,6 @@
 // are available for use by callers.
 //
 #define HANDLE_TABLE_RESERVED_MASK  0x00ffffff
-
 
 /*++
 
@@ -36,9 +34,8 @@ Return Value:
 typedef
 VOID *
 (EFIAPI *HANDLE_MEMORY_ALLOCATE)(
-    IN      UINTN           Size
-    );
-
+  IN      UINTN           Size
+  );
 
 /*++
 
@@ -58,8 +55,7 @@ Return Value:
 typedef
 VOID
 (EFIAPI *HANDLE_MEMORY_FREE)(
-    );
-
+  );
 
 /*++
 
@@ -86,61 +82,54 @@ Return Value:
 typedef
 EFI_STATUS
 (EFIAPI *HANDLE_ENUMERATE_CALLBACK)(
-    IN      const EFI_HANDLE                TableHandle,
-    IN      VOID                           *CallbackContext,
-    IN      EFI_HANDLE                      ObjectHandle,
-    IN      VOID                           *Object
-    );
-
+  IN      const EFI_HANDLE                TableHandle,
+  IN      VOID                           *CallbackContext,
+  IN      EFI_HANDLE                      ObjectHandle,
+  IN      VOID                           *Object
+  );
 
 //
 // Describes information about a handle table
 //
-typedef struct
-{
-    HANDLE_MEMORY_ALLOCATE  Allocate;
-    HANDLE_MEMORY_FREE      Free;
-    UINTN                   ObjectKeySize;
+typedef struct {
+  HANDLE_MEMORY_ALLOCATE    Allocate;
+  HANDLE_MEMORY_FREE        Free;
+  UINTN                     ObjectKeySize;
 } EFI_HANDLE_TABLE_INFO;
 
+EFI_STATUS
+EfiHandleTableInitialize (
+  IN          const EFI_HANDLE_TABLE_INFO  *Attributes,
+  IN          const UINT32                 Size,
+  IN          const UINT8                  TableKey,
+  OUT         EFI_HANDLE                   *Table
+  );
 
 EFI_STATUS
-EfiHandleTableInitialize(
-    IN          const EFI_HANDLE_TABLE_INFO    *Attributes,
-    IN          const UINT32                Size,
-    IN          const UINT8                 TableKey,
-    OUT         EFI_HANDLE                 *Table
-    );
-
-
-EFI_STATUS
-EfiHandleTableAllocateObject(
-    IN          EFI_HANDLE                  TableHandle,
-    IN          const UINTN                 ObjectSize,
-    OUT         VOID                      **Object,
-    OUT         EFI_HANDLE                 *Handle
-    );
-
+EfiHandleTableAllocateObject (
+  IN          EFI_HANDLE   TableHandle,
+  IN          const UINTN  ObjectSize,
+  OUT         VOID         **Object,
+  OUT         EFI_HANDLE   *Handle
+  );
 
 VOID *
-EfiHandleTableLookupByKey(
-    IN              const EFI_HANDLE            TableHandle,
-    IN              const VOID                 *Key,
-    IN              const UINT32                KeySize,
-    OUT OPTIONAL    EFI_HANDLE                 *Handle
-    );
-
+EfiHandleTableLookupByKey (
+  IN              const EFI_HANDLE  TableHandle,
+  IN              const VOID        *Key,
+  IN              const UINT32      KeySize,
+  OUT OPTIONAL    EFI_HANDLE        *Handle
+  );
 
 VOID *
-EfiHandleTableLookupByHandle(
-    IN          const EFI_HANDLE            TableHandle,
-    IN          const EFI_HANDLE            Handle
-    );
-
+EfiHandleTableLookupByHandle (
+  IN          const EFI_HANDLE  TableHandle,
+  IN          const EFI_HANDLE  Handle
+  );
 
 EFI_STATUS
-EfiHandleTableEnumerateObjects(
-    IN          const EFI_HANDLE            TableHandle,
-    IN          const VOID                 *CallbackContext,
-    IN          HANDLE_ENUMERATE_CALLBACK   Callback
-    );
+EfiHandleTableEnumerateObjects (
+  IN          const EFI_HANDLE           TableHandle,
+  IN          const VOID                 *CallbackContext,
+  IN          HANDLE_ENUMERATE_CALLBACK  Callback
+  );

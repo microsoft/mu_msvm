@@ -10,8 +10,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/CcExitLib.h>
 #include "CpuExceptionCommon.h"
 #if MS_HYP_CHANGE
-#include <Library/CrashLib.h>
-#include <Library/DebugLib.h>
+  #include <Library/CrashLib.h>
+  #include <Library/DebugLib.h>
 #endif
 
 /**
@@ -28,14 +28,14 @@ CommonExceptionHandlerWorker (
   IN EXCEPTION_HANDLER_DATA  *ExceptionHandlerData
   )
 {
-#if !MS_HYP_CHANGE
-  EFI_STATUS                 Status;
-#endif
+ #if !MS_HYP_CHANGE
+  EFI_STATUS  Status;
+ #endif
   EXCEPTION_HANDLER_CONTEXT  *ExceptionHandlerContext;
   RESERVED_VECTORS_DATA      *ReservedVectors;
   EFI_CPU_INTERRUPT_HANDLER  *ExternalInterruptHandler;
 
-#if !MS_HYP_CHANGE // TODO: VC/VE Exceptions handled in a different style
+ #if !MS_HYP_CHANGE // TODO: VC/VE Exceptions handled in a different style
   switch (ExceptionType) {
     case VC_EXCEPTION:
       //
@@ -75,7 +75,7 @@ CommonExceptionHandlerWorker (
       break;
   }
 
-#endif // MS_HYP_CHANGE
+ #endif // MS_HYP_CHANGE
 
   ExceptionHandlerContext  = (EXCEPTION_HANDLER_CONTEXT *)(UINTN)(SystemContext.SystemContextIa32);
   ReservedVectors          = ExceptionHandlerData->ReservedVectors;
@@ -151,12 +151,12 @@ CommonExceptionHandlerWorker (
       CpuPause ();
     }
 
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
     //
     // Initialize the serial port before dumping.
     //
     SerialPortInitialize ();
-#endif
+ #endif
 
     //
     // Display ExceptionType, CPU information and Image information
@@ -166,26 +166,27 @@ CommonExceptionHandlerWorker (
     // Release Spinlock of output message
     //
     ReleaseSpinLock (&ExceptionHandlerData->DisplayMessageSpinLock);
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
     //
     // Fail fast if needn't to execute old IDT handler further
     //
-#else
+ #else
     //
     // Enter a dead loop if needn't to execute old IDT handler further
     //
-#endif
+ #endif
     if (ReservedVectors[ExceptionType].Attribute != EFI_VECTOR_HANDOFF_HOOK_BEFORE) {
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
       CpuDeadLoop ();
-#else
-      FailFast(
+ #else
+      FailFast (
         ExceptionType,
         SystemContext.SystemContextX64->ExceptionData,
         0,
         (UINTN)&mDebugBuffer,
-        mDebugCursor);
-#endif // MS_HYP_CHANGE
+        mDebugCursor
+        );
+ #endif // MS_HYP_CHANGE
     }
   }
 }

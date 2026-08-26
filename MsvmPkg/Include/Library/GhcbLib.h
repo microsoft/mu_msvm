@@ -22,11 +22,10 @@ Return Value:
     Pointer to the GHCB.
 
 --*/
-VOID*
-GhcbInitializeGhcb(
-    VOID
-    );
-
+VOID *
+GhcbInitializeGhcb (
+  VOID
+  );
 
 /*++
 
@@ -48,12 +47,11 @@ Return Value:
 
 --*/
 VOID
-GhcbWriteMsr(
-    IN  VOID    *Ghcb,
-        UINT64  MsrNumber,
-        UINT64  RegisterValue
-    );
-
+GhcbWriteMsr (
+  IN  VOID  *Ghcb,
+  UINT64    MsrNumber,
+  UINT64    RegisterValue
+  );
 
 /*++
 
@@ -76,8 +74,8 @@ Return Value:
 
 --*/
 VOID
-GhcbReadMsr(
-    IN  VOID    *Ghcb,
-        UINT64  MsrNumber,
-    OUT UINT64  *RegisterValue
-    );
+GhcbReadMsr (
+  IN  VOID    *Ghcb,
+  UINT64      MsrNumber,
+  OUT UINT64  *RegisterValue
+  );

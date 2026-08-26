@@ -9,10 +9,11 @@
 VOID
 EFIAPI
 EfiHvSetTimer (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  UINT32 TimerIndex,
-  IN  UINT64 Expiration
+  IN  EFI_HV_PROTOCOL  *This,
+  IN  UINT32           TimerIndex,
+  IN  UINT64           Expiration
   )
+
 /*++
   Sets a hypervisor timer to expire.
 
@@ -29,10 +30,11 @@ EfiHvSetTimer (
 
 --*/
 {
-  HvHypercallSetVpRegister64Self(
+  HvHypercallSetVpRegister64Self (
     mBypassOnly ? &mHvBypassContext : &mHvContext,
     HvRegisterStimer0Count + (2 * TimerIndex),
-    Expiration);
+    Expiration
+    );
 }
 
 BOOLEAN
@@ -40,6 +42,7 @@ EFIAPI
 EfiHvDirectTimerSupported (
   VOID
   )
+
 /*++
   Indicates whether the hypervisor supports direct-mode timers.
 
@@ -55,13 +58,14 @@ EfiHvDirectTimerSupported (
 VOID
 EFIAPI
 EfiHvDirectTimerInterruptHandler (
-#if defined(MDE_CPU_X64)
-  IN  EFI_EXCEPTION_TYPE InterruptType,
-#elif defined(MDE_CPU_AARCH64)
-  IN  HARDWARE_INTERRUPT_SOURCE InterruptType,
+#if defined (MDE_CPU_X64)
+  IN  EFI_EXCEPTION_TYPE         InterruptType,
+#elif defined (MDE_CPU_AARCH64)
+  IN  HARDWARE_INTERRUPT_SOURCE  InterruptType,
 #endif
-  IN  EFI_SYSTEM_CONTEXT SystemContext
+  IN  EFI_SYSTEM_CONTEXT         SystemContext
   )
+
 /*++
   The interrupt handler for direct-mode timers. Raises to high level and
   calls out to the connected handler.
@@ -75,39 +79,39 @@ EfiHvDirectTimerInterruptHandler (
 
 --*/
 {
-  EFI_TPL tpl;
+  EFI_TPL  tpl;
 
-  tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-  SendApicEoi();
+  SendApicEoi ();
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-  mHwInt->EndOfInterrupt(mHwInt, InterruptType);
+  mHwInt->EndOfInterrupt (mHwInt, InterruptType);
 
-#endif
+ #endif
 
-  if (mDirectTimerInterruptHandlers[InterruptType] != NULL)
-  {
+  if (mDirectTimerInterruptHandlers[InterruptType] != NULL) {
     mDirectTimerInterruptHandlers[InterruptType](NULL);
   }
 
-  gBS->RestoreTPL(tpl);
+  gBS->RestoreTPL (tpl);
 }
 
 EFI_STATUS
 EFIAPI
 EfiHvConfigureTimer (
-  IN          EFI_HV_PROTOCOL             *This,
-  IN          UINT32                      TimerIndex,
-  IN          HV_SYNIC_SINT_INDEX         SintIndex,
-  IN          BOOLEAN                     Periodic,
-  IN          BOOLEAN                     DirectMode,
-  IN          UINT8                       Vector,
-  IN OPTIONAL EFI_HV_INTERRUPT_HANDLER    InterruptHandler
+  IN          EFI_HV_PROTOCOL           *This,
+  IN          UINT32                    TimerIndex,
+  IN          HV_SYNIC_SINT_INDEX       SintIndex,
+  IN          BOOLEAN                   Periodic,
+  IN          BOOLEAN                   DirectMode,
+  IN          UINT8                     Vector,
+  IN OPTIONAL EFI_HV_INTERRUPT_HANDLER  InterruptHandler
   )
+
 /*++
   Configures a timer for use. Start it with EfiHvSetTimer.
 
@@ -129,66 +133,64 @@ EfiHvConfigureTimer (
 
 --*/
 {
-  HV_X64_MSR_STIMER_CONFIG_CONTENTS config;
-  EFI_STATUS status;
-  DEBUG((DEBUG_VERBOSE, ">>> %a: tindex 0x%x sindex 0x%x periodic %s direct %s vector 0x%x\n",
-    __func__, TimerIndex, SintIndex, Periodic ? L"TRUE" : L"FALSE",
-    DirectMode ? L"TRUE" : L"FALSE", Vector));
+  HV_X64_MSR_STIMER_CONFIG_CONTENTS  config;
+  EFI_STATUS                         status;
 
-  if (TimerIndex >= HV_SYNIC_STIMER_COUNT)
-  {
+  DEBUG ((
+    DEBUG_VERBOSE,
+    ">>> %a: tindex 0x%x sindex 0x%x periodic %s direct %s vector 0x%x\n",
+    __func__,
+    TimerIndex,
+    SintIndex,
+    Periodic ? L"TRUE" : L"FALSE",
+    DirectMode ? L"TRUE" : L"FALSE",
+    Vector
+    ));
+
+  if (TimerIndex >= HV_SYNIC_STIMER_COUNT) {
     status = EFI_INVALID_PARAMETER;
-    DEBUG((DEBUG_ERROR, "--- %a: invalid timer index - %r \n", __func__, status));
+    DEBUG ((DEBUG_ERROR, "--- %a: invalid timer index - %r \n", __func__, status));
     return status;
   }
 
   //
   // Verify that an existing timer is not being reconfigured with an incompatible configuration.
   //
-  if (DirectMode)
-  {
-    if (mTimerConfiguration[TimerIndex].Enable)
-    {
+  if (DirectMode) {
+    if (mTimerConfiguration[TimerIndex].Enable) {
       if (!mTimerConfiguration[TimerIndex].DirectMode ||
-        (mTimerConfiguration[TimerIndex].ApicVector != Vector) ||
-        (mDirectTimerInterruptHandlers[Vector] != InterruptHandler))
+          (mTimerConfiguration[TimerIndex].ApicVector != Vector) ||
+          (mDirectTimerInterruptHandlers[Vector] != InterruptHandler))
       {
         status = EFI_INVALID_PARAMETER;
-        DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration - %r \n", __func__, status));
+        DEBUG ((DEBUG_ERROR, "--- %a: invalid timer configuration - %r \n", __func__, status));
         return status;
       }
-    }
-    else
-    {
-
+    } else {
       //
       // Configure the interrupt handler for this timer.
       //
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-      status = mCpu->RegisterInterruptHandler(mCpu, Vector, EfiHvDirectTimerInterruptHandler);
+      status = mCpu->RegisterInterruptHandler (mCpu, Vector, EfiHvDirectTimerInterruptHandler);
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-      status = mHwInt->RegisterInterruptSource(mHwInt, (UINTN)Vector, EfiHvDirectTimerInterruptHandler);
+      status = mHwInt->RegisterInterruptSource (mHwInt, (UINTN)Vector, EfiHvDirectTimerInterruptHandler);
 
-#endif
+ #endif
 
-      if (EFI_ERROR(status))
-      {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
+      if (EFI_ERROR (status)) {
+        DEBUG ((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
         return status;
       }
 
       mDirectTimerInterruptHandlers[Vector] = InterruptHandler;
     }
-  }
-  else
-  {
-    if (mTimerConfiguration[TimerIndex].DirectMode)
-    {
+  } else {
+    if (mTimerConfiguration[TimerIndex].DirectMode) {
       status = EFI_INVALID_PARAMETER;
-      DEBUG((DEBUG_ERROR, "--- %a: invalid timer configuration (DirectMode) - %r \n", __func__, status));
+      DEBUG ((DEBUG_ERROR, "--- %a: invalid timer configuration (DirectMode) - %r \n", __func__, status));
       return status;
     }
   }
@@ -196,30 +198,29 @@ EfiHvConfigureTimer (
   //
   // Stop the timer if it's already running.
   //
-  EfiHvSetTimer(&mHv, TimerIndex, 0);
+  EfiHvSetTimer (&mHv, TimerIndex, 0);
 
   //
   // Configure the timer. Always use lazy mode if the timer is periodic.
   //
-  config.AsUINT64 = 0;
-  config.Periodic = (Periodic != FALSE);
-  config.Lazy = (Periodic != FALSE);
+  config.AsUINT64   = 0;
+  config.Periodic   = (Periodic != FALSE);
+  config.Lazy       = (Periodic != FALSE);
   config.AutoEnable = TRUE;
-  if (DirectMode)
-  {
+  if (DirectMode) {
     config.DirectMode = 1;
     config.ApicVector = Vector;
-  }
-  else
-  {
+  } else {
     config.SINTx = SintIndex;
   }
-  mTimerConfiguration[TimerIndex] = config;
+
+  mTimerConfiguration[TimerIndex]        = config;
   mTimerConfiguration[TimerIndex].Enable = 1;
-  HvHypercallSetVpRegister64Self(
+  HvHypercallSetVpRegister64Self (
     mBypassOnly ? &mHvBypassContext : &mHvContext,
     HvRegisterStimer0Config + (2 * TimerIndex),
-    config.AsUINT64);
+    config.AsUINT64
+    );
 
   return EFI_SUCCESS;
 }

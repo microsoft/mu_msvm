@@ -12,7 +12,7 @@
 #include "StaticAssert1.h"
 #include "StaticAssertExpression.h"
 
-#define STRSPAN(str, type) (str), CAST_CONSTANT(sizeof(str) - 1, type)
+#define STRSPAN(str, type)  (str), CAST_CONSTANT(sizeof(str) - 1, type)
 
 //
 // Forward declarations for internal helper functions
@@ -51,8 +51,7 @@ STATIC
 VOID
 AziHsmTpmCleanup (
   IN UINT32  *PrimaryHandle
-);
-
+  );
 
 //
 // ----------------------------------------------------------------------------
@@ -111,10 +110,10 @@ typedef struct {
 } TPM2_UNSEAL_CMD;
 
 typedef struct {
-  UINT16  Tag;
-  UINT32  Size;
-  UINT32  CommandCode;
-  UINT16  RequestedBytes;
+  UINT16    Tag;
+  UINT32    Size;
+  UINT32    CommandCode;
+  UINT16    RequestedBytes;
 } TPM2_GET_RANDOM_CMD;
 
 #pragma pack()
@@ -137,12 +136,12 @@ CopyPublicDataToBuffer (
   IN OUT UINT32           *BufferCapacity
   )
 {
-  UINT32  DataFieldSize = 0;
-  UINT16  SchemeAlg     = 0;
+  UINT32  DataFieldSize     = 0;
+  UINT16  SchemeAlg         = 0;
   UINT32  PublicContentSize = 0;
-  UINT32  BytesToWrite = 0;
-  UINT8  *BufPtr = NULL;
-  UINTN  BytesWritten = 0;
+  UINT32  BytesToWrite      = 0;
+  UINT8   *BufPtr           = NULL;
+  UINTN   BytesWritten      = 0;
 
   if ((InPublic == NULL) || (Buffer == NULL) || (BufferCapacity == NULL)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: CopyPublicDataToBuffer invalid parameter\n"));
@@ -171,11 +170,11 @@ CopyPublicDataToBuffer (
 
   // Base fields: type + nameAlg + objectAttributes + authPolicy.size + authPolicy.bytes + DataFieldSize
   PublicContentSize = (UINT32)(sizeof (InPublic->publicArea.type) +
-                                       sizeof (InPublic->publicArea.nameAlg) +
-                                       sizeof (InPublic->publicArea.objectAttributes) +
-                                       sizeof (InPublic->publicArea.authPolicy.size) +
-                                       InPublic->publicArea.authPolicy.size +
-                                       DataFieldSize);
+                               sizeof (InPublic->publicArea.nameAlg) +
+                               sizeof (InPublic->publicArea.objectAttributes) +
+                               sizeof (InPublic->publicArea.authPolicy.size) +
+                               InPublic->publicArea.authPolicy.size +
+                               DataFieldSize);
 
   BytesToWrite = sizeof (UINT16) + PublicContentSize;
 
@@ -291,12 +290,12 @@ CopySensitiveData (
   IN OUT UINT32                     *BufferCapacity
   )
 {
-  UINT16  UserAuthLen = 0;
-  UINT16  DataLen     = 0;
+  UINT16  UserAuthLen       = 0;
+  UINT16  DataLen           = 0;
   UINT32  SensitiveBodySize = 0;
-  UINT32  TotalNeeded = 0;
-  UINT8  *BufPtr = NULL;
-  UINTN  BytesWritten = 0;
+  UINT32  TotalNeeded       = 0;
+  UINT8   *BufPtr           = NULL;
+  UINTN   BytesWritten      = 0;
 
   if ((InSensitive == NULL) || (Buffer == NULL) || (BufferCapacity == NULL)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: CopySensitiveData: Invalid parameter to function.\n"));
@@ -398,7 +397,7 @@ InternalTpm2CreatePrimary (
   UINT8                 *BufPtr;
   UINT32                BufCapacity;
   TPM2_CREATE_CMD       SendBuffer;
-  UINT32                TotalSize = 0;
+  UINT32                TotalSize    = 0;
   UINT32                ResponseCode = 0;
   UINT8                 *RspCursor;
 
@@ -486,7 +485,7 @@ InternalTpm2CreatePrimary (
   }
 
   ResponseHeader = (TPM2_RESPONSE_HEADER *)RecvBuffer;
-  ResponseCode = SwapBytes32 (ResponseHeader->responseCode);
+  ResponseCode   = SwapBytes32 (ResponseHeader->responseCode);
   if (ResponseCode != TPM_RC_SUCCESS) {
     DEBUG ((
       DEBUG_ERROR,
@@ -496,6 +495,7 @@ InternalTpm2CreatePrimary (
     if (ResponseCode == TPM_RC_HIERARCHY) {
       DEBUG ((DEBUG_ERROR, "AziHsm: TPM_RC_HIERARCHY - Hierarchy is not enabled or not correct for use\n"));
     }
+
     Status = EFI_DEVICE_ERROR;
     goto Cleanup;
   }
@@ -600,7 +600,7 @@ InternalTpm2HMAC (
     goto Cleanup;
   }
 
-  Rsp   = (TPM2_RESPONSE_HEADER *)RecvBuffer;
+  Rsp    = (TPM2_RESPONSE_HEADER *)RecvBuffer;
   RspTag = SwapBytes16 (Rsp->tag);
   Rc     = SwapBytes32 (Rsp->responseCode);
 
@@ -683,7 +683,7 @@ ManualHkdfSha256Expand (
   UINTN    HmacInputSize;
   UINTN    OutputOffset = 0;
   UINT8    Counter;
-  UINTN    BytesToCopy  = 0;
+  UINTN    BytesToCopy = 0;
 
   if (  (PRK == NULL) || (DerivedKey == NULL) || (PRKSize != SHA256_DIGEST_SIZE) ||
         (DerivedKeySize == 0) || (DerivedKeySize > MAX_HKDF_BLOCKS * SHA256_DIGEST_SIZE)
@@ -774,7 +774,7 @@ EFIAPI
 AziHsmCreatePlatformPrimaryKeyedHash (
   OUT TPM_HANDLE  *PrimaryHandle,
   IN const char   *PrimaryKeyUserData,
-  IN UINT16        PrimaryKeyUserDataLength
+  IN UINT16       PrimaryKeyUserDataLength
   )
 {
   EFI_STATUS              Status;
@@ -830,7 +830,7 @@ AziHsmCreatePlatformPrimaryKeyedHash (
   Status         = EFI_SUCCESS;
   DEBUG ((DEBUG_INFO, "AziHsm: Platform primary KeyedHash created\n"));
 
-  Cleanup:
+Cleanup:
   ZeroMem (&InSensitive, sizeof (InSensitive));
   ZeroMem (&InPublic, sizeof (InPublic));
   return Status;
@@ -865,14 +865,14 @@ AziHsmGetTpmPlatformSecret (
 
   // Primary Key User Data to be input to primary key creation
   DEBUG ((DEBUG_INFO, "AziHsm: Creating Platform hierarchy primary\n"));
-  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, STRSPAN(AZIHSM_PRIMARY_KEY_USER_DATA, UINT16));
+  Status = AziHsmCreatePlatformPrimaryKeyedHash (&PrimaryHandle, STRSPAN (AZIHSM_PRIMARY_KEY_USER_DATA, UINT16));
   AZIHSM_CHECK_RC (Status, "Primary (platform) creation failed\n");
 
   // Step 2: HMAC KDF Derivation
   ZeroMem (&KdfInput, sizeof (KdfInput));
   ZeroMem (&HmacResult, sizeof (HmacResult));
   ZeroMem (TpmPlatformHierarchySecret, sizeof (*TpmPlatformHierarchySecret));
-  
+
   // Prepare HMAC input: Well-known string
   STATIC_ASSERT_1 (AZIHSM_HASH_USER_INPUT_SIZE <= sizeof (KdfInput.buffer));
   KdfInput.size = AZIHSM_HASH_USER_INPUT_SIZE;
@@ -880,11 +880,11 @@ AziHsmGetTpmPlatformSecret (
 
   // Perform HMAC using the Primary KeyedHash using SHA-256 to derive the PRK of 32 bytes
   Status = InternalTpm2HMAC (
-            PrimaryHandle,
-            &KdfInput,
-            TPM_ALG_SHA256,
-            &HmacResult
-            );
+             PrimaryHandle,
+             &KdfInput,
+             TPM_ALG_SHA256,
+             &HmacResult
+             );
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: TPM HMAC for PRK generation failed\n"));
@@ -903,7 +903,7 @@ AziHsmGetTpmPlatformSecret (
 
 Cleanup:
   // Clean up TPM handles
-  AziHsmTpmCleanup(&PrimaryHandle);
+  AziHsmTpmCleanup (&PrimaryHandle);
   // Zero sensitive data
   ZeroMem (&KdfInput, sizeof (KdfInput));
   ZeroMem (&HmacResult, sizeof (HmacResult));
@@ -925,7 +925,6 @@ Cleanup:
   @retval EFI_SUCCESS              The key derivation completed successfully.
   @retval Others                   An error occurred during the key derivation.
  */
-
 EFI_STATUS
 AziHsmDeriveBKS3fromId (
   IN AZIHSM_BUFFER        *TpmPlatformSecret,
@@ -934,10 +933,11 @@ AziHsmDeriveBKS3fromId (
   OUT AZIHSM_DERIVED_KEY  *BKS3Key
   )
 {
-  EFI_STATUS        Status;
+  EFI_STATUS  Status;
 
   if ((TpmPlatformSecret == NULL) || (BKS3Key == NULL) || (Id == NULL) ||
-      (IdLength == 0) || (IdLength > AZIHSM_PCI_IDENTIFIER_MAX_LEN)) {
+      (IdLength == 0) || (IdLength > AZIHSM_PCI_IDENTIFIER_MAX_LEN))
+  {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmDeriveBKS3fromId - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
@@ -956,12 +956,12 @@ AziHsmDeriveBKS3fromId (
   // HKDF-Expand in software using CryptoPkg
 
   Status = ManualHkdfSha256Expand (
-             TpmPlatformSecret->Data,                   // PRK from HMAC
-             TpmPlatformSecret->Size,                    // PRK size (32 bytes)
-             Id,                         // Context info
+             TpmPlatformSecret->Data,   // PRK from HMAC
+             TpmPlatformSecret->Size,   // PRK size (32 bytes)
+             Id,                        // Context info
              IdLength,                  // Info size
-             BKS3Key->KeyData,                  // Output buffer
-             AZIHSM_DERIVED_KEY_SIZE               // Output size
+             BKS3Key->KeyData,          // Output buffer
+             AZIHSM_DERIVED_KEY_SIZE    // Output size
              );
 
   if (EFI_ERROR (Status)) {
@@ -995,7 +995,6 @@ AziHsmMeasureGuidEvent (
   UINT8       EventDescription[AZIHSM_TCG_EVENT_MAX_SIZE];
   UINT32      EventSize;
 
-
   if (Context == NULL) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmMeasureGuidEvent - No valid context found, skipping measurement\n"));
     return EFI_INVALID_PARAMETER;
@@ -1004,11 +1003,11 @@ AziHsmMeasureGuidEvent (
   // Build JSON string with format: {"azihsm-guid" : "<guid>"}
   ZeroMem (EventDescription, sizeof (EventDescription));
   EventSize = (UINT32)AsciiSPrint (
-                (CHAR8 *)EventDescription,
-                sizeof (EventDescription),
-                "{\"azihsm-guid\":\"%g\"}",
-                Context->Guid
-                );
+                        (CHAR8 *)EventDescription,
+                        sizeof (EventDescription),
+                        "{\"azihsm-guid\":\"%g\"}",
+                        Context->Guid
+                        );
 
   // Measure the JSON string to TPM PCR 6
   Status = TpmMeasureAndLogData (
@@ -1020,7 +1019,7 @@ AziHsmMeasureGuidEvent (
              EventSize
              );
 
-  ZeroMem(EventDescription, sizeof(EventDescription));
+  ZeroMem (EventDescription, sizeof (EventDescription));
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmMeasureGuidEvent - Failed to measure AZIHSM GUID: %r\n", Status));
@@ -1054,7 +1053,6 @@ AziHsmCreateNullAesPrimary (
     return EFI_INVALID_PARAMETER;
   }
 
-
   ZeroMem (&InPublic, sizeof (InPublic));
   ZeroMem (&InSensitive, sizeof (InSensitive));
   InSensitive.sensitive.userAuth.size = 0;
@@ -1080,11 +1078,11 @@ AziHsmCreateNullAesPrimary (
   InPublic.publicArea.unique.rsa.size                            = 0; // let TPM fill
 
   Status = InternalTpm2CreatePrimary (
-                        TPM_RH_NULL,
-                        &InSensitive,
-                        &InPublic,
-                        &Handle
-                        );
+             TPM_RH_NULL,
+             &InSensitive,
+             &InPublic,
+             &Handle
+             );
 
   ZeroMem (&InSensitive, sizeof (InSensitive));
 
@@ -1115,30 +1113,29 @@ AziHsmTpmSealBuffer (
   OUT AZIHSM_BUFFER  *SealedBuffer
   )
 {
-  TPM2_CREATE_CMD  SendBuffer;
-  UINT8            RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
-  UINT32           RecvBufferSize;
+  TPM2_CREATE_CMD         SendBuffer;
+  UINT8                   RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
+  UINT32                  RecvBufferSize;
   TPM2B_SENSITIVE_CREATE  InSensitive;
-  UINTN  SensitivePayloadLen = 0;
-  TPM2B_PUBLIC  InPublic;
-  UINT8       *BufPtr     = NULL;
-  UINT32      BufCapacity = 0;
-  EFI_STATUS  Status;
-  UINT32  TotalSize = 0;
+  UINTN                   SensitivePayloadLen = 0;
+  TPM2B_PUBLIC            InPublic;
+  UINT8                   *BufPtr     = NULL;
+  UINT32                  BufCapacity = 0;
+  EFI_STATUS              Status;
+  UINT32                  TotalSize = 0;
   // Response parsing
   TPM2_RESPONSE_HEADER  *ResponseHeader;
-  UINT32                Responsecode   = 0;
-  UINT8  *RspCursor;
-  UINT32  ParamSize;
-  UINT16  OutPrivBody = 0;
-  UINT8  *PrivStart = NULL;
-  UINT16  OutPubBody = 0;
-  UINT8  *PubLenPos = NULL;
-  UINTN  SealedSecretSize = 0;
-  UINT8  *Dst = NULL;
-  UINT16  PrivTotal;
-  UINT16  PubTotal;
-
+  UINT32                Responsecode = 0;
+  UINT8                 *RspCursor;
+  UINT32                ParamSize;
+  UINT16                OutPrivBody      = 0;
+  UINT8                 *PrivStart       = NULL;
+  UINT16                OutPubBody       = 0;
+  UINT8                 *PubLenPos       = NULL;
+  UINTN                 SealedSecretSize = 0;
+  UINT8                 *Dst             = NULL;
+  UINT16                PrivTotal;
+  UINT16                PubTotal;
 
   if ((ParentHandle == 0) || (PlainBuffer == NULL) || (PlainSize == 0) ||
       (SealedBuffer == NULL) || (SealedBuffer->Data == NULL))
@@ -1147,14 +1144,12 @@ AziHsmTpmSealBuffer (
     return EFI_INVALID_PARAMETER;
   }
 
-
   SealedBuffer->Size = 0;
 
   // Guard: TPM2B_SENSITIVE_CREATE data max to keep command small
   if (PlainSize > MAX_DIGEST_BUFFER) {
     return EFI_BAD_BUFFER_SIZE;
   }
-
 
   ZeroMem (&SendBuffer, sizeof (SendBuffer));
 
@@ -1176,10 +1171,10 @@ AziHsmTpmSealBuffer (
   InSensitive.sensitive.userAuth.size = 0; // Empty platformAuth assumed
   CopyMem (InSensitive.sensitive.data.buffer, PlainBuffer, PlainSize);
   InSensitive.sensitive.data.size = (UINT16)PlainSize;
-  SensitivePayloadLen =  sizeof (InSensitive.sensitive.userAuth.size) +
-                               InSensitive.sensitive.userAuth.size
-                               +sizeof (InSensitive.sensitive.data.size) +
-                               InSensitive.sensitive.data.size;
+  SensitivePayloadLen             =  sizeof (InSensitive.sensitive.userAuth.size) +
+                                    InSensitive.sensitive.userAuth.size
+                                    +sizeof (InSensitive.sensitive.data.size) +
+                                    InSensitive.sensitive.data.size;
 
   if (SensitivePayloadLen > MAX_SYM_DATA ) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmTpmSealBuffer() Sensitive data too large\n"));
@@ -1187,7 +1182,6 @@ AziHsmTpmSealBuffer (
   }
 
   InSensitive.size = (UINT16)SensitivePayloadLen;
-
 
   ZeroMem (&InPublic, sizeof (InPublic));
   InPublic.size                                     = sizeof (TPMT_PUBLIC);
@@ -1203,7 +1197,7 @@ AziHsmTpmSealBuffer (
   InPublic.publicArea.unique.keyedHash.size                    = 0;
 
   // Serialize variable parameters into CmdBuffer
-  BufPtr     = SendBuffer.CmdBuffer;
+  BufPtr      = SendBuffer.CmdBuffer;
   BufCapacity = sizeof (SendBuffer.CmdBuffer);
 
   // ---- inSensitive ----
@@ -1268,7 +1262,7 @@ AziHsmTpmSealBuffer (
   }
 
   ResponseHeader = (TPM2_RESPONSE_HEADER *)RecvBuffer;
-  Responsecode    = SwapBytes32 (ResponseHeader->responseCode);
+  Responsecode   = SwapBytes32 (ResponseHeader->responseCode);
 
   if (Responsecode != TPM_RC_SUCCESS) {
     DEBUG ((DEBUG_ERROR, "AziHsm:  Seal failed rc=0x%X\n", Responsecode));
@@ -1350,12 +1344,12 @@ AziHsmTpmSealBuffer (
   SealedSecretSize = sizeof (UINT16) + PrivTotal + sizeof (UINT16) + PubTotal;
 
   // Check if we have enough buffer capacity to hold the sealed secret
-  if (SealedSecretSize > sizeof(SealedBuffer->Data)) {
+  if (SealedSecretSize > sizeof (SealedBuffer->Data)) {
     DEBUG ((
       DEBUG_ERROR,
       "AziHsm:  Seal packed buffer too small need=%u cap=%u\n",
       (UINT32)SealedSecretSize,
-      (UINT32)sizeof(SealedBuffer->Data)
+      (UINT32)sizeof (SealedBuffer->Data)
       ));
     Status = EFI_BUFFER_TOO_SMALL;
     goto Cleanup;
@@ -1376,7 +1370,7 @@ AziHsmTpmSealBuffer (
   Dst += PubTotal;
 
   SealedBuffer->Size = (UINT16)(Dst - SealedBuffer->Data);
-  Status           = EFI_SUCCESS;
+  Status             = EFI_SUCCESS;
 
 Cleanup:
 
@@ -1405,7 +1399,6 @@ AziHsmTpmCleanup (
     Tpm2FlushContext (*PrimaryHandle);
     *PrimaryHandle = 0;
   }
-
 }
 
 /*
@@ -1495,31 +1488,29 @@ Exit:
   @retval EFI_INVALID_PARAMETER     One or more parameters are invalid.
   @retval EFI_DEVICE_ERROR         An error occurred while accessing the TPM.
  */
-
 EFI_STATUS
-AziHsmTpmLoadSealedBuffer(
+AziHsmTpmLoadSealedBuffer (
   IN  UINT32         Primary,
   IN  AZIHSM_BUFFER  *SealedBuffer,
-  OUT UINT32        *ObjectHandle
-  ) {
-
-  EFI_STATUS  Status;
-  UINT8   *Cur = NULL, *End = NULL, *PrivBlob = NULL, *PubBlob = NULL;
-  UINT16   PrivTotal = 0, PubTotal = 0;
-  UINT16   PrivBodySize = 0;
-  UINT16   PubBodySize = 0;
-  UINT8                   SendBuffer[AZIHSM_TPM_CMD_BUFSIZE];
-  UINT8                   RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
-  UINT32                  RecvBufferSize;
-  TPM2_LOAD_CMD_HEADER    *LoadCmd;
-  UINT8                   *CmdPtr;
-  UINT32                  RequiredSize = 0;
-  UINT32                  TotalSize = 0;
+  OUT UINT32         *ObjectHandle
+  )
+{
+  EFI_STATUS            Status;
+  UINT8                 *Cur = NULL, *End = NULL, *PrivBlob = NULL, *PubBlob = NULL;
+  UINT16                PrivTotal = 0, PubTotal = 0;
+  UINT16                PrivBodySize = 0;
+  UINT16                PubBodySize  = 0;
+  UINT8                 SendBuffer[AZIHSM_TPM_CMD_BUFSIZE];
+  UINT8                 RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
+  UINT32                RecvBufferSize;
+  TPM2_LOAD_CMD_HEADER  *LoadCmd;
+  UINT8                 *CmdPtr;
+  UINT32                RequiredSize = 0;
+  UINT32                TotalSize    = 0;
   TPM2_RESPONSE_HEADER  *ResponseHeader;
   UINT32                Responsecode;
 
-
-  if (Primary == 0 || SealedBuffer == NULL || ObjectHandle == NULL) {
+  if ((Primary == 0) || (SealedBuffer == NULL) || (ObjectHandle == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1527,14 +1518,14 @@ AziHsmTpmLoadSealedBuffer(
   Cur = SealedBuffer->Data;
   End = SealedBuffer->Data + SealedBuffer->Size;
 
-  if (Cur + sizeof(UINT16) > End) {
+  if (Cur + sizeof (UINT16) > End) {
     Status = EFI_COMPROMISED_DATA;
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob too small to contain private size\n"));
     goto Exit;
   }
 
   PrivTotal = *(UINT16 *)Cur;
-  Cur      += sizeof(UINT16);
+  Cur      += sizeof (UINT16);
   if (Cur + PrivTotal > End) {
     Status = EFI_COMPROMISED_DATA;
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob too small to contain private blob\n"));
@@ -1543,22 +1534,23 @@ AziHsmTpmLoadSealedBuffer(
 
   PrivBlob = Cur;
   Cur     += PrivTotal;
-  if (Cur + sizeof(UINT16) > End) {
+  if (Cur + sizeof (UINT16) > End) {
     Status = EFI_COMPROMISED_DATA;
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob too small to contain public size\n"));
     goto Exit;
   }
 
   PubTotal = *(UINT16 *)Cur;
-  Cur     += sizeof(UINT16);
+  Cur     += sizeof (UINT16);
   if (Cur + PubTotal > End) {
     Status = EFI_COMPROMISED_DATA;
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob too small to contain public blob\n"));
     goto Exit;
   }
+
   PubBlob = Cur;
 
-  if ((PrivTotal <= sizeof(UINT16)) || (PubTotal <= sizeof(UINT16))) {
+  if ((PrivTotal <= sizeof (UINT16)) || (PubTotal <= sizeof (UINT16))) {
     Status = EFI_COMPROMISED_DATA;
     DEBUG ((DEBUG_ERROR, "AziHsm: Sealed blob has invalid TPM2B sizes\n"));
     goto Exit;
@@ -1566,29 +1558,34 @@ AziHsmTpmLoadSealedBuffer(
 
   // PrivBlob and PubBlob point to TPM2B structures: [2-byte size][body]
   // Extract body sizes (the first 2 bytes of each blob)
-  PrivBodySize = SwapBytes16(*(UINT16*)PrivBlob);
-  PubBodySize = SwapBytes16(*(UINT16*)PubBlob);
-  
-  
+  PrivBodySize = SwapBytes16 (*(UINT16 *)PrivBlob);
+  PubBodySize  = SwapBytes16 (*(UINT16 *)PubBlob);
+
   // Validate that body sizes match what we expect (PrivTotal/PubTotal should equal bodySize + 2)
-  if ((PrivBodySize + sizeof(UINT16) != PrivTotal) || (PubBodySize + sizeof(UINT16) != PubTotal)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: TPM2B size mismatch - privBody=%u privTotal=%u pubBody=%u pubTotal=%u\n", 
-            (UINT32)PrivBodySize, (UINT32)PrivTotal, (UINT32)PubBodySize, (UINT32)PubTotal));
+  if ((PrivBodySize + sizeof (UINT16) != PrivTotal) || (PubBodySize + sizeof (UINT16) != PubTotal)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "AziHsm: TPM2B size mismatch - privBody=%u privTotal=%u pubBody=%u pubTotal=%u\n",
+      (UINT32)PrivBodySize,
+      (UINT32)PrivTotal,
+      (UINT32)PubBodySize,
+      (UINT32)PubTotal
+      ));
     Status = EFI_COMPROMISED_DATA;
     goto Exit;
   }
 
   // Build TPM2_Load command: use structure for header, then append variable data
-  
+
   ZeroMem (SendBuffer, sizeof (SendBuffer));
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
 
   // Build command header using structure
-  LoadCmd = (TPM2_LOAD_CMD_HEADER *)SendBuffer;
+  LoadCmd                     = (TPM2_LOAD_CMD_HEADER *)SendBuffer;
   LoadCmd->Header.tag         = SwapBytes16 (TPM_ST_SESSIONS);
   LoadCmd->Header.commandCode = SwapBytes32 (TPM_CC_Load);
   LoadCmd->ParentHandle       = SwapBytes32 (Primary);
-  
+
   // Single password session (empty auth)
   LoadCmd->SessionHandle = SwapBytes32 (TPM_RS_PW);
   LoadCmd->AuthAreaSize  = SwapBytes32 (
@@ -1596,36 +1593,36 @@ AziHsmTpmLoadSealedBuffer(
                              sizeof (LoadCmd->NonceSize) +
                              sizeof (LoadCmd->SessionAttributes) +
                              sizeof (LoadCmd->HmacSize)
-                           );
+                             );
   LoadCmd->NonceSize         = 0;
   LoadCmd->SessionAttributes = 0;
   LoadCmd->HmacSize          = 0;
-  
-  // Append variable data after header
-  CmdPtr = SendBuffer + sizeof(TPM2_LOAD_CMD_HEADER);
 
-    // Calculate total size needed for the command
-  RequiredSize = sizeof(TPM2_LOAD_CMD_HEADER) + sizeof(UINT16) + PrivBodySize + sizeof(UINT16) + PubBodySize;
-  if (RequiredSize > sizeof(SendBuffer)) {
-    DEBUG ((DEBUG_ERROR, "AziHsm: Load command buffer too small, required=%u, available=%u\n", RequiredSize, (UINT32)sizeof(SendBuffer)));
+  // Append variable data after header
+  CmdPtr = SendBuffer + sizeof (TPM2_LOAD_CMD_HEADER);
+
+  // Calculate total size needed for the command
+  RequiredSize = sizeof (TPM2_LOAD_CMD_HEADER) + sizeof (UINT16) + PrivBodySize + sizeof (UINT16) + PubBodySize;
+  if (RequiredSize > sizeof (SendBuffer)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: Load command buffer too small, required=%u, available=%u\n", RequiredSize, (UINT32)sizeof (SendBuffer)));
     Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
   }
-  
+
   // InPrivate: size + body
-  WriteUnaligned16((UINT16 *)CmdPtr, SwapBytes16(PrivBodySize));
-  CmdPtr += sizeof(UINT16);
-  CopyMem(CmdPtr, PrivBlob + sizeof(UINT16), PrivBodySize);
+  WriteUnaligned16 ((UINT16 *)CmdPtr, SwapBytes16 (PrivBodySize));
+  CmdPtr += sizeof (UINT16);
+  CopyMem (CmdPtr, PrivBlob + sizeof (UINT16), PrivBodySize);
   CmdPtr += PrivBodySize;
-  
+
   // InPublic: size + body
-  WriteUnaligned16((UINT16 *)CmdPtr, SwapBytes16(PubBodySize));
-  CmdPtr += sizeof(UINT16);
-  CopyMem(CmdPtr, PubBlob + sizeof(UINT16), PubBodySize);
+  WriteUnaligned16 ((UINT16 *)CmdPtr, SwapBytes16 (PubBodySize));
+  CmdPtr += sizeof (UINT16);
+  CopyMem (CmdPtr, PubBlob + sizeof (UINT16), PubBodySize);
   CmdPtr += PubBodySize;
 
   // Set total command size
-  TotalSize = (UINT32)(CmdPtr - SendBuffer);
+  TotalSize                 = (UINT32)(CmdPtr - SendBuffer);
   LoadCmd->Header.paramSize = SwapBytes32 (TotalSize);
   DEBUG ((DEBUG_WARN, "AziHsm: Load command size: %d bytes\n", TotalSize));
 
@@ -1646,14 +1643,13 @@ AziHsmTpmLoadSealedBuffer(
   }
 
   if (RecvBufferSize < (sizeof (TPM2_RESPONSE_HEADER) + sizeof (UINT32))) {
-   DEBUG ((DEBUG_ERROR, "AziHsm: Load response too small\n"));
+    DEBUG ((DEBUG_ERROR, "AziHsm: Load response too small\n"));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
 
   *ObjectHandle = SwapBytes32 (*(UINT32 *)(RecvBuffer + sizeof (TPM2_RESPONSE_HEADER)));
   DEBUG ((DEBUG_INFO, "AziHsm: Load success, handle=0x%X\n", *ObjectHandle));
-
 
   Status = EFI_SUCCESS;
 
@@ -1662,7 +1658,6 @@ Exit:
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
   return Status;
 }
-
 
 /**
  *
@@ -1675,18 +1670,18 @@ AziHsmTpmUnsealBuffer (
   OUT AZIHSM_BUFFER  *UnsealedBuffer
   )
 {
-  EFI_STATUS  Status;
+  EFI_STATUS            Status;
   TPM2_RESPONSE_HEADER  *ResponseHeader;
   UINT32                Responsecode;
   UINT8                 *RspCursor, *ParamEnd;
   UINT16                OutDataSize;
-  TPM2_UNSEAL_CMD  SendBuffer;
-  UINT8            RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
-  UINT32           RecvBufferSize;
-  UINT32           TotalSize = 0;
-  UINT32           ParamSize = 0;
+  TPM2_UNSEAL_CMD       SendBuffer;
+  UINT8                 RecvBuffer[AZIHSM_TPM_RSP_BUFSIZE];
+  UINT32                RecvBufferSize;
+  UINT32                TotalSize = 0;
+  UINT32                ParamSize = 0;
 
-  if (LoadedObjectHandle == 0 || UnsealedBuffer == NULL) {
+  if ((LoadedObjectHandle == 0) || (UnsealedBuffer == NULL)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmTpmUnsealBuffer - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
@@ -1698,25 +1693,24 @@ AziHsmTpmUnsealBuffer (
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
   SendBuffer.Header.tag         = SwapBytes16 (TPM_ST_SESSIONS);
   SendBuffer.Header.commandCode = SwapBytes32 (TPM_CC_Unseal);
-  SendBuffer.ObjectHandle      = SwapBytes32 (LoadedObjectHandle);
+  SendBuffer.ObjectHandle       = SwapBytes32 (LoadedObjectHandle);
   // Single password session (empty auth)
   SendBuffer.SessionHandle = SwapBytes32 (TPM_RS_PW);
   SendBuffer.AuthAreaSize  = SwapBytes32 (
-                                sizeof (SendBuffer.SessionHandle) +
-                                sizeof (SendBuffer.NonceSize) +
-                                sizeof (SendBuffer.SessionAttributes) +
-                                sizeof (SendBuffer.HmacSize)
-                                );
-  TotalSize = sizeof (TPM2_UNSEAL_CMD);
+                               sizeof (SendBuffer.SessionHandle) +
+                               sizeof (SendBuffer.NonceSize) +
+                               sizeof (SendBuffer.SessionAttributes) +
+                               sizeof (SendBuffer.HmacSize)
+                               );
+  TotalSize                   = sizeof (TPM2_UNSEAL_CMD);
   SendBuffer.Header.paramSize = SwapBytes32 (TotalSize);
-  RecvBufferSize = sizeof (RecvBuffer);
-  Status         = Tpm2SubmitCommand (TotalSize, (UINT8 *)&SendBuffer, &RecvBufferSize, RecvBuffer);
+  RecvBufferSize              = sizeof (RecvBuffer);
+  Status                      = Tpm2SubmitCommand (TotalSize, (UINT8 *)&SendBuffer, &RecvBufferSize, RecvBuffer);
   if (EFI_ERROR (Status) || (RecvBufferSize < sizeof (TPM2_RESPONSE_HEADER))) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Unseal submit failed st=%r resp=%u\n", Status, RecvBufferSize));
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
-
 
   ResponseHeader = (TPM2_RESPONSE_HEADER *)RecvBuffer;
   Responsecode   = SwapBytes32 (ResponseHeader->responseCode);
@@ -1732,10 +1726,10 @@ AziHsmTpmUnsealBuffer (
     goto Exit;
   }
 
-  RspCursor = RecvBuffer + sizeof (TPM2_RESPONSE_HEADER);
-  ParamSize = SwapBytes32 (*(UINT32 *)RspCursor);
+  RspCursor  = RecvBuffer + sizeof (TPM2_RESPONSE_HEADER);
+  ParamSize  = SwapBytes32 (*(UINT32 *)RspCursor);
   RspCursor += sizeof (UINT32);
-  ParamEnd  = RspCursor + ParamSize;
+  ParamEnd   = RspCursor + ParamSize;
   // Validate that declared ParamSize fits in remaining response buffer
   if (ParamEnd > (RecvBuffer + RecvBufferSize)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Unseal response parameter size mismatch\n"));
@@ -1772,7 +1766,7 @@ AziHsmTpmUnsealBuffer (
 
   Status = EFI_SUCCESS;
 
-  Exit:
+Exit:
   ZeroMem (&SendBuffer, sizeof (SendBuffer));
   ZeroMem (RecvBuffer, sizeof (RecvBuffer));
   return Status;
@@ -1796,8 +1790,8 @@ AziHsmUnsealUsingTpmNullHierarchy (
   )
 {
   EFI_STATUS  Status;
-  UINT32      Primary       = 0;
-  UINT32      ObjectHandle  = 0;
+  UINT32      Primary      = 0;
+  UINT32      ObjectHandle = 0;
 
   // Validate input args
   if ((SealedBuffer == NULL) || (UnsealedBuffer == NULL)) {
@@ -1838,29 +1832,30 @@ Exit:
 Function to get Random bytes from the TPM.
 
 */
-
 EFI_STATUS
 AziHsmTpmGetRandom (
   IN  UINT16  BytesRequested,
   OUT UINT8   *OutputBuffer
   )
 {
-  EFI_STATUS Status;
-  TPM2_GET_RANDOM_CMD Cmd;
-  UINT8   Rsp[AZIHSM_TPM_RSP_BUFSIZE];
-  UINT32  RspSize;
-  TPM2_RESPONSE_HEADER *Hdr;
-  UINT8 *ResponsePtr;
-  UINT16 RandSize;
+  EFI_STATUS            Status;
+  TPM2_GET_RANDOM_CMD   Cmd;
+  UINT8                 Rsp[AZIHSM_TPM_RSP_BUFSIZE];
+  UINT32                RspSize;
+  TPM2_RESPONSE_HEADER  *Hdr;
+  UINT8                 *ResponsePtr;
+  UINT16                RandSize;
 
-  if ((BytesRequested == 0) || (OutputBuffer == NULL) || (BytesRequested > 64)) { // modest cap
+  if ((BytesRequested == 0) || (OutputBuffer == NULL) || (BytesRequested > 64)) {
+    // modest cap
     return EFI_INVALID_PARAMETER;
   }
+
   // Build simple GetRandom command with a struct for clarity:
   // tag(2) | size(4) | commandCode(4) | bytesRequested(2) = 12 bytes total
 
   ZeroMem (&Cmd, sizeof (Cmd));
-  ZeroMem (Rsp, sizeof(Rsp));
+  ZeroMem (Rsp, sizeof (Rsp));
 
   Cmd.Tag            = SwapBytes16 (TPM_ST_NO_SESSIONS);
   Cmd.Size           = SwapBytes32 ((UINT32)sizeof (Cmd));
@@ -1868,12 +1863,12 @@ AziHsmTpmGetRandom (
   Cmd.RequestedBytes = SwapBytes16 (BytesRequested);
 
   RspSize = sizeof (Rsp);
-  Status = Tpm2SubmitCommand (
-                        (UINT32)sizeof (Cmd),
-                        (UINT8 *)&Cmd,
-                        &RspSize,
-                        Rsp
-                        );
+  Status  = Tpm2SubmitCommand (
+              (UINT32)sizeof (Cmd),
+              (UINT8 *)&Cmd,
+              &RspSize,
+              Rsp
+              );
   if (EFI_ERROR (Status) || (RspSize < sizeof (TPM2_RESPONSE_HEADER) + sizeof (UINT16))) {
     return EFI_DEVICE_ERROR;
   }
@@ -1885,16 +1880,18 @@ AziHsmTpmGetRandom (
 
   // Response layout: header | parameterSize? (not for GetRandom) -> TPM2B_DIGEST randomBytes
   // TPM2B_DIGEST: size(2) + buffer[size]
-  ResponsePtr = Rsp + sizeof (TPM2_RESPONSE_HEADER);
-  RandSize = SwapBytes16 (ReadUnaligned16 ((UINT16 *)ResponsePtr));
-  ResponsePtr += sizeof(UINT16);
-  if (RandSize == 0 || RandSize > BytesRequested || (ResponsePtr + RandSize) > (Rsp + RspSize)) {
+  ResponsePtr  = Rsp + sizeof (TPM2_RESPONSE_HEADER);
+  RandSize     = SwapBytes16 (ReadUnaligned16 ((UINT16 *)ResponsePtr));
+  ResponsePtr += sizeof (UINT16);
+  if ((RandSize == 0) || (RandSize > BytesRequested) || ((ResponsePtr + RandSize) > (Rsp + RspSize))) {
     return EFI_DEVICE_ERROR;
   }
+
   CopyMem (OutputBuffer, ResponsePtr, RandSize);
   // If TPM returned fewer bytes, caller can call again (we treat short as error for simplicity)
   if (RandSize != BytesRequested) {
     return EFI_DEVICE_ERROR;
   }
+
   return EFI_SUCCESS;
 }

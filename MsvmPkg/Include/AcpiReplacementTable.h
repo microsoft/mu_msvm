@@ -23,13 +23,13 @@
 #define ACPI_REPLACEMENT_TABLE_HOB_GUID \
   { 0xa24aef4c, 0xa824, 0x48e9, { 0xb5, 0xb8, 0xbc, 0xd9, 0x6a, 0x59, 0x71, 0xaf } }
 
-extern EFI_GUID gAcpiReplacementTableHobGuid;
+extern EFI_GUID  gAcpiReplacementTableHobGuid;
 
 //
 // HOB payload: pointer to an ACPI table in persistent memory.
 //
 typedef struct {
-    EFI_ACPI_DESCRIPTION_HEADER *Table;
+  EFI_ACPI_DESCRIPTION_HEADER    *Table;
 } ACPI_REPLACEMENT_TABLE_HOB_DATA;
 
 //
@@ -37,14 +37,15 @@ typedef struct {
 // HobRaw must point to a valid GUIDed HOB with gAcpiReplacementTableHobGuid.
 //
 static inline EFI_ACPI_DESCRIPTION_HEADER *
-AcpiReplacementTableFromHob(
-    IN VOID *HobRaw
-    )
+AcpiReplacementTableFromHob (
+  IN VOID  *HobRaw
+  )
 {
-    EFI_HOB_GUID_TYPE *GuidHob = (EFI_HOB_GUID_TYPE *)HobRaw;
-    ACPI_REPLACEMENT_TABLE_HOB_DATA *Data =
-        (ACPI_REPLACEMENT_TABLE_HOB_DATA *)GET_GUID_HOB_DATA(GuidHob);
-    return Data->Table;
+  EFI_HOB_GUID_TYPE                *GuidHob = (EFI_HOB_GUID_TYPE *)HobRaw;
+  ACPI_REPLACEMENT_TABLE_HOB_DATA  *Data    =
+    (ACPI_REPLACEMENT_TABLE_HOB_DATA *)GET_GUID_HOB_DATA (GuidHob);
+
+  return Data->Table;
 }
 
 //
@@ -53,11 +54,11 @@ AcpiReplacementTableFromHob(
 // GetNextAcpiReplacementTableHob() to iterate.
 //
 static inline VOID *
-GetFirstAcpiReplacementTableHob(
-    VOID
-    )
+GetFirstAcpiReplacementTableHob (
+  VOID
+  )
 {
-    return GetFirstGuidHob(&gAcpiReplacementTableHobGuid);
+  return GetFirstGuidHob (&gAcpiReplacementTableHobGuid);
 }
 
 //
@@ -65,11 +66,11 @@ GetFirstAcpiReplacementTableHob(
 // Returns NULL if no more exist.
 //
 static inline VOID *
-GetNextAcpiReplacementTableHob(
-    IN VOID *CurrentHob
-    )
+GetNextAcpiReplacementTableHob (
+  IN VOID  *CurrentHob
+  )
 {
-    return GetNextGuidHob(&gAcpiReplacementTableHobGuid, GET_NEXT_HOB(CurrentHob));
+  return GetNextGuidHob (&gAcpiReplacementTableHobGuid, GET_NEXT_HOB (CurrentHob));
 }
 
 //
@@ -77,19 +78,20 @@ GetNextAcpiReplacementTableHob(
 // Returns the table header pointer, or NULL if not found.
 //
 static inline EFI_ACPI_DESCRIPTION_HEADER *
-FindAcpiReplacementTable(
-    IN UINT32 Signature
-    )
+FindAcpiReplacementTable (
+  IN UINT32  Signature
+  )
 {
-    VOID *Hob = GetFirstAcpiReplacementTableHob();
-    while (Hob != NULL)
-    {
-        EFI_ACPI_DESCRIPTION_HEADER *Table = AcpiReplacementTableFromHob(Hob);
-        if (Table->Signature == Signature)
-        {
-            return Table;
-        }
-        Hob = GetNextAcpiReplacementTableHob(Hob);
+  VOID  *Hob = GetFirstAcpiReplacementTableHob ();
+
+  while (Hob != NULL) {
+    EFI_ACPI_DESCRIPTION_HEADER  *Table = AcpiReplacementTableFromHob (Hob);
+    if (Table->Signature == Signature) {
+      return Table;
     }
-    return NULL;
+
+    Hob = GetNextAcpiReplacementTableHob (Hob);
+  }
+
+  return NULL;
 }

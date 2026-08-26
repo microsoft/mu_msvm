@@ -5,44 +5,42 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-
 #include "VideoDxe.h"
 
-
-EFI_COMPONENT_NAME2_PROTOCOL gVideoDxeComponentName2 =
+EFI_COMPONENT_NAME2_PROTOCOL  gVideoDxeComponentName2 =
 {
-    VideoDxeComponentNameGetDriverName,
-    VideoDxeComponentNameGetControllerName,
-    "en"
+  VideoDxeComponentNameGetDriverName,
+  VideoDxeComponentNameGetControllerName,
+  "en"
 };
 
-EFI_COMPONENT_NAME_PROTOCOL gVideoDxeComponentName =
+EFI_COMPONENT_NAME_PROTOCOL  gVideoDxeComponentName =
 {
-    (EFI_COMPONENT_NAME_GET_DRIVER_NAME) VideoDxeComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME_GET_CONTROLLER_NAME)VideoDxeComponentNameGetControllerName,
-    "eng"
+  (EFI_COMPONENT_NAME_GET_DRIVER_NAME)VideoDxeComponentNameGetDriverName,
+  (EFI_COMPONENT_NAME_GET_CONTROLLER_NAME)VideoDxeComponentNameGetControllerName,
+  "eng"
 };
 
-EFI_UNICODE_STRING_TABLE gVideoDxeDriverNameTable[] =
+EFI_UNICODE_STRING_TABLE  gVideoDxeDriverNameTable[] =
 {
-    { "eng;en", (CHAR16 *)L"Hyper-V Video Driver"},
-    { NULL, NULL }
+  { "eng;en", (CHAR16 *)L"Hyper-V Video Driver" },
+  { NULL,     NULL                              }
 };
 
-EFI_UNICODE_STRING_TABLE gVideoDxeControllerNameTable[] =
+EFI_UNICODE_STRING_TABLE  gVideoDxeControllerNameTable[] =
 {
-    { "eng;en", (CHAR16 *)L"Hyper-V Video Controller"},
-    { NULL, NULL }
+  { "eng;en", (CHAR16 *)L"Hyper-V Video Controller" },
+  { NULL,     NULL                                  }
 };
-
 
 EFI_STATUS
 EFIAPI
 VideoDxeComponentNameGetDriverName (
-    IN  EFI_COMPONENT_NAME2_PROTOCOL *This,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **DriverName
-    )
+  IN  EFI_COMPONENT_NAME2_PROTOCOL  *This,
+  IN  CHAR8                         *Language,
+  OUT CHAR16                        **DriverName
+  )
+
 /*++
 
 Routine Description:
@@ -64,24 +62,25 @@ Return Value:
 
 --*/
 {
-    return LookupUnicodeString2(
-        Language,
-        This->SupportedLanguages,
-        gVideoDxeDriverNameTable,
-        DriverName,
-        (BOOLEAN)(This != &gVideoDxeComponentName2));
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           gVideoDxeDriverNameTable,
+           DriverName,
+           (BOOLEAN)(This != &gVideoDxeComponentName2)
+           );
 }
-
 
 EFI_STATUS
 EFIAPI
 VideoDxeComponentNameGetControllerName (
-    IN  EFI_COMPONENT_NAME2_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_HANDLE ChildHandle OPTIONAL,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **ControllerName
-    )
+  IN  EFI_COMPONENT_NAME2_PROTOCOL  *This,
+  IN  EFI_HANDLE                    ControllerHandle,
+  IN  EFI_HANDLE                    ChildHandle OPTIONAL,
+  IN  CHAR8                         *Language,
+  OUT CHAR16                        **ControllerName
+  )
+
 /*++
 
 Routine Description:
@@ -104,36 +103,35 @@ Arguments:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    //
-    // ChildHandle must be NULL for a Device Driver
-    //
+  //
+  // ChildHandle must be NULL for a Device Driver
+  //
 
-    if (ChildHandle != NULL)
-    {
-        return EFI_UNSUPPORTED;
-    }
+  if (ChildHandle != NULL) {
+    return EFI_UNSUPPORTED;
+  }
 
-    //
-    // Make sure this driver is currently managing ControllerHandle
-    //
+  //
+  // Make sure this driver is currently managing ControllerHandle
+  //
 
-    status = EfiTestManagedDevice(
-        ControllerHandle,
-        gVideoDxeDriverBinding.DriverBindingHandle,
-        &gEfiEmclProtocolGuid);
+  status = EfiTestManagedDevice (
+             ControllerHandle,
+             gVideoDxeDriverBinding.DriverBindingHandle,
+             &gEfiEmclProtocolGuid
+             );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    return LookupUnicodeString2(
-        Language,
-        This->SupportedLanguages,
-        gVideoDxeControllerNameTable,
-        ControllerName,
-        (BOOLEAN)(This != &gVideoDxeComponentName2));
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           gVideoDxeControllerNameTable,
+           ControllerName,
+           (BOOLEAN)(This != &gVideoDxeComponentName2)
+           );
 }
-

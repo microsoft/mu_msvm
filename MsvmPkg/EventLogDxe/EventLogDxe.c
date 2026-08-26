@@ -11,14 +11,15 @@
 #include "StatusCode.h"
 #include "EventLogger.h"
 
-EFI_HV_IVM_PROTOCOL *mHvIvm;
+EFI_HV_IVM_PROTOCOL  *mHvIvm;
 
 EFI_STATUS
 EFIAPI
 EventLogDxeEntry (
-    IN      EFI_HANDLE          ImageHandle,
-    IN      EFI_SYSTEM_TABLE   *SystemTable
-    )
+  IN      EFI_HANDLE        ImageHandle,
+  IN      EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -40,48 +41,45 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS  status;
+  EFI_STATUS  status;
 
-    DEBUG((DEBUG_INIT, "EventLog Driver Starting\n"));
+  DEBUG ((DEBUG_INIT, "EventLog Driver Starting\n"));
 
-    //
-    // The IVM protocol is required for hardware-isolated VMs. Check this
-    // before EventLoggerInitialize, which installs protocols — returning
-    // error after that would leave dangling protocol entries.
-    //
-    if (IsHardwareIsolatedNoParavisor())
-    {
-        status = gBS->LocateProtocol(&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
+  //
+  // The IVM protocol is required for hardware-isolated VMs. Check this
+  // before EventLoggerInitialize, which installs protocols — returning
+  // error after that would leave dangling protocol entries.
+  //
+  if (IsHardwareIsolatedNoParavisor ()) {
+    status = gBS->LocateProtocol (&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
 
-        if (EFI_ERROR(status))
-        {
-            goto Exit;
-        }
+    if (EFI_ERROR (status)) {
+      goto Exit;
     }
+  }
 
-    //
-    // Initialize the event channel management and then the status code protocol
-    //
-    status = EventLoggerInitialize();
+  //
+  // Initialize the event channel management and then the status code protocol
+  //
+  status = EventLoggerInitialize ();
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    //
-    // Don't fail driver initialization if this fails.
-    //
-    StatusCodeRuntimeInitialize();
+  //
+  // Don't fail driver initialization if this fails.
+  //
+  StatusCodeRuntimeInitialize ();
 
-    //
-    // Workaroud: Initialize BootEventLogLib library.  This is done because BootEventLogLib
-    //            library requires gEfiEventLogProtocolGuid, which is not available at the
-    //            time of its constructor execution.
-    //
-    BootEventLogLibInit(ImageHandle, SystemTable);
+  //
+  // Workaroud: Initialize BootEventLogLib library.  This is done because BootEventLogLib
+  //            library requires gEfiEventLogProtocolGuid, which is not available at the
+  //            time of its constructor execution.
+  //
+  BootEventLogLibInit (ImageHandle, SystemTable);
 
 Exit:
 
-    return status;
+  return status;
 }

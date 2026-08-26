@@ -14,5 +14,5 @@ NotifyHostToProcessEfiDiagnostics (
 
 VOID
 NotifyHostToUpdateEfiDiagnosticsGpa (
-  UINT32 EfiDiagnosticsGpa
+  UINT32  EfiDiagnosticsGpa
   );

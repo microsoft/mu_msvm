@@ -13,7 +13,6 @@
 #include <Library/SerialPortLib.h>
 #include <Library/PcdLib.h>
 
-
 /**
   Initializes the debug transport if needed.
 
@@ -48,7 +47,7 @@ DebugTransportInitialize (
            &Parity,
            &DataBits,
            &StopBits
-        );
+           );
 }
 
 /**
@@ -68,7 +67,7 @@ DebugTransportRead (
   IN UINTN   Timeout
   )
 {
-  return PL011UartRead(FixedPcdGet64(PcdFeatureDebuggerPortUartBase), Buffer, NumberOfBytes);
+  return PL011UartRead (FixedPcdGet64 (PcdFeatureDebuggerPortUartBase), Buffer, NumberOfBytes);
 }
 
 /**
@@ -86,7 +85,7 @@ DebugTransportWrite (
   IN UINTN  NumberOfBytes
   )
 {
-  return PL011UartWrite(FixedPcdGet64(PcdFeatureDebuggerPortUartBase), Buffer, NumberOfBytes);
+  return PL011UartWrite (FixedPcdGet64 (PcdFeatureDebuggerPortUartBase), Buffer, NumberOfBytes);
 }
 
 /**
@@ -101,5 +100,5 @@ DebugTransportPoll (
   VOID
   )
 {
-  return PL011UartPoll(FixedPcdGet64(PcdFeatureDebuggerPortUartBase));
+  return PL011UartPoll (FixedPcdGet64 (PcdFeatureDebuggerPortUartBase));
 }

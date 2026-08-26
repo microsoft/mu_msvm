@@ -12,14 +12,14 @@
 
 #pragma once
 
-#define TEST_FLAGS(_flags, _value)      (((_flags) & (_value)) != 0)
+#define TEST_FLAGS(_flags, _value)  (((_flags) & (_value)) != 0)
 
 //
 // Helpers to test key shift states.
 //
-#define EFI_KEY_SHIFT_ACTIVE(_state)    TEST_FLAGS(_state, (EFI_LEFT_SHIFT_PRESSED | EFI_RIGHT_SHIFT_PRESSED))
-#define EFI_KEY_CTRL_ACTIVE(_state)     TEST_FLAGS(_state, (EFI_LEFT_CONTROL_PRESSED | EFI_RIGHT_CONTROL_PRESSED))
-#define EFI_KEY_ALT_ACTIVE(_state)      TEST_FLAGS(_state, (EFI_LEFT_ALT_PRESSED | EFI_RIGHT_ALT_PRESSED))
+#define EFI_KEY_SHIFT_ACTIVE(_state)  TEST_FLAGS(_state, (EFI_LEFT_SHIFT_PRESSED | EFI_RIGHT_SHIFT_PRESSED))
+#define EFI_KEY_CTRL_ACTIVE(_state)   TEST_FLAGS(_state, (EFI_LEFT_CONTROL_PRESSED | EFI_RIGHT_CONTROL_PRESSED))
+#define EFI_KEY_ALT_ACTIVE(_state)    TEST_FLAGS(_state, (EFI_LEFT_ALT_PRESSED | EFI_RIGHT_ALT_PRESSED))
 
 //
 // Specific scan codes that we need to process.
@@ -43,47 +43,45 @@
 //
 // the high bit signifies a key break (release)
 //
-#define SCANCODE_BREAK_FLAG             0x80
+#define SCANCODE_BREAK_FLAG  0x80
 
 //
 // Structure used to map scan codes to EFI_KEY values
 //
-typedef struct _SYNTHKEY_KEY_MAP_ENTRY
-{
-    UINT8   ScanCode;           // Scan Code as defined in scan code set 1
-    UINT16  EfiScanCode;        // Scan code as defined in UEFI specification
+typedef struct _SYNTHKEY_KEY_MAP_ENTRY {
+  UINT8     ScanCode;           // Scan Code as defined in scan code set 1
+  UINT16    EfiScanCode;        // Scan code as defined in UEFI specification
                                 // SCAN_NULL when not applicable.
-    CHAR16  UnicodeChar;        // Unicode character, CHAR_NULL when not applicable
-    CHAR16  ShiftUnicodeChar;   // Unicode character when shift and/or caps lock is applied
+  CHAR16    UnicodeChar;        // Unicode character, CHAR_NULL when not applicable
+  CHAR16    ShiftUnicodeChar;   // Unicode character when shift and/or caps lock is applied
 } SYNTHKEY_KEY_MAP_ENTRY, *PSYNTHKEY_KEY_MAP_ENTRY;
 
 //
 // Used to signal the end of a translation table
 //
-#define TABLE_END                       0x0
+#define TABLE_END  0x0
 
 //
 // Describes the type of key state change detected by SynthKeyLayoutUpdateState.KeyState.
 //
-typedef enum
-{
-    KeyChangeNone,
-    KeyChangeShift,
-    KeyChangeToggle
+typedef enum {
+  KeyChangeNone,
+  KeyChangeShift,
+  KeyChangeToggle
 } SynthKeyStateChangeType;
 
 //
 // Keyboard Layout public APIs
 //
 SynthKeyStateChangeType
-SynthKeyLayoutUpdateKeyState(
-    IN          PHK_MESSAGE_KEYSTROKE       RawKey,
-    IN          PSYNTH_KEYBOARD_STATE       KeyState
-    );
+SynthKeyLayoutUpdateKeyState (
+  IN          PHK_MESSAGE_KEYSTROKE  RawKey,
+  IN          PSYNTH_KEYBOARD_STATE  KeyState
+  );
 
 EFI_STATUS
-SynthKeyLayoutTranslateKey(
-    IN          PHK_MESSAGE_KEYSTROKE       RawKey,
-    IN          PSYNTH_KEYBOARD_STATE       KeyState,
-    OUT         EFI_KEY_DATA               *TranslatedKey
-    );
+SynthKeyLayoutTranslateKey (
+  IN          PHK_MESSAGE_KEYSTROKE  RawKey,
+  IN          PSYNTH_KEYBOARD_STATE  KeyState,
+  OUT         EFI_KEY_DATA           *TranslatedKey
+  );

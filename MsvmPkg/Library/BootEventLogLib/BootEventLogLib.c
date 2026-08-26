@@ -15,15 +15,15 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
-EFI_HANDLE mBootEvent = INVALID_EVENT_HANDLE;
-
+EFI_HANDLE  mBootEvent = INVALID_EVENT_HANDLE;
 
 EFI_STATUS
 EFIAPI
-BootEventLogConstructor(
-    IN  EFI_HANDLE          ImageHandle,
-    IN  EFI_SYSTEM_TABLE    *SystemTable
-    )
+BootEventLogConstructor (
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -42,26 +42,26 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL_INFO attributes;
+  EVENT_CHANNEL_INFO  attributes;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        attributes.Flags      = 0;
-        attributes.RecordSize = 0;
-        attributes.BufferSize = PcdGet32(PcdBootEventLogSize);
-        attributes.Tpl        = TPL_NOTIFY;
-        (void)EventLogChannelCreate(&gBootEventChannelGuid, &attributes, &mBootEvent);
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    attributes.Flags      = 0;
+    attributes.RecordSize = 0;
+    attributes.BufferSize = PcdGet32 (PcdBootEventLogSize);
+    attributes.Tpl        = TPL_NOTIFY;
+    (void)EventLogChannelCreate (&gBootEventChannelGuid, &attributes, &mBootEvent);
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
-BootEventLogLibInit(
-    IN  EFI_HANDLE          ImageHandle,
-    IN  EFI_SYSTEM_TABLE    *SystemTable
-    )
+BootEventLogLibInit (
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -80,19 +80,19 @@ Return Value:
 
 --*/
 {
-    BootEventLogConstructor(ImageHandle, SystemTable);
-    return EFI_SUCCESS;
+  BootEventLogConstructor (ImageHandle, SystemTable);
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventStart(
-    IN  const EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
-        UINT16                          BootVariableNumber,
-    IN  BOOT_DEVICE_STATUS              InitialStatus,
-        EFI_STATUS                      ExtendedStatus
-    )
+BootDeviceEventStart (
+  IN  const EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
+  UINT16                              BootVariableNumber,
+  IN  BOOT_DEVICE_STATUS              InitialStatus,
+  EFI_STATUS                          ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -115,58 +115,58 @@ Return Value:
 
 --*/
 {
-    BOOTEVENT_DEVICE_ENTRY *bootEvent = NULL;
-    UINTN devPathSize;
-    EFI_STATUS status;
+  BOOTEVENT_DEVICE_ENTRY  *bootEvent = NULL;
+  UINTN                   devPathSize;
+  EFI_STATUS              status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    devPathSize = GetDevicePathSize(DevicePath);
+  devPathSize = GetDevicePathSize (DevicePath);
 
-    //
-    // In practice, device paths shouldn't be very long
-    // ASSERT to catch any, but then try to log anyway.
-    // The log write will fail but adjust the LostWrites statistic.
-    //
-    ASSERT(devPathSize < PcdGet32(PcdBootEventLogSize));
+  //
+  // In practice, device paths shouldn't be very long
+  // ASSERT to catch any, but then try to log anyway.
+  // The log write will fail but adjust the LostWrites statistic.
+  //
+  ASSERT (devPathSize < PcdGet32 (PcdBootEventLogSize));
 
-    bootEvent = AllocateZeroPool(devPathSize + sizeof(BOOTEVENT_DEVICE_ENTRY));
+  bootEvent = AllocateZeroPool (devPathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
 
-    if (bootEvent == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Exit;
-    }
+  if (bootEvent == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
 
-    bootEvent->Status             = InitialStatus;
-    bootEvent->ExtendedStatus     = ExtendedStatus;
-    bootEvent->DevicePathSize     = (UINT32)devPathSize;
-    bootEvent->BootVariableNumber = BootVariableNumber;
-    CopyMem(bootEvent->DevicePath, DevicePath, devPathSize);
+  bootEvent->Status             = InitialStatus;
+  bootEvent->ExtendedStatus     = ExtendedStatus;
+  bootEvent->DevicePathSize     = (UINT32)devPathSize;
+  bootEvent->BootVariableNumber = BootVariableNumber;
+  CopyMem (bootEvent->DevicePath, DevicePath, devPathSize);
 
-    status = EventLogLib(mBootEvent,
-                EVENT_FLAG_PENDING,
-                BOOT_DEVICE_EVENT_ID,
-                ((UINT32)devPathSize + sizeof(BOOTEVENT_DEVICE_ENTRY)),
-                bootEvent);
+  status = EventLogLib (
+             mBootEvent,
+             EVENT_FLAG_PENDING,
+             BOOT_DEVICE_EVENT_ID,
+             ((UINT32)devPathSize + sizeof (BOOTEVENT_DEVICE_ENTRY)),
+             bootEvent
+             );
 
 Exit:
 
-    gBS->FreePool(bootEvent);
-    return status;
+  gBS->FreePool (bootEvent);
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventUpdate(
-    IN  BOOT_DEVICE_STATUS  Status,
-        EFI_STATUS          ExtendedStatus
-    )
+BootDeviceEventUpdate (
+  IN  BOOT_DEVICE_STATUS  Status,
+  EFI_STATUS              ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -185,51 +185,47 @@ Return Value:
 
 --*/
 {
-    BOOTEVENT_DEVICE_ENTRY *bootEvent = NULL;
-    EFI_EVENT_DESCRIPTOR   eventDesc;
-    EFI_STATUS status;
+  BOOTEVENT_DEVICE_ENTRY  *bootEvent = NULL;
+  EFI_EVENT_DESCRIPTOR    eventDesc;
+  EFI_STATUS              status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogPendingGet(mBootEvent, &eventDesc, (void**)&bootEvent);
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  status = EventLogPendingGet (mBootEvent, &eventDesc, (void **)&bootEvent);
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    if (eventDesc.EventId != BOOT_DEVICE_EVENT_ID)
-    {
-        status = EFI_NOT_FOUND;
-        goto Exit;
-    }
+  if (eventDesc.EventId != BOOT_DEVICE_EVENT_ID) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
 
-    if (eventDesc.DataSize < sizeof(BOOTEVENT_DEVICE_ENTRY))
-    {
-        ASSERT(FALSE);
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  if (eventDesc.DataSize < sizeof (BOOTEVENT_DEVICE_ENTRY)) {
+    ASSERT (FALSE);
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
-    bootEvent->Status         = Status;
-    bootEvent->ExtendedStatus = ExtendedStatus;
-    status = EFI_SUCCESS;
+  bootEvent->Status         = Status;
+  bootEvent->ExtendedStatus = ExtendedStatus;
+  status                    = EFI_SUCCESS;
 
 Exit:
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventPendingStatus(
-    OUT BOOT_DEVICE_STATUS  *Status,
-    OUT EFI_STATUS          *ExtendedStatus
-    )
+BootDeviceEventPendingStatus (
+  OUT BOOT_DEVICE_STATUS  *Status,
+  OUT EFI_STATUS          *ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -249,50 +245,46 @@ Return Value:
 
 --*/
 {
-    BOOTEVENT_DEVICE_ENTRY *bootEvent = NULL;
-    EFI_EVENT_DESCRIPTOR   eventDesc;
-    EFI_STATUS status;
+  BOOTEVENT_DEVICE_ENTRY  *bootEvent = NULL;
+  EFI_EVENT_DESCRIPTOR    eventDesc;
+  EFI_STATUS              status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogPendingGet(mBootEvent, &eventDesc, (void**)&bootEvent);
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  status = EventLogPendingGet (mBootEvent, &eventDesc, (void **)&bootEvent);
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    if (eventDesc.EventId != BOOT_DEVICE_EVENT_ID)
-    {
-        status = EFI_NOT_FOUND;
-        goto Exit;
-    }
+  if (eventDesc.EventId != BOOT_DEVICE_EVENT_ID) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
 
-    if (eventDesc.DataSize < sizeof(BOOTEVENT_DEVICE_ENTRY))
-    {
-        ASSERT(FALSE);
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  if (eventDesc.DataSize < sizeof (BOOTEVENT_DEVICE_ENTRY)) {
+    ASSERT (FALSE);
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
-    *Status         = bootEvent->Status;
-    *ExtendedStatus = bootEvent->ExtendedStatus;
-    status = EFI_SUCCESS;
+  *Status         = bootEvent->Status;
+  *ExtendedStatus = bootEvent->ExtendedStatus;
+  status          = EFI_SUCCESS;
 
 Exit:
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventComplete(
-    VOID
-    )
+BootDeviceEventComplete (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -310,28 +302,26 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogPendingCommit(mBootEvent);
+  status = EventLogPendingCommit (mBootEvent);
 
 Exit:
 
-    return status;
+  return status;
 }
-
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventResetLog(
-    VOID
-    )
+BootDeviceEventResetLog (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -348,27 +338,26 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogReset(mBootEvent);
+  status = EventLogReset (mBootEvent);
 
 Exit:
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventFlushLog(
-    VOID
-    )
+BootDeviceEventFlushLog (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -385,27 +374,26 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogFlush(mBootEvent);
+  status = EventLogFlush (mBootEvent);
 
 Exit:
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventStatistics(
-    OUT EVENT_CHANNEL_STATISTICS    *Stats
-    )
+BootDeviceEventStatistics (
+  OUT EVENT_CHANNEL_STATISTICS  *Stats
+  )
+
 /*++
 
 Routine Description:
@@ -422,28 +410,27 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogStatistics(mBootEvent, Stats);
+  status = EventLogStatistics (mBootEvent, Stats);
 
 Exit:
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventEnumerate(
-    IN  EFI_EVENTLOG_ENUMERATE_CALLBACK Callback,
-    IN  const VOID                      *Context
-    )
+BootDeviceEventEnumerate (
+  IN  EFI_EVENTLOG_ENUMERATE_CALLBACK  Callback,
+  IN  const VOID                       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -463,17 +450,16 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE)
-    {
-        status = EFI_NOT_READY;
-        goto Exit;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    status = EFI_NOT_READY;
+    goto Exit;
+  }
 
-    status = EventLogEnumerate(mBootEvent, Callback, Context);
+  status = EventLogEnumerate (mBootEvent, Callback, Context);
 
 Exit:
 
-    return status;
+  return status;
 }

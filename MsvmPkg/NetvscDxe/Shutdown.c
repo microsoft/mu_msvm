@@ -24,10 +24,9 @@ PxeShutdown (
   )
 {
   // MS_HYP_CHANGE BEGIN
-  EFI_STATUS status = NetvscShutdown(&Snp->AdapterContext->NicInfo);
+  EFI_STATUS  status = NetvscShutdown (&Snp->AdapterContext->NicInfo);
 
-  if (EFI_ERROR(status))
-  {
+  if (EFI_ERROR (status)) {
     return EFI_DEVICE_ERROR;
   }
 
@@ -57,7 +56,7 @@ PxeShutdown (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Shutdown(
+SnpUndi32Shutdown (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   )
 {

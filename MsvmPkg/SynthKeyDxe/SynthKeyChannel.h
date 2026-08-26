@@ -11,27 +11,28 @@
 #include <Vmbus/VmbusPacketFormat.h>
 
 EFI_STATUS
-SynthKeyChannelOpen(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
+SynthKeyChannelOpen (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
 EFI_STATUS
-SynthKeyChannelClose(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
+SynthKeyChannelClose (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
 EFI_STATUS
-SynthKeyChannelSetIndicators(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
+SynthKeyChannelSetIndicators (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
 static inline
 VOID
-SynthKeyChannelInitMessage(
-    IN OUT      PHK_MESSAGE_HEADER          Header,
-    IN          HK_MESSAGE_TYPE             Type,
-    IN          UINT32                      ByteCount
-    )
+SynthKeyChannelInitMessage (
+  IN OUT      PHK_MESSAGE_HEADER  Header,
+  IN          HK_MESSAGE_TYPE     Type,
+  IN          UINT32              ByteCount
+  )
+
 /*++
 
 Routine Description:
@@ -52,6 +53,6 @@ Return Value:
 
 --*/
 {
-    ZeroMem(Header, ByteCount);
-    Header->MessageType = Type;
+  ZeroMem (Header, ByteCount);
+  Header->MessageType = Type;
 }

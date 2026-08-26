@@ -13,15 +13,16 @@
 #include <Library/IoLib.h>
 #include <Library/DebugLib.h>
 
-#if defined(MDE_CPU_AARCH64)
-#include <Library/HvHypercallLib.h>
+#if defined (MDE_CPU_AARCH64)
+  #include <Library/HvHypercallLib.h>
 #endif
 
 VOID
 EFIAPI
-Stall100ns(
-    IN UINT64 Time100ns
-    )
+Stall100ns (
+  IN UINT64  Time100ns
+  )
+
 /*++
 
 Routine Description:
@@ -39,26 +40,23 @@ Return Value:
 
 --*/
 {
-    UINT64 end;
-    UINT64 current;
+  UINT64  end;
+  UINT64  current;
 
-    current = GetPerformanceCounter();
-    end = current + Time100ns;
-    do
-    {
-
-        CpuPause();
-        current = GetPerformanceCounter();
-
-    } while (current < end);
+  current = GetPerformanceCounter ();
+  end     = current + Time100ns;
+  do {
+    CpuPause ();
+    current = GetPerformanceCounter ();
+  } while (current < end);
 }
-
 
 UINTN
 EFIAPI
 MicroSecondDelay (
-    IN      UINTN                     MicroSeconds
-    )
+  IN      UINTN  MicroSeconds
+  )
+
 /*++
 
 Routine Description:
@@ -75,15 +73,16 @@ Return Value:
 
 --*/
 {
-    Stall100ns (MicroSeconds * UINT64_C(10));
-    return MicroSeconds;
+  Stall100ns (MicroSeconds * UINT64_C (10));
+  return MicroSeconds;
 }
 
 UINTN
 EFIAPI
 NanoSecondDelay (
-    IN      UINTN                     NanoSeconds
-    )
+  IN      UINTN  NanoSeconds
+  )
+
 /*++
 
 Routine Description:
@@ -100,15 +99,16 @@ Return Value:
 
 --*/
 {
-    Stall100ns (NanoSeconds / UINT64_C(100));
-    return NanoSeconds;
+  Stall100ns (NanoSeconds / UINT64_C (100));
+  return NanoSeconds;
 }
 
 UINT64
 EFIAPI
 GetPerformanceCounter (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -125,32 +125,32 @@ Return Value:
 
 --*/
 {
-#if defined (MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-    return AsmReadMsr64(HvSyntheticMsrTimeRefCount);
+  return AsmReadMsr64 (HvSyntheticMsrTimeRefCount);
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-    HV_STATUS status;
-    UINT64 RegisterValue;
+  HV_STATUS  status;
+  UINT64     RegisterValue;
 
-    status = AsmGetVpRegister64(HvRegisterTimeRefCount, &RegisterValue);
-    ASSERT(status == HV_STATUS_SUCCESS);
+  status = AsmGetVpRegister64 (HvRegisterTimeRefCount, &RegisterValue);
+  ASSERT (status == HV_STATUS_SUCCESS);
 
-    return RegisterValue;
+  return RegisterValue;
 
-#else
-#error unsupported architecture
-#endif
+ #else
+  #error unsupported architecture
+ #endif
 }
-
 
 UINT64
 EFIAPI
 GetPerformanceCounterProperties (
-    OUT      UINT64                    *StartValue,  OPTIONAL
-    OUT      UINT64                    *EndValue     OPTIONAL
-    )
+  OUT      UINT64 *StartValue, OPTIONAL
+  OUT      UINT64                    *EndValue     OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -169,24 +169,23 @@ Return Value:
 
 --*/
 {
-    if (StartValue != NULL)
-    {
-        *StartValue = 0;
-    }
+  if (StartValue != NULL) {
+    *StartValue = 0;
+  }
 
-    if (EndValue != NULL)
-    {
-        *EndValue = (UINT64)-1;
-    }
+  if (EndValue != NULL) {
+    *EndValue = (UINT64)-1;
+  }
 
-    return UINT64_C(10) * UINT64_C(1000) * UINT64_C(1000);
+  return UINT64_C (10) * UINT64_C (1000) * UINT64_C (1000);
 }
 
 UINT64
 EFIAPI
 GetTimeInNanoSecond (
-    IN      UINT64                     Ticks
-    )
+  IN      UINT64  Ticks
+  )
+
 /*++
 
 Routine Description:
@@ -204,6 +203,5 @@ Return Value:
 
 --*/
 {
-    return Ticks * 100;
+  return Ticks * 100;
 }
-

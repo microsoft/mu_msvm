@@ -18,10 +18,9 @@ const UINT8  MBOR_MAP_FIELD_MASK     = 0x0F;
 const UINT8  MBOR_BYTES_MARKER       = 0x80;
 const UINT8  MBOR_BYTES_PADDING_MASK = 0x03;
 
-
 // Define MBOR Boolean values
-#define MBOR_BOOLEAN_FALSE 0x14
-#define MBOR_BOOLEAN_TRUE  0x15
+#define MBOR_BOOLEAN_FALSE  0x14
+#define MBOR_BOOLEAN_TRUE   0x15
 
 // Macro to check if advancing position exceeds capacity
 #define AZIHSM_MBOR_IS_POSITION_EXCEEDS_CAPACITY(e, len)  ((e->Position) + ((UINT32)len) > (e->Capacity))
@@ -689,12 +688,12 @@ AziHsmMborEncodePaddedBytes (
     return EFI_INVALID_PARAMETER;
   }
 
-  // Calculate total length: Current position + Marker(1) + Length(2) 
+  // Calculate total length: Current position + Marker(1) + Length(2)
   CurrentTotalLength = Encoder->Position + sizeof (Marker) + sizeof (EncodedLength);
-  
+
   // Calculate padding needed to make it 4-byte aligned
   PaddingLength = (sizeof (UINT32) - (CurrentTotalLength % (sizeof (UINT32)))) % (sizeof (UINT32));
-  
+
   // Ensure padding length fits in the 2-bit mask
   if (PaddingLength > MBOR_BYTES_PADDING_MASK) {
     return EFI_INVALID_PARAMETER;

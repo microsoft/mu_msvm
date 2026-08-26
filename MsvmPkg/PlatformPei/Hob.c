@@ -17,7 +17,6 @@
 #include <IsolationTypes.h>
 #include <Library/CrashDumpAgentLib.h>
 
-
 #define BASIC_FLAGS                                     \
     (EFI_RESOURCE_ATTRIBUTE_PRESENT |                   \
      EFI_RESOURCE_ATTRIBUTE_INITIALIZED)
@@ -43,11 +42,12 @@
 
 static
 VOID
-HobpAcceptRamPages(
-    IN OUT  PPLATFORM_INIT_CONTEXT  Context,
-            HV_GPA_PAGE_NUMBER      GpaPageBase,
-            UINT64                  PageCount
-    )
+HobpAcceptRamPages (
+  IN OUT  PPLATFORM_INIT_CONTEXT  Context,
+  HV_GPA_PAGE_NUMBER              GpaPageBase,
+  UINT64                          PageCount
+  )
+
 /*++
 
 Routine Description:
@@ -70,64 +70,62 @@ Return Value:
 
 --*/
 {
-    UINT32 configBlobSize = PcdGet32(PcdConfigBlobSize);
-    UINT64 configBlobBase = (UINT64)Context->StartOfConfigBlob;
-    HV_GPA_PAGE_NUMBER configBlobPageLimit =
-        ((configBlobBase + configBlobSize - 1) / EFI_PAGE_SIZE) + 1;
+  UINT32              configBlobSize      = PcdGet32 (PcdConfigBlobSize);
+  UINT64              configBlobBase      = (UINT64)Context->StartOfConfigBlob;
+  HV_GPA_PAGE_NUMBER  configBlobPageLimit =
+    ((configBlobBase + configBlobSize - 1) / EFI_PAGE_SIZE) + 1;
 
-    //
-    // No acceptance is required unless this is a hardware isolated platform
-    // with no paravisor.
-    //
+  //
+  // No acceptance is required unless this is a hardware isolated platform
+  // with no paravisor.
+  //
 
-    if (!IsHardwareIsolatedNoParavisor())
-    {
-        return;
+  if (!IsHardwareIsolatedNoParavisor ()) {
+    return;
+  }
+
+  //
+  // The region from 0 to the end of the config blob is expected to be pre-accepted, so exclude
+  // that from the range.
+  //
+  if (GpaPageBase < configBlobPageLimit) {
+    if (GpaPageBase + PageCount > configBlobPageLimit) {
+      PageCount  -= configBlobPageLimit - GpaPageBase;
+      GpaPageBase = configBlobPageLimit;
+    } else {
+      //
+      // The region is entirely pre-accepted - there is nothing to do.
+      //
+      return;
     }
+  }
 
-    //
-    // The region from 0 to the end of the config blob is expected to be pre-accepted, so exclude
-    // that from the range.
-    //
-    if (GpaPageBase < configBlobPageLimit)
-    {
-        if (GpaPageBase + PageCount > configBlobPageLimit)
-        {
-            PageCount -= configBlobPageLimit - GpaPageBase;
-            GpaPageBase = configBlobPageLimit;
-        }
-        else
-        {
-            //
-            // The region is entirely pre-accepted - there is nothing to do.
-            //
-            return;
-        }
-    }
+  //
+  // Accept pages as required by the architecture.
+  //
 
-    //
-    // Accept pages as required by the architecture.
-    //
+ #if defined (MDE_CPU_X64)
+  if (IsHardwareIsolated ()) {
+    PEI_FAIL_FAST_IF_FAILED (
+      EfiUpdatePageRangeAcceptance (
+        GetIsolationType (),
+        (VOID *)PcdGet64 (PcdSvsmCallingArea),
+        GpaPageBase,
+        PageCount,
+        TRUE
+        )
+      );
+  }
 
-#if defined(MDE_CPU_X64)
-    if (IsHardwareIsolated())
-    {
-        PEI_FAIL_FAST_IF_FAILED(EfiUpdatePageRangeAcceptance(
-            GetIsolationType(),
-            (VOID*)PcdGet64(PcdSvsmCallingArea),
-            GpaPageBase,
-            PageCount,
-            TRUE));
-    }
-#endif
+ #endif
 }
 
-
 void
-HobAddMmioRange(
-    EFI_PHYSICAL_ADDRESS    BaseAddress,
-    UINT64                  Size
-    )
+HobAddMmioRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -146,24 +144,28 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_MEMORY_MAPPED_IO,
-                               STANDARD_FLAGS,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"MMIO"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_MEMORY_MAPPED_IO,
+    STANDARD_FLAGS,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"MMIO"
+    ));
 }
 
-
 void
-HobAddMemoryRange(
-    IN OUT  PPLATFORM_INIT_CONTEXT  Context,
-            EFI_PHYSICAL_ADDRESS    BaseAddress,
-            UINT64                  Size
-    )
+HobAddMemoryRange (
+  IN OUT  PPLATFORM_INIT_CONTEXT  Context,
+  EFI_PHYSICAL_ADDRESS            BaseAddress,
+  UINT64                          Size
+  )
+
 /*++
 
 Routine Description:
@@ -184,28 +186,32 @@ Return Value:
 
 --*/
 {
-    ASSERT((BaseAddress % EFI_PAGE_SIZE) == 0);
-    ASSERT((Size % EFI_PAGE_SIZE) == 0);
+  ASSERT ((BaseAddress % EFI_PAGE_SIZE) == 0);
+  ASSERT ((Size % EFI_PAGE_SIZE) == 0);
 
-    HobpAcceptRamPages(Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
+  HobpAcceptRamPages (Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
 
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
-                               MEMORY_FLAGS,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Memory"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_SYSTEM_MEMORY,
+    MEMORY_FLAGS,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Memory"
+    ));
 }
 
-
 void
-HobAddPersistentMemoryRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddPersistentMemoryRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -224,22 +230,27 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
-                               PERSISTENT_MEMORY_FLAGS,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Memory"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_SYSTEM_MEMORY,
+    PERSISTENT_MEMORY_FLAGS,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Memory"
+    ));
 }
 
 void
-HobAddSpecificPurposeMemoryRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddSpecificPurposeMemoryRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -258,23 +269,27 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
-                               SP_MEMORY_FLAGS,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Specific Purpose Memory"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_SYSTEM_MEMORY,
+    SP_MEMORY_FLAGS,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Specific Purpose Memory"
+    ));
 }
 
-
 void
-HobAddReservedMemoryRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddReservedMemoryRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -293,24 +308,28 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_MEMORY_RESERVED,
-                               STANDARD_FLAGS,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Reserved Memory"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_MEMORY_RESERVED,
+    STANDARD_FLAGS,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Reserved Memory"
+    ));
 }
 
-
 void
-HobAddUntestedMemoryRange(
-    IN OUT  PPLATFORM_INIT_CONTEXT  Context,
-            EFI_PHYSICAL_ADDRESS    BaseAddress,
-            UINT64                  Size
-    )
+HobAddUntestedMemoryRange (
+  IN OUT  PPLATFORM_INIT_CONTEXT  Context,
+  EFI_PHYSICAL_ADDRESS            BaseAddress,
+  UINT64                          Size
+  )
+
 /*++
 
 Routine Description:
@@ -329,28 +348,32 @@ Return Value:
 
 --*/
 {
-    ASSERT((BaseAddress % EFI_PAGE_SIZE) == 0);
-    ASSERT((Size % EFI_PAGE_SIZE) == 0);
+  ASSERT ((BaseAddress % EFI_PAGE_SIZE) == 0);
+  ASSERT ((Size % EFI_PAGE_SIZE) == 0);
 
-    HobpAcceptRamPages(Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
+  HobpAcceptRamPages (Context, BaseAddress / EFI_PAGE_SIZE, Size / EFI_PAGE_SIZE);
 
-    BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY,
-                               MEMORY_FLAGS & ~EFI_RESOURCE_ATTRIBUTE_TESTED,
-                               BaseAddress,
-                               Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Untested Memory"));
+  BuildResourceDescriptorHob (
+    EFI_RESOURCE_SYSTEM_MEMORY,
+    MEMORY_FLAGS & ~EFI_RESOURCE_ATTRIBUTE_TESTED,
+    BaseAddress,
+    Size
+    );
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Untested Memory"
+    ));
 }
 
-
 void
-HobAddAllocatedMemoryRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddAllocatedMemoryRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -369,20 +392,22 @@ Return Value:
 
 --*/
 {
-    BuildMemoryAllocationHob(BaseAddress, Size, EfiBootServicesData);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Allocated Memory"));
+  BuildMemoryAllocationHob (BaseAddress, Size, EfiBootServicesData);
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Allocated Memory"
+    ));
 }
 
-
 void
-HobAddFvMemoryRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddFvMemoryRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -401,19 +426,22 @@ Return Value:
 
 --*/
 {
-    BuildFvHob(BaseAddress, Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"Firmware Volume"));
+  BuildFvHob (BaseAddress, Size);
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"Firmware Volume"
+    ));
 }
 
 void
-HobAddIoRange(
-    EFI_PHYSICAL_ADDRESS BaseAddress,
-    UINT64               Size
-    )
+HobAddIoRange (
+  EFI_PHYSICAL_ADDRESS  BaseAddress,
+  UINT64                Size
+  )
+
 /*++
 
 Routine Description:
@@ -432,20 +460,22 @@ Return Value:
 
 --*/
 {
-    BuildResourceDescriptorHob(EFI_RESOURCE_IO, BASIC_FLAGS, BaseAddress, Size);
-    DEBUG((DEBUG_VERBOSE,
-           "HOB Start % 17lx End %17lx %s\n",
-           BaseAddress,
-           BaseAddress + Size - 1,
-           L"IO Ports"));
+  BuildResourceDescriptorHob (EFI_RESOURCE_IO, BASIC_FLAGS, BaseAddress, Size);
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "HOB Start % 17lx End %17lx %s\n",
+    BaseAddress,
+    BaseAddress + Size - 1,
+    L"IO Ports"
+    ));
 }
 
-
 void
-HobAddCpu(
-    UINT8 SizeOfMemorySpace,
-    UINT8 SizeOfIoSpace
-    )
+HobAddCpu (
+  UINT8  SizeOfMemorySpace,
+  UINT8  SizeOfIoSpace
+  )
+
 /*++
 
 Routine Description:
@@ -464,17 +494,17 @@ Return Value:
 
 --*/
 {
-    BuildCpuHob(SizeOfMemorySpace, SizeOfIoSpace);
-    DEBUG((DEBUG_VERBOSE, "HOB MemWidth %d IOWidth %d Cpu\n", SizeOfMemorySpace, SizeOfIoSpace));
+  BuildCpuHob (SizeOfMemorySpace, SizeOfIoSpace);
+  DEBUG ((DEBUG_VERBOSE, "HOB MemWidth %d IOWidth %d Cpu\n", SizeOfMemorySpace, SizeOfIoSpace));
 }
 
-
 void
-HobAddGuidData(
-    IN  EFI_GUID* Guid,
-    IN  VOID*     Data,
-        UINTN     DataSize
+HobAddGuidData (
+  IN  EFI_GUID  *Guid,
+  IN  VOID      *Data,
+  UINTN         DataSize
   )
+
 /*++
 
 Routine Description:
@@ -496,7 +526,6 @@ Return Value:
 
 --*/
 {
-    BuildGuidDataHob(Guid, Data, DataSize);
-    DEBUG((DEBUG_VERBOSE, "HOB Base % 17lx Size %17lx GUID Data\n", Data, DataSize));
+  BuildGuidDataHob (Guid, Data, DataSize);
+  DEBUG ((DEBUG_VERBOSE, "HOB Base % 17lx Size %17lx GUID Data\n", Data, DataSize));
 }
-

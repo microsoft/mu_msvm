@@ -53,7 +53,7 @@ AziHsmDisplayIdenData (
 STATIC
 EFI_STATUS
 AziHsmAdminIssueCmd (
-  IN     EFI_PCI_IO_PROTOCOL  *PciIo,
+  IN     EFI_PCI_IO_PROTOCOL   *PciIo,
   IN OUT AZIHSM_IO_QUEUE_PAIR  *QueuePair,
   IN OUT AZIHSM_ADMIN_CMD_SQE  *AdminSqe,
   OUT    AZIHSM_ADMIN_CMD_CQE  *AdminCqe

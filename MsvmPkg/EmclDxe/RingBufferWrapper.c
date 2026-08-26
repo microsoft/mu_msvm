@@ -11,7 +11,7 @@
 
 #define PrefetchForWrite(x)
 
-#define ALIGN_UP(x, y) ALIGN_VALUE((x), sizeof(y))
+#define ALIGN_UP(x, y)  ALIGN_VALUE((x), sizeof(y))
 
 #include "Init.c"
 #include "RingBuffer.c"

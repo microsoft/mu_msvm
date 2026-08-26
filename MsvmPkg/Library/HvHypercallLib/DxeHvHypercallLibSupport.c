@@ -9,19 +9,19 @@
 #include <HvHypercallLibP.h>
 
 EFI_TPL
-HvHypercallpDisableInterrupts(
-    VOID
-    )
+HvHypercallpDisableInterrupts (
+  VOID
+  )
 {
-    // In DXE, raise TPL to high level that will be restored when enable interrupts
-    // is called.
-    return gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  // In DXE, raise TPL to high level that will be restored when enable interrupts
+  // is called.
+  return gBS->RaiseTPL (TPL_HIGH_LEVEL);
 }
 
 VOID
-HvHypercallpEnableInterrupts(
-    EFI_TPL Tpl
-    )
+HvHypercallpEnableInterrupts (
+  EFI_TPL  Tpl
+  )
 {
-    gBS->RestoreTPL(Tpl);
+  gBS->RestoreTPL (Tpl);
 }

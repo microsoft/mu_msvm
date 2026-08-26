@@ -10,13 +10,14 @@
 VOID
 EFIAPI
 EfiHvInterruptHandler (
-#if defined(MDE_CPU_X64)
-  IN  EFI_EXCEPTION_TYPE InterruptType,
-#elif defined(MDE_CPU_AARCH64)
-  IN  HARDWARE_INTERRUPT_SOURCE InterruptType,
+#if defined (MDE_CPU_X64)
+  IN  EFI_EXCEPTION_TYPE         InterruptType,
+#elif defined (MDE_CPU_AARCH64)
+  IN  HARDWARE_INTERRUPT_SOURCE  InterruptType,
 #endif
-  IN  EFI_SYSTEM_CONTEXT SystemContext
+  IN  EFI_SYSTEM_CONTEXT         SystemContext
   )
+
 /*++
   The interrupt handler for SINT interrupts. Raises to high level and
   calls out to the connected handler.
@@ -29,42 +30,41 @@ EfiHvInterruptHandler (
   @returns nothing
 --*/
 {
-  EFI_TPL tpl;
-  PEFI_HV_SINT_CONFIGURATION sintConfiguration;
+  EFI_TPL                     tpl;
+  PEFI_HV_SINT_CONFIGURATION  sintConfiguration;
 
-  tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
-  if (!mAutoEoi)
-  {
-#if defined(MDE_CPU_X64)
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+  if (!mAutoEoi) {
+ #if defined (MDE_CPU_X64)
 
-    SendApicEoi();
+    SendApicEoi ();
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-    mHwInt->EndOfInterrupt(mHwInt, InterruptType);
+    mHwInt->EndOfInterrupt (mHwInt, InterruptType);
 
-#endif
+ #endif
   }
 
   sintConfiguration = &mSintConfiguration[mVectorSint[InterruptType]];
-  if (sintConfiguration->InterruptHandler != NULL)
-  {
-    sintConfiguration->InterruptHandler(sintConfiguration->Context);
+  if (sintConfiguration->InterruptHandler != NULL) {
+    sintConfiguration->InterruptHandler (sintConfiguration->Context);
   }
 
-  gBS->RestoreTPL(tpl);
+  gBS->RestoreTPL (tpl);
 }
 
 EFI_STATUS
 EFIAPI
 EfiHvConnectSint (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex,
-  IN  UINT8 Vector,
-  IN  BOOLEAN NoProxy,
-  IN  EFI_HV_INTERRUPT_HANDLER InterruptHandler,
-  IN  VOID *Context
+  IN  EFI_HV_PROTOCOL           *This,
+  IN  HV_SYNIC_SINT_INDEX       SintIndex,
+  IN  UINT8                     Vector,
+  IN  BOOLEAN                   NoProxy,
+  IN  EFI_HV_INTERRUPT_HANDLER  InterruptHandler,
+  IN  VOID                      *Context
   )
+
 /*++
   Enables a SINT and provides an interrupt routine to be called at
   TPL_HIGH_LEVEL when the interrupt arrives.
@@ -86,43 +86,41 @@ EfiHvConnectSint (
   @returns EFI STATUS
 --*/
 {
-  HV_SYNIC_SINT sint;
-  PEFI_HV_SINT_CONFIGURATION sintConfiguration;
-  EFI_STATUS status;
-  EFI_TPL tpl;
+  HV_SYNIC_SINT               sint;
+  PEFI_HV_SINT_CONFIGURATION  sintConfiguration;
+  EFI_STATUS                  status;
+  EFI_TPL                     tpl;
 
   //
   // Disable interrupts while manipulating interrupts.
   //
-  tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   //
   // Ensure the SINT is not already registered.
   //
   sintConfiguration = &mSintConfiguration[SintIndex];
-  if (sintConfiguration->Vector != 0)
-  {
+  if (sintConfiguration->Vector != 0) {
     status = EFI_ALREADY_STARTED;
-    DEBUG((DEBUG_ERROR, "--- %a: SINT is already registered - %r \n", __func__, status));
+    DEBUG ((DEBUG_ERROR, "--- %a: SINT is already registered - %r \n", __func__, status));
     goto Cleanup;
   }
 
   //
   // Register the interrupt handler.
   //
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-  status = mCpu->RegisterInterruptHandler(mCpu, Vector, EfiHvInterruptHandler);
+  status = mCpu->RegisterInterruptHandler (mCpu, Vector, EfiHvInterruptHandler);
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-  status = mHwInt->RegisterInterruptSource(mHwInt, (UINTN)Vector, EfiHvInterruptHandler);
+  status = mHwInt->RegisterInterruptSource (mHwInt, (UINTN)Vector, EfiHvInterruptHandler);
 
-#endif
+ #endif
 
-  if (EFI_ERROR(status))
-  {
-    DEBUG((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "--- %a: failed to register the interrupt handler - %r \n", __func__, status));
     goto Cleanup;
   }
 
@@ -130,38 +128,35 @@ EfiHvConnectSint (
   // Register the SINT with the hypervisor.
   //
   sint.AsUINT64 = 0;
-  sint.Vector = Vector;
-  sint.Masked = FALSE;
-  sint.AutoEoi = mAutoEoi;
+  sint.Vector   = Vector;
+  sint.Masked   = FALSE;
+  sint.AutoEoi  = mAutoEoi;
 
-  if (mUseBypassContext)
-  {
-
+  if (mUseBypassContext) {
     //
     // Register the SINT with the host hypervisor before registering it with the paravisor as a proxy interrupt,
     // unless the caller requested that the SINT not be proxied.
     //
-    HvHypercallSetVpRegister64Self(&mHvBypassContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
+    HvHypercallSetVpRegister64Self (&mHvBypassContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
     sint.Proxy = !NoProxy;
   }
 
-  if (!mBypassOnly)
-  {
-    HvHypercallSetVpRegister64Self(&mHvContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
+  if (!mBypassOnly) {
+    HvHypercallSetVpRegister64Self (&mHvContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
   }
 
   //
   // Store the state used by the interrupt handler.
   //
   sintConfiguration->InterruptHandler = InterruptHandler;
-  sintConfiguration->Context = Context;
-  sintConfiguration->Vector = Vector;
-  mVectorSint[Vector] = (UINT8)SintIndex;
-  status = EFI_SUCCESS;
+  sintConfiguration->Context          = Context;
+  sintConfiguration->Vector           = Vector;
+  mVectorSint[Vector]                 = (UINT8)SintIndex;
+  status                              = EFI_SUCCESS;
 
 Cleanup:
 
-  gBS->RestoreTPL(tpl);
+  gBS->RestoreTPL (tpl);
 
   return status;
 }
@@ -169,8 +164,9 @@ Cleanup:
 VOID
 EFIAPI
 EfiHvEventInterruptHandler (
-  VOID *Context
+  VOID  *Context
   )
+
 /*++
   An interrupt handler for a SINT interrupt that just signals an event.
 
@@ -180,20 +176,21 @@ EfiHvEventInterruptHandler (
 
 --*/
 {
-  EFI_EVENT *event;
+  EFI_EVENT  *event;
 
   event = Context;
-  gBS->SignalEvent(event);
+  gBS->SignalEvent (event);
 }
 
 EFI_STATUS
 EFIAPI
 EfiHvConnectSintToEvent (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex,
-  IN  UINT8 Vector,
-  IN  EFI_EVENT Event
+  IN  EFI_HV_PROTOCOL      *This,
+  IN  HV_SYNIC_SINT_INDEX  SintIndex,
+  IN  UINT8                Vector,
+  IN  EFI_EVENT            Event
   )
+
 /*++
   Enables a SINT and provides an event to be signaled when the interrupt
   arrives.
@@ -210,16 +207,17 @@ EfiHvConnectSintToEvent (
 
 --*/
 {
-  EFI_STATUS status;
+  EFI_STATUS  status;
 
   status =
-    EfiHvConnectSint(
+    EfiHvConnectSint (
       This,
       SintIndex,
       Vector,
       FALSE,
       EfiHvEventInterruptHandler,
-      Event);
+      Event
+      );
 
   return status;
 }
@@ -227,9 +225,10 @@ EfiHvConnectSintToEvent (
 VOID
 EFIAPI
 EfiHvDisconnectSint (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex
+  IN  EFI_HV_PROTOCOL      *This,
+  IN  HV_SYNIC_SINT_INDEX  SintIndex
   )
+
 /*++
   Disables a SINT that was previously enabled with EfiHvConnectSint
   or EfiHvConnectSintToEvent.
@@ -242,61 +241,58 @@ EfiHvDisconnectSint (
 
 --*/
 {
-  HV_SYNIC_SINT sint;
-  PEFI_HV_SINT_CONFIGURATION sintConfiguration;
-  EFI_TPL tpl;
+  HV_SYNIC_SINT               sint;
+  PEFI_HV_SINT_CONFIGURATION  sintConfiguration;
+  EFI_TPL                     tpl;
 
-  tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   //
   // Unregister the SINT with the hypervisor.
   //
   sint.AsUINT64 = 0;
-  sint.Masked = 1;
+  sint.Masked   = 1;
 
-  if (mUseBypassContext)
-  {
-    HvHypercallSetVpRegister64Self(&mHvBypassContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
+  if (mUseBypassContext) {
+    HvHypercallSetVpRegister64Self (&mHvBypassContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
   }
 
-  if (!mBypassOnly)
-  {
-    HvHypercallSetVpRegister64Self(&mHvContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
+  if (!mBypassOnly) {
+    HvHypercallSetVpRegister64Self (&mHvContext, HvRegisterSint0 + SintIndex, sint.AsUINT64);
   }
 
   //
   // Unregister the interrupt handler.
   //
   sintConfiguration = &mSintConfiguration[SintIndex];
-  if (sintConfiguration->Vector != 0)
-  {
-#if defined(MDE_CPU_X64)
+  if (sintConfiguration->Vector != 0) {
+ #if defined (MDE_CPU_X64)
 
-    mCpu->RegisterInterruptHandler(mCpu, sintConfiguration->Vector, NULL);
+    mCpu->RegisterInterruptHandler (mCpu, sintConfiguration->Vector, NULL);
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-    mHwInt->RegisterInterruptSource(mHwInt, sintConfiguration->Vector, NULL);
+    mHwInt->RegisterInterruptSource (mHwInt, sintConfiguration->Vector, NULL);
 
-#endif
+ #endif
     mVectorSint[sintConfiguration->Vector] = 0;
   }
 
-  sintConfiguration->Vector = 0;
+  sintConfiguration->Vector           = 0;
   sintConfiguration->InterruptHandler = NULL;
-  sintConfiguration->Context = NULL;
+  sintConfiguration->Context          = NULL;
 
-  gBS->RestoreTPL(tpl);
-
+  gBS->RestoreTPL (tpl);
 }
 
 HV_MESSAGE *
 EFIAPI
 EfiHvGetSintMessage (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex,
-  IN  BOOLEAN Direct
+  IN  EFI_HV_PROTOCOL      *This,
+  IN  HV_SYNIC_SINT_INDEX  SintIndex,
+  IN  BOOLEAN              Direct
   )
+
 /*++
   Retrieves the next message from the SINT message queue.
 
@@ -310,18 +306,16 @@ EfiHvGetSintMessage (
 
 --*/
 {
-  volatile HV_MESSAGE *message;
-  PHV_HYPERCALL_CONTEXT context;
+  volatile HV_MESSAGE    *message;
+  PHV_HYPERCALL_CONTEXT  context;
 
   context = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
-  if (context->MessagePage.Page == NULL)
-  {
+  if (context->MessagePage.Page == NULL) {
     return NULL;
   }
 
   message = &((PHV_MESSAGE_PAGE)context->MessagePage.Page)->SintMessage[SintIndex];
-  if (message->Header.MessageType == HvMessageTypeNone)
-  {
+  if (message->Header.MessageType == HvMessageTypeNone) {
     return NULL;
   }
 
@@ -331,10 +325,11 @@ EfiHvGetSintMessage (
 EFI_STATUS
 EFIAPI
 EfiHvCompleteSintMessage (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex,
-  IN  BOOLEAN Direct
+  IN  EFI_HV_PROTOCOL      *This,
+  IN  HV_SYNIC_SINT_INDEX  SintIndex,
+  IN  BOOLEAN              Direct
   )
+
 /*++
   Marks the current message in the SINT message queue as complete so
   that the next message can be processed.
@@ -349,21 +344,19 @@ EfiHvCompleteSintMessage (
 
 --*/
 {
-  volatile HV_MESSAGE *message;
-  PHV_HYPERCALL_CONTEXT context;
+  volatile HV_MESSAGE    *message;
+  PHV_HYPERCALL_CONTEXT  context;
 
   context = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
-  if (context->MessagePage.Page == NULL)
-  {
+  if (context->MessagePage.Page == NULL) {
     return EFI_UNSUPPORTED;
   }
 
-  message = &((PHV_MESSAGE_PAGE)context->MessagePage.Page)->SintMessage[SintIndex];
+  message                     = &((PHV_MESSAGE_PAGE)context->MessagePage.Page)->SintMessage[SintIndex];
   message->Header.MessageType = HvMessageTypeNone;
-  MemoryBarrier();
-  if (message->Header.MessageFlags.MessagePending)
-  {
-    HvHypercallSetVpRegister64Self(context, HvRegisterEom, 0);
+  MemoryBarrier ();
+  if (message->Header.MessageFlags.MessagePending) {
+    HvHypercallSetVpRegister64Self (context, HvRegisterEom, 0);
   }
 
   return EFI_SUCCESS;
@@ -372,10 +365,11 @@ EfiHvCompleteSintMessage (
 volatile HV_SYNIC_EVENT_FLAGS *
 EFIAPI
 EfiHvGetSintEventFlags (
-  IN  EFI_HV_PROTOCOL *This,
-  IN  HV_SYNIC_SINT_INDEX SintIndex,
-  IN  BOOLEAN Direct
+  IN  EFI_HV_PROTOCOL      *This,
+  IN  HV_SYNIC_SINT_INDEX  SintIndex,
+  IN  BOOLEAN              Direct
   )
+
 /*++
   Retrieves a pointer to the event flags for a SINT.
 
@@ -389,12 +383,11 @@ EfiHvGetSintEventFlags (
 
 --*/
 {
-  PHV_HYPERCALL_CONTEXT context;
-  volatile HV_SYNIC_EVENT_FLAGS *pFlags;
+  PHV_HYPERCALL_CONTEXT          context;
+  volatile HV_SYNIC_EVENT_FLAGS  *pFlags;
 
   context = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
-  if (context->EventFlagsPage.Page == NULL)
-  {
+  if (context->EventFlagsPage.Page == NULL) {
     return NULL;
   }
 
@@ -406,8 +399,9 @@ EfiHvGetSintEventFlags (
 UINT64
 EFIAPI
 EfiHvGetReferenceTime (
-  IN  EFI_HV_PROTOCOL *This
+  IN  EFI_HV_PROTOCOL  *This
   )
+
 /*++
   Retrieves the current hypervisor reference time, in 100ns units.
 
@@ -417,22 +411,23 @@ EfiHvGetReferenceTime (
 
 --*/
 {
-  UINT64 refTime;
+  UINT64  refTime;
 
   //
   // Always use the local hypervisor context, even if only the bypass
   // context has been configured, since the ref timer MSR is always locally
   // available.
   //
-  refTime = HvHypercallGetVpRegister64Self(&mHvContext, HvRegisterTimeRefCount);
+  refTime = HvHypercallGetVpRegister64Self (&mHvContext, HvRegisterTimeRefCount);
   return refTime;
 }
 
 UINT32
 EFIAPI
 EfiHvGetCurrentVpIndex (
-  IN  EFI_HV_PROTOCOL *This
+  IN  EFI_HV_PROTOCOL  *This
   )
+
 /*++
   Retrieves the current virtual processor index.
 
@@ -442,22 +437,23 @@ EfiHvGetCurrentVpIndex (
 
 --*/
 {
-  UINT32 vpIndex;
+  UINT32  vpIndex;
 
   //
   // Always use the local hypervisor context, even if only the bypass
   // context has been configured, since the VP index MSR is always locally
   // available.
   //
-  vpIndex = (UINT32)HvHypercallGetVpRegister64Self(&mHvContext, HvRegisterVpIndex);
+  vpIndex = (UINT32)HvHypercallGetVpRegister64Self (&mHvContext, HvRegisterVpIndex);
   return vpIndex;
 }
 
 PEFI_SYNIC_COMPONENT
-EfiHvpGetSynicComponent(
-  IN  PHV_HYPERCALL_CONTEXT Context,
-  IN  HV_REGISTER_NAME Register
+EfiHvpGetSynicComponent (
+  IN  PHV_HYPERCALL_CONTEXT  Context,
+  IN  HV_REGISTER_NAME       Register
   )
+
 /*++
   Gets a synthetic interrupt controller component based on its register.
 
@@ -469,28 +465,28 @@ EfiHvpGetSynicComponent(
 
 --*/
 {
-  switch (Register)
-  {
-  case HvRegisterSipp:
-    return &Context->MessagePage;
+  switch (Register) {
+    case HvRegisterSipp:
+      return &Context->MessagePage;
 
-  case HvRegisterSifp:
-    return &Context->EventFlagsPage;
+    case HvRegisterSifp:
+      return &Context->EventFlagsPage;
 
-  default:
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+    default:
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
 
-    // Unreachable but needed to compile.
-    return NULL;
+      // Unreachable but needed to compile.
+      return NULL;
   }
 }
 
 VOID
-EfiHvpEnableSynicComponent(
-  IN  HV_REGISTER_NAME Register,
-  IN  VOID *Buffer,
-  IN  BOOLEAN Direct
+EfiHvpEnableSynicComponent (
+  IN  HV_REGISTER_NAME  Register,
+  IN  VOID              *Buffer,
+  IN  BOOLEAN           Direct
   )
+
 /*++
   Enables a synthetic interrupt controller component.
 
@@ -504,18 +500,18 @@ EfiHvpEnableSynicComponent(
 
 --*/
 {
-  PHV_HYPERCALL_CONTEXT context;
-  PEFI_SYNIC_COMPONENT component;
-  UINTN gpa;
+  PHV_HYPERCALL_CONTEXT  context;
+  PEFI_SYNIC_COMPONENT   component;
+  UINTN                  gpa;
 
   //
   // Use the SIMP format, as they are all the same.
   //
 
-  HV_SYNIC_SIMP simp;
+  HV_SYNIC_SIMP  simp;
 
-  context = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
-  component = EfiHvpGetSynicComponent(context, Register);
+  context   = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
+  component = EfiHvpGetSynicComponent (context, Register);
 
   //
   // Check if the component is for the paravisor in a hardware-isolated
@@ -525,45 +521,35 @@ EfiHvpEnableSynicComponent(
   //      visible.
   //
 
-  simp.AsUINT64 = HvHypercallGetVpRegister64Self(context, Register);
-  if (simp.SimpEnabled != 0)
-  {
+  simp.AsUINT64 = HvHypercallGetVpRegister64Self (context, Register);
+  if (simp.SimpEnabled != 0) {
     gpa = simp.BaseSimpGpa * EFI_PAGE_SIZE;
-    if ((!Direct && gpa < mSharedGpaBoundary) ||
-      (Direct && mSharedGpaBoundary != 0 && gpa >= mSharedGpaBoundary))
+    if ((!Direct && (gpa < mSharedGpaBoundary)) ||
+        (Direct && (mSharedGpaBoundary != 0) && (gpa >= mSharedGpaBoundary)))
     {
-
       //
       // Failure is not allowed here - need to fail fast
       //
-      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
     }
 
-    if (Direct)
-    {
+    if (Direct) {
       component->Page = (VOID *)gpa;
+    } else {
+      component->Page = EfiHvpSharedVa ((VOID *)gpa);
     }
-    else
-    {
-      component->Page = EfiHvpSharedVa((VOID *)gpa);
-    }
-  }
-  else
-  {
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE((mUseBypassContext == FALSE) || mBypassOnly || Direct);
+  } else {
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE ((mUseBypassContext == FALSE) || mBypassOnly || Direct);
 
-    component->Page = Buffer;
+    component->Page  = Buffer;
     simp.SimpEnabled = 1;
-    if (Direct)
-    {
-      simp.BaseSimpGpa = EfiHvpBasePa((UINTN)component->Page) / EFI_PAGE_SIZE;
-    }
-    else
-    {
-      simp.BaseSimpGpa = EfiHvpSharedPa(component->Page) / EFI_PAGE_SIZE;
+    if (Direct) {
+      simp.BaseSimpGpa = EfiHvpBasePa ((UINTN)component->Page) / EFI_PAGE_SIZE;
+    } else {
+      simp.BaseSimpGpa = EfiHvpSharedPa (component->Page) / EFI_PAGE_SIZE;
     }
 
-    HvHypercallSetVpRegister64Self(context, Register, simp.AsUINT64);
+    HvHypercallSetVpRegister64Self (context, Register, simp.AsUINT64);
 
     //
     // Only disable the component on cleanup if it was explicitly enabled
@@ -578,6 +564,7 @@ EFI_STATUS
 EfiHvConnectToSynic (
   VOID
   )
+
 /*++
   Initializes a connection to the synthetic interrupt controller.
 
@@ -590,31 +577,34 @@ EfiHvConnectToSynic (
   //
   // Enable the message page.
   //
-  EfiHvpEnableSynicComponent(HvRegisterSipp, &mHvPages->MessagePage, FALSE);
+  EfiHvpEnableSynicComponent (HvRegisterSipp, &mHvPages->MessagePage, FALSE);
 
   //
   // Enable the event page.
   //
-  EfiHvpEnableSynicComponent(HvRegisterSifp, &mHvPages->EventFlagsPage, FALSE);
+  EfiHvpEnableSynicComponent (HvRegisterSifp, &mHvPages->EventFlagsPage, FALSE);
 
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
   //
   // When hardware isolated, also enable the paravisor's components.
   //
 
-  if (mUseBypassContext && !mBypassOnly)
-  {
-    EfiHvpEnableSynicComponent(HvRegisterSipp,
-                   &mHvPages->ParavisorMessagePage,
-                   TRUE);
+  if (mUseBypassContext && !mBypassOnly) {
+    EfiHvpEnableSynicComponent (
+      HvRegisterSipp,
+      &mHvPages->ParavisorMessagePage,
+      TRUE
+      );
 
-    EfiHvpEnableSynicComponent(HvRegisterSifp,
-                   &mHvPages->ParavisorEventFlagsPage,
-                   TRUE);
+    EfiHvpEnableSynicComponent (
+      HvRegisterSifp,
+      &mHvPages->ParavisorEventFlagsPage,
+      TRUE
+      );
   }
 
-#endif
+ #endif
 
   mSynicConnected = TRUE;
 
@@ -622,10 +612,11 @@ EfiHvConnectToSynic (
 }
 
 VOID
-EfiHvpDisableSynicComponent(
-  IN  HV_REGISTER_NAME Register,
-  IN  BOOLEAN Direct
+EfiHvpDisableSynicComponent (
+  IN  HV_REGISTER_NAME  Register,
+  IN  BOOLEAN           Direct
   )
+
 /*++
   Disables a synthetic interrupt controller component.
 
@@ -637,27 +628,26 @@ EfiHvpDisableSynicComponent(
 
 --*/
 {
-  PHV_HYPERCALL_CONTEXT context;
-  PEFI_SYNIC_COMPONENT component;
+  PHV_HYPERCALL_CONTEXT  context;
+  PEFI_SYNIC_COMPONENT   component;
 
   //
   // Use the SIMP format, as they are all the same.
   //
-  HV_SYNIC_SIMP simp;
+  HV_SYNIC_SIMP  simp;
 
-  context = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
-  component = EfiHvpGetSynicComponent(context, Register);
+  context   = (mUseBypassContext && !Direct) ? &mHvBypassContext : &mHvContext;
+  component = EfiHvpGetSynicComponent (context, Register);
 
   //
   // Disable the register only if the component was explicitly enabled before.
   //
 
-  if (component->DisableOnCleanup)
-  {
-    simp.AsUINT64 = HvHypercallGetVpRegister64Self(context, Register);
+  if (component->DisableOnCleanup) {
+    simp.AsUINT64    = HvHypercallGetVpRegister64Self (context, Register);
     simp.SimpEnabled = 0;
     simp.BaseSimpGpa = 0;
-    HvHypercallSetVpRegister64Self(context, Register, simp.AsUINT64);
+    HvHypercallSetVpRegister64Self (context, Register, simp.AsUINT64);
   }
 }
 
@@ -665,6 +655,7 @@ VOID
 EfiHvDisconnectFromSynic (
   VOID
   )
+
 /*++
   Tears down the connection to the synthetic interrupt controller.
 
@@ -674,14 +665,13 @@ EfiHvDisconnectFromSynic (
 
 --*/
 {
-  HV_HYPERCALL_CONTEXT *context;
-  volatile HV_SYNIC_EVENT_FLAGS *flags;
-  HV_SYNIC_SINT_INDEX sintIndex;
-  UINT32 timerIndex;
-  UINT32 flagsIndex = 0;
+  HV_HYPERCALL_CONTEXT           *context;
+  volatile HV_SYNIC_EVENT_FLAGS  *flags;
+  HV_SYNIC_SINT_INDEX            sintIndex;
+  UINT32                         timerIndex;
+  UINT32                         flagsIndex = 0;
 
-  if (!mSynicConnected)
-  {
+  if (!mSynicConnected) {
     return;
   }
 
@@ -689,73 +679,63 @@ EfiHvDisconnectFromSynic (
   // Clear all the timers.
   //
   context = mBypassOnly ? &mHvBypassContext : &mHvContext;
-  for (timerIndex = 0; timerIndex < HV_SYNIC_STIMER_COUNT; timerIndex += 1)
-  {
-    HvHypercallSetVpRegister64Self(context, HvRegisterStimer0Count + (2 * timerIndex), 0);
-    HvHypercallSetVpRegister64Self(context, HvRegisterStimer0Config + (2 * timerIndex), 0);
+  for (timerIndex = 0; timerIndex < HV_SYNIC_STIMER_COUNT; timerIndex += 1) {
+    HvHypercallSetVpRegister64Self (context, HvRegisterStimer0Count + (2 * timerIndex), 0);
+    HvHypercallSetVpRegister64Self (context, HvRegisterStimer0Config + (2 * timerIndex), 0);
   }
 
   //
   // Disconnect the SINTs and drain all the message queues.
   //
-  for (sintIndex = 0; sintIndex < HV_SYNIC_SINT_COUNT; sintIndex += 1)
-  {
-    EfiHvDisconnectSint(&mHv, sintIndex);
-    while (EfiHvGetSintMessage(&mHv, sintIndex, FALSE) != NULL)
-    {
-      EfiHvCompleteSintMessage(&mHv, sintIndex, FALSE);
+  for (sintIndex = 0; sintIndex < HV_SYNIC_SINT_COUNT; sintIndex += 1) {
+    EfiHvDisconnectSint (&mHv, sintIndex);
+    while (EfiHvGetSintMessage (&mHv, sintIndex, FALSE) != NULL) {
+      EfiHvCompleteSintMessage (&mHv, sintIndex, FALSE);
     }
 
     //
     // Zero the event flags for this SINT.
     //
-    flags = EfiHvGetSintEventFlags(&mHv, sintIndex, FALSE);
+    flags = EfiHvGetSintEventFlags (&mHv, sintIndex, FALSE);
 
-    for (flagsIndex = 0; flagsIndex < HV_EVENT_FLAGS_DWORD_COUNT; flagsIndex++)
-    {
+    for (flagsIndex = 0; flagsIndex < HV_EVENT_FLAGS_DWORD_COUNT; flagsIndex++) {
       flags->Flags32[flagsIndex] = 0;
     }
 
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
     //
     // Do the same for the paravisor synic if hardware isolated.
     //
 
-    if (mUseBypassContext && !mBypassOnly)
-    {
-      while (EfiHvGetSintMessage(&mHv, sintIndex, TRUE) != NULL)
-      {
-        EfiHvCompleteSintMessage(&mHv, sintIndex, TRUE);
+    if (mUseBypassContext && !mBypassOnly) {
+      while (EfiHvGetSintMessage (&mHv, sintIndex, TRUE) != NULL) {
+        EfiHvCompleteSintMessage (&mHv, sintIndex, TRUE);
       }
 
-      flags = EfiHvGetSintEventFlags(&mHv, sintIndex, TRUE);
-      for (flagsIndex = 0; flagsIndex < HV_EVENT_FLAGS_DWORD_COUNT; flagsIndex++)
-      {
+      flags = EfiHvGetSintEventFlags (&mHv, sintIndex, TRUE);
+      for (flagsIndex = 0; flagsIndex < HV_EVENT_FLAGS_DWORD_COUNT; flagsIndex++) {
         flags->Flags32[flagsIndex] = 0;
       }
     }
 
-#endif
-
+ #endif
   }
-
 
   //
   // Disable the message and event flags pages if they were enabled.
   //
-  EfiHvpDisableSynicComponent(HvRegisterSipp, FALSE);
-  EfiHvpDisableSynicComponent(HvRegisterSifp, FALSE);
+  EfiHvpDisableSynicComponent (HvRegisterSipp, FALSE);
+  EfiHvpDisableSynicComponent (HvRegisterSifp, FALSE);
 
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-  if (mUseBypassContext && !mBypassOnly)
-  {
-    EfiHvpDisableSynicComponent(HvRegisterSipp, TRUE);
-    EfiHvpDisableSynicComponent(HvRegisterSifp, TRUE);
+  if (mUseBypassContext && !mBypassOnly) {
+    EfiHvpDisableSynicComponent (HvRegisterSipp, TRUE);
+    EfiHvpDisableSynicComponent (HvRegisterSifp, TRUE);
   }
 
-#endif
+ #endif
 
   mSynicConnected = FALSE;
 }

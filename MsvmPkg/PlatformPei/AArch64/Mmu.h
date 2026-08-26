@@ -13,6 +13,6 @@
 //
 EFI_STATUS
 EFIAPI
-ConfigureMmu(
-    UINT64  MaxAddress
-    );
+ConfigureMmu (
+  UINT64  MaxAddress
+  );

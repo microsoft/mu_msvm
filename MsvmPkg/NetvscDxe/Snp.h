@@ -18,7 +18,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Protocol/DevicePath.h>
 #include <Protocol/AdapterInformation.h>  // MS_HYP_CHANGE
 
-
 #include <Guid/EventGroup.h>
 
 #include <Library/DebugLib.h>
@@ -33,16 +32,15 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #define SNP_DRIVER_SIGNATURE  SIGNATURE_32 ('s', 'n', 'd', 's')
 
-
 typedef struct {
-  UINT32                         Signature;
-  EFI_SIMPLE_NETWORK_PROTOCOL    Snp;
-  EFI_SIMPLE_NETWORK_MODE        Mode;
-  EFI_ADAPTER_INFORMATION_PROTOCOL Aip; // MS_HYP_CHANGE
+  UINT32                              Signature;
+  EFI_SIMPLE_NETWORK_PROTOCOL         Snp;
+  EFI_SIMPLE_NETWORK_MODE             Mode;
+  EFI_ADAPTER_INFORMATION_PROTOCOL    Aip; // MS_HYP_CHANGE
 
-  NETVSC_ADAPTER_CONTEXT      *AdapterContext;
+  NETVSC_ADAPTER_CONTEXT              *AdapterContext;
 
-  EFI_EVENT    ExitBootServicesEvent;
+  EFI_EVENT                           ExitBootServicesEvent;
 } SNP_DRIVER;
 
 #define EFI_SIMPLE_NETWORK_DEV_FROM_THIS(a)  CR (a, SNP_DRIVER, Snp, SNP_DRIVER_SIGNATURE)
@@ -74,14 +72,15 @@ NetvscAipGetSupportedTypes (
   OUT EFI_GUID                          **InfoTypesBuffer,
   OUT UINTN                             *InfoTypesBufferCount
   );
+
 // MS_HYP_CHANGE END
 
 //
 // Global Variables
 //
-extern EFI_DRIVER_BINDING_PROTOCOL    gSimpleNetworkDriverBinding;
-extern EFI_COMPONENT_NAME_PROTOCOL    gSimpleNetworkComponentName;
-extern EFI_COMPONENT_NAME2_PROTOCOL   gSimpleNetworkComponentName2;
+extern EFI_DRIVER_BINDING_PROTOCOL   gSimpleNetworkDriverBinding;
+extern EFI_COMPONENT_NAME_PROTOCOL   gSimpleNetworkComponentName;
+extern EFI_COMPONENT_NAME2_PROTOCOL  gSimpleNetworkComponentName2;
 
 /**
   this routine calls NetVsc to start the interface and changes the snp state.
@@ -180,7 +179,7 @@ EFI_STATUS
 PxeGetStatus (
   IN     SNP_DRIVER  *Snp,
   OUT UINT32         *InterruptStatusPtr,
-  OUT VOID          **TransmitBufferListPtr OPTIONAL
+  OUT VOID           **TransmitBufferListPtr OPTIONAL
   );
 
 /**
@@ -201,7 +200,7 @@ PxeGetStatus (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Start(
+SnpUndi32Start (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -225,7 +224,7 @@ SnpUndi32Start(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Stop(
+SnpUndi32Stop (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -264,7 +263,7 @@ SnpUndi32Stop(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Initialize(
+SnpUndi32Initialize (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        ExtraRxBufferSize OPTIONAL,
   IN UINTN                        ExtraTxBufferSize OPTIONAL
@@ -296,7 +295,7 @@ SnpUndi32Initialize(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Reset(
+SnpUndi32Reset (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ExtendedVerification
   );
@@ -322,7 +321,7 @@ SnpUndi32Reset(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Shutdown(
+SnpUndi32Shutdown (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   );
 
@@ -422,7 +421,7 @@ SnpUndi32Shutdown(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32ReceiveFilters(
+SnpUndi32ReceiveFilters (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINT32                       Enable,
   IN UINT32                       Disable,
@@ -465,7 +464,7 @@ SnpUndi32ReceiveFilters(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32StationAddress(
+SnpUndi32StationAddress (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN EFI_MAC_ADDRESS              *New  OPTIONAL
@@ -520,7 +519,7 @@ SnpUndi32StationAddress(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Statistics(
+SnpUndi32Statistics (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN OUT UINTN                    *StatisticsSize   OPTIONAL,
@@ -557,7 +556,7 @@ SnpUndi32Statistics(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32McastIpToMac(
+SnpUndi32McastIpToMac (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      IPv6,
   IN EFI_IP_ADDRESS               *IP,
@@ -617,7 +616,7 @@ SnpUndi32McastIpToMac(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32NvData(
+SnpUndi32NvData (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ReadWrite,
   IN UINTN                        Offset,
@@ -727,7 +726,7 @@ SnpUndi32GetStatus (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Transmit(
+SnpUndi32Transmit (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        HeaderSize,
   IN UINTN                        BufferSize,
@@ -787,7 +786,7 @@ SnpUndi32Transmit(
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Receive(
+SnpUndi32Receive (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINTN                       *HeaderSize OPTIONAL,
   IN OUT UINTN                    *BufferSize,

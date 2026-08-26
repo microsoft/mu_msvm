@@ -1,6 +1,6 @@
 /** @file
   Implementation of the DebugTransportLib that wraps the IO implementation
-  of serial port lib to change port address. Inspired by QemuQ5Pkg from MU 
+  of serial port lib to change port address. Inspired by QemuQ5Pkg from MU
   TIANO.
 
   Copyright (c) Microsoft Corporation.

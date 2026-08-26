@@ -16,17 +16,17 @@
 /// Platform type values passed by the loader.
 ///
 typedef enum {
-    MsvmSecPlatformHyperV  = 0,  // Hyper-V with MS extensions
-    MsvmSecPlatformGeneric = 1,  // Generic virtualization (no MS extensions)
+  MsvmSecPlatformHyperV  = 0,    // Hyper-V with MS extensions
+  MsvmSecPlatformGeneric = 1,    // Generic virtualization (no MS extensions)
 } MSVM_SEC_PLATFORM_TYPE;
 
 ///
 /// PPI carrying the platform type from SEC to PEI.
 ///
 typedef struct {
-    MSVM_SEC_PLATFORM_TYPE PlatformType;
+  MSVM_SEC_PLATFORM_TYPE    PlatformType;
 } MSVM_SEC_PLATFORM_TYPE_PPI;
 
-extern EFI_GUID gMsvmSecPlatformTypePpiGuid;
+extern EFI_GUID  gMsvmSecPlatformTypePpiGuid;
 
 #endif // SEC_PLATFORM_TYPE_H_

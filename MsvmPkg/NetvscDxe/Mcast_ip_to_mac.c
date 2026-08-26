@@ -34,38 +34,30 @@ PxeIp2Mac (
   )
 {
   // MS_HYP_CHANGE BEGIN
-  if (IPv6)
-  {
-      if (IP->v6.Addr[0] != 0xFF)
-      {
-          return EFI_INVALID_PARAMETER;
-      }
-      else
-      {
-          MAC->Addr[0] = 0x33;
-          MAC->Addr[1] = 0x33;
-          MAC->Addr[2] = IP->v6.Addr[12];
-          MAC->Addr[3] = IP->v6.Addr[13];
-          MAC->Addr[4] = IP->v6.Addr[14];
-          MAC->Addr[5] = IP->v6.Addr[15];
-      }
+  if (IPv6) {
+    if (IP->v6.Addr[0] != 0xFF) {
+      return EFI_INVALID_PARAMETER;
+    } else {
+      MAC->Addr[0] = 0x33;
+      MAC->Addr[1] = 0x33;
+      MAC->Addr[2] = IP->v6.Addr[12];
+      MAC->Addr[3] = IP->v6.Addr[13];
+      MAC->Addr[4] = IP->v6.Addr[14];
+      MAC->Addr[5] = IP->v6.Addr[15];
+    }
+  } else {
+    if ((IP->v4.Addr[0] & 0xF0) != 0xE0) {
+      return EFI_INVALID_PARAMETER;
+    } else {
+      MAC->Addr[0] = 0x01;
+      MAC->Addr[1] = 0x00;
+      MAC->Addr[2] = 0x5E;
+      MAC->Addr[3] = (IP->v4.Addr[1] & 0x7F);
+      MAC->Addr[4] = IP->v4.Addr[2];
+      MAC->Addr[5] = IP->v4.Addr[3];
+    }
   }
-  else
-  {
-      if ((IP->v4.Addr[0] & 0xF0) != 0xE0)
-      {
-          return EFI_INVALID_PARAMETER;
-      }
-      else
-      {
-          MAC->Addr[0] = 0x01;
-          MAC->Addr[1] = 0x00;
-          MAC->Addr[2] = 0x5E;
-          MAC->Addr[3] = (IP->v4.Addr[1] & 0x7F);
-          MAC->Addr[4] = IP->v4.Addr[2];
-          MAC->Addr[5] = IP->v4.Addr[3];
-      }
-  }
+
   // MS_HYP_CHANGE BEGIN
 
   return EFI_SUCCESS;
@@ -101,7 +93,7 @@ PxeIp2Mac (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32McastIpToMac(
+SnpUndi32McastIpToMac (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      IPv6,
   IN EFI_IP_ADDRESS               *IP,

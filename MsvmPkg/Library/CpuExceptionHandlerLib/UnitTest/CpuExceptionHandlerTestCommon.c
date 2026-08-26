@@ -744,15 +744,17 @@ TestCpuStackGuardInBspAndAp (
   VOID                            *NewIdtr;
   UINTN                           *CpuStackBaseBuffer;
 
-#if MU_CHANGE // Use Memory Protection Hob
+ #if MU_CHANGE // Use Memory Protection Hob
   if (!gDxeMps.CpuStackGuard) {
     return UNIT_TEST_PASSED;
   }
-#else
+
+ #else
   if (!PcdGetBool (PcdCpuStackGuard)) {
     return UNIT_TEST_PASSED;
   }
-#endif
+
+ #endif
 
   //
   // Get MP Service Protocol

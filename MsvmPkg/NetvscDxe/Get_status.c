@@ -31,8 +31,9 @@ EFI_STATUS
 PxeGetStatus (
   IN     SNP_DRIVER  *Snp,
   OUT UINT32         *InterruptStatusPtr,
-  OUT VOID          **TransmitBufferListPtr OPTIONAL
+  OUT VOID           **TransmitBufferListPtr OPTIONAL
   )
+
 /**
 
 Arguments:
@@ -44,7 +45,7 @@ Arguments:
 **/
 {
   // MS_HYP_CHANGE BEGIN
-  NIC_DATA_INSTANCE *adapterInfo;
+  NIC_DATA_INSTANCE  *adapterInfo;
 
   //
   // Get the NicInfo.
@@ -58,25 +59,21 @@ Arguments:
     *InterruptStatusPtr = 0;
 
     if (adapterInfo->RxInterrupt) {
-      *InterruptStatusPtr |= EFI_SIMPLE_NETWORK_RECEIVE_INTERRUPT;
+      *InterruptStatusPtr     |= EFI_SIMPLE_NETWORK_RECEIVE_INTERRUPT;
       adapterInfo->RxInterrupt = FALSE;
     }
 
     if (adapterInfo->TxedInterrupt) {
-      *InterruptStatusPtr |= EFI_SIMPLE_NETWORK_TRANSMIT_INTERRUPT;
+      *InterruptStatusPtr       |= EFI_SIMPLE_NETWORK_TRANSMIT_INTERRUPT;
       adapterInfo->TxedInterrupt = FALSE;
     }
   }
 
-  if (TransmitBufferListPtr != NULL)
-  {
-    if (TxQueueIsEmpty(&adapterInfo->TxedBuffersQueue))
-    {
+  if (TransmitBufferListPtr != NULL) {
+    if (TxQueueIsEmpty (&adapterInfo->TxedBuffersQueue)) {
       *TransmitBufferListPtr = NULL;
-    }
-    else
-    {
-      TxQueueDequeue(&adapterInfo->TxedBuffersQueue, TransmitBufferListPtr);
+    } else {
+      TxQueueDequeue (&adapterInfo->TxedBuffersQueue, TransmitBufferListPtr);
     }
   }
 
@@ -126,7 +123,7 @@ Arguments:
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32GetStatus(
+SnpUndi32GetStatus (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINT32                      *InterruptStatus  OPTIONAL,
   OUT VOID                        **TxBuf           OPTIONAL
@@ -166,7 +163,7 @@ SnpUndi32GetStatus(
   }
 
   // MS_HYP_CHANGE
-  Status = PxeGetStatus(Snp, InterruptStatus, TxBuf);
+  Status = PxeGetStatus (Snp, InterruptStatus, TxBuf);
 
 ON_EXIT:
   gBS->RestoreTPL (OldTpl);

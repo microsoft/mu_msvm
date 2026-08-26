@@ -18,7 +18,6 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseCryptLib.h>  // For AES context and operations
 
-
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverSupportedEfiVersion.h>
 #include <Protocol/PciIo.h>
@@ -40,16 +39,15 @@
 #define AZIHSM_CONTROLLER_STATE_FROM_PROTOCOL(a) \
   CR (a, AZIHSM_CONTROLLER_STATE, AziHsmProtocol, AZIHSM_CONTROLLER_SIGNATURE)
 
-
 // Marshal Key and IV into a compact struct to avoid manual offset math
 #pragma pack(push, 1)
 typedef struct {
-  UINT16 RecordSize;   // RecordSize does not include the size of the RecordSize field itself
-  UINT8  KeyVersion;
-  UINT8  KeySize;                              // length of Key[] in bytes
-  UINT8  Key[AZIHSM_AES256_KEY_SIZE];
-  UINT8  IvSize;                               // length of Iv[] in bytes
-  UINT8  Iv[AZIHSM_AES_IV_SIZE];
+  UINT16    RecordSize; // RecordSize does not include the size of the RecordSize field itself
+  UINT8     KeyVersion;
+  UINT8     KeySize;                           // length of Key[] in bytes
+  UINT8     Key[AZIHSM_AES256_KEY_SIZE];
+  UINT8     IvSize;                            // length of Iv[] in bytes
+  UINT8     Iv[AZIHSM_AES_IV_SIZE];
 } AZIHSM_KEY_IV_RECORD;
 #pragma pack(pop)
 

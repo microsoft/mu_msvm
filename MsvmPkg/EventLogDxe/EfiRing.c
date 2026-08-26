@@ -22,10 +22,10 @@
 // Data and enumeration handles have a key encoded in the upper 32-bits that remains
 // valid as long as no record is removed or the ring is not reset.
 //
-#define RING_HANDLE_KEY_MASK             0xFFFFFFFFULL
-#define RING_HANDLE_GET_OFFSET(handle)   ((RING_HANDLE)(handle) & RING_HANDLE_KEY_MASK)
-#define RING_HANDLE_GET_KEY(handle)      (((RING_HANDLE)(handle) >> 32))
-#define RING_HANDLE_SET_KEY(handle, key) (((RING_HANDLE)(handle)) | ((UINT64)(key)) << 32)
+#define RING_HANDLE_KEY_MASK  0xFFFFFFFFULL
+#define RING_HANDLE_GET_OFFSET(handle)    ((RING_HANDLE)(handle) & RING_HANDLE_KEY_MASK)
+#define RING_HANDLE_GET_KEY(handle)       (((RING_HANDLE)(handle) >> 32))
+#define RING_HANDLE_SET_KEY(handle, key)  (((RING_HANDLE)(handle)) | ((UINT64)(key)) << 32)
 
 #define RING_REMOVED_SIGNATURE  'R'
 #define RING_REMOVED_SIZE       0xFFFFFFFF
@@ -34,16 +34,15 @@
 // Internal record header describes the size of
 // the data written into the buffer.
 //
-typedef struct
-{
-    UINT32 Size;
+typedef struct {
+  UINT32    Size;
 } RING_RECORD;
 
-
 UINT32
-RingBufferCurrentKey(
-    IN      EFI_RING_BUFFER        *Ring
-    )
+RingBufferCurrentKey (
+  IN      EFI_RING_BUFFER  *Ring
+  )
+
 /*++
 
 Routine Description:
@@ -60,22 +59,21 @@ Return Value:
 
 --*/
 {
-    //
-    // HandleKey of 0 is reserved for RingBufferReset().
-    //
-    if (Ring->HandleKey == 0)
-    {
-        Ring->HandleKey = 1;
-    }
+  //
+  // HandleKey of 0 is reserved for RingBufferReset().
+  //
+  if (Ring->HandleKey == 0) {
+    Ring->HandleKey = 1;
+  }
 
-    return Ring->HandleKey;
+  return Ring->HandleKey;
 }
 
-
 UINT32
-RingBufferBytesFree(
-    IN      const EFI_RING_BUFFER  *Ring
-    )
+RingBufferBytesFree (
+  IN      const EFI_RING_BUFFER  *Ring
+  )
+
 /*++
 
 Routine Description:
@@ -94,52 +92,49 @@ Return Value:
 
 --*/
 {
-    UINT32 bytesFree;
+  UINT32  bytesFree;
 
-    bytesFree = Ring->Tail - Ring->Head - 1;
-    if (bytesFree < Ring->Size)
-    {
-        //            1         2         3
-        //  0123456789012345678901234567890123456789
-        // +----------------------------------------+
-        // |ffffgggghhhh--------aaaabbbbccccddddeeee|
-        // +----------------------------------------+
-        //  ^           ^       ^                   ^
-        //  Buffer      Head    Tail                Size
-        //
-        // In this example, Head < Tail, there are 32 bytes of free
-        // space, 20 at the end of the buffer and another 12 at the
-        // beginning.
-        //
+  bytesFree = Ring->Tail - Ring->Head - 1;
+  if (bytesFree < Ring->Size) {
+    //            1         2         3
+    //  0123456789012345678901234567890123456789
+    // +----------------------------------------+
+    // |ffffgggghhhh--------aaaabbbbccccddddeeee|
+    // +----------------------------------------+
+    //  ^           ^       ^                   ^
+    //  Buffer      Head    Tail                Size
+    //
+    // In this example, Head < Tail, there are 32 bytes of free
+    // space, 20 at the end of the buffer and another 12 at the
+    // beginning.
+    //
 
-        return bytesFree;
-    }
-    else
-    {
-        //            1         2         3
-        //  0123456789012345678901234567890123456789
-        // +----------------------------------------+
-        // |------------aaaabbbb--------------------|
-        // +----------------------------------------+
-        //  ^           ^       ^                   ^
-        //  Buffer      Tail    Head                Size
-        //
-        // In this example, Head >= Tail, (remember that == means the
-        // buffer is empty) there are 8 bytes of free space
-        // represented by aaaabbbb.
-        //
+    return bytesFree;
+  } else {
+    //            1         2         3
+    //  0123456789012345678901234567890123456789
+    // +----------------------------------------+
+    // |------------aaaabbbb--------------------|
+    // +----------------------------------------+
+    //  ^           ^       ^                   ^
+    //  Buffer      Tail    Head                Size
+    //
+    // In this example, Head >= Tail, (remember that == means the
+    // buffer is empty) there are 8 bytes of free space
+    // represented by aaaabbbb.
+    //
 
-        return Ring->Size + bytesFree;
-    }
+    return Ring->Size + bytesFree;
+  }
 }
 
-
 VOID
-RingBufferWrapIfNeeded(
-    IN      const EFI_RING_BUFFER      *Ring,
-    IN OUT  UINT32                     *Offset,
-    IN      UINT32                      BytesRequired
-    )
+RingBufferWrapIfNeeded (
+  IN      const EFI_RING_BUFFER  *Ring,
+  IN OUT  UINT32                 *Offset,
+  IN      UINT32                 BytesRequired
+  )
+
 /*++
 
 Routine Description:
@@ -162,19 +157,18 @@ Return Value:
 
 --*/
 {
-    ASSERT(*Offset < Ring->Size);
-    if ((Ring->Size - *Offset) < BytesRequired)
-    {
-        *Offset = 0;
-    }
+  ASSERT (*Offset < Ring->Size);
+  if ((Ring->Size - *Offset) < BytesRequired) {
+    *Offset = 0;
+  }
 }
 
-
 EFI_STATUS
-RingBufferIsValidOffset(
-    IN          const EFI_RING_BUFFER  *Ring,
-    IN          UINT32                  Offset
-    )
+RingBufferIsValidOffset (
+  IN          const EFI_RING_BUFFER  *Ring,
+  IN          UINT32                 Offset
+  )
+
 /*++
 
 Routine Description:
@@ -194,23 +188,23 @@ Return Value:
 
 --*/
 {
-    if ((Offset > Ring->Size) ||        // out of bounds
-        ((Offset >= Ring->Head) &&      // unallocated space
-         (Offset <  Ring->Tail)))
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if ((Offset > Ring->Size) ||          // out of bounds
+      ((Offset >= Ring->Head) &&        // unallocated space
+       (Offset <  Ring->Tail)))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
-
 EFI_STATUS
-RingBufferRecordAt(
-    IN          const EFI_RING_BUFFER  *Ring,
-    IN OUT      UINT32                 *Offset,
-    OUT         RING_RECORD           **Header
-    )
+RingBufferRecordAt (
+  IN          const EFI_RING_BUFFER  *Ring,
+  IN OUT      UINT32                 *Offset,
+  OUT         RING_RECORD            **Header
+  )
+
 /*++
 
 Routine Description:
@@ -237,65 +231,63 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *header = NULL;
-    UINT32 newOffset;
-    EFI_STATUS status = EFI_SUCCESS;
+  RING_RECORD  *header = NULL;
+  UINT32       newOffset;
+  EFI_STATUS   status = EFI_SUCCESS;
 
-    status = RingBufferIsValidOffset(Ring, *Offset);
+  status = RingBufferIsValidOffset (Ring, *Offset);
 
-    if (EFI_ERROR(status))
-    {
-        ASSERT(FALSE);
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    ASSERT (FALSE);
+    goto Exit;
+  }
 
-    if (Ring->Head == Ring->Tail)
-    {
-        // empty ring so no header.
-        status = EFI_NOT_FOUND;
-        goto Exit;
-    }
+  if (Ring->Head == Ring->Tail) {
+    // empty ring so no header.
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
 
-    RingBufferWrapIfNeeded(Ring, Offset, sizeof(RING_RECORD));
-    header = (RING_RECORD*)&Ring->Buffer[*Offset];
+  RingBufferWrapIfNeeded (Ring, Offset, sizeof (RING_RECORD));
+  header = (RING_RECORD *)&Ring->Buffer[*Offset];
 
-    if ((header->Size > (Ring->Size - 1)) ||
-        (header->Size < sizeof(RING_RECORD)))
-    {
-        ASSERT(FALSE);
-        header = NULL;
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  if ((header->Size > (Ring->Size - 1)) ||
+      (header->Size < sizeof (RING_RECORD)))
+  {
+    ASSERT (FALSE);
+    header = NULL;
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
-    //
-    // Detect bad sizes that would place the next record
-    // in an invalid location.
-    //
-    newOffset = (*Offset + header->Size) & Ring->Mask;
+  //
+  // Detect bad sizes that would place the next record
+  // in an invalid location.
+  //
+  newOffset = (*Offset + header->Size) & Ring->Mask;
 
-    if ((newOffset <= *Offset) &&
-        (newOffset > Ring->Head))
-    {
-        ASSERT(FALSE);
-        header = NULL;
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  if ((newOffset <= *Offset) &&
+      (newOffset > Ring->Head))
+  {
+    ASSERT (FALSE);
+    header = NULL;
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
 Exit:
-    *Header = header;
-    return status;
+  *Header = header;
+  return status;
 }
 
-
 UINT32
-RingBufferFillDataAt(
-    IN          EFI_RING_BUFFER        *Ring,
-    IN          const UINT32            Offset,
-                const UINT8             Value,
-    IN          const UINT32            DataSize
-    )
+RingBufferFillDataAt (
+  IN          EFI_RING_BUFFER  *Ring,
+  IN          const UINT32     Offset,
+  const UINT8                  Value,
+  IN          const UINT32     DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -320,43 +312,41 @@ Return Value:
 
 --*/
 {
-    UINT32 bytesToCopy = DataSize;
-    UINT32 chunkSize;
+  UINT32  bytesToCopy = DataSize;
+  UINT32  chunkSize;
 
-    ASSERT(Offset < Ring->Size);
-    ASSERT(DataSize < Ring->Size);
+  ASSERT (Offset < Ring->Size);
+  ASSERT (DataSize < Ring->Size);
 
-    //
-    // Set the first chunk from the current offset to the end of the ring.
-    //
-    chunkSize = MIN((Ring->Size - Offset), bytesToCopy);
+  //
+  // Set the first chunk from the current offset to the end of the ring.
+  //
+  chunkSize = MIN ((Ring->Size - Offset), bytesToCopy);
 
-    if (chunkSize > 0)
-    {
-        SetMem(&Ring->Buffer[Offset], chunkSize, Value);
-        bytesToCopy -= chunkSize;
-    }
+  if (chunkSize > 0) {
+    SetMem (&Ring->Buffer[Offset], chunkSize, Value);
+    bytesToCopy -= chunkSize;
+  }
 
-    //
-    // Set the second chunk (if any) after wrapping to the start of the ring.
-    //
-    if (bytesToCopy > 0)
-    {
-        chunkSize = MIN(Ring->Size, bytesToCopy);
-        SetMem(&Ring->Buffer[0], chunkSize, Value);
-    }
+  //
+  // Set the second chunk (if any) after wrapping to the start of the ring.
+  //
+  if (bytesToCopy > 0) {
+    chunkSize = MIN (Ring->Size, bytesToCopy);
+    SetMem (&Ring->Buffer[0], chunkSize, Value);
+  }
 
-    return (Offset + DataSize) & Ring->Mask;
+  return (Offset + DataSize) & Ring->Mask;
 }
 
-
 UINT32
-RingBufferWriteDataAt(
-    IN          EFI_RING_BUFFER        *Ring,
-    IN          const UINT32            Offset,
-    IN          const VOID             *Data,
-    IN          const UINT32            DataSize
-    )
+RingBufferWriteDataAt (
+  IN          EFI_RING_BUFFER  *Ring,
+  IN          const UINT32     Offset,
+  IN          const VOID       *Data,
+  IN          const UINT32     DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -381,45 +371,43 @@ Return Value:
 
 --*/
 {
-    UINT8 *src = (UINT8*)Data;
-    UINT32 bytesToCopy = DataSize;
-    UINT32 chunkSize;
+  UINT8   *src        = (UINT8 *)Data;
+  UINT32  bytesToCopy = DataSize;
+  UINT32  chunkSize;
 
-    ASSERT(Offset < Ring->Size);
-    ASSERT(DataSize < Ring->Size);
+  ASSERT (Offset < Ring->Size);
+  ASSERT (DataSize < Ring->Size);
 
-    //
-    // Copy in the first chunk from the current offset to the end of the ring.
-    //
-    chunkSize = MIN((Ring->Size - Offset), bytesToCopy);
+  //
+  // Copy in the first chunk from the current offset to the end of the ring.
+  //
+  chunkSize = MIN ((Ring->Size - Offset), bytesToCopy);
 
-    if (chunkSize > 0)
-    {
-        CopyMem(&Ring->Buffer[Offset], src, chunkSize);
-        bytesToCopy -= chunkSize;
-        src         += chunkSize;
-    }
+  if (chunkSize > 0) {
+    CopyMem (&Ring->Buffer[Offset], src, chunkSize);
+    bytesToCopy -= chunkSize;
+    src         += chunkSize;
+  }
 
-    //
-    // Copy in the second chunk (if any) after wrapping to the start of the ring.
-    //
-    if (bytesToCopy > 0)
-    {
-        chunkSize = MIN(Ring->Size, bytesToCopy);
-        CopyMem(&Ring->Buffer[0], src, chunkSize);
-    }
+  //
+  // Copy in the second chunk (if any) after wrapping to the start of the ring.
+  //
+  if (bytesToCopy > 0) {
+    chunkSize = MIN (Ring->Size, bytesToCopy);
+    CopyMem (&Ring->Buffer[0], src, chunkSize);
+  }
 
-    return (Offset + DataSize) & Ring->Mask;
+  return (Offset + DataSize) & Ring->Mask;
 }
 
-
 UINT32
-RingBufferReadDataAt(
-    IN          const EFI_RING_BUFFER  *Ring,
-    IN          UINT32                  Offset,
-    OUT         VOID                   *Data,
-    IN          UINT32                  DataSize
-    )
+RingBufferReadDataAt (
+  IN          const EFI_RING_BUFFER  *Ring,
+  IN          UINT32                 Offset,
+  OUT         VOID                   *Data,
+  IN          UINT32                 DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -445,46 +433,44 @@ Return Value:
 
 --*/
 {
-    UINT8 *dst = (UINT8*)Data;
-    UINT32 curOffset = Offset;
-    UINT32 bytesToCopy = DataSize;
-    UINT32 chunkSize;
+  UINT8   *dst        = (UINT8 *)Data;
+  UINT32  curOffset   = Offset;
+  UINT32  bytesToCopy = DataSize;
+  UINT32  chunkSize;
 
-    ASSERT(DataSize < Ring->Size);
-    //
-    // Copy the first chunk from the current offset to the end of the ring.
-    //
-    chunkSize = MIN((Ring->Size - curOffset), bytesToCopy);
+  ASSERT (DataSize < Ring->Size);
+  //
+  // Copy the first chunk from the current offset to the end of the ring.
+  //
+  chunkSize = MIN ((Ring->Size - curOffset), bytesToCopy);
 
-    if (chunkSize > 0)
-    {
-        CopyMem(dst, &Ring->Buffer[curOffset], chunkSize);
-        bytesToCopy -= chunkSize;
-        dst         += chunkSize;
-    }
+  if (chunkSize > 0) {
+    CopyMem (dst, &Ring->Buffer[curOffset], chunkSize);
+    bytesToCopy -= chunkSize;
+    dst         += chunkSize;
+  }
 
-    //
-    // Copy in the second chunk (if any) after wrapping to the start of the ring.
-    //
-    if (bytesToCopy > 0)
-    {
-        ASSERT(bytesToCopy < Ring->Size);
-        chunkSize = MIN(Ring->Size, bytesToCopy);
-        CopyMem(dst, &Ring->Buffer[0], chunkSize);
-    }
+  //
+  // Copy in the second chunk (if any) after wrapping to the start of the ring.
+  //
+  if (bytesToCopy > 0) {
+    ASSERT (bytesToCopy < Ring->Size);
+    chunkSize = MIN (Ring->Size, bytesToCopy);
+    CopyMem (dst, &Ring->Buffer[0], chunkSize);
+  }
 
-    return (Offset + DataSize) & Ring->Mask;
+  return (Offset + DataSize) & Ring->Mask;
 }
 
-
 EFI_STATUS
-RingBufferReadRecord(
-    IN              const EFI_RING_BUFFER  *Ring,
-    IN OUT          UINT32                 *Offset,
-    OUT             RING_RECORD           **Header,
-    OUT             VOID                   *Data,
-    IN OUT OPTIONAL UINT32                 *DataSize
-    )
+RingBufferReadRecord (
+  IN              const EFI_RING_BUFFER  *Ring,
+  IN OUT          UINT32                 *Offset,
+  OUT             RING_RECORD            **Header,
+  OUT             VOID                   *Data,
+  IN OUT OPTIONAL UINT32                 *DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -516,64 +502,60 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *record   = NULL;
-    UINT32       offset   = *Offset;
-    UINT32       dataOffset;
-    UINT32       dataSize = 0;
-    EFI_STATUS   status   = EFI_SUCCESS;
+  RING_RECORD  *record = NULL;
+  UINT32       offset  = *Offset;
+  UINT32       dataOffset;
+  UINT32       dataSize = 0;
+  EFI_STATUS   status   = EFI_SUCCESS;
 
-    //
-    // Get and verify the record header
-    // then read the data.
-    //
-    status = RingBufferRecordAt(Ring, &offset, &record);
+  //
+  // Get and verify the record header
+  // then read the data.
+  //
+  status = RingBufferRecordAt (Ring, &offset, &record);
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  dataSize = record->Size - sizeof (RING_RECORD);
+
+  if (Data != NULL) {
+    ASSERT (DataSize != NULL);
+
+    if (dataSize > *DataSize) {
+      status = EFI_BUFFER_TOO_SMALL;
+      goto Exit;
     }
 
-    dataSize = record->Size - sizeof(RING_RECORD);
+    // skip the header then copy the data into the caller's buffer
+    dataOffset = (offset + sizeof (RING_RECORD)) & Ring->Mask;
+    RingBufferReadDataAt (Ring, dataOffset, Data, dataSize);
+  }
 
-    if (Data != NULL)
-    {
-        ASSERT(DataSize != NULL);
-
-        if (dataSize > *DataSize)
-        {
-            status = EFI_BUFFER_TOO_SMALL;
-            goto Exit;
-        }
-
-        // skip the header then copy the data into the caller's buffer
-        dataOffset = (offset + sizeof(RING_RECORD)) & Ring->Mask;
-        RingBufferReadDataAt(Ring, dataOffset, Data, dataSize);
-    }
-
-    *Offset = offset;
+  *Offset = offset;
 
 Exit:
 
-    *Header = record;
+  *Header = record;
 
-    if (DataSize != NULL)
-    {
-        *DataSize = dataSize;
-    }
+  if (DataSize != NULL) {
+    *DataSize = dataSize;
+  }
 
-    return status;
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferIo(
-    IN          EFI_RING_BUFFER        *Ring,
-    IN          const RING_HANDLE       DataHandle,
-    IN          const RING_IO_OPERATION Op,
-    IN          const UINT32            Offset,
-    IN OUT      VOID                   *Data,
-    IN OUT      UINT32                 *DataSize
-    )
+RingBufferIo (
+  IN          EFI_RING_BUFFER          *Ring,
+  IN          const RING_HANDLE        DataHandle,
+  IN          const RING_IO_OPERATION  Op,
+  IN          const UINT32             Offset,
+  IN OUT      VOID                     *Data,
+  IN OUT      UINT32                   *DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -604,81 +586,73 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *record;
-    UINT32 ringOffset = RING_HANDLE_GET_OFFSET(DataHandle);
-    UINT32 recordDataSize;
-    UINT32 byteCount = *DataSize;
-    EFI_STATUS status;
+  RING_RECORD  *record;
+  UINT32       ringOffset = RING_HANDLE_GET_OFFSET (DataHandle);
+  UINT32       recordDataSize;
+  UINT32       byteCount = *DataSize;
+  EFI_STATUS   status;
 
-    if (RING_HANDLE_GET_KEY(DataHandle) != Ring->HandleKey)
-    {
-        // handle invalidated.
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
+  if (RING_HANDLE_GET_KEY (DataHandle) != Ring->HandleKey) {
+    // handle invalidated.
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
+
+  //
+  // Try and get the record header
+  // RingBufferRecordAt will validate the offset
+  //
+  status = RingBufferRecordAt (Ring, &ringOffset, &record);
+
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  recordDataSize = record->Size - sizeof (RING_RECORD);
+
+  if (Offset > recordDataSize) {
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
+
+  //
+  // validate the caller's start offset and data size with
+  // respect to the record.
+  //
+  ringOffset = (ringOffset + sizeof (RING_RECORD) + Offset) & Ring->Mask;
+
+  if (Op == DataWrite) {
+    if ((Offset + byteCount) > recordDataSize) {
+      status = EFI_BAD_BUFFER_SIZE;
+      goto Exit;
     }
 
+    RingBufferWriteDataAt (Ring, ringOffset, Data, byteCount);
+  } else {
     //
-    // Try and get the record header
-    // RingBufferRecordAt will validate the offset
+    // Cap actual read size to the record bounds
     //
-    status = RingBufferRecordAt(Ring, &ringOffset, &record);
-
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
+    if ((Offset + byteCount) > recordDataSize) {
+      byteCount = recordDataSize - Offset;
     }
 
-    recordDataSize = record->Size - sizeof(RING_RECORD);
+    RingBufferReadDataAt (Ring, ringOffset, Data, byteCount);
+    *DataSize = byteCount;
+  }
 
-    if (Offset > recordDataSize)
-    {
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
-
-    //
-    // validate the caller's start offset and data size with
-    // respect to the record.
-    //
-    ringOffset = (ringOffset + sizeof(RING_RECORD) + Offset) & Ring->Mask;
-
-    if (Op == DataWrite)
-    {
-        if ((Offset + byteCount) > recordDataSize)
-        {
-            status = EFI_BAD_BUFFER_SIZE;
-            goto Exit;
-        }
-
-        RingBufferWriteDataAt(Ring, ringOffset, Data, byteCount);
-    }
-    else
-    {
-        //
-        // Cap actual read size to the record bounds
-        //
-        if ((Offset + byteCount) > recordDataSize)
-        {
-            byteCount = recordDataSize - Offset;
-        }
-
-        RingBufferReadDataAt(Ring, ringOffset, Data, byteCount);
-        *DataSize = byteCount;
-    }
-
-    status = EFI_SUCCESS;
+  status = EFI_SUCCESS;
 
 Exit:
-    return status;
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferReserve(
-    IN              EFI_RING_BUFFER        *Ring,
-    IN              const UINT32            DataSize,
-    OUT OPTIONAL    RING_HANDLE            *DataHandle
-    )
+RingBufferReserve (
+  IN              EFI_RING_BUFFER  *Ring,
+  IN              const UINT32     DataSize,
+  OUT OPTIONAL    RING_HANDLE      *DataHandle
+  )
+
 /*++
 
 Routine Description:
@@ -706,82 +680,73 @@ Return Value:
 
 --*/
 {
-    UINT32 totalSize = DataSize + sizeof(RING_RECORD);
-    UINT32 headerOffset;
-    RING_RECORD header;
-    RING_HANDLE handle = INVALID_RING_HANDLE;
-    EFI_STATUS status;
+  UINT32       totalSize = DataSize + sizeof (RING_RECORD);
+  UINT32       headerOffset;
+  RING_RECORD  header;
+  RING_HANDLE  handle = INVALID_RING_HANDLE;
+  EFI_STATUS   status;
 
-    if (totalSize > (Ring->Size - 1))
-    {
+  if (totalSize > (Ring->Size - 1)) {
+    Ring->Stats.LostWrites++;
+    status = EFI_BAD_BUFFER_SIZE;
+    goto Exit;
+  }
+
+  if (RingBufferBytesFree (Ring) < totalSize) {
+    if (Ring->Flags & RING_BUFFER_OVERWRITE) {
+      //
+      // If there is not enough space between the head and the tail
+      // records at the tail will need to be deleted.
+      // keep deleting until there is enough space.
+      //
+      while (RingBufferBytesFree (Ring) < totalSize) {
+        if (EFI_ERROR (RingBufferRemove (Ring, NULL, NULL))) {
+          break;
+        }
+
         Ring->Stats.LostWrites++;
-        status = EFI_BAD_BUFFER_SIZE;
-        goto Exit;
+      }
+    } else {
+      // dropping new data
+      Ring->Stats.LostWrites++;
+      status = EFI_OUT_OF_RESOURCES;
+      goto Exit;
     }
+  }
 
-    if (RingBufferBytesFree(Ring) < totalSize)
-    {
-        if (Ring->Flags & RING_BUFFER_OVERWRITE)
-        {
-            //
-            // If there is not enough space between the head and the tail
-            // records at the tail will need to be deleted.
-            // keep deleting until there is enough space.
-            //
-            while (RingBufferBytesFree(Ring) < totalSize)
-            {
-                if (EFI_ERROR(RingBufferRemove(Ring, NULL, NULL)))
-                {
-                    break;
-                }
+  header.Size  = totalSize;
+  headerOffset = Ring->Head;
+  RingBufferWrapIfNeeded (Ring, &headerOffset, sizeof (header));
 
-                Ring->Stats.LostWrites++;
-            }
-        }
-        else
-        {
-            // dropping new data
-            Ring->Stats.LostWrites++;
-            status = EFI_OUT_OF_RESOURCES;
-            goto Exit;
-        }
-    }
-
-    header.Size  = totalSize;
-    headerOffset = Ring->Head;
-    RingBufferWrapIfNeeded(Ring, &headerOffset, sizeof(header));
-
-    DEBUG_CODE
-    (
-        RingBufferFillDataAt(Ring, headerOffset, (UINT8)Ring->HandleKey, header.Size);
+  DEBUG_CODE (
+    RingBufferFillDataAt (Ring, headerOffset, (UINT8)Ring->HandleKey, header.Size);
     );
 
-    CopyMem(&Ring->Buffer[headerOffset], &header, sizeof(header));
+  CopyMem (&Ring->Buffer[headerOffset], &header, sizeof (header));
 
-    Ring->Stats.Reserve++;
-    Ring->Head = (headerOffset + header.Size) & Ring->Mask;
+  Ring->Stats.Reserve++;
+  Ring->Head = (headerOffset + header.Size) & Ring->Mask;
 
-    handle = RING_HANDLE_SET_KEY(headerOffset, RingBufferCurrentKey(Ring));
-    status = EFI_SUCCESS;
+  handle = RING_HANDLE_SET_KEY (headerOffset, RingBufferCurrentKey (Ring));
+  status = EFI_SUCCESS;
 
 Exit:
 
-    if (DataHandle != NULL)
-    {
-        *DataHandle = handle;
-    }
+  if (DataHandle != NULL) {
+    *DataHandle = handle;
+  }
 
-    return status;
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferAdd(
-    IN              EFI_RING_BUFFER        *Ring,
-    IN              const VOID             *Data,
-    IN              const UINT32            DataSize,
-    OUT OPTIONAL    RING_HANDLE            *DataHandle
-    )
+RingBufferAdd (
+  IN              EFI_RING_BUFFER  *Ring,
+  IN              const VOID       *Data,
+  IN              const UINT32     DataSize,
+  OUT OPTIONAL    RING_HANDLE      *DataHandle
+  )
+
 /*++
 
 Routine Description:
@@ -810,41 +775,39 @@ Return Value:
 
 --*/
 {
-    RING_HANDLE handle;
-    UINT32 dataOffset;
-    EFI_STATUS status;
+  RING_HANDLE  handle;
+  UINT32       dataOffset;
+  EFI_STATUS   status;
+
+  //
+  // Reserve a region then write the data into it.
+  //
+  status = RingBufferReserve (Ring, DataSize, &handle);
+
+  if (!EFI_ERROR (status)) {
+    dataOffset = (RING_HANDLE_GET_OFFSET (handle) + sizeof (RING_RECORD)) & Ring->Mask;
+    RingBufferWriteDataAt (Ring, dataOffset, Data, DataSize);
 
     //
-    // Reserve a region then write the data into it.
+    // return a record handle if the caller requested one.
     //
-    status = RingBufferReserve(Ring, DataSize, &handle);
-
-    if (!EFI_ERROR(status))
-    {
-        dataOffset = (RING_HANDLE_GET_OFFSET(handle) + sizeof(RING_RECORD)) & Ring->Mask;
-        RingBufferWriteDataAt(Ring, dataOffset, Data, DataSize);
-
-        //
-        // return a record handle if the caller requested one.
-        //
-        if (DataHandle != NULL)
-        {
-            *DataHandle = handle;
-        }
-
-        status = EFI_SUCCESS;
+    if (DataHandle != NULL) {
+      *DataHandle = handle;
     }
 
-    return status;
+    status = EFI_SUCCESS;
+  }
+
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferRemove(
-    IN              EFI_RING_BUFFER        *Ring,
-    OUT OPTIONAL    VOID                   *Data,
-    IN OUT OPTIONAL UINT32                 *DataSize
-    )
+RingBufferRemove (
+  IN              EFI_RING_BUFFER  *Ring,
+  OUT OPTIONAL    VOID             *Data,
+  IN OUT OPTIONAL UINT32           *DataSize
+  )
+
 /*++
 
 Routine Description:
@@ -868,46 +831,43 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *record = NULL;
-    UINT32       offset = Ring->Tail;
-    UINT32       newTail;
-    EFI_STATUS   status = EFI_SUCCESS;
+  RING_RECORD  *record = NULL;
+  UINT32       offset  = Ring->Tail;
+  UINT32       newTail;
+  EFI_STATUS   status = EFI_SUCCESS;
 
-    status = RingBufferReadRecord(Ring, &offset, &record, Data, DataSize);
+  status = RingBufferReadRecord (Ring, &offset, &record, Data, DataSize);
 
-    if (!EFI_ERROR(status))
-    {
-        //
-        // Invalidate handles key, 0 is reserved.
-        //
-        Ring->HandleKey++;
-        if (Ring->HandleKey == 0)
-        {
-            Ring->HandleKey = 1;
-        }
-
-        newTail = (offset + record->Size) & Ring->Mask;
-
-        DEBUG_CODE
-        (
-            RingBufferFillDataAt(Ring, offset, RING_REMOVED_SIGNATURE, record->Size);
-        );
-
-        record->Size = RING_REMOVED_SIZE;
-        Ring->Tail = newTail;
+  if (!EFI_ERROR (status)) {
+    //
+    // Invalidate handles key, 0 is reserved.
+    //
+    Ring->HandleKey++;
+    if (Ring->HandleKey == 0) {
+      Ring->HandleKey = 1;
     }
 
-    return status;
+    newTail = (offset + record->Size) & Ring->Mask;
+
+    DEBUG_CODE (
+      RingBufferFillDataAt (Ring, offset, RING_REMOVED_SIGNATURE, record->Size);
+      );
+
+    record->Size = RING_REMOVED_SIZE;
+    Ring->Tail   = newTail;
+  }
+
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferHandleEnumerate(
-    IN              const EFI_RING_BUFFER  *Ring,
-    IN OUT          RING_HANDLE            *Enumerator,
-    OUT             RING_HANDLE            *Item,
-    OUT OPTIONAL    UINT32                 *ItemSize
-    )
+RingBufferHandleEnumerate (
+  IN              const EFI_RING_BUFFER  *Ring,
+  IN OUT          RING_HANDLE            *Enumerator,
+  OUT             RING_HANDLE            *Item,
+  OUT OPTIONAL    UINT32                 *ItemSize
+  )
+
 /*++
 
 Routine Description:
@@ -935,70 +895,62 @@ Return Value:
 
 --*/
 {
-    RING_HANDLE  enumHandle = INVALID_RING_HANDLE;
-    RING_HANDLE  itemHandle = INVALID_RING_HANDLE;
-    RING_RECORD *record = NULL;
-    UINT32 enumOffset;
-    UINT32 currentKey;
-    UINT32 itemSize = 0;
-    EFI_STATUS status = EFI_NOT_FOUND;
+  RING_HANDLE  enumHandle = INVALID_RING_HANDLE;
+  RING_HANDLE  itemHandle = INVALID_RING_HANDLE;
+  RING_RECORD  *record    = NULL;
+  UINT32       enumOffset;
+  UINT32       currentKey;
+  UINT32       itemSize = 0;
+  EFI_STATUS   status   = EFI_NOT_FOUND;
 
-    if (*Enumerator == INVALID_RING_HANDLE)
-    {
-        enumOffset = Ring->Tail;
-    }
-    else if (RING_HANDLE_GET_KEY(*Enumerator) != Ring->HandleKey)
-    {
-        // handle invalidated.
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
-    else
-    {
-        enumOffset = RING_HANDLE_GET_OFFSET(*Enumerator);
-    }
+  if (*Enumerator == INVALID_RING_HANDLE) {
+    enumOffset = Ring->Tail;
+  } else if (RING_HANDLE_GET_KEY (*Enumerator) != Ring->HandleKey) {
+    // handle invalidated.
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  } else {
+    enumOffset = RING_HANDLE_GET_OFFSET (*Enumerator);
+  }
 
-    // empty or last record.
-    if (enumOffset == Ring->Head)
-    {
-        status = EFI_NOT_FOUND;
-        goto Exit;
-    }
+  // empty or last record.
+  if (enumOffset == Ring->Head) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
 
-    currentKey = RingBufferCurrentKey((EFI_RING_BUFFER *)Ring);
-    itemHandle = RING_HANDLE_SET_KEY(enumOffset, currentKey);
-    status = RingBufferRecordAt(Ring, &enumOffset, &record);
+  currentKey = RingBufferCurrentKey ((EFI_RING_BUFFER *)Ring);
+  itemHandle = RING_HANDLE_SET_KEY (enumOffset, currentKey);
+  status     = RingBufferRecordAt (Ring, &enumOffset, &record);
 
-    if (EFI_ERROR(status))
-    {
-        itemHandle = INVALID_RING_HANDLE;
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    itemHandle = INVALID_RING_HANDLE;
+    goto Exit;
+  }
 
-    // advance the enumerator
-    itemSize   = record->Size;
-    enumOffset = (enumOffset + record->Size) & Ring->Mask;
-    enumHandle = RING_HANDLE_SET_KEY(enumOffset, currentKey);
+  // advance the enumerator
+  itemSize   = record->Size;
+  enumOffset = (enumOffset + record->Size) & Ring->Mask;
+  enumHandle = RING_HANDLE_SET_KEY (enumOffset, currentKey);
 
 Exit:
 
-    *Enumerator = enumHandle;
-    *Item       = itemHandle;
+  *Enumerator = enumHandle;
+  *Item       = itemHandle;
 
-    if (ItemSize != NULL)
-    {
-        *ItemSize = itemSize;
-    }
+  if (ItemSize != NULL) {
+    *ItemSize = itemSize;
+  }
 
-    return status;
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferHandleIsValid(
-    IN          EFI_RING_BUFFER        *Ring,
-    IN          const RING_HANDLE       DataHandle
-    )
+RingBufferHandleIsValid (
+  IN          EFI_RING_BUFFER    *Ring,
+  IN          const RING_HANDLE  DataHandle
+  )
+
 /*++
 
 Routine Description:
@@ -1017,34 +969,31 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *record;
-    UINT32 ringOffset = RING_HANDLE_GET_OFFSET(DataHandle);
-    EFI_STATUS status;
+  RING_RECORD  *record;
+  UINT32       ringOffset = RING_HANDLE_GET_OFFSET (DataHandle);
+  EFI_STATUS   status;
 
-    if (RING_HANDLE_GET_KEY(DataHandle) != Ring->HandleKey)
-    {
-        // handle invalidated.
-        status = EFI_INVALID_PARAMETER;
-    }
-    else
-    {
-        //
-        // Try and get the record header
-        // RingBufferRecordAt will validate the offset
-        //
-        status = RingBufferRecordAt(Ring, &ringOffset, &record);
-    }
+  if (RING_HANDLE_GET_KEY (DataHandle) != Ring->HandleKey) {
+    // handle invalidated.
+    status = EFI_INVALID_PARAMETER;
+  } else {
+    //
+    // Try and get the record header
+    // RingBufferRecordAt will validate the offset
+    //
+    status = RingBufferRecordAt (Ring, &ringOffset, &record);
+  }
 
-    return status;
+  return status;
 }
 
-
 EFI_STATUS
-RingBufferFlatten(
-    IN          const EFI_RING_BUFFER  *Ring,
-    IN OUT      UINT32                 *BufferSize,
-    OUT         VOID                   *Buffer
-    )
+RingBufferFlatten (
+  IN          const EFI_RING_BUFFER  *Ring,
+  IN OUT      UINT32                 *BufferSize,
+  OUT         VOID                   *Buffer
+  )
+
 /*++
 
 Routine Description:
@@ -1068,67 +1017,64 @@ Return Value:
 
 --*/
 {
-    RING_RECORD *record = NULL;
-    UINT8  *curOutput   = Buffer;
-    UINT32 enumOffset   = Ring->Tail;
-    UINT32 byteCount;
-    UINT32 curDataSize;
-    EFI_STATUS status = EFI_SUCCESS;
+  RING_RECORD  *record    = NULL;
+  UINT8        *curOutput = Buffer;
+  UINT32       enumOffset = Ring->Tail;
+  UINT32       byteCount;
+  UINT32       curDataSize;
+  EFI_STATUS   status = EFI_SUCCESS;
 
-    //
-    // Only flush the part of the ring that is actually in use.
-    // Note that this needed size is not truly accurate as it includes
-    // the internal RING_RECORD header which is not part of the flattened
-    // data.
-    //
-    byteCount = (Ring->Size - RingBufferBytesFree(Ring));
+  //
+  // Only flush the part of the ring that is actually in use.
+  // Note that this needed size is not truly accurate as it includes
+  // the internal RING_RECORD header which is not part of the flattened
+  // data.
+  //
+  byteCount = (Ring->Size - RingBufferBytesFree (Ring));
 
-    if (*BufferSize < byteCount)
-    {
-        status = EFI_BUFFER_TOO_SMALL;
-        goto Exit;
+  if (*BufferSize < byteCount) {
+    status = EFI_BUFFER_TOO_SMALL;
+    goto Exit;
+  }
+
+  //
+  // Enumerate and write all records. The internal record header is removed.
+  //
+  byteCount  = 0;
+  enumOffset = Ring->Tail;
+
+  while (enumOffset != Ring->Head) {
+    status = RingBufferRecordAt (Ring, &enumOffset, &record);
+
+    if (EFI_ERROR (status)) {
+      byteCount = 0;
+      break;
     }
 
     //
-    // Enumerate and write all records. The internal record header is removed.
+    // read the current record from the ring skipping the header
+    // The ASSERT detects RING_RECORD corruption.
     //
-    byteCount  = 0;
-    enumOffset = Ring->Tail;
+    curDataSize = record->Size - sizeof (RING_RECORD);
+    ASSERT (curDataSize <= ((UINTN)(*BufferSize) - ((UINTN)curOutput - (UINTN)Buffer)));
 
-    while (enumOffset != Ring->Head)
-    {
-        status = RingBufferRecordAt(Ring, &enumOffset, &record);
+    enumOffset = (enumOffset + sizeof (RING_RECORD)) & Ring->Mask;
+    enumOffset = RingBufferReadDataAt (Ring, enumOffset, curOutput, curDataSize);
 
-        if (EFI_ERROR(status))
-        {
-            byteCount = 0;
-            break;
-        }
-
-        //
-        // read the current record from the ring skipping the header
-        // The ASSERT detects RING_RECORD corruption.
-        //
-        curDataSize = record->Size - sizeof(RING_RECORD);
-        ASSERT(curDataSize <= ((UINTN)(*BufferSize) - ((UINTN)curOutput - (UINTN)Buffer)));
-
-        enumOffset = (enumOffset + sizeof(RING_RECORD)) & Ring->Mask;
-        enumOffset = RingBufferReadDataAt(Ring, enumOffset, curOutput, curDataSize);
-
-        byteCount += curDataSize;
-        curOutput += curDataSize;
-    }
+    byteCount += curDataSize;
+    curOutput += curDataSize;
+  }
 
 Exit:
-    *BufferSize = byteCount;
-    return status;
+  *BufferSize = byteCount;
+  return status;
 }
 
-
 VOID
-RingBufferReset(
-    IN          EFI_RING_BUFFER        *Ring
-    )
+RingBufferReset (
+  IN          EFI_RING_BUFFER  *Ring
+  )
+
 /*++
 
 Routine Description:
@@ -1145,19 +1091,19 @@ Return Value:
 
 --*/
 {
-    Ring->Head = 0;
-    Ring->Tail = 0;
-    Ring->HandleKey = 0;
-    ZeroMem(&Ring->Stats, sizeof(Ring->Stats));
+  Ring->Head      = 0;
+  Ring->Tail      = 0;
+  Ring->HandleKey = 0;
+  ZeroMem (&Ring->Stats, sizeof (Ring->Stats));
 }
 
-
 EFI_STATUS
-RingBufferInitialize(
-    IN          EFI_RING_BUFFER        *Ring,
-    IN          const UINT32            Capacity,
-    IN          const UINT32            Flags
-    )
+RingBufferInitialize (
+  IN          EFI_RING_BUFFER  *Ring,
+  IN          const UINT32     Capacity,
+  IN          const UINT32     Flags
+  )
+
 /*++
 
 Routine Description:
@@ -1181,19 +1127,19 @@ Return Value:
 
 --*/
 {
-    //
-    // verify the capacity is a power of 2 and actually usable for something
-    //
-    if ((Capacity < sizeof(RING_RECORD) + 1) ||
-        ((Capacity & (Capacity - 1)) != 0))
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  //
+  // verify the capacity is a power of 2 and actually usable for something
+  //
+  if ((Capacity < sizeof (RING_RECORD) + 1) ||
+      ((Capacity & (Capacity - 1)) != 0))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    Ring->Size  = Capacity;
-    Ring->Mask  = Capacity - 1;
-    Ring->Flags = Flags;
-    RingBufferReset(Ring);
+  Ring->Size  = Capacity;
+  Ring->Mask  = Capacity - 1;
+  Ring->Flags = Flags;
+  RingBufferReset (Ring);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

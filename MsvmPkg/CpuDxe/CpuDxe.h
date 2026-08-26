@@ -42,12 +42,12 @@
 #include <Guid/VectorHandoffTable.h>
 
 #if MS_HYP_CHANGE
-#include <Protocol/Cpu2.h>
-#include <Protocol/EfiHv.h>
+  #include <Protocol/Cpu2.h>
+  #include <Protocol/EfiHv.h>
 #endif // MS_HYP_CHANGE
 
 #if MU_CHANGE // Remove Nonstop Mode
-#define HEAP_GUARD_NONSTOP_MODE  FALSE
+#define HEAP_GUARD_NONSTOP_MODE      FALSE
 #define NULL_DETECTION_NONSTOP_MODE  FALSE
 #else
 #define HEAP_GUARD_NONSTOP_MODE       \
@@ -233,6 +233,7 @@ CpuSetMemoryAttributes (
   );
 
 // MS_HYP_CHANGE BEGIN
+
 /**
   Waits for an interrupt to arrive, then enables CPU interrupts.
 
@@ -244,8 +245,9 @@ CpuSetMemoryAttributes (
 EFI_STATUS
 EFIAPI
 CpuWaitForAndEnableInterrupt (
-  IN EFI_CPU2_PROTOCOL          *This
+  IN EFI_CPU2_PROTOCOL  *This
   );
+
 // MS_HYP_CHANGE END
 
 /**

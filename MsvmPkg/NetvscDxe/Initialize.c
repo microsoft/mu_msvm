@@ -27,23 +27,19 @@ PxeInit (
   UINT16      CableDetectFlag
   )
 {
-  EFI_STATUS          Status;
+  EFI_STATUS  Status;
 
   // MS_HYP_CHANGE BEGIN
-  Status = NetvscInit(&Snp->AdapterContext->NicInfo);
+  Status = NetvscInit (&Snp->AdapterContext->NicInfo);
 
-  if (Status == EFI_SUCCESS)
-  {
-    if (Snp->Mode.MediaPresentSupported)
-    {
-        Snp->Mode.MediaPresent = Snp->AdapterContext->NicInfo.MediaPresent;
+  if (Status == EFI_SUCCESS) {
+    if (Snp->Mode.MediaPresentSupported) {
+      Snp->Mode.MediaPresent = Snp->AdapterContext->NicInfo.MediaPresent;
     }
 
     Snp->Mode.State = EfiSimpleNetworkInitialized;
-  }
-  else
-  {
-  // MS_HYP_CHANGE END
+  } else {
+    // MS_HYP_CHANGE END
     Status = EFI_DEVICE_ERROR;
   }
 
@@ -85,16 +81,17 @@ PxeInit (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Initialize(
+SnpUndi32Initialize (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        ExtraRxBufferSize OPTIONAL,
   IN UINTN                        ExtraTxBufferSize OPTIONAL
   )
 {
   EFI_STATUS  EfiStatus;
-#if MU_CHANGE
+
+ #if MU_CHANGE
   EFI_STATUS  EventStatus;
-#endif
+ #endif
   SNP_DRIVER  *Snp;
   EFI_TPL     OldTpl;
 
@@ -163,12 +160,13 @@ SnpUndi32Initialize(
 ON_EXIT:
   gBS->RestoreTPL (OldTpl);
 
-#if MU_CHANGE // [BEGIN] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
+ #if MU_CHANGE // [BEGIN] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
   if (!EFI_ERROR (EfiStatus)) {
     EventStatus = EfiNamedEventSignal (&gSnpNetworkInitializedEventGuid);
     ASSERT_EFI_ERROR (EventStatus);
   }
-#endif // MU_CHANGE [END] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
+
+ #endif // MU_CHANGE [END] - Signal gSnpNetworkInitializedEventGuid when Snp->Initialized() called.
 
   return EfiStatus;
 }
