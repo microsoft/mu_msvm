@@ -37,10 +37,11 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
             RequiredSubmodule("MU_BASECORE"),
             RequiredSubmodule("Common/MU"),
             RequiredSubmodule("Feature/DEBUGGER"),
+            RequiredSubmodule("Common/PATINA_EDK2"),
         ]
 
     def GetPackagesPath(self):
-        pp = ('MU_BASECORE', 'Common/MU', 'Feature/DEBUGGER')
+        pp = ('MU_BASECORE', 'Common/MU', 'Feature/DEBUGGER', 'Common/PATINA_EDK2')
         ws = self.GetWorkspaceRoot()
         return [os.path.join(ws, x) for x in pp]
 
@@ -58,6 +59,7 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
         self.env.SetValue("BLD_*_BUILD_UNIT_TESTS", "FALSE", "Unit Test build off by default")
         self.env.SetValue("BLD_*_BUILD_APPS", "FALSE", "App Build off by default")
         self.env.SetValue("PE_VALIDATION_PATH", self.edk2path.GetAbsolutePathOnThisSystemFromEdk2RelativePath("MsvmPkg", "image_validation.cfg"), "Image validation ignore list")
+        self.env.SetValue("BLD_*_USE_LEGACY_C_CORE", "TRUE", "For now default to the C core")
 
         #
         # Build AARCH64 by using BUILD_ARCH=AARCH64 with PlatformBuild.py

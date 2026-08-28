@@ -66,7 +66,7 @@ NumBlocks     = 0x600
 !if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
 0x00000000|0x00500000
 !else
-0x00000000|0x004E0000
+0x00000000|0x00493000
 !endif
 gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
 FV = DXE
@@ -75,7 +75,7 @@ FV = DXE
 !if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
 0x00500000|0x100000
 !else
-0x004E0000|0x100000
+0x00493000|0x0014D000
 !endif
 gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAINFV
@@ -134,6 +134,7 @@ INF  RuleOverride=RESET_VECTOR UefiCpuPkg/ResetVector/Vtf0/Vtf0.inf
 [FV.MAINFV]
 BlockSize          = 0x10000
 FvAlignment        = 16
+FvForceRebase      = TRUE
 ERASE_POLARITY     = 1
 MEMORY_MAPPED      = TRUE
 STICKY_WRITE       = TRUE
@@ -149,14 +150,6 @@ READ_ENABLED_CAP   = TRUE
 READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
-
-#
-# Dispatch these components first in PEI.
-#
-APRIORI PEI {
-  INF  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
-  INF  MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
-}
 
 #
 # PEI components
@@ -178,7 +171,19 @@ INF DebuggerFeaturePkg/DebugConfigPei/DebugConfigPei.inf
 #
 # DXE components.
 #
-INF MdeModulePkg/Core/Dxe/DxeMain.inf
+
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF MdeModulePkg/Core/Dxe/DxeMain.inf
+!else
+  FILE DXE_CORE = 23C9322F-2AF2-476A-BC4C-26BC88266C71 {
+    !if $(TARGET) == RELEASE
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\release\msvm_x64_dxe_core.efi
+    !else
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\debug\msvm_x64_dxe_core.efi
+    !endif
+    SECTION UI = "DxeCore"
+  }
+!endif
 
 [FV.DXE]
 BlockSize          = 0x1000
@@ -199,24 +204,6 @@ READ_ENABLED_CAP   = TRUE
 READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
-
-#
-# Dispatch these components first in DXE.
-#
-APRIORI DXE {
-  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
-  INF MsvmPkg/CpuDxe/CpuDxe.inf
-  INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
-  INF MdeModulePkg/Universal/Metronome/Metronome.inf
-  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
-  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
-  INF MsvmPkg/EventLogDxe/EventLogDxe.inf
-  INF MsvmPkg/SynicTimerDxe/SynicTimerDxe.inf
-  INF MsvmPkg/VariableDxe/VariableDxe.inf
-  INF MsvmPkg/EfiDiagnosticsDxe/EfiDiagnosticsDxe.inf
-  INF MsvmPkg/PlatformDeviceStateHelper/PlatformDeviceStateHelper.inf
-}
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf
@@ -263,7 +250,11 @@ INF MsGraphicsPkg/DisplayEngineDxe/DisplayEngineDxe.inf
 INF MsvmPkg/AcpiPlatformDxe/AcpiPlatformDxe.inf
 INF RuleOverride=ACPITABLE MsvmPkg/AcpiTables/AcpiTables.inf
 INF MsvmPkg/AziHsmDxe/AziHsmDxe.inf
-INF MsvmPkg/CpuDxe/CpuDxe.inf
+!if $(USE_LEGACY_C_CORE) == TRUE
+  INF MsvmPkg/CpuDxe/CpuDxe.inf
+!else
+  INF PatinaPkg/MpDxe/MpDxe.inf
+!endif
 INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
 INF MsvmPkg/EmclDxe/EmclDxe.inf
 INF MsvmPkg/EventLogDxe/EventLogDxe.inf
@@ -360,22 +351,22 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 #
 [Rule.Common.SEC]
   FILE SEC = $(NAMED_GUID) {
-    PE32     PE32           $(INF_OUTPUT)/$(MODULE_NAME).efi
+    PE32     PE32     Xip=TRUE      $(INF_OUTPUT)/$(MODULE_NAME).efi
     UI       STRING ="$(MODULE_NAME)" Optional
     VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
 
 [Rule.Common.PEI_CORE]
   FILE PEI_CORE = $(NAMED_GUID) {
-    PE32     PE32   Align=Auto    $(INF_OUTPUT)/$(MODULE_NAME).efi
+    PE32     PE32   Align=Auto  Xip=TRUE  $(INF_OUTPUT)/$(MODULE_NAME).efi
     UI       STRING ="$(MODULE_NAME)" Optional
     VERSION  STRING ="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
 
 [Rule.Common.PEIM]
   FILE PEIM = $(NAMED_GUID) {
-     PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
-     PE32      PE32   Align=Auto           $(INF_OUTPUT)/$(MODULE_NAME).efi
+     PEI_DEPEX PEI_DEPEX Optional          $(INF_OUTPUT)/$(MODULE_NAME).depex
+     PE32      PE32   Align=Auto  Xip=TRUE $(INF_OUTPUT)/$(MODULE_NAME).efi
      UI       STRING="$(MODULE_NAME)" Optional
      VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
@@ -383,7 +374,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 [Rule.Common.PEIM.BINARY]
   FILE PEIM = $(NAMED_GUID) {
     PEI_DEPEX PEI_DEPEX Optional      |.depex
-    PE32      PE32     Align = Auto   |.efi
+    PE32      PE32     Align = Auto Xip=TRUE   |.efi
     UI        STRING="$(MODULE_NAME)" Optional
     VERSION   STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
@@ -391,7 +382,7 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
 [Rule.Common.PEIM.PLATFORM_PEI]
   FILE PEIM = $(NAMED_GUID) {
      PEI_DEPEX PEI_DEPEX Optional        $(INF_OUTPUT)/$(MODULE_NAME).depex
-     PE32      PE32   Align=Auto           $(INF_OUTPUT)/$(MODULE_NAME).efi
+     PE32      PE32   Align=Auto     Xip=TRUE      $(INF_OUTPUT)/$(MODULE_NAME).efi
      UI       STRING="$(MODULE_NAME)" Optional
      VERSION  STRING="$(INF_VERSION)" Optional BUILD_NUM=$(BUILD_NUMBER)
   }
