@@ -35,3 +35,6 @@
 
 [Protocols]
   gEfiEventLogProtocolGuid      ## CONSUMES
+
+[Depex]
+  gEfiEventLogProtocolGuid

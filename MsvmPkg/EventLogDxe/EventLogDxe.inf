@@ -39,7 +39,6 @@
   BaseLib
   BaseMemoryLib
   BiosDeviceLib
-  BootEventLogLib                 # MS_CHANGE
   DevicePathLib                   # MS_CHANGE
   DebugLib
   HobLib
@@ -57,6 +56,7 @@
   gMemoryStatusCodeRecordGuid                   ## CONSUMES ## HOB
   gStatusCodeEventChannelGuid                   ## CONSUMES
   gSyntheticNetworkClassGuid                    ## CONSUMES
+  gBootEventChannelGuid                         ## CONSUMES
 
 [Protocols]
   gEfiEventLogProtocolGuid                      ## PRODUCES
@@ -71,6 +71,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdProgressCodeOsLoaderStart               ## SOMETIMES_CONSUMES
   gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeReplayIn
   gMsvmPkgTokenSpaceGuid.PcdEventLogMaxChannels
+  gMsvmPkgTokenSpaceGuid.PcdBootEventLogSize
   gMsvmPkgTokenSpaceGuid.PcdHostEmulatorsWhenHardwareIsolated
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
   gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaCanonicalizationBitmask
