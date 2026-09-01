@@ -26,6 +26,66 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
 stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 ```
 
+## Running CI Checks Locally
+
+Run the source checks from the repository root before opening a pull request. First, initialize the submodules and install the
+Python dependencies:
+
+```powershell
+git submodule update --init --recursive
+python -m pip install -r pip_requirement_stable.txt
+```
+
+Disable Git's automatic line-ending conversion to match the GitHub Actions environment, then download the tools used by the
+checks. The update step is required on a new checkout and whenever the external dependency configuration changes.
+
+```powershell
+git config core.autocrlf false
+stuart_update -c .\.pytool\CISettings.py
+```
+
+Run the same source checks that are enforced by GitHub Actions:
+
+```powershell
+stuart_ci_build `
+	-c .\.pytool\CISettings.py `
+	-p MsvmPkg `
+	-t NO-TARGET `
+	-a X64,AARCH64 `
+	--disable-all `
+	GuidCheck=run `
+	LineEndingCheck=run `
+	UncrustifyCheck=run
+```
+
+The `--disable-all` option disables the default plugin set, and each `Check=run` argument explicitly enables a check used by
+this repository. To run one check while iterating, specify only that check. For example:
+
+```powershell
+stuart_ci_build -c .\.pytool\CISettings.py -p MsvmPkg -t NO-TARGET -a X64,AARCH64 --disable-all GuidCheck=run
+```
+
+The check configuration is stored in `MsvmPkg\MsvmPkg.ci.yaml`. The Stuart environment and package paths are configured by
+`.pytool\CISettings.py`.
+
+### Fixing Uncrustify Failures
+
+By default, `UncrustifyCheck` reports files that need formatting without modifying them. Run it in correction mode to update
+those files in place:
+
+```powershell
+stuart_ci_build `
+	-c .\.pytool\CISettings.py `
+	-p MsvmPkg `
+	-t NO-TARGET `
+	-a X64,AARCH64 `
+	--disable-all `
+	UncrustifyCheck=run `
+	UNCRUSTIFY_IN_PLACE=TRUE
+```
+
+Review the resulting changes and rerun the full source-check command before committing them.
+
 ## Specialized Builds
 
 ### Debug-Enabled Build
