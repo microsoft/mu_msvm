@@ -1,0 +1,46 @@
+## @file
+# CI configuration for MsvmPkg source checks.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+{
+    "GuidCheck": {
+        "IgnoreGuidName": [
+            "gEfiRngProtocolGuid=3152BCA5-EADE-433D-862E-C01CDC291F44",
+            "gMsEventMasterFrameNotifyGroupGuid=B24FD789-0ADF-46B6-B385-7003E83654D2"
+        ],
+        "IgnoreGuidValue": [],
+        "IgnoreFoldersAndFiles": [],
+        "IgnoreDuplicates": [
+            "HvResetSystemLib=ResetSystemLib",
+            "DefaultExceptionHandlerLib=DefaultExceptionHandlerLib",
+            "CpuExceptionHandlerDxeTest=CpuExceptionHandlerDxeTest",
+            "VariableRuntimeDxe=VariableRuntimeDxe",
+            "AcpiPlatform=AcpiPlatform",
+            "SecPeiCpuExceptionHandlerLib=SecPeiCpuExceptionHandlerLib",
+            "DxeCpuExceptionHandlerLib=DxeCpuExceptionHandlerLib",
+            "MtrrLibUnitTestHost=MtrrLibUnitTestHost",
+            "PeiCpuExceptionHandlerLib=PeiCpuExceptionHandlerLib",
+            "SmmCpuExceptionHandlerLib=SmmCpuExceptionHandlerLib",
+            "MtrrLib=MtrrLib",
+            "BaseRngLib=BaseRngLib",
+            "MsvmBootEventLogLib=MsvmBootEventLogLib",
+            "PlatformThemeLib=PlatformThemeLib",
+            "HostVisibilityLib=IsolationLib",
+            "CpuExceptionHandlerPeiTest=CpuExceptionHandlerPeiTest",
+            "MsvmPcRtc=PcRtc",
+            "CpuDxe=CpuDxe",
+            "DxeImageVerificationLib=DxeImageVerificationLib=DxeImageVerificationLib"
+        ]
+    },
+    "LineEndingCheck": {
+        "IgnoreFiles": [],
+        "IgnoreFilesWithNoExtension": false
+    },
+    "UncrustifyCheck": {
+        "AuditOnly": true,
+        "IgnoreFiles": [],
+        "OutputFileDiffs": false
+    }
+}

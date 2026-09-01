@@ -15,6 +15,44 @@ env:
   BASE_VERSION: "26.0"
 
 jobs:
+  source-checks:
+    name: Source Checks
+    runs-on: windows-2022
+
+    steps:
+      - name: Disable Automatic Line Ending Conversion
+        run: git config --global core.autocrlf false
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r pip_requirement_stable.txt
+
+      - name: Download Source Check Dependencies
+        run: stuart_update -c .pytool/CISettings.py
+
+      - name: Run Source Checks
+        run: >-
+          stuart_ci_build
+          -c .pytool/CISettings.py
+          -p MsvmPkg
+          -t NO-TARGET
+          -a X64,AARCH64
+          --disable-all
+          GuidCheck=run
+          LineEndingCheck=run
+          UncrustifyCheck=run
+
   build:
     runs-on: windows-2022
 
@@ -148,7 +186,7 @@ jobs:
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build]
+    needs: [source-checks, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
