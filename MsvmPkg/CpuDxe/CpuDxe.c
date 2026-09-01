@@ -56,10 +56,6 @@ EFI_CPU_ARCH_PROTOCOL  gCpu = {
 
 #if MS_HYP_CHANGE
 
-EFI_CPU2_PROTOCOL  gCpu2 = {
-  CpuWaitForAndEnableInterrupt,
-};
-
 //
 // Local function prototypes
 //
@@ -513,33 +509,6 @@ CpuSetMemoryAttributes (
   //
   return AssignMemoryPageAttributes (NULL, BaseAddress, Length, MemoryAttributes, NULL);
 }
-
-#if MS_HYP_CHANGE
-VOID EFIAPI
-MsEnableInterruptsAndSleep (
-  VOID
-  );
-
-/**
-  Waits for an interrupt to arrive, then enables CPU interrupts.
-
-  @param  This              Protocol instance structure
-
-  @retval EFI_SUCCESS       If interrupts were enabled in the CPU
-
-**/
-EFI_STATUS
-EFIAPI
-CpuWaitForAndEnableInterrupt (
-  IN EFI_CPU2_PROTOCOL  *This
-  )
-{
-  MsEnableInterruptsAndSleep ();
-
-  return EFI_SUCCESS;
-}
-
-#endif // MS_HYP_CHANGE END
 
 /**
   Gets GCD Mem Space type from MTRR Type.
@@ -1557,10 +1526,6 @@ InitializeCpu (
                   &mCpuHandle,
                   &gEfiCpuArchProtocolGuid,
                   &gCpu,
- #if MS_HYP_CHANGE
-                  &gEfiCpu2ProtocolGuid,
-                  &gCpu2,
- #endif // MS_HYP_CHANGE
                   NULL
                   );
   ASSERT_EFI_ERROR (Status);

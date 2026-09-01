@@ -14,7 +14,6 @@
 #include <Protocol/Vmbus.h>
 #include <Protocol/Emcl.h>
 #include <Protocol/ScsiPassThruExt.h>
-#include <Protocol/InternalEventServices.h>
 
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>

@@ -10,6 +10,7 @@
 #include <Platform.h>
 #include <BiosInterface.h>
 #include <AcpiTables.h>
+#include <Guid/PatinaConfigHob.h>
 #include <IndustryStandard/Acpi.h>
 #include <IndustryStandard/Tpm20.h>
 #if defined (MDE_CPU_AARCH64)
@@ -1671,6 +1672,19 @@ Return Value:
         UEFI_CONFIG_GIC  *gicConfig = (UEFI_CONFIG_GIC *)header;
         PEI_FAIL_FAST_IF_FAILED (PcdSet64S (PcdGicDistributorBase, gicConfig->GicDistributorBase));
         PEI_FAIL_FAST_IF_FAILED (PcdSet64S (PcdGicRedistributorsBase, gicConfig->GicRedistributorsBase));
+
+        MSVM_PATINA_CONFIG  *patinaConfig;
+        patinaConfig = (MSVM_PATINA_CONFIG *)BuildGuidHob (&gMsvmPatinaConfigHobGuid, sizeof (MSVM_PATINA_CONFIG));
+        if (patinaConfig == NULL) {
+          DEBUG ((DEBUG_ERROR, "*** Failed to build MSVM Patina Config HOB\n"));
+          FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+        }
+
+        patinaConfig->VersionMajor         = MSVM_CONFIG_HOB_VERSION_MAJOR;
+        patinaConfig->VersionMinor         = MSVM_CONFIG_HOB_VERSION_MINOR;
+        patinaConfig->GicDistributorBase   = gicConfig->GicDistributorBase;
+        patinaConfig->GicRedistributorBase = gicConfig->GicRedistributorsBase;
+
         break;
       }
  #endif

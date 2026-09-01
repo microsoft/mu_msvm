@@ -169,25 +169,11 @@ Return Value:
   //
   // The MMIO registers for the BIOS device must be declared as runtime so they are
   // included in the guest os call to SetVirtualAddressMap and can be converted to a GVA.
-  // While there is a centralized BiosDeviceBaseLib, we can't do the AddMemorySpace there since
-  // only _one_ driver can add the memory space, and that constructor is called by each
-  // driver that includes that lib. This one wins and registers the memory space.
-  //
-  status = gDS->AddMemorySpace (
-                  EfiGcdMemoryTypeMemoryMappedIo,
-                  PcdGet32 (PcdBiosBaseAddress),
-                  EFI_PAGE_SIZE,
-                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME
-                  );
-  ASSERT_EFI_ERROR (status);
-  if (EFI_ERROR (status)) {
-    goto Cleanup;
-  }
-
+  // The memory space is already added by the platform, just set it to runtime here.
   status = gDS->SetMemorySpaceAttributes (
                   PcdGet32 (PcdBiosBaseAddress),
                   EFI_PAGE_SIZE,
-                  EFI_MEMORY_UC | EFI_MEMORY_RUNTIME
+                  EFI_MEMORY_UC | EFI_MEMORY_XP | EFI_MEMORY_RUNTIME
                   );
   ASSERT_EFI_ERROR (status);
   if (EFI_ERROR (status)) {

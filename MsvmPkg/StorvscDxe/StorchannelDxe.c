@@ -9,7 +9,7 @@
 #include "StorvscDxe.h"
 #include <IndustryStandard/Scsi.h>
 #include <Vmbus/NtStatus.h>
-#include "MsInternalEventServices.h"
+#include <Library/MsEventSleepLib.h>
 #include "StorportDxe.h"
 
 typedef struct _STOR_CHANNEL_PROTOCOL_VERSION {
@@ -585,18 +585,8 @@ Return Value:
 {
   EFI_STATUS  status;
   EFI_EVENT   event = NULL;
-  UINTN       signaledEventIndex;
 
   ASSERT (*Target <= VMSTOR_MAX_TARGETS);
-
-  if (mInternalEventServices == NULL) {
-    status = gBS->LocateProtocol (
-                    &gInternalEventServicesProtocolGuid,
-                    NULL,
-                    (VOID **)&mInternalEventServices
-                    );
-    ASSERT_EFI_ERROR (status);
-  }
 
   status = gBS->CreateEvent (
                   0,
@@ -623,10 +613,11 @@ Return Value:
   }
 
   //
-  // This can be called from TPL_CALLBACK. Use WaitForEventInternal instead of gBS->WaitForEvent
-  // which enforces a TPL check for TPL_APPLICATION.
+  // This can be called from TPL_CALLBACK, where gBS->WaitForEvent is not
+  // allowed. Sleep until the completion event is signaled by the SINT
+  // interrupt handler instead.
   //
-  status = mInternalEventServices->WaitForEventInternal (1, &event, &signaledEventIndex);
+  status = MsWaitForEventSleep (event);
 
   if (EFI_ERROR (status)) {
     goto Cleanup;

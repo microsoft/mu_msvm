@@ -57,10 +57,6 @@
   *_GCC_AARCH64_ASLDLINK_FLAGS   = -z common-page-size=0x10000
   *_GCC_AARCH64_DLINK_FLAGS      = -z common-page-size=0x10000
 
-[BuildOptions.common.EDKII.SEC, BuildOptions.common.EDKII.PEIM, BuildOptions.common.EDKII.PEI_CORE]
-  MSFT:*_*_*_DLINK_FLAGS   = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS = -align:4096 -filealign:4096
-
 ################################################################################
 #
 # SKU Identification section - list of all SKU IDs supported by this Platform.
@@ -118,6 +114,7 @@
   MmuLib|ArmPkg/Library/MmuLib/BaseMmuLib.inf
   MmUnblockMemoryLib|MdePkg/Library/MmUnblockMemoryLib/MmUnblockMemoryLibNull.inf
   MsBaseLib|MsvmPkg/Library/MsBaseLib/MsBaseLib.inf
+  MsEventSleepLib|MsvmPkg/Library/MsEventSleepLib/MsEventSleepLib.inf
   MsBootPolicyLib|MsvmPkg/Library/MsBootPolicyLib/MsBootPolicyLib.inf
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   PanicLib|MdePkg/Library/BasePanicLibNull/BasePanicLibNull.inf
@@ -552,8 +549,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerInBootOrder|FALSE
 
 [PcdsFeatureFlag.common]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdInternalEventServicesEnabled|TRUE
-
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerFixedInRAM|FALSE
   gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedFileLoggerForceEnable|TRUE
 
@@ -806,7 +801,10 @@
   MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
   MdeModulePkg/Core/Pei/PeiMain.inf
   MdeModulePkg/Universal/ResetSystemPei/ResetSystemPei.inf
-  MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+  MdeModulePkg/Universal/PCD/Pei/Pcd.inf {
+    <LibraryClasses>
+      PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+  }
   MsvmPkg/EfiDiagnosticsPei/EfiDiagnosticsPei.inf
   MsvmPkg/PlatformPei/PlatformPei.inf
   MsGraphicsPkg/MsUiTheme/Pei/MsUiThemePpi.inf
@@ -869,7 +867,10 @@
   MdeModulePkg/Universal/Metronome/Metronome.inf
   MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+  MdeModulePkg/Universal/PCD/Dxe/Pcd.inf {
+    <LibraryClasses>
+      PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+  }
   MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf {
   <LibraryClasses>
@@ -1037,13 +1038,3 @@
 
   *_GCC_*_ASLDLINK_FLAGS = -z common-page-size=0x1000
   *_GCC_*_DLINK_FLAGS    = -z common-page-size=0x1000
-
-  # Set file alignment and (memory) alignment to 4K.
-  # Memory alignment 4K is required for page protection.
-  # i.e. So that, text/data/rdata are on different pages,
-  # so that data/rdata are not executable and text/rdata are not writable.
-  # This is the main reason sections exist and the main feature of the PE format.
-  # File==memory for execute in place, or loader perf/simplicity otherwise.
-  # Memory alignment defaults to 4K, if not otherwise changed by build system.
-  MSFT:*_*_*_DLINK_FLAGS      = -align:4096 -filealign:4096
-  *_CLANGPDB_*_DLINK_FLAGS    = -align:4096 -filealign:4096

@@ -61,9 +61,12 @@ jobs:
         target: [DEBUG, RELEASE]
         arch: [X64, AARCH64]
         tools: [VS2022, CLANGPDB]
+        c_core: [TRUE, FALSE]
         exclude:
         - arch: AARCH64
           tools: VS2022
+        - tools: VS2022
+          c_core: FALSE
 
     steps:
       # Checkout the repository
@@ -169,7 +172,7 @@ jobs:
 
       # Stuart Build: Perform the build using the specified architecture and target
       - name: Stuart Build
-        run: stuart_build -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}} TARGET=${{matrix.target}} BUILD_ARCH=${{matrix.arch}}
+        run: stuart_build -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}} TARGET=${{matrix.target}} BUILD_ARCH=${{matrix.arch}} BLD_*_USE_LEGACY_C_CORE=${{matrix.c_core}}
 
       # Upload the MSVM.fd file, MAP/, and PDB/ directories directly as an artifact
       - name: Upload Build Artifact

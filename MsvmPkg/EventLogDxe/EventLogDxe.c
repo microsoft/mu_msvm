@@ -72,13 +72,6 @@ Return Value:
   //
   StatusCodeRuntimeInitialize ();
 
-  //
-  // Workaroud: Initialize BootEventLogLib library.  This is done because BootEventLogLib
-  //            library requires gEfiEventLogProtocolGuid, which is not available at the
-  //            time of its constructor execution.
-  //
-  BootEventLogLibInit (ImageHandle, SystemTable);
-
 Exit:
 
   return status;

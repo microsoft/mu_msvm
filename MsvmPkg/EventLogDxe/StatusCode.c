@@ -34,9 +34,11 @@ ReportStatusCode (
 //
 // GUID for status code event channel.
 //
+extern EFI_GUID  gBootEventChannelGuid;
 extern EFI_GUID  gStatusCodeEventChannelGuid;
 
-EFI_HANDLE  mEfiStatusCodeEventHandle;
+EFI_HANDLE         mEfiStatusCodeEventHandle;
+STATIC EFI_HANDLE  mBootEvent = INVALID_EVENT_HANDLE;
 
 //
 // CallerId field is valid.
@@ -57,6 +59,110 @@ typedef struct {
   EFI_GUID                 CallerId;
   EFI_STATUS_CODE_DATA     Data;
 } EFI_STATUS_CODE_EVENT;
+
+STATIC
+VOID
+BootEventChannelInitialize (
+  VOID
+  )
+{
+  EVENT_CHANNEL_INFO  Attributes;
+
+  Attributes.Flags      = 0;
+  Attributes.RecordSize = 0;
+  Attributes.BufferSize = PcdGet32 (PcdBootEventLogSize);
+  Attributes.Tpl        = TPL_NOTIFY;
+  (VOID)EventChannelCreate (&gBootEventChannelGuid, &Attributes, &mBootEvent);
+}
+
+STATIC
+EFI_STATUS
+BootDeviceEventStart (
+  IN CONST EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
+  IN UINT16                          BootVariableNumber,
+  IN BOOT_DEVICE_STATUS              InitialStatus,
+  IN EFI_STATUS                      ExtendedStatus
+  )
+{
+  BOOTEVENT_DEVICE_ENTRY  *BootEvent;
+  EFI_EVENT_DESCRIPTOR    EventDescriptor;
+  UINTN                   DevicePathSize;
+  EFI_STATUS              Status;
+
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
+
+  DevicePathSize = GetDevicePathSize (DevicePath);
+  ASSERT (DevicePathSize < PcdGet32 (PcdBootEventLogSize));
+
+  BootEvent = AllocateZeroPool (DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
+  if (BootEvent == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  BootEvent->Status             = InitialStatus;
+  BootEvent->ExtendedStatus     = ExtendedStatus;
+  BootEvent->DevicePathSize     = (UINT32)DevicePathSize;
+  BootEvent->BootVariableNumber = BootVariableNumber;
+  CopyMem (BootEvent->DevicePath, DevicePath, DevicePathSize);
+
+  ZeroMem (&EventDescriptor, sizeof (EventDescriptor));
+  EventDescriptor.Flags    = EVENT_FLAG_PENDING;
+  EventDescriptor.EventId  = BOOT_DEVICE_EVENT_ID;
+  EventDescriptor.DataSize = (UINT32)(DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
+  Status                   = EventLog (mBootEvent, &EventDescriptor, BootEvent);
+
+  FreePool (BootEvent);
+  return Status;
+}
+
+STATIC
+EFI_STATUS
+BootDeviceEventUpdate (
+  IN BOOT_DEVICE_STATUS  Status,
+  IN EFI_STATUS          ExtendedStatus
+  )
+{
+  BOOTEVENT_DEVICE_ENTRY  *BootEvent;
+  EFI_EVENT_DESCRIPTOR    EventDescriptor;
+  EFI_STATUS              EventStatus;
+
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
+
+  EventStatus = EventPendingGet (mBootEvent, &EventDescriptor, (VOID **)&BootEvent);
+  if (EFI_ERROR (EventStatus)) {
+    return EventStatus;
+  }
+
+  if (EventDescriptor.EventId != BOOT_DEVICE_EVENT_ID) {
+    return EFI_NOT_FOUND;
+  }
+
+  if (EventDescriptor.DataSize < sizeof (BOOTEVENT_DEVICE_ENTRY)) {
+    ASSERT (FALSE);
+    return EFI_INVALID_PARAMETER;
+  }
+
+  BootEvent->Status         = Status;
+  BootEvent->ExtendedStatus = ExtendedStatus;
+  return EFI_SUCCESS;
+}
+
+STATIC
+EFI_STATUS
+BootDeviceEventComplete (
+  VOID
+  )
+{
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
+
+  return EventPendingCommit (mBootEvent);
+}
 
 /**
   Check if it's a Device Path pointing to BootManagerMenu.
@@ -374,6 +480,12 @@ Return Value:
     ASSERT (FALSE);
     goto Exit;
   }
+
+  //
+  // EventLogDxe owns the event logger implementation, so use it directly
+  // rather than calling back through BootEventLogLib and the protocol.
+  //
+  BootEventChannelInitialize ();
 
   //
   // Replay Status code entries which were logged during the PEI phase.

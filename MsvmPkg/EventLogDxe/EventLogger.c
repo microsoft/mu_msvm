@@ -66,6 +66,11 @@ typedef struct {
   //
   EVENT_CHANNEL_STATISTICS    Stats;
   //
+  // Pre-allocated below 4GB for the BIOS data port. This buffer is retained
+  // for the channel lifetime so flushing does not change the memory map.
+  //
+  VOID                        *FlushBuffer;
+  //
   // Backing store for event data
   //
   EFI_RING_BUFFER             Ring;
@@ -320,17 +325,13 @@ Return Value:
   UINT64                    physicalAddress;
   UINT64                    virtualAddress;
   BOOLEAN                   hostEmulatorsPresent = PcdGetBool (PcdHostEmulatorsWhenHardwareIsolated);
-  VOID                      *originalAllocation;
 
   //
-  // Allocate a region below 4GB since the BIOS data port
-  // only accepts 32-Bit values.
+  // Use the region allocated when the channel was created. The BIOS data
+  // port only accepts 32-bit addresses, and allocating here would change
+  // the memory map when called from an ExitBootServices notification.
   //
-  channelDescriptor  = EventAllocate32BitMemory (allocSize);
-  originalAllocation = channelDescriptor;
-  if (channelDescriptor == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
+  channelDescriptor = channel->FlushBuffer;
 
   EventChannelLock (channel);
 
@@ -400,7 +401,6 @@ Return Value:
 
 Exit:
   EventChannelUnlock (channel);
-  FreePages (originalAllocation, EFI_SIZE_TO_PAGES (allocSize));
 
   return status;
 }
@@ -585,6 +585,8 @@ Return Value:
   EFI_HANDLE     handle   = INVALID_EVENT_HANDLE;
   UINTN          allocSize;
   EFI_STATUS     status;
+  UINT32         flushBufferSize;
+  VOID           *flushBuffer = NULL;
 
   //
   // Try to find the channel.
@@ -626,16 +628,36 @@ Return Value:
     goto Exit;
   }
 
+  if (Attributes->BufferSize > (MAX_UINT32 - sizeof (BIOS_EVENT_CHANNEL))) {
+    status = EFI_BAD_BUFFER_SIZE;
+    goto Exit;
+  }
+
+  //
+  // Pre-allocate the flush buffer below 4GB for the BIOS data port. We
+  // allocate it here so that we can safe during EBS when we cannot
+  // tolerate memory map changes. It is boot services data and will be
+  // released to the OS after EBS.
+  //
+  flushBufferSize = Attributes->BufferSize + sizeof (BIOS_EVENT_CHANNEL);
+  flushBuffer     = EventAllocate32BitMemory (flushBufferSize);
+  if (flushBuffer == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
+
   allocSize = sizeof (EVENT_CHANNEL) + Attributes->BufferSize;
 
   status = EfiHandleTableAllocateObject (mEventChannels, allocSize, (void **)&channel, &handle);
 
   if (EFI_ERROR (status)) {
+    FreePages (flushBuffer, EFI_SIZE_TO_PAGES (flushBufferSize));
     goto Exit;
   }
 
   CopyGuid (&channel->Id, Channel);
   CopyMem (&channel->Attributes, Attributes, sizeof (channel->Attributes));
+  channel->FlushBuffer = flushBuffer;
 
   EfiInitializeLock (&channel->Lock, Attributes->Tpl);
   channel->Pending.Handle    = INVALID_RING_HANDLE;

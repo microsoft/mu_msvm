@@ -782,9 +782,9 @@ AziHsmCreatePlatformPrimaryKeyedHash (
   TPM2B_PUBLIC            InPublic;
   TPM_HANDLE              Handle = 0;
 
-  // Validate parameters: Max Buffer size for (InSensitive.sensitive.data.buffer) is MAX_SYM_DATA
+  // Validate parameters: label must fit in the unique.keyedHash.buffer of InPublic
   if (  (PrimaryHandle == NULL) || (PrimaryKeyUserData == NULL)
-     || (PrimaryKeyUserDataLength > MAX_SYM_DATA))
+     || (PrimaryKeyUserDataLength > sizeof (InPublic.publicArea.unique.keyedHash.buffer)))
   {
     DEBUG ((DEBUG_ERROR, "AziHsm: CreatePlatformPrimaryKeyedHash invalid parameter\n"));
     return EFI_INVALID_PARAMETER;
@@ -797,23 +797,25 @@ AziHsmCreatePlatformPrimaryKeyedHash (
   ZeroMem (&InSensitive, sizeof (InSensitive));
   InSensitive.size                    = sizeof (TPMS_SENSITIVE_CREATE);
   InSensitive.sensitive.userAuth.size = 0; // Empty platformAuth assumed
-  CopyMem (InSensitive.sensitive.data.buffer, PrimaryKeyUserData, PrimaryKeyUserDataLength);
-  InSensitive.sensitive.data.size = PrimaryKeyUserDataLength;
+  InSensitive.sensitive.data.size     = 0; // Let TPM derive key from platform hierarchy seed
 
   ZeroMem (&InPublic, sizeof (InPublic));
-  InPublic.size                                     = sizeof (TPMT_PUBLIC);
-  InPublic.publicArea.type                          = TPM_ALG_KEYEDHASH;
-  InPublic.publicArea.nameAlg                       = TPM_ALG_SHA256;
-  InPublic.publicArea.objectAttributes.fixedTPM     = 1;
-  InPublic.publicArea.objectAttributes.fixedParent  = 1;
-  InPublic.publicArea.objectAttributes.userWithAuth = 1;         // RS_PW allowed
-  InPublic.publicArea.objectAttributes.sign         = 1;
-  InPublic.publicArea.objectAttributes.noDA         = 1;         // No dictionary attack protection
+  InPublic.size                                            = sizeof (TPMT_PUBLIC);
+  InPublic.publicArea.type                                 = TPM_ALG_KEYEDHASH;
+  InPublic.publicArea.nameAlg                              = TPM_ALG_SHA256;
+  InPublic.publicArea.objectAttributes.fixedTPM            = 1;
+  InPublic.publicArea.objectAttributes.fixedParent         = 1;
+  InPublic.publicArea.objectAttributes.sensitiveDataOrigin = 1;  // TPM generates key from hierarchy seed
+  InPublic.publicArea.objectAttributes.userWithAuth        = 1;  // RS_PW allowed
+  InPublic.publicArea.objectAttributes.sign                = 1;
+  InPublic.publicArea.objectAttributes.noDA                = 1;  // No dictionary attack protection
   // Not restricted, no decrypt, no policy -> simple HMAC key
   InPublic.publicArea.authPolicy.size                                        = 0;
   InPublic.publicArea.parameters.keyedHashDetail.scheme.scheme               = TPM_ALG_HMAC;
   InPublic.publicArea.parameters.keyedHashDetail.scheme.details.hmac.hashAlg = TPM_ALG_SHA256;
-  InPublic.publicArea.unique.keyedHash.size                                  = 0;
+  // Use caller-provided label as the unique field to differentiate this primary's template
+  InPublic.publicArea.unique.keyedHash.size = PrimaryKeyUserDataLength;
+  CopyMem (InPublic.publicArea.unique.keyedHash.buffer, PrimaryKeyUserData, PrimaryKeyUserDataLength);
 
   Status = InternalTpm2CreatePrimary (
              TPM_RH_PLATFORM,   // Use platform hierarchy
@@ -916,29 +918,26 @@ Cleanup:
 }
 
 /**
-   Given the HSM PCI Identifier(serial number) and the Unsealed blob, use manual KDF to derive the BKS3 key
-  @param[in]  TpmPlatformSecret         Pointer to the unsealed blob containing necessary data.
-  @param[in]  Id        Pointer to the PCI Identifier (serial number).
-  @param[in]  IdLength  Length of the PCI Identifier in bytes.
-  @param[out] DerivedKey           Pointer to the structure to hold the derived key material.
+   Given the Unsealed blob, use manual KDF to derive the BKS3 key.
+
+   The HKDF `info` parameter is the fixed string constant AZIHSM_BKS3_HKDF_INFO.
+
+  @param[in]  TpmPlatformSecret    Pointer to the unsealed blob containing necessary data.
+  @param[out] BKS3Key              Pointer to the structure to hold the derived key material.
 
   @retval EFI_SUCCESS              The key derivation completed successfully.
   @retval Others                   An error occurred during the key derivation.
  */
 EFI_STATUS
-AziHsmDeriveBKS3fromId (
+AziHsmDeriveBKS3fromTpmPlatSecret (
   IN AZIHSM_BUFFER        *TpmPlatformSecret,
-  IN UINT8                *Id,
-  IN UINTN                IdLength,
   OUT AZIHSM_DERIVED_KEY  *BKS3Key
   )
 {
   EFI_STATUS  Status;
 
-  if ((TpmPlatformSecret == NULL) || (BKS3Key == NULL) || (Id == NULL) ||
-      (IdLength == 0) || (IdLength > AZIHSM_PCI_IDENTIFIER_MAX_LEN))
-  {
-    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmDeriveBKS3fromId - Invalid parameter\n"));
+  if ((TpmPlatformSecret == NULL) || (BKS3Key == NULL)) {
+    DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmDeriveBKS3fromTpmPlatSecret - Invalid parameter\n"));
     Status = EFI_INVALID_PARAMETER;
     goto Exit;
   }
@@ -956,12 +955,12 @@ AziHsmDeriveBKS3fromId (
   // HKDF-Expand in software using CryptoPkg
 
   Status = ManualHkdfSha256Expand (
-             TpmPlatformSecret->Data,   // PRK from HMAC
-             TpmPlatformSecret->Size,   // PRK size (32 bytes)
-             Id,                        // Context info
-             IdLength,                  // Info size
-             BKS3Key->KeyData,          // Output buffer
-             AZIHSM_DERIVED_KEY_SIZE    // Output size
+             TpmPlatformSecret->Data,            // PRK from HMAC
+             TpmPlatformSecret->Size,            // PRK size (32 bytes)
+             (UINT8 *)AZIHSM_BKS3_HKDF_INFO,     // Context info
+             sizeof (AZIHSM_BKS3_HKDF_INFO) - 1, // Info size (exclude NUL)
+             BKS3Key->KeyData,                   // Output buffer
+             AZIHSM_DERIVED_KEY_SIZE             // Output size
              );
 
   if (EFI_ERROR (Status)) {

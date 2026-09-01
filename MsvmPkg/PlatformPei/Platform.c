@@ -683,39 +683,10 @@ Return Value:
   // without VMBus.
   //
   if (PcdGet64 (PcdLowMmioGapSizeInPages) > 0) {
- #if defined (MDE_CPU_X64)
     HobAddMmioRange (
       PcdGet64 (PcdLowMmioGapBasePageNumber) * SIZE_4KB,
       PcdGet64 (PcdLowMmioGapSizeInPages) * SIZE_4KB
       );
- #elif defined (MDE_CPU_AARCH64)
-    //
-    // For ARM64 we are still using the BiosDevice for runtime services.
-    // However the registers are now in MMIO space instead of IO space. Therefore the
-    // addresses need to be translated after the guest calls SetVirtualAddressMap.
-    // To have the address range included with the guest's call to SetVirtualAddressMap
-    // the range has to be declared as DXE runtime memory. That has to be done in DXE phase
-    // by a driver so the range can't be declared as MMIO here.  Therefore leave that page
-    // out of this early general platform declaration.
-    //
-    UINT64  GapBase         = PcdGet32 (PcdBiosBaseAddress);
-    UINT64  GapSize         = SIZE_4KB;
-    UINT64  FirstRangeBase  = PcdGet64 (PcdLowMmioGapBasePageNumber) * SIZE_4KB;
-    UINT64  FirstRangeSize  = GapBase - FirstRangeBase;
-    UINT64  SecondRangeBase = FirstRangeBase + FirstRangeSize + GapSize;
-    UINT64  SecondRangeSize = (PcdGet64 (PcdLowMmioGapSizeInPages) * SIZE_4KB) -
-                              (FirstRangeSize + GapSize);
-
-    HobAddMmioRange (
-      FirstRangeBase,
-      FirstRangeSize
-      );
-
-    HobAddMmioRange (
-      SecondRangeBase,
-      SecondRangeSize
-      );
- #endif
   }
 
   if (PcdGet64 (PcdHighMmioGapSizeInPages) > 0) {
