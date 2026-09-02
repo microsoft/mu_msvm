@@ -15,8 +15,8 @@
 
 #include <IndustryStandard/Pci.h>
 
-const UINT16 DEFAULT_PCI_VENDOR_ID              = 0x1414; // Microsoft
-const UINT16 DEFAULT_PCI_DEVICE_ID              = 0xb111;
+const UINT16  DEFAULT_PCI_VENDOR_ID = 0x1414;             // Microsoft
+const UINT16  DEFAULT_PCI_DEVICE_ID = 0xb111;
 
 /// \brief      PciIo Protocol Poll mem. Unimplemented.
 ///
@@ -33,19 +33,19 @@ const UINT16 DEFAULT_PCI_DEVICE_ID              = 0xb111;
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoPollMem(
-    IN  EFI_PCI_IO_PROTOCOL          *This,
-    IN  EFI_PCI_IO_PROTOCOL_WIDTH    Width,
-    IN  UINT8                        BarIndex,
-    IN  UINT64                       Offset,
-    IN  UINT64                       Mask,
-    IN  UINT64                       Value,
-    IN  UINT64                       Delay,
-    OUT UINT64                       *Result
-    )
+VpcivscPciIoPollMem (
+  IN  EFI_PCI_IO_PROTOCOL        *This,
+  IN  EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN  UINT8                      BarIndex,
+  IN  UINT64                     Offset,
+  IN  UINT64                     Mask,
+  IN  UINT64                     Value,
+  IN  UINT64                     Delay,
+  OUT UINT64                     *Result
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /// \brief      PciIoProtocol Poll Io. Unimplemented.
@@ -63,19 +63,19 @@ VpcivscPciIoPollMem(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoPollIo(
-    IN  EFI_PCI_IO_PROTOCOL        *This,
-    IN  EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN  UINT8                      BarIndex,
-    IN  UINT64                     Offset,
-    IN  UINT64                     Mask,
-    IN  UINT64                     Value,
-    IN  UINT64                     Delay,
-    OUT UINT64                     *Result
-    )
+VpcivscPciIoPollIo (
+  IN  EFI_PCI_IO_PROTOCOL        *This,
+  IN  EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN  UINT8                      BarIndex,
+  IN  UINT64                     Offset,
+  IN  UINT64                     Mask,
+  IN  UINT64                     Value,
+  IN  UINT64                     Delay,
+  OUT UINT64                     *Result
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /// \brief      Return how big a PciIo protocol width is, in bytes.
@@ -85,55 +85,54 @@ VpcivscPciIoPollIo(
 /// \return     The size in bytes.
 ///
 UINT64
-DecodePciIoProtocolWidth(
-    EFI_PCI_IO_PROTOCOL_WIDTH Width
-    )
+DecodePciIoProtocolWidth (
+  EFI_PCI_IO_PROTOCOL_WIDTH  Width
+  )
 {
-    UINT64 size = 0;
+  UINT64  size = 0;
 
-    // The NVMe driver does not use any of the Fill/Fifo types. Unknown what
-    // they mean, probably a specific pattern for accessing memory/io space but
-    // probably doesn't matter in a VM.
-    switch (Width)
-    {
-        case EfiPciIoWidthFillUint8:
-        case EfiPciIoWidthFifoUint8:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint8:
-            size = 1;
-            break;
+  // The NVMe driver does not use any of the Fill/Fifo types. Unknown what
+  // they mean, probably a specific pattern for accessing memory/io space but
+  // probably doesn't matter in a VM.
+  switch (Width) {
+    case EfiPciIoWidthFillUint8:
+    case EfiPciIoWidthFifoUint8:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint8:
+      size = 1;
+      break;
 
-        case EfiPciIoWidthFifoUint16:
-        case EfiPciIoWidthFillUint16:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint16:
-            size = 2;
-            break;
+    case EfiPciIoWidthFifoUint16:
+    case EfiPciIoWidthFillUint16:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint16:
+      size = 2;
+      break;
 
-        case EfiPciIoWidthFifoUint32:
-        case EfiPciIoWidthFillUint32:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint32:
-            size = 4;
-            break;
+    case EfiPciIoWidthFifoUint32:
+    case EfiPciIoWidthFillUint32:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint32:
+      size = 4;
+      break;
 
-        case EfiPciIoWidthFifoUint64:
-        case EfiPciIoWidthFillUint64:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint64:
-            size = 8;
-            break;
+    case EfiPciIoWidthFifoUint64:
+    case EfiPciIoWidthFillUint64:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint64:
+      size = 8;
+      break;
 
-        default:
-            ASSERT(FALSE);
-            break;
-    }
+    default:
+      ASSERT (FALSE);
+      break;
+  }
 
-    return size;
+  return size;
 }
 
 // \brief      Validate that a given bar is mapped and valid to access
@@ -148,247 +147,241 @@ DecodePciIoProtocolWidth(
 // \return     TRUE if a valid access, FALSE otherwise
 //
 BOOLEAN
-VpcivscValidateBarAccess(
-    PVPCI_DEVICE_CONTEXT Context,
-    EFI_PCI_IO_PROTOCOL_WIDTH Width,
-    UINT8 BarIndex,
-    UINT64 Offset,
-    UINTN Count
-    )
+VpcivscValidateBarAccess (
+  PVPCI_DEVICE_CONTEXT       Context,
+  EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  UINT8                      BarIndex,
+  UINT64                     Offset,
+  UINTN                      Count
+  )
 {
-    ASSERT(BarIndex < PCI_MAX_BAR);
+  ASSERT (BarIndex < PCI_MAX_BAR);
 
-    // Check how big of a region we're accessing. Width * Count gives us that.
-    UINT64 totalSize = Count * DecodePciIoProtocolWidth(Width) + Offset;
+  // Check how big of a region we're accessing. Width * Count gives us that.
+  UINT64  totalSize = Count * DecodePciIoProtocolWidth (Width) + Offset;
 
-    // If we overflowed, can't possibly be valid.
-    if (totalSize < Offset)
-    {
-        return FALSE;
-    }
+  // If we overflowed, can't possibly be valid.
+  if (totalSize < Offset) {
+    return FALSE;
+  }
 
-    // Check the size of access is less than the total size.
-    return (totalSize <= Context->MappedBars[BarIndex].Size);
+  // Check the size of access is less than the total size.
+  return (totalSize <= Context->MappedBars[BarIndex].Size);
 }
 
-  /// \brief      Enable a PCI driver to read from PCI controller registers in PCI
-  ///             memory. Done by accessing the mapped MMIO bar.
-  ///
-  /// NOTE: For VPCI, we only support MMIO space.
-  ///
-  /// \param      This                   A pointer to the EFI_PCI_IO_PROTOCOL
-  ///                                    instance.
-  /// \param      Width                  Signifies the width of the memory or
-  ///                                    I/O operations.
-  /// \param      BarIndex               The BAR index of the standard PCI
-  ///                                    Configuration header to use as the base
-  ///                                    address for the memory or I/O operation
-  ///                                    to perform.
-  /// \param      Offset                 The offset within the selected BAR to
-  ///                                    start the memory or I/O operation.
-  /// \param      Count                  The number of memory or I/O operations
-  ///                                    to perform.
-  /// \param      Buffer                 For read operations, the destination
-  ///                                    buffer to store the results. For write
-  ///                                    operations, the source buffer to write
-  ///                                    data from.
-  /// \retval     EFI_SUCCESS            The data was read from or written to
-  ///                                    the PCI controller.
-  /// \retval     EFI_UNSUPPORTED        BarIndex not valid for this PCI
-  ///                                    controller.
-  /// \retval     EFI_UNSUPPORTED        The address range specified by Offset,
-  ///                                    Width, and Count is not valid for the
-  ///                                    PCI BAR specified by BarIndex.
-  /// \retval     EFI_OUT_OF_RESOURCES   The request could not be completed due
-  ///                                    to a lack of resources.
-  /// \retval     EFI_INVALID_PARAMETER  One or more parameters are invalid.
-  ///
-  /// \return     { description_of_the_return_value }
-  ///
+/// \brief      Enable a PCI driver to read from PCI controller registers in PCI
+///             memory. Done by accessing the mapped MMIO bar.
+///
+/// NOTE: For VPCI, we only support MMIO space.
+///
+/// \param      This                   A pointer to the EFI_PCI_IO_PROTOCOL
+///                                    instance.
+/// \param      Width                  Signifies the width of the memory or
+///                                    I/O operations.
+/// \param      BarIndex               The BAR index of the standard PCI
+///                                    Configuration header to use as the base
+///                                    address for the memory or I/O operation
+///                                    to perform.
+/// \param      Offset                 The offset within the selected BAR to
+///                                    start the memory or I/O operation.
+/// \param      Count                  The number of memory or I/O operations
+///                                    to perform.
+/// \param      Buffer                 For read operations, the destination
+///                                    buffer to store the results. For write
+///                                    operations, the source buffer to write
+///                                    data from.
+/// \retval     EFI_SUCCESS            The data was read from or written to
+///                                    the PCI controller.
+/// \retval     EFI_UNSUPPORTED        BarIndex not valid for this PCI
+///                                    controller.
+/// \retval     EFI_UNSUPPORTED        The address range specified by Offset,
+///                                    Width, and Count is not valid for the
+///                                    PCI BAR specified by BarIndex.
+/// \retval     EFI_OUT_OF_RESOURCES   The request could not be completed due
+///                                    to a lack of resources.
+/// \retval     EFI_INVALID_PARAMETER  One or more parameters are invalid.
+///
+/// \return     { description_of_the_return_value }
+///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoMemRead(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT8                      BarIndex,
-    IN      UINT64                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoMemRead (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT8                      BarIndex,
+  IN      UINT64                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    PVPCI_DEVICE_CONTEXT context = NULL;
+  PVPCI_DEVICE_CONTEXT  context = NULL;
 
-    // DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoMemRead called with width 0x%x, bar index 0x%x, offset %x, count %x\n",
-    //     Width,
-    //     BarIndex,
-    //     Offset,
-    //     Count));
+  // DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoMemRead called with width 0x%x, bar index 0x%x, offset %x, count %x\n",
+  //     Width,
+  //     BarIndex,
+  //     Offset,
+  //     Count));
 
-    if (BarIndex >= PCI_MAX_BAR)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (BarIndex >= PCI_MAX_BAR) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO(This);
+  context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO (This);
 
-    // Read from mapped config space. Bar index tells us which bar to read from, first check if the read is valid.
-    if (!VpcivscValidateBarAccess(context, Width, BarIndex, Offset, Count))
-    {
-        return EFI_UNSUPPORTED;
-    }
+  // Read from mapped config space. Bar index tells us which bar to read from, first check if the read is valid.
+  if (!VpcivscValidateBarAccess (context, Width, BarIndex, Offset, Count)) {
+    return EFI_UNSUPPORTED;
+  }
 
-    // Do the mmio read, starting at the specified address
-    UINTN startAddress = context->MappedBars[BarIndex].MappedAddress + Offset;
-    switch (Width)
-    {
-        case EfiPciIoWidthFillUint8:
-        case EfiPciIoWidthFifoUint8:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint8:
-            MmioReadBuffer8(startAddress, Count, Buffer);
-            break;
+  // Do the mmio read, starting at the specified address
+  UINTN  startAddress = context->MappedBars[BarIndex].MappedAddress + Offset;
 
-        case EfiPciIoWidthFifoUint16:
-        case EfiPciIoWidthFillUint16:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint16:
-            MmioReadBuffer16(startAddress, Count * 2, Buffer);
-            break;
+  switch (Width) {
+    case EfiPciIoWidthFillUint8:
+    case EfiPciIoWidthFifoUint8:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint8:
+      MmioReadBuffer8 (startAddress, Count, Buffer);
+      break;
 
-        case EfiPciIoWidthFifoUint32:
-        case EfiPciIoWidthFillUint32:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint32:
-            MmioReadBuffer32(startAddress, Count * 4, Buffer);
-            break;
+    case EfiPciIoWidthFifoUint16:
+    case EfiPciIoWidthFillUint16:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint16:
+      MmioReadBuffer16 (startAddress, Count * 2, Buffer);
+      break;
 
-        case EfiPciIoWidthFifoUint64:
-        case EfiPciIoWidthFillUint64:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint64:
-            MmioReadBuffer64(startAddress, Count * 8, Buffer);
-            break;
+    case EfiPciIoWidthFifoUint32:
+    case EfiPciIoWidthFillUint32:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint32:
+      MmioReadBuffer32 (startAddress, Count * 4, Buffer);
+      break;
 
-        default:
-            ASSERT(FALSE);
-            return EFI_DEVICE_ERROR;
-    }
+    case EfiPciIoWidthFifoUint64:
+    case EfiPciIoWidthFillUint64:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint64:
+      MmioReadBuffer64 (startAddress, Count * 8, Buffer);
+      break;
 
-    return EFI_SUCCESS;
+    default:
+      ASSERT (FALSE);
+      return EFI_DEVICE_ERROR;
+  }
+
+  return EFI_SUCCESS;
 }
 
-  /// \brief      Enable a PCI driver to write to PCI controller registers in PCI
-  ///             memory. Done by accessing the mapped MMIO bar.
-  ///
-  /// NOTE: For VPCI, we only support MMIO space.
-  ///
-  /// \param      This                   A pointer to the EFI_PCI_IO_PROTOCOL
-  ///                                    instance.
-  /// \param      Width                  Signifies the width of the memory or
-  ///                                    I/O operations.
-  /// \param      BarIndex               The BAR index of the standard PCI
-  ///                                    Configuration header to use as the base
-  ///                                    address for the memory or I/O operation
-  ///                                    to perform.
-  /// \param      Offset                 The offset within the selected BAR to
-  ///                                    start the memory or I/O operation.
-  /// \param      Count                  The number of memory or I/O operations
-  ///                                    to perform.
-  /// \param      Buffer                 For read operations, the destination
-  ///                                    buffer to store the results. For write
-  ///                                    operations, the source buffer to write
-  ///                                    data from.
-  /// \retval     EFI_SUCCESS            The data was read from or written to
-  ///                                    the PCI controller.
-  /// \retval     EFI_UNSUPPORTED        BarIndex not valid for this PCI
-  ///                                    controller.
-  /// \retval     EFI_UNSUPPORTED        The address range specified by Offset,
-  ///                                    Width, and Count is not valid for the
-  ///                                    PCI BAR specified by BarIndex.
-  /// \retval     EFI_OUT_OF_RESOURCES   The request could not be completed due
-  ///                                    to a lack of resources.
-  /// \retval     EFI_INVALID_PARAMETER  One or more parameters are invalid.
-  ///
+/// \brief      Enable a PCI driver to write to PCI controller registers in PCI
+///             memory. Done by accessing the mapped MMIO bar.
+///
+/// NOTE: For VPCI, we only support MMIO space.
+///
+/// \param      This                   A pointer to the EFI_PCI_IO_PROTOCOL
+///                                    instance.
+/// \param      Width                  Signifies the width of the memory or
+///                                    I/O operations.
+/// \param      BarIndex               The BAR index of the standard PCI
+///                                    Configuration header to use as the base
+///                                    address for the memory or I/O operation
+///                                    to perform.
+/// \param      Offset                 The offset within the selected BAR to
+///                                    start the memory or I/O operation.
+/// \param      Count                  The number of memory or I/O operations
+///                                    to perform.
+/// \param      Buffer                 For read operations, the destination
+///                                    buffer to store the results. For write
+///                                    operations, the source buffer to write
+///                                    data from.
+/// \retval     EFI_SUCCESS            The data was read from or written to
+///                                    the PCI controller.
+/// \retval     EFI_UNSUPPORTED        BarIndex not valid for this PCI
+///                                    controller.
+/// \retval     EFI_UNSUPPORTED        The address range specified by Offset,
+///                                    Width, and Count is not valid for the
+///                                    PCI BAR specified by BarIndex.
+/// \retval     EFI_OUT_OF_RESOURCES   The request could not be completed due
+///                                    to a lack of resources.
+/// \retval     EFI_INVALID_PARAMETER  One or more parameters are invalid.
+///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoMemWrite(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT8                      BarIndex,
-    IN      UINT64                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoMemWrite (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT8                      BarIndex,
+  IN      UINT64                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    PVPCI_DEVICE_CONTEXT context = NULL;
+  PVPCI_DEVICE_CONTEXT  context = NULL;
 
-    // DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoMemWrite called with width 0x%x, bar index 0x%x, offset %x, count %x\n",
-    //     Width,
-    //     BarIndex,
-    //     Offset,
-    //     Count));
+  // DEBUG((DEBUG_VPCI_INFO, "VpcivscPciIoMemWrite called with width 0x%x, bar index 0x%x, offset %x, count %x\n",
+  //     Width,
+  //     BarIndex,
+  //     Offset,
+  //     Count));
 
-    if (BarIndex >= PCI_MAX_BAR)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (BarIndex >= PCI_MAX_BAR) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO(This);
+  context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO (This);
 
-    // Read from mapped config space. Bar index tells us which bar to read from, first check if the read is valid.
-    if (!VpcivscValidateBarAccess(context, Width, BarIndex, Offset, Count))
-    {
-        return EFI_UNSUPPORTED;
-    }
+  // Read from mapped config space. Bar index tells us which bar to read from, first check if the read is valid.
+  if (!VpcivscValidateBarAccess (context, Width, BarIndex, Offset, Count)) {
+    return EFI_UNSUPPORTED;
+  }
 
-    // Do the read, width tells us what access size to use for mmio, count how many times.
-    UINTN startAddress = context->MappedBars[BarIndex].MappedAddress + Offset;
-    switch (Width)
-    {
-        case EfiPciIoWidthFillUint8:
-        case EfiPciIoWidthFifoUint8:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint8:
-            MmioWriteBuffer8(startAddress, Count, Buffer);
-            break;
+  // Do the read, width tells us what access size to use for mmio, count how many times.
+  UINTN  startAddress = context->MappedBars[BarIndex].MappedAddress + Offset;
 
-        case EfiPciIoWidthFifoUint16:
-        case EfiPciIoWidthFillUint16:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint16:
-            MmioWriteBuffer16(startAddress, Count * 2, Buffer);
-            break;
+  switch (Width) {
+    case EfiPciIoWidthFillUint8:
+    case EfiPciIoWidthFifoUint8:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint8:
+      MmioWriteBuffer8 (startAddress, Count, Buffer);
+      break;
 
-        case EfiPciIoWidthFifoUint32:
-        case EfiPciIoWidthFillUint32:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint32:
-            MmioWriteBuffer32(startAddress, Count * 4, Buffer);
-            break;
+    case EfiPciIoWidthFifoUint16:
+    case EfiPciIoWidthFillUint16:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint16:
+      MmioWriteBuffer16 (startAddress, Count * 2, Buffer);
+      break;
 
-        case EfiPciIoWidthFifoUint64:
-        case EfiPciIoWidthFillUint64:
-            ASSERT(FALSE);
-            //fallthru
-        case EfiPciIoWidthUint64:
-            MmioWriteBuffer64(startAddress, Count * 8, Buffer);
-            break;
+    case EfiPciIoWidthFifoUint32:
+    case EfiPciIoWidthFillUint32:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint32:
+      MmioWriteBuffer32 (startAddress, Count * 4, Buffer);
+      break;
 
-        default:
-            ASSERT(FALSE);
-            return EFI_DEVICE_ERROR;
-    }
+    case EfiPciIoWidthFifoUint64:
+    case EfiPciIoWidthFillUint64:
+      ASSERT (FALSE);
+    // fallthru
+    case EfiPciIoWidthUint64:
+      MmioWriteBuffer64 (startAddress, Count * 8, Buffer);
+      break;
 
-    return EFI_SUCCESS;
+    default:
+      ASSERT (FALSE);
+      return EFI_DEVICE_ERROR;
+  }
+
+  return EFI_SUCCESS;
 }
-
 
 /// \brief      Read from an IO space PCI config register. Not supported for
 ///             VPCI devices.
@@ -397,17 +390,17 @@ VpcivscPciIoMemWrite(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoIoRead(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT8                      BarIndex,
-    IN      UINT64                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoIoRead (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT8                      BarIndex,
+  IN      UINT64                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /// \brief      Write to an IO space PCI config register. Not supported for
@@ -417,17 +410,17 @@ VpcivscPciIoIoRead(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoIoWrite(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT8                      BarIndex,
-    IN      UINT64                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoIoWrite (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT8                      BarIndex,
+  IN      UINT64                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /// \brief      Read from PCI config space. For VPCI, the only usage of this is
@@ -444,73 +437,69 @@ VpcivscPciIoIoWrite(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoConfigRead(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT32                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoConfigRead (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT32                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    PVPCI_DEVICE_CONTEXT context = NULL;
+  PVPCI_DEVICE_CONTEXT  context = NULL;
 
-    DEBUG((DEBUG_VERBOSE, "VpcivscPciIoConfigRead called with offset 0x%x and count 0x%x\n", Offset, Count));
+  DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoConfigRead called with offset 0x%x and count 0x%x\n", Offset, Count));
 
-    if (Buffer == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (Buffer == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO(This);
+  context = VPCI_DEVICE_CONTEXT_FROM_PCI_IO (This);
 
-    // Get the actual device description for returning real device IDs
-    CONST VPCI_DEVICE_DESCRIPTION *deviceDesc = context->DeviceDescription;
-    switch (Offset)
-    {
-        case PCI_CLASSCODE_OFFSET:
-            if (!((Count == 3) && (Width == EfiPciIoWidthUint8)))
-            {
-                ASSERT(FALSE);
-                return EFI_DEVICE_ERROR;
-            }
+  // Get the actual device description for returning real device IDs
+  CONST VPCI_DEVICE_DESCRIPTION  *deviceDesc = context->DeviceDescription;
 
-            UINT8* classCode = (UINT8*) Buffer;
-            classCode[0] = deviceDesc->IDs.ProgIf;
-            classCode[1] = deviceDesc->IDs.SubClass;
-            classCode[2] = deviceDesc->IDs.BaseClass;
-            break;
-        case PCI_VENDOR_ID_OFFSET:
-            // PCI_VENDOR_ID_OFFSET and PCI_DEVICE_ID_OFFSET can be read together with a count of 2 at offset PCI_VENDOR_ID_OFFSET
-            if (!(((Count == 1) || (Count == 2)) && (Width == EfiPciIoWidthUint16)))
-            {
-                ASSERT(FALSE);
-                return EFI_DEVICE_ERROR;
-            }
+  switch (Offset) {
+    case PCI_CLASSCODE_OFFSET:
+      if (!((Count == 3) && (Width == EfiPciIoWidthUint8))) {
+        ASSERT (FALSE);
+        return EFI_DEVICE_ERROR;
+      }
 
-            UINT16* id = (UINT16*) Buffer;
-            id[0] = deviceDesc->IDs.VendorID;
-            if (Count == 2)
-            {
-                // Read the PCI_DEVICE_ID_OFFSET too
-                id[1] = deviceDesc->IDs.DeviceID;
-            }
-            break;
-        case PCI_DEVICE_ID_OFFSET:
-            if (!((Count == 1) && (Width == EfiPciIoWidthUint16)))
-            {
-                ASSERT(FALSE);
-                return EFI_DEVICE_ERROR;
-            }
-            UINT16* deviceId = (UINT16*) Buffer;
-            *deviceId = deviceDesc->IDs.DeviceID;
-            break;
-        default:
-            ASSERT(FALSE);
-            return EFI_DEVICE_ERROR;
+      UINT8  *classCode = (UINT8 *)Buffer;
+      classCode[0] = deviceDesc->IDs.ProgIf;
+      classCode[1] = deviceDesc->IDs.SubClass;
+      classCode[2] = deviceDesc->IDs.BaseClass;
+      break;
+    case PCI_VENDOR_ID_OFFSET:
+      // PCI_VENDOR_ID_OFFSET and PCI_DEVICE_ID_OFFSET can be read together with a count of 2 at offset PCI_VENDOR_ID_OFFSET
+      if (!(((Count == 1) || (Count == 2)) && (Width == EfiPciIoWidthUint16))) {
+        ASSERT (FALSE);
+        return EFI_DEVICE_ERROR;
+      }
 
-    }
+      UINT16  *id = (UINT16 *)Buffer;
+      id[0] = deviceDesc->IDs.VendorID;
+      if (Count == 2) {
+        // Read the PCI_DEVICE_ID_OFFSET too
+        id[1] = deviceDesc->IDs.DeviceID;
+      }
 
-    return EFI_SUCCESS;
+      break;
+    case PCI_DEVICE_ID_OFFSET:
+      if (!((Count == 1) && (Width == EfiPciIoWidthUint16))) {
+        ASSERT (FALSE);
+        return EFI_DEVICE_ERROR;
+      }
+
+      UINT16  *deviceId = (UINT16 *)Buffer;
+      *deviceId = deviceDesc->IDs.DeviceID;
+      break;
+    default:
+      ASSERT (FALSE);
+      return EFI_DEVICE_ERROR;
+  }
+
+  return EFI_SUCCESS;
 }
 
 /// \brief      Write to PCI config space. Unimplemented.
@@ -519,18 +508,17 @@ VpcivscPciIoConfigRead(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoConfigWrite(
-    IN      EFI_PCI_IO_PROTOCOL        *This,
-    IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
-    IN      UINT32                     Offset,
-    IN      UINTN                      Count,
-    IN OUT  VOID                       *Buffer
-    )
+VpcivscPciIoConfigWrite (
+  IN      EFI_PCI_IO_PROTOCOL        *This,
+  IN      EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN      UINT32                     Offset,
+  IN      UINTN                      Count,
+  IN OUT  VOID                       *Buffer
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
-
 
 /// \brief      Copy memory in PCI config space. Unimplemented.
 ///
@@ -538,18 +526,18 @@ VpcivscPciIoConfigWrite(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoCopyMem(
-    IN  EFI_PCI_IO_PROTOCOL         *This,
-    IN  EFI_PCI_IO_PROTOCOL_WIDTH   Width,
-    IN  UINT8                       DestBarIndex,
-    IN  UINT64                      DestOffset,
-    IN  UINT8                       SrcBarIndex,
-    IN  UINT64                      SrcOffset,
-    IN  UINTN                       Count
-    )
+VpcivscPciIoCopyMem (
+  IN  EFI_PCI_IO_PROTOCOL        *This,
+  IN  EFI_PCI_IO_PROTOCOL_WIDTH  Width,
+  IN  UINT8                      DestBarIndex,
+  IN  UINT64                     DestOffset,
+  IN  UINT8                      SrcBarIndex,
+  IN  UINT64                     SrcOffset,
+  IN  UINTN                      Count
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /// \brief      Provides the PCI controller-specific addresses needed to access
@@ -573,58 +561,57 @@ VpcivscPciIoCopyMem(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoMap(
-    IN      EFI_PCI_IO_PROTOCOL            *This,
-    IN      EFI_PCI_IO_PROTOCOL_OPERATION  Operation,
-    IN      VOID                           *HostAddress,
-    IN OUT  UINTN                          *NumberOfBytes,
-    OUT     EFI_PHYSICAL_ADDRESS           *DeviceAddress,
-    OUT     VOID                           **Mapping
-    )
+VpcivscPciIoMap (
+  IN      EFI_PCI_IO_PROTOCOL            *This,
+  IN      EFI_PCI_IO_PROTOCOL_OPERATION  Operation,
+  IN      VOID                           *HostAddress,
+  IN OUT  UINTN                          *NumberOfBytes,
+  OUT     EFI_PHYSICAL_ADDRESS           *DeviceAddress,
+  OUT     VOID                           **Mapping
+  )
 {
-    if (IoMmuIsPresent ()) {
-        //
-        // Isolated VM: delegate to the IOMMU protocol for bounce buffering.
-        // EFI_PCI_IO_PROTOCOL_OPERATION maps directly to EDKII_IOMMU_OPERATION
-        // because the BusMasterRead / BusMasterWrite / BusMasterCommonBuffer
-        // members share the same ordinal values (0, 1, 2) in both enums.
-        // The STATIC_ASSERTs below catch any future divergence at compile time.
-        //
-        STATIC_ASSERT (
-            (UINT32)EfiPciIoOperationBusMasterRead ==
-            (UINT32)EdkiiIoMmuOperationBusMasterRead,
-            "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterRead mismatch"
-            );
-        STATIC_ASSERT (
-            (UINT32)EfiPciIoOperationBusMasterWrite ==
-            (UINT32)EdkiiIoMmuOperationBusMasterWrite,
-            "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterWrite mismatch"
-            );
-        STATIC_ASSERT (
-            (UINT32)EfiPciIoOperationBusMasterCommonBuffer ==
-            (UINT32)EdkiiIoMmuOperationBusMasterCommonBuffer,
-            "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterCommonBuffer mismatch"
-            );
-
-        return IoMmuMap (
-                   (EDKII_IOMMU_OPERATION)Operation,
-                   HostAddress,
-                   NumberOfBytes,
-                   DeviceAddress,
-                   Mapping
-                   );
-    }
-
+  if (IoMmuIsPresent ()) {
     //
-    // No IoMmu bounce case: the VSC has DMA access to all pages.
-    // Just return the address of the buffer.
+    // Isolated VM: delegate to the IOMMU protocol for bounce buffering.
+    // EFI_PCI_IO_PROTOCOL_OPERATION maps directly to EDKII_IOMMU_OPERATION
+    // because the BusMasterRead / BusMasterWrite / BusMasterCommonBuffer
+    // members share the same ordinal values (0, 1, 2) in both enums.
+    // The STATIC_ASSERTs below catch any future divergence at compile time.
     //
-    *DeviceAddress = (UINTN)HostAddress;
-    *Mapping = NULL;
+    STATIC_ASSERT (
+      (UINT32)EfiPciIoOperationBusMasterRead ==
+      (UINT32)EdkiiIoMmuOperationBusMasterRead,
+      "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterRead mismatch"
+      );
+    STATIC_ASSERT (
+      (UINT32)EfiPciIoOperationBusMasterWrite ==
+      (UINT32)EdkiiIoMmuOperationBusMasterWrite,
+      "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterWrite mismatch"
+      );
+    STATIC_ASSERT (
+      (UINT32)EfiPciIoOperationBusMasterCommonBuffer ==
+      (UINT32)EdkiiIoMmuOperationBusMasterCommonBuffer,
+      "EFI_PCI_IO_PROTOCOL_OPERATION/EDKII_IOMMU_OPERATION BusMasterCommonBuffer mismatch"
+      );
 
-    return EFI_SUCCESS;
+    return IoMmuMap (
+             (EDKII_IOMMU_OPERATION)Operation,
+             HostAddress,
+             NumberOfBytes,
+             DeviceAddress,
+             Mapping
+             );
+  }
+
+  //
+  // No IoMmu bounce case: the VSC has DMA access to all pages.
+  // Just return the address of the buffer.
+  //
+  *DeviceAddress = (UINTN)HostAddress;
+  *Mapping       = NULL;
+
+  return EFI_SUCCESS;
 }
-
 
 /// \brief      Unmap the buffer mapped by the corresponding call to PciIoMap.
 ///             For VPCI, also a noop.
@@ -636,17 +623,17 @@ VpcivscPciIoMap(
 ///
 EFI_STATUS
 EFIAPI
-VpcivscPciIoUnmap(
-    IN  EFI_PCI_IO_PROTOCOL  *This,
-    IN  VOID                 *Mapping
-    )
+VpcivscPciIoUnmap (
+  IN  EFI_PCI_IO_PROTOCOL  *This,
+  IN  VOID                 *Mapping
+  )
 {
-    if (IoMmuIsPresent ()) {
-        return IoMmuUnmap (Mapping);
-    }
+  if (IoMmuIsPresent ()) {
+    return IoMmuUnmap (Mapping);
+  }
 
-    // No IoMmu bounce case: nothing to do since Map is a noop.
-    return EFI_SUCCESS;
+  // No IoMmu bounce case: nothing to do since Map is a noop.
+  return EFI_SUCCESS;
 }
 
 /**
@@ -671,94 +658,91 @@ VpcivscPciIoUnmap(
 **/
 EFI_STATUS
 EFIAPI
-VpcivscPciIoAllocateBuffer(
-    IN  EFI_PCI_IO_PROTOCOL   *This,
-    IN  EFI_ALLOCATE_TYPE     Type,
-    IN  EFI_MEMORY_TYPE       MemoryType,
-    IN  UINTN                 Pages,
-    OUT VOID                  **HostAddress,
-    IN  UINT64                Attributes
-    )
+VpcivscPciIoAllocateBuffer (
+  IN  EFI_PCI_IO_PROTOCOL  *This,
+  IN  EFI_ALLOCATE_TYPE    Type,
+  IN  EFI_MEMORY_TYPE      MemoryType,
+  IN  UINTN                Pages,
+  OUT VOID                 **HostAddress,
+  IN  UINT64               Attributes
+  )
 {
-    DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoAllocateBuffer called with pages %x\n", Pages));
+  DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoAllocateBuffer called with pages %x\n", Pages));
 
-    if (IoMmuIsPresent ()) {
-        //
-        // Isolated VM: delegate to the IOMMU protocol which allocates
-        // host-visible memory and returns a shared VA.
-        //
-        return IoMmuAllocateBuffer (Type, MemoryType, Pages, HostAddress, Attributes);
-    }
-
+  if (IoMmuIsPresent ()) {
     //
-    // Non-isolated VM: just allocate memory normally.
+    // Isolated VM: delegate to the IOMMU protocol which allocates
+    // host-visible memory and returns a shared VA.
     //
-    if (Attributes != 0)
-    {
-        ASSERT (FALSE);
-        return EFI_UNSUPPORTED;
-    }
+    return IoMmuAllocateBuffer (Type, MemoryType, Pages, HostAddress, Attributes);
+  }
 
-    if (MemoryType != EfiBootServicesData)
-    {
-        ASSERT (FALSE);
-        return EFI_UNSUPPORTED;
-    }
+  //
+  // Non-isolated VM: just allocate memory normally.
+  //
+  if (Attributes != 0) {
+    ASSERT (FALSE);
+    return EFI_UNSUPPORTED;
+  }
 
-    *HostAddress = AllocatePages (Pages);
-    if (*HostAddress == NULL)
-    {
-        return EFI_OUT_OF_RESOURCES;
-    }
+  if (MemoryType != EfiBootServicesData) {
+    ASSERT (FALSE);
+    return EFI_UNSUPPORTED;
+  }
 
-    return EFI_SUCCESS;
+  *HostAddress = AllocatePages (Pages);
+  if (*HostAddress == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
-VpcivscPciIoFreeBuffer(
-    IN  EFI_PCI_IO_PROTOCOL   *This,
-    IN  UINTN                 Pages,
-    IN  VOID                  *HostAddress
-    )
+VpcivscPciIoFreeBuffer (
+  IN  EFI_PCI_IO_PROTOCOL  *This,
+  IN  UINTN                Pages,
+  IN  VOID                 *HostAddress
+  )
 {
-    DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoFreeBuffer called with addr %llx pages %x\n", HostAddress, Pages));
+  DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoFreeBuffer called with addr %llx pages %x\n", HostAddress, Pages));
 
-    if (IoMmuIsPresent ()) {
-        //
-        // Isolated VM: delegate to the IOMMU protocol which revokes
-        // host visibility and frees the pages.
-        //
-        return IoMmuFreeBuffer (Pages, HostAddress);
-    }
+  if (IoMmuIsPresent ()) {
+    //
+    // Isolated VM: delegate to the IOMMU protocol which revokes
+    // host visibility and frees the pages.
+    //
+    return IoMmuFreeBuffer (Pages, HostAddress);
+  }
 
-    FreePages (HostAddress, Pages);
+  FreePages (HostAddress, Pages);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
-VpcivscPciIoFlush(
-    IN  EFI_PCI_IO_PROTOCOL  *This
-    )
+VpcivscPciIoFlush (
+  IN  EFI_PCI_IO_PROTOCOL  *This
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 EFI_STATUS
 EFIAPI
-VpcivscPciIoGetLocation(
-    IN  EFI_PCI_IO_PROTOCOL  *This,
-    OUT UINTN                *Segment,
-    OUT UINTN                *Bus,
-    OUT UINTN                *Device,
-    OUT UINTN                *Function
-    )
+VpcivscPciIoGetLocation (
+  IN  EFI_PCI_IO_PROTOCOL  *This,
+  OUT UINTN                *Segment,
+  OUT UINTN                *Bus,
+  OUT UINTN                *Device,
+  OUT UINTN                *Function
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 /**
@@ -782,44 +766,44 @@ VpcivscPciIoGetLocation(
 **/
 EFI_STATUS
 EFIAPI
-VpcivscPciIoAttributes(
-    IN  EFI_PCI_IO_PROTOCOL                       * This,
-    IN  EFI_PCI_IO_PROTOCOL_ATTRIBUTE_OPERATION  Operation,
-    IN  UINT64                                   Attributes,
-    OUT UINT64                                   *Result OPTIONAL
-    )
+VpcivscPciIoAttributes (
+  IN  EFI_PCI_IO_PROTOCOL                      *This,
+  IN  EFI_PCI_IO_PROTOCOL_ATTRIBUTE_OPERATION  Operation,
+  IN  UINT64                                   Attributes,
+  OUT UINT64                                   *Result OPTIONAL
+  )
 {
-    DEBUG((DEBUG_VERBOSE, "VpcivscPciIoAttributes called\n"));
+  DEBUG ((DEBUG_VERBOSE, "VpcivscPciIoAttributes called\n"));
 
-    // These are meaningless for VPCI. Our VSC pretends to be a Windows VSC, so
-    // the PdoD0Entry packet handles the correct bus enable on the host side.
+  // These are meaningless for VPCI. Our VSC pretends to be a Windows VSC, so
+  // the PdoD0Entry packet handles the correct bus enable on the host side.
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
-VpcivscPciIoGetBarAttributes(
-    IN  EFI_PCI_IO_PROTOCOL             * This,
-    IN  UINT8                          BarIndex,
-    OUT UINT64                         *Supports, OPTIONAL
-    OUT VOID                           **Resources OPTIONAL
-    )
+VpcivscPciIoGetBarAttributes (
+  IN  EFI_PCI_IO_PROTOCOL *This,
+  IN  UINT8 BarIndex,
+  OUT UINT64 *Supports, OPTIONAL
+  OUT VOID                           **Resources OPTIONAL
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }
 
 EFI_STATUS
 EFIAPI
-VpcivscPciIoSetBarAttributes(
-    IN      EFI_PCI_IO_PROTOCOL          *This,
-    IN      UINT64                       Attributes,
-    IN      UINT8                        BarIndex,
-    IN OUT  UINT64                       *Offset,
-    IN OUT  UINT64                       *Length
-    )
+VpcivscPciIoSetBarAttributes (
+  IN      EFI_PCI_IO_PROTOCOL  *This,
+  IN      UINT64               Attributes,
+  IN      UINT8                BarIndex,
+  IN OUT  UINT64               *Offset,
+  IN OUT  UINT64               *Length
+  )
 {
-    ASSERT(FALSE);
-    return EFI_DEVICE_ERROR;
+  ASSERT (FALSE);
+  return EFI_DEVICE_ERROR;
 }

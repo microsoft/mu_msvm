@@ -8,9 +8,9 @@
 // It should work with them all removed.
 // MSC does support standard _Pragma but so far __pragma feels easier to use.
 #if defined (_MSC_VER) && !defined (__clang__)
-#define PRAGMA(x) __pragma(x)
+#define PRAGMA(x)  __pragma(x)
 #else
-#define PRAGMA(x) _Pragma(#x)
+#define PRAGMA(x)  _Pragma(#x)
 #endif
 
 #define CLANG_PRAGMA(x)
@@ -18,12 +18,12 @@
 #define MS_PRAGMA(x)
 
 #if defined (__clang__)
-#undef CLANG_PRAGMA
-#define CLANG_PRAGMA PRAGMA
+  #undef CLANG_PRAGMA
+#define CLANG_PRAGMA  PRAGMA
 #elif defined (__GNUC__)
-#undef GCC_PRAGMA
-#define GCC_PRAGMA PRAGMA
+  #undef GCC_PRAGMA
+#define GCC_PRAGMA  PRAGMA
 #elif defined (_MSC_VER)
-#undef MS_PRAGMA
-#define MS_PRAGMA PRAGMA
+  #undef MS_PRAGMA
+#define MS_PRAGMA  PRAGMA
 #endif

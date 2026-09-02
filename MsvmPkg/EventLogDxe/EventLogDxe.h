@@ -18,4 +18,4 @@
 #include <BiosBootLogInterface.h>
 #include <Protocol/EfiHv.h>
 #include <Protocol/EventLog.h>
-extern EFI_HV_IVM_PROTOCOL *mHvIvm;
+extern EFI_HV_IVM_PROTOCOL  *mHvIvm;

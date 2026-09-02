@@ -7,9 +7,10 @@
 #include "EfiHvInternal.h"
 
 UINTN
-EfiHvpSharedPa(
-  VOID *Address
+EfiHvpSharedPa (
+  VOID  *Address
   )
+
 /**
   Given an address, which may be either a VA or a PA, removes any
   canonicalization bits and returns the shared GPA corresponding to the
@@ -21,12 +22,11 @@ EfiHvpSharedPa(
 
 **/
 {
-  UINTN addr;
+  UINTN  addr;
 
-  addr = (UINTN)Address;
+  addr  = (UINTN)Address;
   addr &= ~mCanonicalizationMask;
-  if (addr < mSharedGpaBoundary)
-  {
+  if (addr < mSharedGpaBoundary) {
     addr += mSharedGpaBoundary;
   }
 
@@ -34,9 +34,10 @@ EfiHvpSharedPa(
 }
 
 VOID *
-EfiHvpSharedVa(
-  VOID *Address
+EfiHvpSharedVa (
+  VOID  *Address
   )
+
 /**
   Given an address, which may be either a VA or a PA, returns a canonicalized
   pointer pointing to the shared GPA alias.
@@ -47,13 +48,14 @@ EfiHvpSharedVa(
 
 **/
 {
-  return (VOID *)(EfiHvpSharedPa(Address) | mCanonicalizationMask);
+  return (VOID *)(EfiHvpSharedPa (Address) | mCanonicalizationMask);
 }
 
 UINTN
-EfiHvpBasePa(
-  UINTN Address
+EfiHvpBasePa (
+  UINTN  Address
   )
+
 /**
   Given an address, returns the private alias GPA corresponding to that
   address.
@@ -65,8 +67,7 @@ EfiHvpBasePa(
 **/
 {
   Address &= ~mCanonicalizationMask;
-  if (Address >= mSharedGpaBoundary)
-  {
+  if (Address >= mSharedGpaBoundary) {
     Address -= mSharedGpaBoundary;
   }
 
@@ -75,11 +76,12 @@ EfiHvpBasePa(
 
 HV_STATUS
 EfiHvIssueHypercall (
-  IN  HV_CALL_CODE CallCode,
-  IN  BOOLEAN Fast,
-  IN  UINT64 FirstRegister,
-  IN  UINT64 SecondRegister
+  IN  HV_CALL_CODE  CallCode,
+  IN  BOOLEAN       Fast,
+  IN  UINT64        FirstRegister,
+  IN  UINT64        SecondRegister
   )
+
 /*++
   Issues a hypercall.
 
@@ -98,20 +100,22 @@ EfiHvIssueHypercall (
 --*/
 {
   return
-    HvHypercallIssue(
+    HvHypercallIssue (
       mUseBypassContext ? &mHvBypassContext : &mHvContext,
       CallCode,
       Fast,
       0,
       FirstRegister,
       SecondRegister,
-      NULL);
+      NULL
+      );
 }
 
 EFI_STATUS
 EfiHvConvertStatus (
-  IN  HV_STATUS Status
+  IN  HV_STATUS  Status
   )
+
 /*++
   Converts a hypervisor status code into an EFI status code.
 
@@ -121,15 +125,14 @@ EfiHvConvertStatus (
 
 --*/
 {
-  switch (Status)
-  {
-  case HV_STATUS_SUCCESS:
-    return EFI_SUCCESS;
+  switch (Status) {
+    case HV_STATUS_SUCCESS:
+      return EFI_SUCCESS;
 
-  case HV_STATUS_INVALID_PARAMETER:
-    return EFI_INVALID_PARAMETER;
+    case HV_STATUS_INVALID_PARAMETER:
+      return EFI_INVALID_PARAMETER;
 
-  default:
-    return EFI_DEVICE_ERROR;
+    default:
+      return EFI_DEVICE_ERROR;
   }
 }

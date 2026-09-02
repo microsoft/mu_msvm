@@ -17,10 +17,11 @@
 
 EFI_STATUS
 EFIAPI
-BootEventLogConstructor(
-    IN  EFI_HANDLE          ImageHandle,
-    IN  EFI_SYSTEM_TABLE    *SystemTable
-    )
+BootEventLogConstructor (
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -39,18 +40,18 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventStart(
-    IN  const EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
-        UINT16                          BootVariableNumber,
-    IN  BOOT_DEVICE_STATUS              InitialStatus,
-        EFI_STATUS                      ExtendedStatus
-    )
+BootDeviceEventStart (
+  IN  const EFI_DEVICE_PATH_PROTOCOL  *DevicePath,
+  UINT16                              BootVariableNumber,
+  IN  BOOT_DEVICE_STATUS              InitialStatus,
+  EFI_STATUS                          ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -73,16 +74,16 @@ Return Value:
 
 --*/
 {
-   return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventUpdate(
-    IN  BOOT_DEVICE_STATUS  Status,
-        EFI_STATUS          ExtendedStatus
-    )
+BootDeviceEventUpdate (
+  IN  BOOT_DEVICE_STATUS  Status,
+  EFI_STATUS              ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -101,16 +102,16 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventPendingStatus(
-    OUT BOOT_DEVICE_STATUS  *Status,
-    OUT EFI_STATUS          *ExtendedStatus
-    )
+BootDeviceEventPendingStatus (
+  OUT BOOT_DEVICE_STATUS  *Status,
+  OUT EFI_STATUS          *ExtendedStatus
+  )
+
 /*++
 
 Routine Description:
@@ -130,15 +131,15 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventComplete(
-    VOID
-    )
+BootDeviceEventComplete (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -156,16 +157,15 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventResetLog(
-    VOID
-    )
+BootDeviceEventResetLog (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -182,15 +182,15 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventFlushLog(
-    VOID
-    )
+BootDeviceEventFlushLog (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -207,15 +207,15 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventStatistics(
-    OUT EVENT_CHANNEL_STATISTICS    *Stats
-    )
+BootDeviceEventStatistics (
+  OUT EVENT_CHANNEL_STATISTICS  *Stats
+  )
+
 /*++
 
 Routine Description:
@@ -232,16 +232,16 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-BootDeviceEventEnumerate(
-    IN  EFI_EVENTLOG_ENUMERATE_CALLBACK Callback,
-    IN  const VOID                      *Context
-    )
+BootDeviceEventEnumerate (
+  IN  EFI_EVENTLOG_ENUMERATE_CALLBACK  Callback,
+  IN  const VOID                       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -261,5 +261,5 @@ Return Value:
 
 --*/
 {
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

@@ -41,14 +41,13 @@ Return Value:
 
 --*/
 EFI_STATUS
-EfiUpdatePageRangeAcceptance(
-                UINT32              IsolationType,
-    IN OPTIONAL VOID                *SvsmCallingArea,
-                HV_GPA_PAGE_NUMBER  StartingPageNumber,
-                UINT64              PageCount,
-                BOOLEAN             Accept
-    );
-
+EfiUpdatePageRangeAcceptance (
+  UINT32              IsolationType,
+  IN OPTIONAL VOID    *SvsmCallingArea,
+  HV_GPA_PAGE_NUMBER  StartingPageNumber,
+  UINT64              PageCount,
+  BOOLEAN             Accept
+  );
 
 /*++
 
@@ -86,13 +85,13 @@ Return Value:
 
 --*/
 EFI_STATUS
-EfiMakePageRangeHostVisible(
-                    UINT32              IsolationType,
-    IN OPTIONAL     VOID                *SvsmCallingArea,
-                    HV_GPA_PAGE_NUMBER  StartingPageNumber,
-                    UINT64              PageCount,
-    OUT OPTIONAL    UINT64              *PagesProcessed
-    );
+EfiMakePageRangeHostVisible (
+  UINT32                  IsolationType,
+  IN OPTIONAL     VOID    *SvsmCallingArea,
+  HV_GPA_PAGE_NUMBER      StartingPageNumber,
+  UINT64                  PageCount,
+  OUT OPTIONAL    UINT64  *PagesProcessed
+  );
 
 /*++
 
@@ -129,10 +128,10 @@ Return Value:
 
 --*/
 EFI_STATUS
-EfiMakePageRangeHostNotVisible(
-                    UINT32              IsolationType,
-    IN OPTIONAL     VOID                *SvsmCallingArea,
-                    HV_GPA_PAGE_NUMBER  PageNumber,
-                    UINT64              PageCount,
-    OUT OPTIONAL    UINT64              *PagesProcessed
-    );
+EfiMakePageRangeHostNotVisible (
+  UINT32                  IsolationType,
+  IN OPTIONAL     VOID    *SvsmCallingArea,
+  HV_GPA_PAGE_NUMBER      PageNumber,
+  UINT64                  PageCount,
+  OUT OPTIONAL    UINT64  *PagesProcessed
+  );

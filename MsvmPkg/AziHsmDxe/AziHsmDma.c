@@ -86,7 +86,7 @@ AziHsmDmaBufferFree (
   )
 {
   UINTN  NumberOfPages = 0;
-  
+
   if (DmaBuffer == NULL) {
     return EFI_INVALID_PARAMETER;
   }
@@ -116,7 +116,7 @@ AziHsmDmaBufferFree (
   // Clear remaining fields to prevent use-after-free
   DmaBuffer->DeviceAddress = 0;
   DmaBuffer->NumberOfBytes = 0;
-  DmaBuffer->PciIo = NULL;
+  DmaBuffer->PciIo         = NULL;
 
   return EFI_SUCCESS;
 }

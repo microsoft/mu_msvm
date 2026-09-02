@@ -56,11 +56,11 @@ Tcg2PlatformDxeEntryPoint (
   IN    EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  EFI_STATUS     Status;
+  EFI_STATUS  Status;
   // MS_HYP_CHANGE BEGIN
   // EFI_BOOT_MODE  BootMode;
   // MS_HYP_CHANGE END
-  EFI_EVENT      Event;
+  EFI_EVENT  Event;
 
   // MS_HYP_CHANGE BEGIN
   // BootMode = GetBootModeHob ();
@@ -69,16 +69,16 @@ Tcg2PlatformDxeEntryPoint (
   // occur, since capsule reset will occur first).
   // if (BootMode == BOOT_ON_FLASH_UPDATE) {
 
-    //
-    // Lock the TPM platform hierarchy at ReadyToBoot rather than EndOfDxe.
-    // AziHsmDxe needs access to the TPM platform hierarchy during
-    // DriverBindingStart, which executes after EndOfDxe. Moving the lock to
-    // ReadyToBoot gives AziHsmDxe the window it needs. This cannot be done
-    // from AziHsmDxe's DriverEntry because DriverEntry runs unconditionally
-    // and cannot check for the presence of an AziHsm device, which would
-    // cause TPM operations to execute unnecessarily on non-AziHsm VMs.
-    //
-    Status = EfiCreateEventReadyToBootEx (TPL_CALLBACK, TpmReadyToLockEventCallBack, NULL, &Event);
+  //
+  // Lock the TPM platform hierarchy at ReadyToBoot rather than EndOfDxe.
+  // AziHsmDxe needs access to the TPM platform hierarchy during
+  // DriverBindingStart, which executes after EndOfDxe. Moving the lock to
+  // ReadyToBoot gives AziHsmDxe the window it needs. This cannot be done
+  // from AziHsmDxe's DriverEntry because DriverEntry runs unconditionally
+  // and cannot check for the presence of an AziHsm device, which would
+  // cause TPM operations to execute unnecessarily on non-AziHsm VMs.
+  //
+  Status = EfiCreateEventReadyToBootEx (TPL_CALLBACK, TpmReadyToLockEventCallBack, NULL, &Event);
   // } else {
   //   // In all other boot paths, disable TPM Platform Hierarchy at EndOfDxe.
   //   Status = gBS->CreateEventEx (

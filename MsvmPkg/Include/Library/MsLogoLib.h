@@ -6,7 +6,6 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 
-
 #ifndef _MS_LOGO_LIB_H_
 #define _MS_LOGO_LIB_H_
 
@@ -25,7 +24,6 @@ EFIAPI
 EnableQuietBoot (
   IN  EFI_GUID  *LogoFile
   );
-
 
 /**
   Use SystemTable ConOut to turn on video based Simple Text Out consoles. The
@@ -53,9 +51,8 @@ DisableQuietBoot (
 EFI_STATUS
 EFIAPI
 MsLogoLibSetConsoleMode (
-    BOOLEAN  IsVgaMode,
-    BOOLEAN  DrawLogo
-    );
+  BOOLEAN  IsVgaMode,
+  BOOLEAN  DrawLogo
+  );
 
 #endif
-

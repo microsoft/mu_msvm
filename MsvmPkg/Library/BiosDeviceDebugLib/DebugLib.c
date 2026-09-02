@@ -18,10 +18,9 @@
 
 #include <BiosInterface.h>
 
-
 // -------------------------------------------------------------------- Defines
 
-#define DEBUG_PRINT_MAX_SIZE 1024
+#define DEBUG_PRINT_MAX_SIZE  1024
 
 // ------------------------------------------------------------------ Functions
 
@@ -35,52 +34,54 @@
 //
 static
 VOID
-WriteBiosDevice(
-    IN UINT32 AddressRegisterValue,
-    IN UINT32 DataRegisterValue
-    )
+WriteBiosDevice (
+  IN UINT32  AddressRegisterValue,
+  IN UINT32  DataRegisterValue
+  )
 {
-    UINTN biosBaseAddress = PcdGet32(PcdBiosBaseAddress);
-#if defined(MDE_CPU_AARCH64)
-    MmioWrite32(biosBaseAddress, AddressRegisterValue);
-    MmioWrite32(biosBaseAddress + 4, DataRegisterValue);
-#elif defined(MDE_CPU_X64)
-    IoWrite32(biosBaseAddress, AddressRegisterValue);
-    IoWrite32(biosBaseAddress + 4, DataRegisterValue);
-#endif
+  UINTN  biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+
+ #if defined (MDE_CPU_AARCH64)
+  MmioWrite32 (biosBaseAddress, AddressRegisterValue);
+  MmioWrite32 (biosBaseAddress + 4, DataRegisterValue);
+ #elif defined (MDE_CPU_X64)
+  IoWrite32 (biosBaseAddress, AddressRegisterValue);
+  IoWrite32 (biosBaseAddress + 4, DataRegisterValue);
+ #endif
 }
 
 static
 UINT32
-ReadBiosDevice(
-    IN UINT32 AddressRegisterValue
-    )
+ReadBiosDevice (
+  IN UINT32  AddressRegisterValue
+  )
 {
-    UINTN biosBaseAddress = PcdGet32(PcdBiosBaseAddress);
-#if defined(MDE_CPU_AARCH64)
-    MmioWrite32(biosBaseAddress, AddressRegisterValue);
-    return MmioRead32(biosBaseAddress + 4);
-#elif defined(MDE_CPU_X64)
-    IoWrite32(biosBaseAddress, AddressRegisterValue);
-    return IoRead32(biosBaseAddress + 4);
-#endif
+  UINTN  biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+
+ #if defined (MDE_CPU_AARCH64)
+  MmioWrite32 (biosBaseAddress, AddressRegisterValue);
+  return MmioRead32 (biosBaseAddress + 4);
+ #elif defined (MDE_CPU_X64)
+  IoWrite32 (biosBaseAddress, AddressRegisterValue);
+  return IoRead32 (biosBaseAddress + 4);
+ #endif
 }
 
 VOID
 EFIAPI
-DebugPrintString(
-    IN  CHAR8 *String,
-    IN  UINTN Length
-    );
-
+DebugPrintString (
+  IN  CHAR8  *String,
+  IN  UINTN  Length
+  );
 
 VOID
 EFIAPI
-DebugPrint(
-    IN  UINTN       ErrorLevel,
-    IN  CONST CHAR8 *String,
-    ...
-    )
+DebugPrint (
+  IN  UINTN        ErrorLevel,
+  IN  CONST CHAR8  *String,
+  ...
+  )
+
 /*++
 
 Routine Description:
@@ -109,26 +110,26 @@ Return value:
 
 --*/
 {
-    CHAR8 buffer[DEBUG_PRINT_MAX_SIZE];
-    VA_LIST marker;
+  CHAR8    buffer[DEBUG_PRINT_MAX_SIZE];
+  VA_LIST  marker;
 
-    ASSERT(String != NULL);
+  ASSERT (String != NULL);
 
-    VA_START(marker, String);
-    AsciiVSPrint(buffer, sizeof(buffer), String, marker);
-    VA_END (marker);
+  VA_START (marker, String);
+  AsciiVSPrint (buffer, sizeof (buffer), String, marker);
+  VA_END (marker);
 
-    DebugPrintString(buffer, sizeof(buffer));
+  DebugPrintString (buffer, sizeof (buffer));
 }
-
 
 VOID
 EFIAPI
 DebugAssert (
-    IN  CONST CHAR8 *FileName,
-    IN  UINTN       LineNumber,
-    IN  CONST CHAR8 *Description
-    )
+  IN  CONST CHAR8  *FileName,
+  IN  UINTN        LineNumber,
+  IN  CONST CHAR8  *Description
+  )
+
 /*++
 
 Routine Description:
@@ -150,26 +151,28 @@ Return Value:
 
 --*/
 {
-    CHAR8 buffer[DEBUG_PRINT_MAX_SIZE];
-    UINTN length = AsciiSPrint(buffer,
-                               DEBUG_PRINT_MAX_SIZE - 1,
-                               "**ASSERT** FILE: %a LINE: %ull DESC: %a\n",
-                               FileName,
-                               LineNumber,
-                               Description);
+  CHAR8  buffer[DEBUG_PRINT_MAX_SIZE];
+  UINTN  length = AsciiSPrint (
+                    buffer,
+                    DEBUG_PRINT_MAX_SIZE - 1,
+                    "**ASSERT** FILE: %a LINE: %ull DESC: %a\n",
+                    FileName,
+                    LineNumber,
+                    Description
+                    );
 
-    DebugPrintString(buffer, length + 1); // Include null
+  DebugPrintString (buffer, length + 1);  // Include null
 
-    return;
+  return;
 }
-
 
 VOID *
 EFIAPI
 DebugClearMemory (
-    OUT VOID    *Buffer,
-    IN  UINTN   Length
-    )
+  OUT VOID   *Buffer,
+  IN  UINTN  Length
+  )
+
 /*++
 
 Routine Description:
@@ -195,15 +198,15 @@ Return Value:
 
 --*/
 {
-    return Buffer;
+  return Buffer;
 }
-
 
 BOOLEAN
 EFIAPI
 DebugAssertEnabled (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -220,15 +223,15 @@ Return Value:
 
 --*/
 {
-    return TRUE;
+  return TRUE;
 }
-
 
 BOOLEAN
 EFIAPI
 DebugPrintEnabled (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -245,15 +248,15 @@ Return Value:
 
 --*/
 {
-    return TRUE;
+  return TRUE;
 }
-
 
 BOOLEAN
 EFIAPI
 DebugCodeEnabled (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -270,15 +273,15 @@ Return Value:
 
 --*/
 {
-    return TRUE;
+  return TRUE;
 }
-
 
 BOOLEAN
 EFIAPI
 DebugClearMemoryEnabled (
-    VOID
-    )
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -295,15 +298,15 @@ Return Value:
 
 --*/
 {
-    return FALSE;
+  return FALSE;
 }
-
 
 BOOLEAN
 EFIAPI
-DebugPrintLevelEnabled(
-    IN  CONST UINTN        ErrorLevel
-    )
+DebugPrintLevelEnabled (
+  IN  CONST UINTN  ErrorLevel
+  )
+
 /*++
 
 Routine Description:
@@ -323,16 +326,16 @@ Return Value:
 
 --*/
 {
-  return (BOOLEAN) ((ErrorLevel & PcdGet32(PcdDebugPrintErrorLevel)) != 0);
+  return (BOOLEAN)((ErrorLevel & PcdGet32 (PcdDebugPrintErrorLevel)) != 0);
 }
-
 
 VOID
 EFIAPI
-DebugPrintString(
-    IN  CHAR8 *String,
-    IN  UINTN Length
-    )
+DebugPrintString (
+  IN  CHAR8  *String,
+  IN  UINTN  Length
+  )
+
 /*++
 
 Routine Description:
@@ -353,13 +356,13 @@ Return Value:
 
 --*/
 {
-    //
-    // Ensure it is null terminated.
-    //
-    String[Length - 1] = 0;
+  //
+  // Ensure it is null terminated.
+  //
+  String[Length - 1] = 0;
 
-    //
-    // Intercept the Bios VDev with the correct codepoint and buffer GPA.
-    //
-    WriteBiosDevice(BiosDebugOutputString, (UINT32)(UINTN)String);
+  //
+  // Intercept the Bios VDev with the correct codepoint and buffer GPA.
+  //
+  WriteBiosDevice (BiosDebugOutputString, (UINT32)(UINTN)String);
 }

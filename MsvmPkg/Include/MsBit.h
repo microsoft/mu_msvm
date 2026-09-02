@@ -3,9 +3,18 @@
 #pragma once
 #include <stddef.h>
 
-UINT8 BitScanForward64 (UINT32 *index, UINT64 value);
+UINT8
+BitScanForward64 (
+  UINT32  *index,
+  UINT64  value
+  );
 
-void SetBit (void *Bits, size_t Index);
+void
+SetBit (
+  void    *Bits,
+  size_t  Index
+  );
+
 // Not atomic.
 // Like Intel bts and Visual C++ _bittestandset64 except:
 //   no return value

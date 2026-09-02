@@ -30,19 +30,18 @@
 //
 // Global Variables
 //
-extern EFI_DRIVER_BINDING_PROTOCOL  gSynthKeyDriverBinding;
-extern EFI_COMPONENT_NAME_PROTOCOL  gSynthKeyComponentName;
-extern EFI_COMPONENT_NAME2_PROTOCOL gSynthKeyComponentName2;
+extern EFI_DRIVER_BINDING_PROTOCOL   gSynthKeyDriverBinding;
+extern EFI_COMPONENT_NAME_PROTOCOL   gSynthKeyComponentName;
+extern EFI_COMPONENT_NAME2_PROTOCOL  gSynthKeyComponentName2;
 
 //
 // Keyboard version used for the purpose of UEFI driver ranking.
 // Higher values will be preferred.
 // 0x10 is the start of the IHV reserved range
 //
-#define SYNTH_KEYBOARD_VERSION      0x10
+#define SYNTH_KEYBOARD_VERSION  0x10
 
-
-#define SYNTHKEY_KEY_BUFFER_SIZE    256
+#define SYNTHKEY_KEY_BUFFER_SIZE  256
 
 //
 // Simple ring buffer for queuing EFI_KEY_DATA
@@ -50,75 +49,68 @@ extern EFI_COMPONENT_NAME2_PROTOCOL gSynthKeyComponentName2;
 // since there is a one entry "buffer" between Head and Tail
 // used to detect when the buffer is full.
 //
-typedef struct _EFI_KEY_BUFFER
-{
-  EFI_KEY_DATA  Buffer[SYNTHKEY_KEY_BUFFER_SIZE];
-  UINTN         Head;
-  UINTN         Tail;
+typedef struct _EFI_KEY_BUFFER {
+  EFI_KEY_DATA    Buffer[SYNTHKEY_KEY_BUFFER_SIZE];
+  UINTN           Head;
+  UINTN           Tail;
 } EFI_KEY_BUFFER, *PEFI_KEY_BUFFER;
-
 
 //
 // Encapsulates the EFI KeyState (shift key and toggle key state) plus
 // internal state specific to the Hyper-V driver.
 //
-typedef struct _SYNTH_KEYBOARD_STATE
-{
-    EFI_KEY_STATE   KeyState;
+typedef struct _SYNTH_KEYBOARD_STATE {
+  EFI_KEY_STATE    KeyState;
 
-    struct
-    {
-        // TRUE -> EMCL Channel has been opened.
-        unsigned    ChannelOpen:1;
+  struct {
+    // TRUE -> EMCL Channel has been opened.
+    unsigned    ChannelOpen         : 1;
 
-        // TRUE -> vdev protocol negotiation was successfull.
-        unsigned    ChannelConnected:1;
+    // TRUE -> vdev protocol negotiation was successfull.
+    unsigned    ChannelConnected    : 1;
 
-        // TRUE -> both of the input protocols are installed.
-        unsigned    SimpleTextInstalled:1;
+    // TRUE -> both of the input protocols are installed.
+    unsigned    SimpleTextInstalled : 1;
 
-        // TRUE -> Pause key mulit-scancode sequence is in progress.
-        unsigned    PauseSequence:1;
-    };
+    // TRUE -> Pause key mulit-scancode sequence is in progress.
+    unsigned    PauseSequence       : 1;
+  };
+} SYNTH_KEYBOARD_STATE, *PSYNTH_KEYBOARD_STATE;
 
-}SYNTH_KEYBOARD_STATE, *PSYNTH_KEYBOARD_STATE;
-
-
-#define SYNTH_KEYBOARD_DEVICE_SIGNATURE         SIGNATURE_32('S', 'k', 'e', 'y')
+#define SYNTH_KEYBOARD_DEVICE_SIGNATURE  SIGNATURE_32('S', 'k', 'e', 'y')
 
 //
 //  Device context for a synthetic keyboard instance.
 //
-typedef struct _SYNTH_KEYBOARD_DEVICE
-{
-    UINTN                               Signature;
+typedef struct _SYNTH_KEYBOARD_DEVICE {
+  UINTN                                Signature;
 
-    EFI_HANDLE                          Handle;
-    EFI_DEVICE_PATH_PROTOCOL           *DevicePath;
-    EFI_EMCL_PROTOCOL                  *Emcl;
+  EFI_HANDLE                           Handle;
+  EFI_DEVICE_PATH_PROTOCOL             *DevicePath;
+  EFI_EMCL_PROTOCOL                    *Emcl;
 
-    EFI_SIMPLE_TEXT_INPUT_PROTOCOL      ConIn;
-    EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL   ConInEx;
+  EFI_SIMPLE_TEXT_INPUT_PROTOCOL       ConIn;
+  EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL    ConInEx;
 
-    SYNTH_KEYBOARD_STATE                State;
-    EFI_EVENT                           InitCompleteEvent;
+  SYNTH_KEYBOARD_STATE                 State;
+  EFI_EVENT                            InitCompleteEvent;
 
-    EFI_KEY_BUFFER                      EfiKeyQueue;
+  EFI_KEY_BUFFER                       EfiKeyQueue;
 
-    //
-    // Notification Function List
-    //
-    LIST_ENTRY                          NotifyList;
-
+  //
+  // Notification Function List
+  //
+  LIST_ENTRY                           NotifyList;
 } SYNTH_KEYBOARD_DEVICE, *PSYNTH_KEYBOARD_DEVICE;
 
 static inline
 VOID
-SynthKeyReportStatus(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    IN          EFI_STATUS_CODE_TYPE        Type,
-    IN          EFI_STATUS_CODE_VALUE       Value
-    )
+SynthKeyReportStatus (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  IN          EFI_STATUS_CODE_TYPE    Type,
+  IN          EFI_STATUS_CODE_VALUE   Value
+  )
+
 /*++
 
 Routine Description:
@@ -141,9 +133,9 @@ Return Value:
 
 --*/
 {
-    Type |= EFI_PERIPHERAL_KEYBOARD;
+  Type |= EFI_PERIPHERAL_KEYBOARD;
 
-    REPORT_STATUS_CODE_WITH_DEVICE_PATH(Type, Value, pDevice->DevicePath);
+  REPORT_STATUS_CODE_WITH_DEVICE_PATH (Type, Value, pDevice->DevicePath);
 }
 
 //
@@ -156,6 +148,5 @@ Return Value:
 #define SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(a)   \
     CR((a), SYNTH_KEYBOARD_DEVICE, ConInEx, SYNTH_KEYBOARD_DEVICE_SIGNATURE)
 
-#define TPL_KEYBOARD_CALLBACK (TPL_CALLBACK + 1)
-#define TPL_KEYBOARD_NOTIFY   TPL_NOTIFY
-
+#define TPL_KEYBOARD_CALLBACK  (TPL_CALLBACK + 1)
+#define TPL_KEYBOARD_NOTIFY    TPL_NOTIFY

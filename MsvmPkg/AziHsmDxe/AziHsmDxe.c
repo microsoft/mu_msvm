@@ -32,14 +32,14 @@ AziHsmAes256CbcEncrypt (
   IN  UINTN   KeySize,
   IN  UINT8   *Iv,
   IN  UINTN   IvSize
-);
+  );
 
 STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
-  IN  AZIHSM_CONTROLLER_STATE    *State,
+  IN  AZIHSM_CONTROLLER_STATE   *State,
   IN  CONST AZIHSM_DDI_API_REV  *ApiRevisionMax
-);
+  );
 
 //
 // Driver Binding Instance
@@ -72,14 +72,13 @@ EFI_UNICODE_STRING_TABLE  gDriverNameTable[] = {
 
 EFI_UNICODE_STRING_TABLE  gControllerNameTable[] = {
   { .Language = "eng;en", .UnicodeString = L"Azure Integrated HSM Controller" },
-  { .Language = NULL,     .UnicodeString = NULL                                }
+  { .Language = NULL,     .UnicodeString = NULL                               }
 };
 
 EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL  gDriverSupportedEfiVersion = {
   .Length          = sizeof (EFI_DRIVER_SUPPORTED_EFI_VERSION_PROTOCOL),
   .FirmwareVersion = 0x00010000
 };
-
 
 /**
   Tests to see if this driver supports a given controller. If a child device is provided,
@@ -125,13 +124,13 @@ AziHsmBindingSupported (
                   );
 
   if (Status == EFI_ALREADY_STARTED) {
-    DEBUG((DEBUG_INFO, "AziHsmDxe: Controller already started, checking if supported\n"));
+    DEBUG ((DEBUG_INFO, "AziHsmDxe: Controller already started, checking if supported\n"));
     Status = EFI_SUCCESS;
     goto Exit;
   }
 
   if (EFI_ERROR (Status)) {
-   // No need to log here, as failure to open Device Path likely means unsupported device
+    // No need to log here, as failure to open Device Path likely means unsupported device
     goto Exit;
   }
 
@@ -148,13 +147,13 @@ AziHsmBindingSupported (
                   );
 
   if (Status == EFI_ALREADY_STARTED) {
-    DEBUG((DEBUG_INFO, "AziHsmDxe: PCI I/O already started, checking if supported\n"));
+    DEBUG ((DEBUG_INFO, "AziHsmDxe: PCI I/O already started, checking if supported\n"));
     Status = EFI_SUCCESS;
     goto Exit;
   }
 
   if (EFI_ERROR (Status)) {
-   // No need to log here, as failure to open PCI I/O likely means unsupported device
+    // No need to log here, as failure to open PCI I/O likely means unsupported device
     goto Exit;
   }
 
@@ -292,8 +291,8 @@ AziHsmDriverBindingStart (
   //
   // Get API revision
   //
-  ZeroMem(&ApiRevisionMin, sizeof(ApiRevisionMin));
-  ZeroMem(&ApiRevisionMax, sizeof(ApiRevisionMax));
+  ZeroMem (&ApiRevisionMin, sizeof (ApiRevisionMin));
+  ZeroMem (&ApiRevisionMax, sizeof (ApiRevisionMax));
   Status = AziHsmGetApiRevision (State, &ApiRevisionMin, &ApiRevisionMax);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to get API revision: %r\n", Status));
@@ -357,32 +356,32 @@ Exit:
 STATIC
 EFI_STATUS
 AziHsmPerformBks3SealingWorkflow (
-  IN  AZIHSM_CONTROLLER_STATE    *State,
+  IN  AZIHSM_CONTROLLER_STATE   *State,
   IN  CONST AZIHSM_DDI_API_REV  *ApiRevisionMax
-)
+  )
 {
-  EFI_STATUS          Status = EFI_INVALID_PARAMETER;
-  AZIHSM_BUFFER       SealedBKS3Buffer;
-  AZIHSM_BUFFER       SealedAesSecret;
-  AZIHSM_BUFFER       TpmPlatformSecret;
-  AZIHSM_DERIVED_KEY  TpmDerivedSecret;
-  UINT8               *InputData = NULL;
-  UINT8               *EncryptedData = NULL;
-  UINT8               Iv[AZIHSM_AES_IV_SIZE];
-  UINT8               Aes256Key[AZIHSM_AES256_KEY_SIZE];
-  UINTN               PaddedInputSize = 0;
-  BOOLEAN             IsHSMSealSuccess = FALSE;
-  UINT8               WrappedBKS3[AZIHSM_BUFFER_MAX_SIZE];
-  UINT16              WrappedBKS3KeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
-  AZIHSM_DERIVED_KEY  BKS3Key;
-  UINT8               HsmGuid[AZIHSM_HSM_GUID_MAX_SIZE];
-  UINT16              HsmGuidSize = AZIHSM_HSM_GUID_MAX_SIZE;
-  AZIHSM_TCG_CONTEXT  TcgContext;
-  UINTN               PadValue = 0;
-  UINT16              EncryptedDataSize = 0;
-  AZIHSM_BUFFER       KeyIvBuffer;
-  AZIHSM_KEY_IV_RECORD KeyIvRecord;
-  UINT32              ExpectedSealedDataSize;
+  EFI_STATUS            Status = EFI_INVALID_PARAMETER;
+  AZIHSM_BUFFER         SealedBKS3Buffer;
+  AZIHSM_BUFFER         SealedAesSecret;
+  AZIHSM_BUFFER         TpmPlatformSecret;
+  AZIHSM_DERIVED_KEY    TpmDerivedSecret;
+  UINT8                 *InputData     = NULL;
+  UINT8                 *EncryptedData = NULL;
+  UINT8                 Iv[AZIHSM_AES_IV_SIZE];
+  UINT8                 Aes256Key[AZIHSM_AES256_KEY_SIZE];
+  UINTN                 PaddedInputSize  = 0;
+  BOOLEAN               IsHSMSealSuccess = FALSE;
+  UINT8                 WrappedBKS3[AZIHSM_BUFFER_MAX_SIZE];
+  UINT16                WrappedBKS3KeySize = (UINT16)AZIHSM_BUFFER_MAX_SIZE;
+  AZIHSM_DERIVED_KEY    BKS3Key;
+  UINT8                 HsmGuid[AZIHSM_HSM_GUID_MAX_SIZE];
+  UINT16                HsmGuidSize = AZIHSM_HSM_GUID_MAX_SIZE;
+  AZIHSM_TCG_CONTEXT    TcgContext;
+  UINTN                 PadValue          = 0;
+  UINT16                EncryptedDataSize = 0;
+  AZIHSM_BUFFER         KeyIvBuffer;
+  AZIHSM_KEY_IV_RECORD  KeyIvRecord;
+  UINT32                ExpectedSealedDataSize;
 
   if (State == NULL) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow() Invalid parameter\n"));
@@ -393,8 +392,8 @@ AziHsmPerformBks3SealingWorkflow (
   ZeroMem (&SealedAesSecret, sizeof (SealedAesSecret));
   ZeroMem (WrappedBKS3, AZIHSM_BUFFER_MAX_SIZE);
   ZeroMem (&BKS3Key, sizeof (BKS3Key));
-  ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
-  ZeroMem (&TpmDerivedSecret, sizeof(TpmDerivedSecret));
+  ZeroMem (&TpmPlatformSecret, sizeof (TpmPlatformSecret));
+  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
   ZeroMem (HsmGuid, sizeof (HsmGuid));
   ZeroMem (&TcgContext, sizeof (TcgContext));
 
@@ -452,6 +451,7 @@ AziHsmPerformBks3SealingWorkflow (
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
+
   if (EFI_ERROR (AziHsmTpmGetRandom (sizeof (Iv), Iv))) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AziHsmPerformBks3SealingWorkflow - TPM GetRandom failed for IV\n"));
     Status = EFI_DEVICE_ERROR;
@@ -459,7 +459,7 @@ AziHsmPerformBks3SealingWorkflow (
   }
 
   // We need to add PKCS7 padding to ensure the data is block-aligned for AES encryption
-  PadValue = AES_BLOCK_SIZE - (WrappedBKS3KeySize % AES_BLOCK_SIZE);
+  PadValue        = AES_BLOCK_SIZE - (WrappedBKS3KeySize % AES_BLOCK_SIZE);
   PaddedInputSize = WrappedBKS3KeySize + PadValue;
 
   InputData = AllocatePool (PaddedInputSize);
@@ -497,7 +497,7 @@ AziHsmPerformBks3SealingWorkflow (
   // Now seal the AES key and IV to the TPM NULL hierarchy
   // Create a Key/IV record structure to hold the key and IV
   ZeroMem (&KeyIvRecord, sizeof (KeyIvRecord));
- 
+
   KeyIvRecord.KeySize = (UINT8)sizeof (KeyIvRecord.Key);
   CopyMem (KeyIvRecord.Key, Aes256Key, sizeof (KeyIvRecord.Key));
 
@@ -506,7 +506,7 @@ AziHsmPerformBks3SealingWorkflow (
 
   KeyIvRecord.KeyVersion = AZIHSM_AES_KEY_VERSION;
   // RecordSize does not include the size of the RecordSize field itself
-  KeyIvRecord.RecordSize = sizeof(AZIHSM_KEY_IV_RECORD) - sizeof(UINT16);
+  KeyIvRecord.RecordSize = sizeof (AZIHSM_KEY_IV_RECORD) - sizeof (UINT16);
 
   ZeroMem (&KeyIvBuffer, sizeof (KeyIvBuffer));
   if (sizeof (KeyIvRecord) > sizeof (KeyIvBuffer.Data)) {
@@ -579,7 +579,7 @@ AziHsmPerformBks3SealingWorkflow (
   // Measure HSM GUID to PCR 6
   CopyMem (TcgContext.Guid, HsmGuid, HsmGuidSize);
 
-  Status = AziHsmMeasureGuidEvent(&TcgContext);
+  Status = AziHsmMeasureGuidEvent (&TcgContext);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to measure HSM GUID to TPM PCR 6. Status: %r\n", Status));
     goto Cleanup;
@@ -602,6 +602,7 @@ Cleanup:
     ZeroMem (EncryptedData, PaddedInputSize);
     FreePool (EncryptedData);
   }
+
   if (InputData != NULL) {
     ZeroMem (InputData, PaddedInputSize);
     FreePool (InputData);
@@ -612,14 +613,14 @@ Exit:
   ZeroMem (&BKS3Key, sizeof (BKS3Key));
   ZeroMem (HsmGuid, sizeof (HsmGuid));
   ZeroMem (&TcgContext, sizeof (TcgContext));
-  ZeroMem (&TpmPlatformSecret, sizeof(TpmPlatformSecret));
-  ZeroMem (&TpmDerivedSecret, sizeof(TpmDerivedSecret));
+  ZeroMem (&TpmPlatformSecret, sizeof (TpmPlatformSecret));
+  ZeroMem (&TpmDerivedSecret, sizeof (TpmDerivedSecret));
   return Status;
 }
 
 /**
  * Perform AES256-CBC encryption on the input data given a Key and IV.
- * 
+ *
  * @param[in]   InputData       Pointer to the input data buffer to encrypt.
  * @param[in]   InputDataSize   Size of the input data buffer in bytes (must be multiple of 16).
  * @param[out]  OutputData      Pointer to the output buffer to receive the encrypted data.
@@ -628,7 +629,7 @@ Exit:
  * @param[in]   KeySize         Size of the encryption key in bytes (must be 32 for AES-256).
  * @param[in]   Iv              Pointer to the initialization vector (IV).
  * @param[in]   IvSize          Size of the IV in bytes (must be 16).
- * 
+ *
  * @retval EFI_SUCCESS              Encryption completed successfully.
  * @retval EFI_INVALID_PARAMETER    Invalid input parameters.
  * @retval EFI_OUT_OF_RESOURCES     Memory allocation failed.
@@ -645,7 +646,7 @@ AziHsmAes256CbcEncrypt (
   IN  UINTN   KeySize,
   IN  UINT8   *Iv,
   IN  UINTN   IvSize
-)
+  )
 {
   EFI_STATUS  Status;
   UINTN       CtxSize;
@@ -653,7 +654,7 @@ AziHsmAes256CbcEncrypt (
   BOOLEAN     CryptoOk;
 
   // Validate NULL parameters
-  if (InputData == NULL || OutputData == NULL || OutputDataSize == NULL || Key == NULL || Iv == NULL) {
+  if ((InputData == NULL) || (OutputData == NULL) || (OutputDataSize == NULL) || (Key == NULL) || (Iv == NULL)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: AES256-CBC Encrypt: Invalid NULL parameter\n"));
     return EFI_INVALID_PARAMETER;
   }
@@ -689,6 +690,7 @@ AziHsmAes256CbcEncrypt (
     Status = EFI_OUT_OF_RESOURCES;
     goto Exit;
   }
+
   ZeroMem (Ctx, CtxSize);
 
   // Initialize AES context
@@ -706,16 +708,16 @@ AziHsmAes256CbcEncrypt (
     Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
-  
+
   // Ensure output data size does not exceed MAX_UINT16
-  if(InputDataSize > MAX_UINT16) {
+  if (InputDataSize > MAX_UINT16) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Encrypt: Input data size %u exceeds maximum output size %u\n", InputDataSize, MAX_UINT16));
     Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
   }
 
   *OutputDataSize = (UINT16)InputDataSize;
-  Status = EFI_SUCCESS;
+  Status          = EFI_SUCCESS;
 
 Exit:
   // Clean up sensitive AES context
@@ -774,11 +776,11 @@ AziHsmDriverBindingStop (
   // Continue with cleanup even if uninitialization fails
   //
   ProtocolCloseStatus = gBS->UninstallMultipleProtocolInterfaces (
-                          Controller,
-                          &gMsvmAziHsmProtocolGuid,
-                          &State->AziHsmProtocol,
-                          NULL
-                          );
+                               Controller,
+                               &gMsvmAziHsmProtocolGuid,
+                               &State->AziHsmProtocol,
+                               NULL
+                               );
   if (EFI_ERROR (ProtocolCloseStatus)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to uninstall AziHsm protocol. Status: %r\n", ProtocolCloseStatus));
   }
@@ -788,11 +790,11 @@ AziHsmDriverBindingStop (
   FreePool (State);
 
   ProtocolCloseStatus = gBS->CloseProtocol (
-                          Controller,
-                          &gEfiPciIoProtocolGuid,
-                          This->DriverBindingHandle,
-                          Controller
-                          );
+                               Controller,
+                               &gEfiPciIoProtocolGuid,
+                               This->DriverBindingHandle,
+                               Controller
+                               );
   if (EFI_ERROR (ProtocolCloseStatus)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to close PciIo protocol. Status: %r\n", ProtocolCloseStatus));
     if (!EFI_ERROR (Status)) {
@@ -801,11 +803,11 @@ AziHsmDriverBindingStop (
   }
 
   ProtocolCloseStatus = gBS->CloseProtocol (
-                          Controller,
-                          &gEfiDevicePathProtocolGuid,
-                          This->DriverBindingHandle,
-                          Controller
-                          );
+                               Controller,
+                               &gEfiDevicePathProtocolGuid,
+                               This->DriverBindingHandle,
+                               Controller
+                               );
   if (EFI_ERROR (ProtocolCloseStatus)) {
     DEBUG ((DEBUG_ERROR, "AziHsm: Failed to close DevicePath protocol. Status: %r\n", ProtocolCloseStatus));
     if (!EFI_ERROR (Status)) {
@@ -1032,7 +1034,6 @@ Exit:
   return Status;
 }
 
-
 /**
   The entry point for HSM driver, used to install HSM driver on the ImageHandle.
 
@@ -1049,7 +1050,7 @@ AziHsmDriverEntry (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  EFI_STATUS          Status;
+  EFI_STATUS  Status;
 
   Status = EfiLibInstallDriverBindingComponentName2 (
              ImageHandle,
@@ -1082,4 +1083,3 @@ AziHsmDriverEntry (
 Exit:
   return Status;
 }
-

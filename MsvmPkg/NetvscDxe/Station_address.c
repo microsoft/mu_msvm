@@ -9,7 +9,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include "Snp.h"
 
-
 /**
   Call UNDI to read the MAC address of the NIC and update the mode structure
   with the address.
@@ -87,7 +86,7 @@ PxeGetStnAddr (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32StationAddress(
+SnpUndi32StationAddress (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN EFI_MAC_ADDRESS              *New OPTIONAL

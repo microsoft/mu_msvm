@@ -18,14 +18,15 @@
 #include "MsCpuid.h"
 #include "StaticAssert1.h"
 
-BOOLEAN mParavisorPresent = FALSE;
-UINT32 mIsolationType = UefiIsolationTypeNone;
-UINT32 mSharedGpaBit = 0;
+BOOLEAN  mParavisorPresent = FALSE;
+UINT32   mIsolationType    = UefiIsolationTypeNone;
+UINT32   mSharedGpaBit     = 0;
 
 VOID
-HvDetectIsolation(
-    VOID
-    )
+HvDetectIsolation (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -42,119 +43,119 @@ Return Value:
 
 --*/
 {
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-    HV_CPUID_RESULT cpuidResult;
-    UINT64 sharedGpaBoundary;
-    UINT64 sharedGpaCanonicalizationBitmask;
-    EFI_STATUS status = EFI_SUCCESS;
-    UINT32 virtualAddressBits;
+  HV_CPUID_RESULT  cpuidResult;
+  UINT64           sharedGpaBoundary;
+  UINT64           sharedGpaCanonicalizationBitmask;
+  EFI_STATUS       status = EFI_SUCCESS;
+  UINT32           virtualAddressBits;
 
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
-    if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
-    {
-        DEBUG((DEBUG_INFO, "%a - Hypervisor is not present \n", __func__));
-        return;
-    }
-
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
-    if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
-    {
-        DEBUG((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __func__));
-        return;
-    }
-
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
-    if (!cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation)
-    {
-        DEBUG((DEBUG_INFO, "%a - Isolation is not present \n", __func__));
-        return;
-    }
-
-    MsCpuid(cpuidResult.AsUINT32, HvCpuidFunctionMsHvIsolationConfiguration);
-    switch (cpuidResult.MsHvIsolationConfiguration.IsolationType)
-    {
-    case HV_PARTITION_ISOLATION_TYPE_VBS:
-        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs); }
-        mIsolationType = UefiIsolationTypeVbs;
-        break;
-    case HV_PARTITION_ISOLATION_TYPE_SNP:
-        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp); }
-        mIsolationType = UefiIsolationTypeSnp;
-        break;
-    case HV_PARTITION_ISOLATION_TYPE_TDX:
-        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx); }
-        mIsolationType = UefiIsolationTypeTdx;
-        break;
-    case HV_PARTITION_ISOLATION_TYPE_NONE:
-        { STATIC_ASSERT_1(HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone); }
-        return;
-    default:
-        ASSERT(FALSE);
-        return;
-    }
-
-    status = PcdSet32S(PcdIsolationArchitecture, mIsolationType);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "Failed to set the PCD PcdIsolationArchitecture::0x%x \n", status));
-        PEI_FAIL_FAST_IF_FAILED(status);
-    }
-
-    if (cpuidResult.MsHvIsolationConfiguration.ParavisorPresent)
-    {
-        mParavisorPresent = TRUE;
-        status = PcdSetBoolS(PcdIsolationParavisorPresent, TRUE);
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "Failed to set the PCD PcdIsolationParavisorPresent::0x%x \n", status));
-            PEI_FAIL_FAST_IF_FAILED(status);
-        }
-    }
-
-    if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryActive)
-    {
-        mSharedGpaBit = cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits;
-        sharedGpaBoundary = UINT64_C(1) << mSharedGpaBit;
-        sharedGpaCanonicalizationBitmask = 0;
-        virtualAddressBits = 48;
-        if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits == (virtualAddressBits - 1))
-        {
-            sharedGpaCanonicalizationBitmask = ~((UINT64_C(1) << virtualAddressBits) - 1);
-        }
-        else if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits > (virtualAddressBits - 1))
-        {
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-
-        DEBUG((DEBUG_VERBOSE,
-               "%a: SharedGpaBoundary: 0x%lx, CanonicalizationMask 0x%lx\n",
-               __func__,
-               sharedGpaBoundary,
-               sharedGpaCanonicalizationBitmask));
-
-        status = PcdSet64S(PcdIsolationSharedGpaBoundary, sharedGpaBoundary);
-        if (!EFI_ERROR(status))
-        {
-            status = PcdSet64S(PcdIsolationSharedGpaCanonicalizationBitmask,
-                               sharedGpaCanonicalizationBitmask);
-        }
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "Failed to set the PCD PcdIsolationSharedGpaBoundary::0x%x \n", status));
-            PEI_FAIL_FAST_IF_FAILED(status);
-        }
-    }
-
-#endif
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
+  if (!cpuidResult.VersionAndFeatures.HypervisorPresent) {
+    DEBUG ((DEBUG_INFO, "%a - Hypervisor is not present \n", __func__));
     return;
+  }
+
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
+  if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface) {
+    DEBUG ((DEBUG_INFO, "%a - Hypervisor interface is not present \n", __func__));
+    return;
+  }
+
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionMsHvFeatures);
+  if (!cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation) {
+    DEBUG ((DEBUG_INFO, "%a - Isolation is not present \n", __func__));
+    return;
+  }
+
+  MsCpuid (cpuidResult.AsUINT32, HvCpuidFunctionMsHvIsolationConfiguration);
+  switch (cpuidResult.MsHvIsolationConfiguration.IsolationType) {
+    case HV_PARTITION_ISOLATION_TYPE_VBS:
+    {
+      STATIC_ASSERT_1 (HV_PARTITION_ISOLATION_TYPE_VBS == UefiIsolationTypeVbs);
+    }
+      mIsolationType = UefiIsolationTypeVbs;
+      break;
+    case HV_PARTITION_ISOLATION_TYPE_SNP:
+    {
+      STATIC_ASSERT_1 (HV_PARTITION_ISOLATION_TYPE_SNP == UefiIsolationTypeSnp);
+    }
+      mIsolationType = UefiIsolationTypeSnp;
+      break;
+    case HV_PARTITION_ISOLATION_TYPE_TDX:
+    {
+      STATIC_ASSERT_1 (HV_PARTITION_ISOLATION_TYPE_TDX == UefiIsolationTypeTdx);
+    }
+      mIsolationType = UefiIsolationTypeTdx;
+      break;
+    case HV_PARTITION_ISOLATION_TYPE_NONE:
+    {
+      STATIC_ASSERT_1 (HV_PARTITION_ISOLATION_TYPE_NONE == UefiIsolationTypeNone);
+    }
+      return;
+    default:
+      ASSERT (FALSE);
+      return;
+  }
+
+  status = PcdSet32S (PcdIsolationArchitecture, mIsolationType);
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to set the PCD PcdIsolationArchitecture::0x%x \n", status));
+    PEI_FAIL_FAST_IF_FAILED (status);
+  }
+
+  if (cpuidResult.MsHvIsolationConfiguration.ParavisorPresent) {
+    mParavisorPresent = TRUE;
+    status            = PcdSetBoolS (PcdIsolationParavisorPresent, TRUE);
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "Failed to set the PCD PcdIsolationParavisorPresent::0x%x \n", status));
+      PEI_FAIL_FAST_IF_FAILED (status);
+    }
+  }
+
+  if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryActive) {
+    mSharedGpaBit                    = cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits;
+    sharedGpaBoundary                = UINT64_C (1) << mSharedGpaBit;
+    sharedGpaCanonicalizationBitmask = 0;
+    virtualAddressBits               = 48;
+    if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits == (virtualAddressBits - 1)) {
+      sharedGpaCanonicalizationBitmask = ~((UINT64_C (1) << virtualAddressBits) - 1);
+    } else if (cpuidResult.MsHvIsolationConfiguration.SharedGpaBoundaryBits > (virtualAddressBits - 1)) {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    DEBUG ((
+      DEBUG_VERBOSE,
+      "%a: SharedGpaBoundary: 0x%lx, CanonicalizationMask 0x%lx\n",
+      __func__,
+      sharedGpaBoundary,
+      sharedGpaCanonicalizationBitmask
+      ));
+
+    status = PcdSet64S (PcdIsolationSharedGpaBoundary, sharedGpaBoundary);
+    if (!EFI_ERROR (status)) {
+      status = PcdSet64S (
+                 PcdIsolationSharedGpaCanonicalizationBitmask,
+                 sharedGpaCanonicalizationBitmask
+                 );
+    }
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "Failed to set the PCD PcdIsolationSharedGpaBoundary::0x%x \n", status));
+      PEI_FAIL_FAST_IF_FAILED (status);
+    }
+  }
+
+ #endif
+  return;
 }
 
 VOID
-HvDetectDmaPinningRequired(
-    VOID
-    )
+HvDetectDmaPinningRequired (
+  VOID
+  )
+
 /*++
 
 Routine Description:
@@ -174,76 +175,70 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    //
-    // When Hyper-V is disabled (e.g. the loader reported a Generic platform via
-    // the SEC platform type PPI) no hypervisor is present to service hypercalls.
-    // Issuing one here during PEI - before the exception vectors are installed -
-    // hard hangs the system, so skip the detection entirely.
-    //
-    if (!PcdGetBool(PcdHvEnabled))
-    {
-        return;
-    }
+  //
+  // When Hyper-V is disabled (e.g. the loader reported a Generic platform via
+  // the SEC platform type PPI) no hypervisor is present to service hypercalls.
+  // Issuing one here during PEI - before the exception vectors are installed -
+  // hard hangs the system, so skip the detection entirely.
+  //
+  if (!PcdGetBool (PcdHvEnabled)) {
+    return;
+  }
 
-#if defined(MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
 
-    HV_CPUID_RESULT cpuidResult;
+  HV_CPUID_RESULT  cpuidResult;
 
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
-    if (!cpuidResult.VersionAndFeatures.HypervisorPresent)
-    {
-        return;
-    }
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionVersionAndFeatures);
+  if (!cpuidResult.VersionAndFeatures.HypervisorPresent) {
+    return;
+  }
 
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
-    if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface)
-    {
-        return;
-    }
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionHvInterface);
+  if (cpuidResult.HvInterface.Interface != HvMicrosoftHypervisorInterface) {
+    return;
+  }
 
-    MsCpuid(cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
-    if (!cpuidResult.MsHvEnlightenmentInformation.UseGpaPinningHypercall)
-    {
-        return;
-    }
+  MsCpuid (cpuidResult.AsUINT32, HvCpuIdFunctionMsHvEnlightenmentInformation);
+  if (!cpuidResult.MsHvEnlightenmentInformation.UseGpaPinningHypercall) {
+    return;
+  }
 
-#elif defined(MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
 
-    HV_STATUS hvStatus;
-    HV_REGISTER_VALUE registerValue;
-    HV_ENLIGHTENMENT_INFORMATION enlightenmentInformation;
+  HV_STATUS                     hvStatus;
+  HV_REGISTER_VALUE             registerValue;
+  HV_ENLIGHTENMENT_INFORMATION  enlightenmentInformation;
 
-    hvStatus = AsmGetVpRegister(HvRegisterFeaturesInfo, &registerValue);
-    if (hvStatus != HV_STATUS_SUCCESS)
-    {
-        DEBUG((DEBUG_INFO, "%a - HvRegisterFeaturesInfo is not available: 0x%x\n", __func__, hvStatus));
-        return;
-    }
+  hvStatus = AsmGetVpRegister (HvRegisterFeaturesInfo, &registerValue);
+  if (hvStatus != HV_STATUS_SUCCESS) {
+    DEBUG ((DEBUG_INFO, "%a - HvRegisterFeaturesInfo is not available: 0x%x\n", __func__, hvStatus));
+    return;
+  }
 
-    *((PHV_UINT128)&enlightenmentInformation) = registerValue.Reg128;
-    if (!enlightenmentInformation.UseGpaPinningHypercall)
-    {
-        return;
-    }
+  *((PHV_UINT128)&enlightenmentInformation) = registerValue.Reg128;
+  if (!enlightenmentInformation.UseGpaPinningHypercall) {
+    return;
+  }
 
-#endif
+ #endif
 
-    status = PcdSetBoolS(PcdDmaPinningRequired, TRUE);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "Failed to set the PCD PcdDmaPinningRequired::0x%x \n", status));
-        PEI_FAIL_FAST_IF_FAILED(status);
-    }
+  status = PcdSetBoolS (PcdDmaPinningRequired, TRUE);
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to set the PCD PcdDmaPinningRequired::0x%x \n", status));
+    PEI_FAIL_FAST_IF_FAILED (status);
+  }
 }
 
 VOID
-HvDetectSvsm(
-    IN  PSNP_SECRETS    SecretsPage,
-    OUT UINT64          *SvsmBase,
-    OUT UINT64          *SvsmSize
-    )
+HvDetectSvsm (
+  IN  PSNP_SECRETS  SecretsPage,
+  OUT UINT64        *SvsmBase,
+  OUT UINT64        *SvsmSize
+  )
+
 /*++
 
 Routine Description:
@@ -265,27 +260,23 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    //
-    // Examine the secrets page to determine whether any SVSM has declared its
-    // presence.
-    //
+  //
+  // Examine the secrets page to determine whether any SVSM has declared its
+  // presence.
+  //
 
-    if (SecretsPage->SvsmSize != 0)
-    {
-        *SvsmBase = SecretsPage->SvsmBase;
-        *SvsmSize = SecretsPage->SvsmSize;
-        status = PcdSet64S(PcdSvsmCallingArea, SecretsPage->SvsmCallingArea);
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "Failed to set the SVSM calling area address::0x%x \n", status));
-            PEI_FAIL_FAST_IF_FAILED(status);
-        }
+  if (SecretsPage->SvsmSize != 0) {
+    *SvsmBase = SecretsPage->SvsmBase;
+    *SvsmSize = SecretsPage->SvsmSize;
+    status    = PcdSet64S (PcdSvsmCallingArea, SecretsPage->SvsmCallingArea);
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "Failed to set the SVSM calling area address::0x%x \n", status));
+      PEI_FAIL_FAST_IF_FAILED (status);
     }
-    else
-    {
-        *SvsmBase = 0;
-        *SvsmSize = 0;
-    }
+  } else {
+    *SvsmBase = 0;
+    *SvsmSize = 0;
+  }
 }

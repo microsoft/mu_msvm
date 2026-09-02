@@ -64,9 +64,9 @@ typedef struct {
 } EXCEPTION_HANDLER_DATA;
 
 #if MS_HYP_CHANGE
-#include <Hv/HvGuestMsr.h>
-extern CHAR8 mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
-extern UINTN mDebugCursor;
+  #include <Hv/HvGuestMsr.h>
+extern CHAR8  mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
+extern UINTN  mDebugCursor;
 #endif // MS_HYP_CHANGE
 
 extern CONST UINT32  mErrorCodeFlag;

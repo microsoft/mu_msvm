@@ -12,9 +12,9 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/HiiLib.h>
 
-EFI_HII_HANDLE gStringPackHandle;
+EFI_HII_HANDLE  gStringPackHandle;
 
-EFI_GUID mFrontPageStringPackGuid = {
+EFI_GUID  mFrontPageStringPackGuid = {
   // {9CA9EC7A-BC96-45E4-A500-1D4B79141553}
   0x9ca9ec7a, 0xbc96, 0x45e4, { 0xa5, 0x0, 0x1d, 0x4b, 0x79, 0x14, 0x15, 0x53 }
 };
@@ -29,12 +29,12 @@ InitializeStringSupport (
   )
 {
   gStringPackHandle = HiiAddPackages (
-                         &mFrontPageStringPackGuid,
-                         gImageHandle,
-                         FrontPageStrings,
-                         NULL
-                         );
-  //ASSERT (gStringPackHandle != NULL);
+                        &mFrontPageStringPackGuid,
+                        gImageHandle,
+                        FrontPageStrings,
+                        NULL
+                        );
+  // ASSERT (gStringPackHandle != NULL);
 }
 
 /**
@@ -49,7 +49,7 @@ InitializeStringSupport (
 **/
 CHAR16 *
 GetStringById (
-  IN  EFI_STRING_ID   Id
+  IN  EFI_STRING_ID  Id
   )
 {
   return HiiGetString (gStringPackHandle, Id, NULL);

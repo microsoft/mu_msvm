@@ -8,7 +8,7 @@
 #ifndef _FRONT_PAGE_UI_H_
 #define _FRONT_PAGE_UI_H_
 
-#define MAX_STRING_LENGTH               1024
+#define MAX_STRING_LENGTH  1024
 
 /**
   This function processes the results of changes in configuration.
@@ -31,12 +31,12 @@
 EFI_STATUS
 EFIAPI
 UiCallback (
-  IN  CONST EFI_HII_CONFIG_ACCESS_PROTOCOL   *This,
-  IN  EFI_BROWSER_ACTION                     Action,
-  IN  EFI_QUESTION_ID                        QuestionId,
-  IN  UINT8                                  Type,
-  IN  EFI_IFR_TYPE_VALUE                     *Value,
-  OUT EFI_BROWSER_ACTION_REQUEST             *ActionRequest
+  IN  CONST EFI_HII_CONFIG_ACCESS_PROTOCOL  *This,
+  IN  EFI_BROWSER_ACTION                    Action,
+  IN  EFI_QUESTION_ID                       QuestionId,
+  IN  UINT8                                 Type,
+  IN  EFI_IFR_TYPE_VALUE                    *Value,
+  OUT EFI_BROWSER_ACTION_REQUEST            *ActionRequest
   );
 
 #endif // _FRONT_PAGE_UI_H_

@@ -13,4 +13,5 @@
 
 EFI_STATUS
 EFIAPI
-StatusCodeRuntimeInitialize();
+StatusCodeRuntimeInitialize (
+  );

@@ -10,7 +10,13 @@
 
 #pragma once
 
-VOID WriteBiosDevice(UINT32 AddressRegisterValue, UINT32 DataRegisterValue);
+VOID
+WriteBiosDevice (
+  UINT32  AddressRegisterValue,
+  UINT32  DataRegisterValue
+  );
 
-UINT32 ReadBiosDevice(UINT32 AddressRegisterValue);
-
+UINT32
+ReadBiosDevice (
+  UINT32  AddressRegisterValue
+  );

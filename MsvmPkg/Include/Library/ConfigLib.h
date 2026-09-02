@@ -14,53 +14,52 @@
 typedef
 UINT32
 (CONFIG_GET_UINT32)(
-    void
-    );
+  void
+  );
 
 typedef
 UINT64
 (CONFIG_GET_UINT64)(
-    void
-    );
+  void
+  );
 
 typedef
-void*
+void *
 (CONFIG_GET_PTR)(
-    void
-    );
+  void
+  );
 
 typedef
-CHAR8*
+CHAR8 *
 (CONFIG_GET_STRING)(
-    void
-    );
+  void
+  );
 
 typedef
-EFI_GUID*
+EFI_GUID *
 (CONFIG_GET_GUID)(
-    void
-    );
+  void
+  );
 
 typedef
 BOOLEAN
 (CONFIG_GET_BOOLEAN)(
-    void
-    );
+  void
+  );
 
 typedef
 void
 (CONFIG_SET_UINT64)(
-    UINT64 Value
-    );
+  UINT64  Value
+  );
 
-enum
-{
-    ConfigLibEntropyDataSize =      BiosInterfaceEntropyTableSize,
-    ConfigLibSmbiosStringMax =      BiosInterfaceSmbiosStringMax,
-    ConfigLibSmbiosV24CpuInfoSize = sizeof(SMBIOS_CPU_INFORMATION)
+enum {
+  ConfigLibEntropyDataSize      =      BiosInterfaceEntropyTableSize,
+  ConfigLibSmbiosStringMax      =      BiosInterfaceSmbiosStringMax,
+  ConfigLibSmbiosV24CpuInfoSize = sizeof (SMBIOS_CPU_INFORMATION)
 };
 
-CONFIG_GET_UINT32   GetNfitSize;
-CONFIG_SET_UINT64   GetNfit;
-CONFIG_SET_UINT64   SetVpmemACPIBuffer;
-CONFIG_SET_UINT64   SetGenerationIdAddress;
+CONFIG_GET_UINT32  GetNfitSize;
+CONFIG_SET_UINT64  GetNfit;
+CONFIG_SET_UINT64  SetVpmemACPIBuffer;
+CONFIG_SET_UINT64  SetGenerationIdAddress;

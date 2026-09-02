@@ -58,6 +58,7 @@ SerialPortInitialize (
     while (SerialPortRead (&Scratch, sizeof (Scratch)) != 0) {
     }
   }
+
   return Status;
   // MU_CHANGE END
 }

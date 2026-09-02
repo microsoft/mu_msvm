@@ -7,7 +7,6 @@
 
 #include <Library/BaseLib.h>
 
-
 /**
   Simple function to inform any callers of whether the lib is ready to present a prompt.
   Since the prompt itself only returns TRUE or FALSE, make sure all other technical requirements
@@ -27,7 +26,6 @@ IsPromptReady (
   return EFI_SUCCESS;
 }  // IsPromptReady()
 
-
 /**
   This function will take in a prompt string to present to the user in a
   OK/Cancel dialog box and return TRUE if the user actively pressed OK. Returns
@@ -42,7 +40,7 @@ IsPromptReady (
 BOOLEAN
 EFIAPI
 PromptForUserConfirmation (
-  IN  CHAR16    *PromptString
+  IN  CHAR16  *PromptString
   )
 {
   return TRUE;

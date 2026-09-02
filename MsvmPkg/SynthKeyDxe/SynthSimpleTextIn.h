@@ -18,21 +18,17 @@
 // Public Simple Text In APIs
 //
 EFI_STATUS
-SimpleTextInInitialize(
-    IN OUT      PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
-
-
-VOID
-SimpleTextInCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
-
+SimpleTextInInitialize (
+  IN OUT      PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
 VOID
-SimpleTextInQueueKey(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    IN          EFI_KEY_DATA               *Key
-    );
+SimpleTextInCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
-
+VOID
+SimpleTextInQueueKey (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  IN          EFI_KEY_DATA            *Key
+  );

@@ -33,13 +33,11 @@ PxeRecvFilterEnable (
   EFI_MAC_ADDRESS  *MCastAddressList
   )
 {
-
   // MS_HYP_CHANGE BEGIN
-  UINT32       newFilter;
-  EFI_STATUS   status;
+  UINT32      newFilter;
+  EFI_STATUS  status;
 
-  if (MCastAddressCount > 0)
-  {
+  if (MCastAddressCount > 0) {
     //
     // All Multicast Packets are broadcasted to all vNICS by VMswitch
     // So, the worst case scenario is that the Stack would be processing
@@ -47,17 +45,16 @@ PxeRecvFilterEnable (
     //
     // TODO: Implement Multicast support or clarify the lack of support for Multicasting.
     //
-    CopyMem(Snp->Mode.MCastFilter, MCastAddressList, MCastAddressCount*sizeof(EFI_MAC_ADDRESS));
-    Snp->Mode.MCastFilterCount = (UINT32) MCastAddressCount;
+    CopyMem (Snp->Mode.MCastFilter, MCastAddressList, MCastAddressCount*sizeof (EFI_MAC_ADDRESS));
+    Snp->Mode.MCastFilterCount = (UINT32)MCastAddressCount;
   }
 
   newFilter = (EnableFlags & Snp->Mode.ReceiveFilterMask) | Snp->AdapterContext->NicInfo.RxFilter;
 
-  status = NetvscSetFilter(&Snp->AdapterContext->NicInfo, newFilter);
+  status = NetvscSetFilter (&Snp->AdapterContext->NicInfo, newFilter);
 
-  if (EFI_ERROR(status))
-  {
-  // MS_HYP_CHANGE END
+  if (EFI_ERROR (status)) {
+    // MS_HYP_CHANGE END
     return EFI_DEVICE_ERROR;
   }
 
@@ -84,11 +81,10 @@ PxeRecvFilterDisable (
   )
 {
   // MS_HYP_CHANGE BEGIN
-  UINT32       newFilter;
-  EFI_STATUS   status;
+  UINT32      newFilter;
+  EFI_STATUS  status;
 
-  if (ResetMCastList)
-  {
+  if (ResetMCastList) {
     //
     // All Multicast Packets are broadcasted to all vNICS by VMswitch
     // So, the worst case scenario is that the stack would be processing
@@ -99,10 +95,10 @@ PxeRecvFilterDisable (
 
   newFilter = (~(DisableFlags & Snp->Mode.ReceiveFilterMask)) & Snp->AdapterContext->NicInfo.RxFilter;
 
-  status = NetvscSetFilter(&Snp->AdapterContext->NicInfo, newFilter);
+  status = NetvscSetFilter (&Snp->AdapterContext->NicInfo, newFilter);
 
-  if (EFI_ERROR(status)) {
-  // MS_HYP_CHANGE END
+  if (EFI_ERROR (status)) {
+    // MS_HYP_CHANGE END
     return EFI_DEVICE_ERROR;
   }
 
@@ -225,7 +221,7 @@ PxeRecvFilterRead (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32ReceiveFilters(
+SnpUndi32ReceiveFilters (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINT32                       Enable,
   IN UINT32                       Disable,

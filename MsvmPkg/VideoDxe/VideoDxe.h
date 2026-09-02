@@ -5,7 +5,6 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-
 #pragma once
 
 #include <Uefi.h>
@@ -34,43 +33,41 @@
 #define DEFAULT_SCREEN_HEIGHT           (768)
 
 typedef struct _RECT {
-  INT32 left;
-  INT32 top;
-  INT32 right;
-  INT32 bottom;
+  INT32    left;
+  INT32    top;
+  INT32    right;
+  INT32    bottom;
 } RECT, *PRECT;
 
-#define BYTE UINT8
+#define BYTE  UINT8
 
 #include <SynthVidProtocol.h>
 #include <Vmbus/VmbusPacketFormat.h>
 
-#define VIDEODXE_VERSION 1
-#define VIDEODXE_CONTEXT_SIGNATURE SIGNATURE_32('V','D','X','E')
+#define VIDEODXE_VERSION            1
+#define VIDEODXE_CONTEXT_SIGNATURE  SIGNATURE_32('V','D','X','E')
 
-#define VIDEO_DXE_MAX_PACKET_SIZE (512)
+#define VIDEO_DXE_MAX_PACKET_SIZE  (512)
 
 typedef struct _VIDEODXE_CONTEXT VIDEODXE_CONTEXT;
 
-typedef struct _VIDEODXE_CONTEXT
-{
-    //
-    // Device State
-    //
-    UINTN Signature;
-    EFI_HANDLE Handle;
-    EFI_EMCL_PROTOCOL *Emcl;
-    BOOLEAN ChannelStarted;
-    EFI_STATUS InitStatus;
-    EFI_EVENT InitCompleteEvent;
+typedef struct _VIDEODXE_CONTEXT {
+  //
+  // Device State
+  //
+  UINTN                                   Signature;
+  EFI_HANDLE                              Handle;
+  EFI_EMCL_PROTOCOL                       *Emcl;
+  BOOLEAN                                 ChannelStarted;
+  EFI_STATUS                              InitStatus;
+  EFI_EVENT                               InitCompleteEvent;
 
-    //
-    // Produced Protocols
-    //
-    EFI_GRAPHICS_OUTPUT_PROTOCOL          GraphicsOutput;
-    EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE     Mode;
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  ModeInfo;
-
+  //
+  // Produced Protocols
+  //
+  EFI_GRAPHICS_OUTPUT_PROTOCOL            GraphicsOutput;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE       Mode;
+  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION    ModeInfo;
 } VIDEODXE_CONTEXT, *PVIDEODXE_CONTEXT;
 
 #define VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS(a) \
@@ -81,17 +78,16 @@ typedef struct _VIDEODXE_CONTEXT
         VIDEODXE_CONTEXT_SIGNATURE \
         )
 
-
-extern EFI_DRIVER_BINDING_PROTOCOL gVideoDxeDriverBinding;
-extern EFI_COMPONENT_NAME2_PROTOCOL gVideoDxeComponentName2;
-extern EFI_COMPONENT_NAME_PROTOCOL gVideoDxeComponentName;
+extern EFI_DRIVER_BINDING_PROTOCOL   gVideoDxeDriverBinding;
+extern EFI_COMPONENT_NAME2_PROTOCOL  gVideoDxeComponentName2;
+extern EFI_COMPONENT_NAME_PROTOCOL   gVideoDxeComponentName;
 
 EFI_STATUS
 EFIAPI
 VideoDxeDriverEntryPoint (
-    IN  EFI_HANDLE ImageHandle,
-    IN  EFI_SYSTEM_TABLE *SystemTable
-    );
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  );
 
 //
 // EFI_DRIVER_BINDING_PROTOCOL functions, used to determine if this driver supports the controller,
@@ -99,28 +95,28 @@ VideoDxeDriverEntryPoint (
 //
 EFI_STATUS
 EFIAPI
-VideoDxeDriverBindingSupported(
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    );
+VideoDxeDriverBindingSupported (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  );
 
 EFI_STATUS
 EFIAPI
-VideoDxeDriverBindingStart(
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    );
+VideoDxeDriverBindingStart (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  );
 
 EFI_STATUS
 EFIAPI
-VideoDxeDriverBindingStop(
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  UINTN NumberOfChildren,
-    IN  EFI_HANDLE *ChildHandleBuffer
-    );
+VideoDxeDriverBindingStop (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  UINTN                        NumberOfChildren,
+  IN  EFI_HANDLE                   *ChildHandleBuffer
+  );
 
 //
 // EFI_COMPONENT_NAME_PROTOCOL and EFI_COMPONENT_NAME2_PROTOCOL functions.
@@ -128,62 +124,62 @@ VideoDxeDriverBindingStop(
 //
 EFI_STATUS
 EFIAPI
-VideoDxeComponentNameGetDriverName(
-    IN  EFI_COMPONENT_NAME2_PROTOCOL *This,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **DriverName
-    );
+VideoDxeComponentNameGetDriverName (
+  IN  EFI_COMPONENT_NAME2_PROTOCOL  *This,
+  IN  CHAR8                         *Language,
+  OUT CHAR16                        **DriverName
+  );
 
 EFI_STATUS
 EFIAPI
-VideoDxeComponentNameGetControllerName(
-    IN  EFI_COMPONENT_NAME2_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_HANDLE ChildHandle OPTIONAL,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **ControllerName
-    );
+VideoDxeComponentNameGetControllerName (
+  IN  EFI_COMPONENT_NAME2_PROTOCOL  *This,
+  IN  EFI_HANDLE                    ControllerHandle,
+  IN  EFI_HANDLE                    ChildHandle OPTIONAL,
+  IN  CHAR8                         *Language,
+  OUT CHAR16                        **ControllerName
+  );
 
 //
 // Video Channel Functions.
 //
 EFI_STATUS
-VideoChannelOpen(
-    IN  PVIDEODXE_CONTEXT Context
-    );
+VideoChannelOpen (
+  IN  PVIDEODXE_CONTEXT  Context
+  );
 
 VOID
-VideoChannelClose(
-    IN  PVIDEODXE_CONTEXT Context
-    );
+VideoChannelClose (
+  IN  PVIDEODXE_CONTEXT  Context
+  );
 
 EFI_STATUS
-VideoChannelStartInitialize(
-    IN  PVIDEODXE_CONTEXT Context
-    );
+VideoChannelStartInitialize (
+  IN  PVIDEODXE_CONTEXT  Context
+  );
 
 //
 // EFI_GRAPHICS_OUTPUT_PROTOCOL Protocol functions.
 //
 EFI_STATUS
 EFIAPI
-VideoGraphicsOutputQueryMode(
-  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL *This,
-  IN   UINT32 ModeNumber,
-  IN   UINTN *SizeOfInfo,
-  OUT EFI_GRAPHICS_OUTPUT_MODE_INFORMATION **Info
+VideoGraphicsOutputQueryMode (
+  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL         *This,
+  IN   UINT32                               ModeNumber,
+  IN   UINTN                                *SizeOfInfo,
+  OUT EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  **Info
   );
 
 EFI_STATUS
 EFIAPI
-VideoGraphicsOutputSetMode(
-  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL * This,
-  IN   UINT32 ModeNumber
+VideoGraphicsOutputSetMode (
+  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL  *This,
+  IN   UINT32                        ModeNumber
   );
 
 EFI_STATUS
 EFIAPI
-VideoGraphicsOutputBlt(
+VideoGraphicsOutputBlt (
   IN   EFI_GRAPHICS_OUTPUT_PROTOCOL *This,
   IN   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BltBuffer, OPTIONAL
   IN   EFI_GRAPHICS_OUTPUT_BLT_OPERATION  BltOperation,
@@ -195,4 +191,3 @@ VideoGraphicsOutputBlt(
   IN   UINTN Height,
   IN   UINTN Delta
   );
-

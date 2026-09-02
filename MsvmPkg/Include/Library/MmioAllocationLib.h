@@ -16,5 +16,7 @@
 //
 // \return     A pointer to the region of mmio space, or NULL on failure.
 //
-VOID*
-AllocateMmioPages(UINT64 NumberOfPages);
+VOID *
+AllocateMmioPages (
+  UINT64  NumberOfPages
+  );

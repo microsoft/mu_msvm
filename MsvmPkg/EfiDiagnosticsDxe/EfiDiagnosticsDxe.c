@@ -48,7 +48,7 @@ OnResetProcessDiagnostics (
   IN VOID            *ResetData OPTIONAL
   )
 {
-  DEBUG((DEBUG_ERROR, "%a: Reset notification callback called. ResetType = %d, ResetStatus = %r\n", __func__, ResetType, ResetStatus));
+  DEBUG ((DEBUG_ERROR, "%a: Reset notification callback called. ResetType = %d, ResetStatus = %r\n", __func__, ResetType, ResetStatus));
   NotifyHostToProcessEfiDiagnostics ();
 }
 

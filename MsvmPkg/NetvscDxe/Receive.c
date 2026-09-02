@@ -7,7 +7,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
-
 #include "Snp.h"
 
 /**
@@ -47,22 +46,22 @@ PxeReceive (
   UINT16           *Protocol
   )
 {
-  UINTN            BuffSize;
+  UINTN  BuffSize;
 
   BuffSize = *BufferSize;
 
   // MS_HYP_CHANGE BEGIN
-  EFI_STATUS status = NetvscReceive(
-        &Snp->AdapterContext->NicInfo,
-        Buffer,
-        BufferSize,
-        HeaderSize,
-        SrcAddr,
-        DestAddr,
-        Protocol);
+  EFI_STATUS  status = NetvscReceive (
+                         &Snp->AdapterContext->NicInfo,
+                         Buffer,
+                         BufferSize,
+                         HeaderSize,
+                         SrcAddr,
+                         DestAddr,
+                         Protocol
+                         );
 
-  switch(status)
-  {
+  switch (status) {
     case EFI_SUCCESS:
       break;
 
@@ -128,7 +127,7 @@ PxeReceive (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Receive(
+SnpUndi32Receive (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   OUT UINTN                       *HeaderSize OPTIONAL,
   IN OUT UINTN                    *BufferSize,

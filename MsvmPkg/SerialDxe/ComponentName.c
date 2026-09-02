@@ -14,54 +14,54 @@
 
 #include "Serial.h"
 
-extern EFI_GUID gMsvmSerialBusProtocolGuid;
+extern EFI_GUID  gMsvmSerialBusProtocolGuid;
 
 //
 // EFI Component Name Protocol.
 //
 GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME_PROTOCOL  gSerialComponentName =
 {
-    SerialComponentNameGetDriverName,
-    SerialComponentNameGetControllerName,
-    "eng"
+  SerialComponentNameGetDriverName,
+  SerialComponentNameGetControllerName,
+  "eng"
 };
 
 //
 // EFI Component Name 2 Protocol.
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME2_PROTOCOL gSerialComponentName2 =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME2_PROTOCOL  gSerialComponentName2 =
 {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME) SerialComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME) SerialComponentNameGetControllerName,
-    "en"
+  (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)SerialComponentNameGetDriverName,
+  (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)SerialComponentNameGetControllerName,
+  "en"
 };
 
 //
 // Root Controller name table.
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE gSerialControllerNameTable[] =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  gSerialControllerNameTable[] =
 {
-    { "eng;en", (CHAR16 *)L"Hyper-V Serial Bus Controller" },
-    { NULL, NULL }
+  { "eng;en", (CHAR16 *)L"Hyper-V Serial Bus Controller" },
+  { NULL,     NULL                                       }
 };
 
 //
 // Driver name table.
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE mSerialDriverNameTable[] =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  mSerialDriverNameTable[] =
 {
-    { "eng;en", L"Hyper-V Serial Driver" },
-    { NULL, NULL }
+  { "eng;en", L"Hyper-V Serial Driver" },
+  { NULL,     NULL                     }
 };
-
 
 EFI_STATUS
 EFIAPI
-SerialComponentNameGetDriverName(
-    IN  EFI_COMPONENT_NAME_PROTOCOL   *This,
-    IN  CHAR8                         *Language,
-    OUT CHAR16                        **DriverName
-    )
+SerialComponentNameGetDriverName (
+  IN  EFI_COMPONENT_NAME_PROTOCOL  *This,
+  IN  CHAR8                        *Language,
+  OUT CHAR16                       **DriverName
+  )
+
 /*++
 
 Routine Description:
@@ -109,23 +109,25 @@ Return Value:
 
 --*/
 {
-    return LookupUnicodeString2(Language,
-                                This->SupportedLanguages,
-                                mSerialDriverNameTable,
-                                DriverName,
-                                (BOOLEAN)(This == &gSerialComponentName));
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           mSerialDriverNameTable,
+           DriverName,
+           (BOOLEAN)(This == &gSerialComponentName)
+           );
 }
-
 
 EFI_STATUS
 EFIAPI
-SerialComponentNameGetControllerName(
-    IN  EFI_COMPONENT_NAME_PROTOCOL     *This,
-    IN  EFI_HANDLE                      ControllerHandle,
-    IN  EFI_HANDLE                      ChildHandle OPTIONAL,
-    IN  CHAR8                           *Language,
-    OUT CHAR16                          **ControllerName
-    )
+SerialComponentNameGetControllerName (
+  IN  EFI_COMPONENT_NAME_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_HANDLE                   ChildHandle OPTIONAL,
+  IN  CHAR8                        *Language,
+  OUT CHAR16                       **ControllerName
+  )
+
 /*++
 
 Routine Description:
@@ -203,63 +205,70 @@ Return Value:
 
 --**/
 {
-    EFI_STATUS              status;
-    EFI_SERIAL_IO_PROTOCOL  *serialIo;
-    SERIAL_DEVICE           *serialDevice;
+  EFI_STATUS              status;
+  EFI_SERIAL_IO_PROTOCOL  *serialIo;
+  SERIAL_DEVICE           *serialDevice;
 
+  //
+  // Make sure this driver is currently managing a ControllerHandle
+  //
+  status = EfiTestManagedDevice (
+             ControllerHandle,
+             gSerialDriver.DriverBindingHandle,
+             &gMsvmSerialBusProtocolGuid
+             );
+
+  if (ChildHandle != NULL) {
     //
-    // Make sure this driver is currently managing a ControllerHandle
+    // Get the Serial IO protocol on the child handle
     //
-    status = EfiTestManagedDevice(ControllerHandle,
-                                  gSerialDriver.DriverBindingHandle,
-                                  &gMsvmSerialBusProtocolGuid);
-
-    if (ChildHandle != NULL)
-    {
-        //
-        // Get the Serial IO protocol on the child handle
-        //
-        status = gBS->OpenProtocol(ChildHandle,
-                                   &gEfiSerialIoProtocolGuid,
-                                   (VOID **) &serialIo,
-                                   gSerialDriver.DriverBindingHandle,
-                                   ChildHandle,
-                                   EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-        if (EFI_ERROR(status))
-        {
-            return status;
-        }
-        //
-        // Offset to the Serial Device structure.
-        //
-        serialDevice = SERIAL_DEVICE_FROM_THIS(serialIo);
-
-        //
-        // Return the device specific string.
-        //
-        return LookupUnicodeString2(Language,
-                                    This->SupportedLanguages,
-                                    serialDevice->ControllerNameTable,
-                                    ControllerName,
-                                    (BOOLEAN)(This == &gSerialComponentName));
+    status = gBS->OpenProtocol (
+                    ChildHandle,
+                    &gEfiSerialIoProtocolGuid,
+                    (VOID **)&serialIo,
+                    gSerialDriver.DriverBindingHandle,
+                    ChildHandle,
+                    EFI_OPEN_PROTOCOL_GET_PROTOCOL
+                    );
+    if (EFI_ERROR (status)) {
+      return status;
     }
 
     //
-    // Just get the name of the root handle.
+    // Offset to the Serial Device structure.
     //
-    return LookupUnicodeString2(Language,
-                                This->SupportedLanguages,
-                                gSerialControllerNameTable,
-                                ControllerName,
-                                (BOOLEAN)(This == &gSerialComponentName));
+    serialDevice = SERIAL_DEVICE_FROM_THIS (serialIo);
+
+    //
+    // Return the device specific string.
+    //
+    return LookupUnicodeString2 (
+             Language,
+             This->SupportedLanguages,
+             serialDevice->ControllerNameTable,
+             ControllerName,
+             (BOOLEAN)(This == &gSerialComponentName)
+             );
+  }
+
+  //
+  // Just get the name of the root handle.
+  //
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           gSerialControllerNameTable,
+           ControllerName,
+           (BOOLEAN)(This == &gSerialComponentName)
+           );
 }
 
-
 VOID
-AddName(
-    IN  SERIAL_DEVICE               *SerialDevice,
-    IN  SERIAL_DEVICE_PROPERTIES    *SerialProperties
-    )
+AddName (
+  IN  SERIAL_DEVICE             *SerialDevice,
+  IN  SERIAL_DEVICE_PROPERTIES  *SerialProperties
+  )
+
 /*++
 
 Routine Description:
@@ -280,19 +289,23 @@ Return Value:
 
 --**/
 {
-    CHAR16 serialPortName[] = L"Serial Port #9";
+  CHAR16  serialPortName[] = L"Serial Port #9";
 
-    serialPortName[ARRAY_SIZE(serialPortName) - 2] = (CHAR16)(L'0' + (UINT8) SerialProperties->UID);
+  serialPortName[ARRAY_SIZE (serialPortName) - 2] = (CHAR16)(L'0' + (UINT8)SerialProperties->UID);
 
-    AddUnicodeString2("eng",
-                      gSerialComponentName.SupportedLanguages,
-                      &SerialDevice->ControllerNameTable,
-                      (CHAR16 *)serialPortName,
-                      TRUE);
+  AddUnicodeString2 (
+    "eng",
+    gSerialComponentName.SupportedLanguages,
+    &SerialDevice->ControllerNameTable,
+    (CHAR16 *)serialPortName,
+    TRUE
+    );
 
-    AddUnicodeString2("en",
-                      gSerialComponentName2.SupportedLanguages,
-                      &SerialDevice->ControllerNameTable,
-                      (CHAR16 *)serialPortName,
-                      FALSE);
+  AddUnicodeString2 (
+    "en",
+    gSerialComponentName2.SupportedLanguages,
+    &SerialDevice->ControllerNameTable,
+    (CHAR16 *)serialPortName,
+    FALSE
+    );
 }

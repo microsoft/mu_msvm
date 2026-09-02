@@ -26,36 +26,36 @@
 #include <BiosInterface.h>
 #include <IsolationTypes.h>
 
-#define SEC_TO_100NS(x) ((x) * 10LL * 1000 * 1000)
-#define _100NS_TO_S(x)  ((x) / (10LL * 1000 * 1000))
+#define SEC_TO_100NS(x)  ((x) * 10LL * 1000 * 1000)
+#define _100NS_TO_S(x)   ((x) / (10LL * 1000 * 1000))
 
 EFI_STATUS
 EFIAPI
 WatchdogSoftSetPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              TimerPeriod
-    );
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                TimerPeriod
+  );
 
 EFI_STATUS
 EFIAPI
 WatchdogHwSetPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              TimerPeriod
-    );
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                TimerPeriod
+  );
 
 EFI_STATUS
 EFIAPI
 WatchdogRegisterHandler (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-    IN  EFI_WATCHDOG_TIMER_NOTIFY           NotifyFunction
-    );
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  IN  EFI_WATCHDOG_TIMER_NOTIFY         NotifyFunction
+  );
 
 EFI_STATUS
 EFIAPI
 WatchdogGetTimerPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              *TimerPeriod
-    );
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                *TimerPeriod
+  );
 
 //
 // The Watchdog Timer Architectural Protocol instance produced by this driver
@@ -63,9 +63,9 @@ WatchdogGetTimerPeriod (
 //
 EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  mWatchdogTimer =
 {
-    WatchdogRegisterHandler,
-    NULL,
-    WatchdogGetTimerPeriod
+  WatchdogRegisterHandler,
+  NULL,
+  WatchdogGetTimerPeriod
 };
 
 //
@@ -76,7 +76,7 @@ EFI_HANDLE  mWatchdogTimerHandle = NULL;
 //
 // Timer event used for resetting the HW or Soft Watchdog expiration.
 //
-EFI_EVENT   mWatchdogTimerEvent;
+EFI_EVENT  mWatchdogTimerEvent;
 
 //
 // The notification function to call if the watchdig timer fires
@@ -86,24 +86,25 @@ EFI_WATCHDOG_TIMER_NOTIFY  mWatchdogTimerNotifyFunction = NULL;
 //
 // The watchdog timer period in 100 ns units
 //
-UINT64      mWatchdogTimerPeriod = 0;
+UINT64  mWatchdogTimerPeriod = 0;
 
 //
 // Cached period of the hardware watchdog timer.
 //
-UINT32      mWatchdogTimerHwResolution = 0;
+UINT32  mWatchdogTimerHwResolution = 0;
 
 //
 // Notification for when ExitBootServices is called.
 //
-static EFI_EVENT    mExitBootServicesEvent = NULL;
+static EFI_EVENT  mExitBootServicesEvent = NULL;
 
 VOID
 EFIAPI
 WatchdogSoftTimer (
-    IN  EFI_EVENT   Timer,
-    IN  VOID        *Context
-    )
+  IN  EFI_EVENT  Timer,
+  IN  VOID       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -122,25 +123,27 @@ Return Value:
 
 --*/
 {
-    REPORT_STATUS_CODE(EFI_ERROR_CODE | EFI_ERROR_MINOR,
-        (EFI_COMPUTING_UNIT_HOST_PROCESSOR | EFI_CU_HP_EC_TIMER_EXPIRED));
+  REPORT_STATUS_CODE (
+    EFI_ERROR_CODE | EFI_ERROR_MINOR,
+    (EFI_COMPUTING_UNIT_HOST_PROCESSOR | EFI_CU_HP_EC_TIMER_EXPIRED)
+    );
 
-    if (mWatchdogTimerNotifyFunction != NULL)
-    {
-        mWatchdogTimerNotifyFunction(mWatchdogTimerPeriod);
-    }
+  if (mWatchdogTimerNotifyFunction != NULL) {
+    mWatchdogTimerNotifyFunction (mWatchdogTimerPeriod);
+  }
 
-    DEBUG ((EFI_D_ERROR, "Watchdog Timer reseting system\n"));
+  DEBUG ((EFI_D_ERROR, "Watchdog Timer reseting system\n"));
 
-    gRT->ResetSystem (EfiResetCold, EFI_TIMEOUT, 0, NULL);
+  gRT->ResetSystem (EfiResetCold, EFI_TIMEOUT, 0, NULL);
 }
 
 EFI_STATUS
 EFIAPI
 WatchdogSoftSetPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              TimerPeriod
-    )
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                TimerPeriod
+  )
+
 /*++
 
 Routine Description:
@@ -170,17 +173,20 @@ Return Value:
 {
   mWatchdogTimerPeriod = TimerPeriod;
 
-  return gBS->SetTimer(mWatchdogTimerEvent,
+  return gBS->SetTimer (
+                mWatchdogTimerEvent,
                 (mWatchdogTimerPeriod == 0) ? TimerCancel : TimerRelative,
-                mWatchdogTimerPeriod);
+                mWatchdogTimerPeriod
+                );
 }
 
 EFI_STATUS
 EFIAPI
 WatchdogHwSetPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              TimerPeriod
-    )
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                TimerPeriod
+  )
+
 /*++
 
 Routine Description:
@@ -207,52 +213,51 @@ Return Value:
 
 --*/
 {
-    UINT32 timerPeriodSeconds;
-    UINT32 watchdogCount;
+  UINT32  timerPeriodSeconds;
+  UINT32  watchdogCount;
 
-    ASSERT ((mWatchdogTimerHwResolution != BIOS_WATCHDOG_NOT_ENABLED) &&
-            (mWatchdogTimerHwResolution != 0));
+  ASSERT (
+    (mWatchdogTimerHwResolution != BIOS_WATCHDOG_NOT_ENABLED) &&
+    (mWatchdogTimerHwResolution != 0)
+    );
 
-    if ((TimerPeriod != 0) &&
-        (TimerPeriod < (UINT64)SEC_TO_100NS(mWatchdogTimerHwResolution)))
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if ((TimerPeriod != 0) &&
+      (TimerPeriod < (UINT64)SEC_TO_100NS (mWatchdogTimerHwResolution)))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    mWatchdogTimerPeriod = TimerPeriod;
+  mWatchdogTimerPeriod = TimerPeriod;
 
+  //
+  // Disable the watchdog before setting the new count.
+  // The device is required to be completely disabled
+  // before changing the mode or one-shot timeout.
+  //
+  WatchdogConfigure (0, WatchdogDisabled);
+
+  if (TimerPeriod != 0) {
     //
-    // Disable the watchdog before setting the new count.
-    // The device is required to be completely disabled
-    // before changing the mode or one-shot timeout.
+    // Convert the desired expiration into the timer's native format.
     //
-    WatchdogConfigure(0, WatchdogDisabled);
+    timerPeriodSeconds = (UINT32)_100NS_TO_S (TimerPeriod);
+    watchdogCount      = timerPeriodSeconds / mWatchdogTimerHwResolution;
+    DEBUG ((EFI_D_INFO, "Hyper-V Watchdog Enabled. Expires in %d seconds (COUNT - %d).\n", timerPeriodSeconds, watchdogCount));
+    WatchdogConfigure (watchdogCount, WatchdogOneShot);
+  } else {
+    DEBUG ((EFI_D_INFO, "Hyper-V Watchdog Disabled.\n"));
+  }
 
-    if (TimerPeriod != 0)
-    {
-
-        //
-        // Convert the desired expiration into the timer's native format.
-        //
-        timerPeriodSeconds  = (UINT32)_100NS_TO_S(TimerPeriod);
-        watchdogCount       = timerPeriodSeconds / mWatchdogTimerHwResolution;
-        DEBUG((EFI_D_INFO, "Hyper-V Watchdog Enabled. Expires in %d seconds (COUNT - %d).\n", timerPeriodSeconds, watchdogCount));
-        WatchdogConfigure(watchdogCount, WatchdogOneShot);
-    }
-    else
-    {
-        DEBUG((EFI_D_INFO, "Hyper-V Watchdog Disabled.\n"));
-    }
-
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
 WatchdogGetTimerPeriod (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-        UINT64                              *TimerPeriod
-    )
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  UINT64                                *TimerPeriod
+  )
+
 /*++
 
 Routine Description:
@@ -277,22 +282,22 @@ Return Value:
 
 --*/
 {
-    if (TimerPeriod == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (TimerPeriod == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    *TimerPeriod = mWatchdogTimerPeriod;
+  *TimerPeriod = mWatchdogTimerPeriod;
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
 WatchdogRegisterHandler (
-    IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL    *This,
-    IN  EFI_WATCHDOG_TIMER_NOTIFY           NotifyFunction
-    )
+  IN  EFI_WATCHDOG_TIMER_ARCH_PROTOCOL  *This,
+  IN  EFI_WATCHDOG_TIMER_NOTIFY         NotifyFunction
+  )
+
 /*++
 
 Routine Description:
@@ -318,27 +323,25 @@ Return Value:
 
 --*/
 {
-    //
-    // If NotifyFunction is NULL, and a handler was not previously registered,
-    // return EFI_INVALID_PARAMETER.
-    //
-    if ((NotifyFunction == NULL) && (mWatchdogTimerNotifyFunction == NULL))
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  //
+  // If NotifyFunction is NULL, and a handler was not previously registered,
+  // return EFI_INVALID_PARAMETER.
+  //
+  if ((NotifyFunction == NULL) && (mWatchdogTimerNotifyFunction == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    //
-    // If NotifyFunction is not NULL, and a handler is already registered,
-    // return EFI_ALREADY_STARTED.
-    //
-    if ((NotifyFunction != NULL) && (mWatchdogTimerNotifyFunction != NULL))
-    {
-        return EFI_ALREADY_STARTED;
-    }
+  //
+  // If NotifyFunction is not NULL, and a handler is already registered,
+  // return EFI_ALREADY_STARTED.
+  //
+  if ((NotifyFunction != NULL) && (mWatchdogTimerNotifyFunction != NULL)) {
+    return EFI_ALREADY_STARTED;
+  }
 
-    mWatchdogTimerNotifyFunction = NotifyFunction;
+  mWatchdogTimerNotifyFunction = NotifyFunction;
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 /// \brief      Called when the Exit Boot Services event is signaled.
@@ -348,25 +351,25 @@ Return Value:
 ///
 VOID
 EFIAPI
-ExitBootServicesHandler(
-    IN  EFI_EVENT   Event,
-    IN  void*       Context
-    )
+ExitBootServicesHandler (
+  IN  EFI_EVENT  Event,
+  IN  void       *Context
+  )
 {
-
-    //
-    // Disable the watchdog as ExitBootServices is about to relinquish control
-    // of the system to the bootloader.
-    //
-    WatchdogConfigure(0, WatchdogDisabled);
+  //
+  // Disable the watchdog as ExitBootServices is about to relinquish control
+  // of the system to the bootloader.
+  //
+  WatchdogConfigure (0, WatchdogDisabled);
 }
 
 EFI_STATUS
 EFIAPI
 WatchdogInitialize (
-    IN  EFI_HANDLE          ImageHandle,
-    IN  EFI_SYSTEM_TABLE    *SystemTable
-    )
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -386,86 +389,79 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS  status;
-    BOOLEAN useSoftwareTimer = FALSE;
+  EFI_STATUS  status;
+  BOOLEAN     useSoftwareTimer = FALSE;
 
-    ASSERT_PROTOCOL_ALREADY_INSTALLED(NULL, &gEfiWatchdogTimerArchProtocolGuid);
+  ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEfiWatchdogTimerArchProtocolGuid);
 
-    if (IsHardwareIsolatedNoParavisor())
+  if (IsHardwareIsolatedNoParavisor ()) {
+    DEBUG ((EFI_D_INFO, "Running on an isolated guest without the BIOS emulator. Falling back to software.\n"));
+    useSoftwareTimer = TRUE;
+  } else {
+    //
+    // Read the hardware timer resolution to determine if it is
+    // available. Fallback to the software timer if hardware is disabled.
+    //
+    mWatchdogTimerHwResolution = WatchdogGetResolution ();
+
+    if ((mWatchdogTimerHwResolution == 0) ||
+        (mWatchdogTimerHwResolution == BIOS_WATCHDOG_NOT_ENABLED))
     {
-        DEBUG((EFI_D_INFO, "Running on an isolated guest without the BIOS emulator. Falling back to software.\n"));
-        useSoftwareTimer = TRUE;
+      DEBUG ((EFI_D_INFO, "No watchdog hardware available. Falling back to software.\n"));
+      useSoftwareTimer = TRUE;
     }
-    else
-    {
+  }
 
-        //
-        // Read the hardware timer resolution to determine if it is
-        // available. Fallback to the software timer if hardware is disabled.
-        //
-        mWatchdogTimerHwResolution = WatchdogGetResolution();
+  if (useSoftwareTimer) {
+    DEBUG ((EFI_D_INFO, "Using software timer.\n"));
+    mWatchdogTimerHwResolution    = BIOS_WATCHDOG_NOT_ENABLED;
+    mWatchdogTimer.SetTimerPeriod = WatchdogSoftSetPeriod;
 
-        if ((mWatchdogTimerHwResolution == 0) ||
-            (mWatchdogTimerHwResolution == BIOS_WATCHDOG_NOT_ENABLED))
-        {
-            DEBUG((EFI_D_INFO, "No watchdog hardware available. Falling back to software.\n"));
-            useSoftwareTimer = TRUE;
-        }
-    }
-
-    if (useSoftwareTimer)
-    {
-        DEBUG((EFI_D_INFO, "Using software timer.\n"));
-        mWatchdogTimerHwResolution = BIOS_WATCHDOG_NOT_ENABLED;
-        mWatchdogTimer.SetTimerPeriod = WatchdogSoftSetPeriod;
-
-        status = gBS->CreateEvent (
-                      EVT_TIMER | EVT_NOTIFY_SIGNAL,
-                      TPL_NOTIFY,
-                      WatchdogSoftTimer,
-                      NULL,
-                      &mWatchdogTimerEvent
-                      );
-        ASSERT_EFI_ERROR (status);
-
-    }
-    else
-    {
-        DEBUG((EFI_D_INFO, "Using Hyper-V watchdog timer.\n"));
-        mWatchdogTimer.SetTimerPeriod = WatchdogHwSetPeriod;
-
-        //
-        // No Periodic timer is needed when using the HW timer.
-        // This driver will use it in one-shot mode.
-        //
-    }
+    status = gBS->CreateEvent (
+                    EVT_TIMER | EVT_NOTIFY_SIGNAL,
+                    TPL_NOTIFY,
+                    WatchdogSoftTimer,
+                    NULL,
+                    &mWatchdogTimerEvent
+                    );
+    ASSERT_EFI_ERROR (status);
+  } else {
+    DEBUG ((EFI_D_INFO, "Using Hyper-V watchdog timer.\n"));
+    mWatchdogTimer.SetTimerPeriod = WatchdogHwSetPeriod;
 
     //
-    // Register notify function for EVT_SIGNAL_EXIT_BOOT_SERVICES.
+    // No Periodic timer is needed when using the HW timer.
+    // This driver will use it in one-shot mode.
     //
-    status = gBS->CreateEventEx(EVT_NOTIFY_SIGNAL,
-                              TPL_NOTIFY,
-                              ExitBootServicesHandler,
-                              NULL,
-                              &gEfiEventExitBootServicesGuid,
-                              &mExitBootServicesEvent);
-    ASSERT_EFI_ERROR(status);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
-        return status;
-    }
+  }
 
-    //
-    // Install the Watchdog Timer Arch Protocol onto a new handle
-    //
-    status = gBS->InstallMultipleProtocolInterfaces(
+  //
+  // Register notify function for EVT_SIGNAL_EXIT_BOOT_SERVICES.
+  //
+  status = gBS->CreateEventEx (
+                  EVT_NOTIFY_SIGNAL,
+                  TPL_NOTIFY,
+                  ExitBootServicesHandler,
+                  NULL,
+                  &gEfiEventExitBootServicesGuid,
+                  &mExitBootServicesEvent
+                  );
+  ASSERT_EFI_ERROR (status);
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
+    return status;
+  }
+
+  //
+  // Install the Watchdog Timer Arch Protocol onto a new handle
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
                   &mWatchdogTimerHandle,
                   &gEfiWatchdogTimerArchProtocolGuid,
                   &mWatchdogTimer,
                   NULL
                   );
-    ASSERT_EFI_ERROR (status);
+  ASSERT_EFI_ERROR (status);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

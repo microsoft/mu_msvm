@@ -24,31 +24,30 @@
 #include <BiosInterface.h>
 #include <PciConstants.h>
 
-
 STATIC
 EFI_DEVICE_PATH_PROTOCOL *
 CreateRootBridgeDevicePath (
-    UINT32  Uid
-    )
+  UINT32  Uid
+  )
 {
-    ACPI_HID_DEVICE_PATH      *AcpiNode;
-    EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
+  ACPI_HID_DEVICE_PATH      *AcpiNode;
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
 
-    AcpiNode = (ACPI_HID_DEVICE_PATH *)CreateDeviceNode (
-                   ACPI_DEVICE_PATH,
-                   ACPI_DP,
-                   sizeof (ACPI_HID_DEVICE_PATH)
-                   );
-    if (AcpiNode == NULL) {
-        return NULL;
-    }
+  AcpiNode = (ACPI_HID_DEVICE_PATH *)CreateDeviceNode (
+                                       ACPI_DEVICE_PATH,
+                                       ACPI_DP,
+                                       sizeof (ACPI_HID_DEVICE_PATH)
+                                       );
+  if (AcpiNode == NULL) {
+    return NULL;
+  }
 
-    AcpiNode->HID = PCIE_ROOT_COMPLEX_HID;
-    AcpiNode->UID = Uid;
+  AcpiNode->HID = PCIE_ROOT_COMPLEX_HID;
+  AcpiNode->UID = Uid;
 
-    DevicePath = AppendDevicePathNode (NULL, (EFI_DEVICE_PATH_PROTOCOL *)AcpiNode);
-    FreePool (AcpiNode);
-    return DevicePath;
+  DevicePath = AppendDevicePathNode (NULL, (EFI_DEVICE_PATH_PROTOCOL *)AcpiNode);
+  FreePool (AcpiNode);
+  return DevicePath;
 }
 
 /**
@@ -61,232 +60,268 @@ CreateRootBridgeDevicePath (
 PCI_ROOT_BRIDGE *
 EFIAPI
 PciHostBridgeGetRootBridges (
-    OUT UINTN  *Count
-    )
+  OUT UINTN  *Count
+  )
 {
-    UINT32                       McfgDataLen;
-    UINT32                       McfgEntryCount;
-    MCFG_ALLOCATION_ENTRY        *McfgEntries;
-    PCIE_BAR_APERTURE_ENTRY      *Apertures;
-    UINT32                       ApertureCount;
-    PCI_ROOT_BRIDGE              *Bridges;
-    UINT32                       i;
+  UINT32                   McfgDataLen;
+  UINT32                   McfgEntryCount;
+  MCFG_ALLOCATION_ENTRY    *McfgEntries;
+  PCIE_BAR_APERTURE_ENTRY  *Apertures;
+  UINT32                   ApertureCount;
+  PCI_ROOT_BRIDGE          *Bridges;
+  UINT32                   i;
 
-    if (Count == NULL) {
-        return NULL;
-    }
+  if (Count == NULL) {
+    return NULL;
+  }
 
-    *Count = 0;
+  *Count = 0;
+
+  //
+  // Find MCFG table from HOB list.
+  //
+  MCFG_TABLE_HEADER  *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable (
+                                                       EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE
+                                                       );
+
+  DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgHdr=%p\n", McfgHdr));
+
+  if ((McfgHdr == NULL) || (McfgHdr->Header.Length < sizeof (MCFG_TABLE_HEADER))) {
+    DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
+    return NULL;
+  }
+
+  McfgDataLen    = McfgHdr->Header.Length - sizeof (MCFG_TABLE_HEADER);
+  McfgEntryCount = McfgDataLen / sizeof (MCFG_ALLOCATION_ENTRY);
+
+  if ((McfgEntryCount == 0) || ((McfgDataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "PCIe: Invalid MCFG data (len=%u, entry_size=%u)\n",
+      McfgDataLen,
+      (UINT32)sizeof (MCFG_ALLOCATION_ENTRY)
+      ));
+    return NULL;
+  }
+
+  McfgEntries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
+
+  //
+  // Read PcieBarApertures from PCD.
+  //
+  Apertures     = (PCIE_BAR_APERTURE_ENTRY *)(UINTN)PcdGet64 (PcdPcieBarAperturesPtr);
+  ApertureCount = PcdGet32 (PcdPcieBarAperturesSize) / sizeof (PCIE_BAR_APERTURE_ENTRY);
+
+  if ((ApertureCount > 0) && (Apertures == NULL)) {
+    DEBUG ((DEBUG_ERROR, "PCIe: ApertureCount > 0 but pointer is NULL\n"));
+    ApertureCount = 0;
+  }
+
+  DEBUG ((
+    DEBUG_INFO,
+    "PCIe: %u MCFG entries, %u aperture entries\n",
+    McfgEntryCount,
+    ApertureCount
+    ));
+
+  //
+  // Allocate root bridge array, one per aperture entry.
+  // PcieBarApertures is the authoritative list of bridges UEFI should
+  // enumerate.  MCFG may contain additional bridges for the guest OS.
+  //
+  if (ApertureCount == 0) {
+    DEBUG ((DEBUG_INFO, "PciHostBridgeLib: No apertures, no root bridges for UEFI\n"));
+    return NULL;
+  }
+
+  Bridges = AllocateZeroPool (ApertureCount * sizeof (PCI_ROOT_BRIDGE));
+  if (Bridges == NULL) {
+    DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Failed to allocate root bridges\n"));
+    return NULL;
+  }
+
+  UINT32  BridgeCount = 0;
+
+  for (i = 0; i < ApertureCount; i++) {
+    UINT16  Segment        = Apertures[i].Segment;
+    UINT8   StartBus       = Apertures[i].StartBus;
+    UINT8   EndBus         = Apertures[i].EndBus;
+    UINT64  LowMmioBase    = Apertures[i].LowMmioBase;
+    UINT64  LowMmioLength  = Apertures[i].LowMmioLength;
+    UINT64  HighMmioBase   = Apertures[i].HighMmioBase;
+    UINT64  HighMmioLength = Apertures[i].HighMmioLength;
+    UINT32  j;
 
     //
-    // Find MCFG table from HOB list.
+    // Find the matching MCFG entry to get the ECAM base address.
+    // Match by segment number AND bus range containment — multiple MCFG
+    // entries per segment are allowed (PCI Firmware Spec §4.1.2) with
+    // disjoint bus ranges.
     //
-    MCFG_TABLE_HEADER *McfgHdr = (MCFG_TABLE_HEADER *)FindAcpiReplacementTable(
-        EFI_ACPI_6_2_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE);
-
-    DEBUG ((DEBUG_VERBOSE, "PCIe: PciHostBridgeLib McfgHdr=%p\n", McfgHdr));
-
-    if (McfgHdr == NULL || McfgHdr->Header.Length < sizeof(MCFG_TABLE_HEADER)) {
-        DEBUG ((DEBUG_INFO, "PCIe: No MCFG table, no root bridges\n"));
-        return NULL;
-    }
-
-    McfgDataLen = McfgHdr->Header.Length - sizeof (MCFG_TABLE_HEADER);
-    McfgEntryCount = McfgDataLen / sizeof (MCFG_ALLOCATION_ENTRY);
-
-    if (McfgEntryCount == 0 || (McfgDataLen % sizeof (MCFG_ALLOCATION_ENTRY)) != 0) {
-        DEBUG ((DEBUG_ERROR, "PCIe: Invalid MCFG data (len=%u, entry_size=%u)\n",
-                McfgDataLen, (UINT32)sizeof (MCFG_ALLOCATION_ENTRY)));
-        return NULL;
-    }
-
-    McfgEntries = (MCFG_ALLOCATION_ENTRY *)(McfgHdr + 1);
-
-    //
-    // Read PcieBarApertures from PCD.
-    //
-    Apertures = (PCIE_BAR_APERTURE_ENTRY *)(UINTN)PcdGet64 (PcdPcieBarAperturesPtr);
-    ApertureCount = PcdGet32 (PcdPcieBarAperturesSize) / sizeof (PCIE_BAR_APERTURE_ENTRY);
-
-    if (ApertureCount > 0 && Apertures == NULL) {
-        DEBUG ((DEBUG_ERROR, "PCIe: ApertureCount > 0 but pointer is NULL\n"));
-        ApertureCount = 0;
-    }
-
-    DEBUG ((DEBUG_INFO, "PCIe: %u MCFG entries, %u aperture entries\n",
-            McfgEntryCount, ApertureCount));
-
-    //
-    // Allocate root bridge array, one per aperture entry.
-    // PcieBarApertures is the authoritative list of bridges UEFI should
-    // enumerate.  MCFG may contain additional bridges for the guest OS.
-    //
-    if (ApertureCount == 0) {
-        DEBUG ((DEBUG_INFO, "PciHostBridgeLib: No apertures, no root bridges for UEFI\n"));
-        return NULL;
-    }
-
-    Bridges = AllocateZeroPool (ApertureCount * sizeof (PCI_ROOT_BRIDGE));
-    if (Bridges == NULL) {
-        DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Failed to allocate root bridges\n"));
-        return NULL;
-    }
-
-    UINT32 BridgeCount = 0;
-    for (i = 0; i < ApertureCount; i++) {
-        UINT16  Segment        = Apertures[i].Segment;
-        UINT8   StartBus       = Apertures[i].StartBus;
-        UINT8   EndBus         = Apertures[i].EndBus;
-        UINT64  LowMmioBase    = Apertures[i].LowMmioBase;
-        UINT64  LowMmioLength  = Apertures[i].LowMmioLength;
-        UINT64  HighMmioBase   = Apertures[i].HighMmioBase;
-        UINT64  HighMmioLength = Apertures[i].HighMmioLength;
-        UINT32  j;
-
-        //
-        // Find the matching MCFG entry to get the ECAM base address.
-        // Match by segment number AND bus range containment — multiple MCFG
-        // entries per segment are allowed (PCI Firmware Spec §4.1.2) with
-        // disjoint bus ranges.
-        //
-        BOOLEAN McfgFound = FALSE;
-        UINT64  EcamBase  = 0;
-        for (j = 0; j < McfgEntryCount; j++) {
-            if (McfgEntries[j].PciSegmentGroupNumber == Segment &&
-                StartBus >= McfgEntries[j].StartBusNumber &&
-                EndBus   <= McfgEntries[j].EndBusNumber) {
-                McfgFound = TRUE;
-                EcamBase = McfgEntries[j].BaseAddress
+    BOOLEAN  McfgFound = FALSE;
+    UINT64   EcamBase  = 0;
+    for (j = 0; j < McfgEntryCount; j++) {
+      if ((McfgEntries[j].PciSegmentGroupNumber == Segment) &&
+          (StartBus >= McfgEntries[j].StartBusNumber) &&
+          (EndBus   <= McfgEntries[j].EndBusNumber))
+      {
+        McfgFound = TRUE;
+        EcamBase  = McfgEntries[j].BaseAddress
                     + (UINT64)McfgEntries[j].StartBusNumber * PCIE_ECAM_BYTES_PER_BUS;
-                break;
-            }
-        }
-
-        if (!McfgFound) {
-            DEBUG ((DEBUG_ERROR,
-                    "PCIe: Aperture segment %u has no matching MCFG entry\n",
-                    Segment));
-            goto Cleanup;
-        }
-
-        if (EndBus < StartBus) {
-            DEBUG ((DEBUG_ERROR, "PCIe: Invalid bus range for segment %u: Start=%u End=%u\n",
-                    Segment, StartBus, EndBus));
-            goto Cleanup;
-        }
-
-        DEBUG ((DEBUG_INFO,
-                "PCIe: Bridge[%u]: Seg=%u Bus=%u..%u EcamBase=%016lx LowMmio=%016lx+%016lx HighMmio=%016lx+%016lx\n",
-                BridgeCount, Segment, StartBus, EndBus, EcamBase,
-                LowMmioBase, LowMmioLength, HighMmioBase, HighMmioLength));
-
-        Bridges[BridgeCount].Segment              = Segment;
-        Bridges[BridgeCount].Supports             = 0;
-        Bridges[BridgeCount].Attributes           = 0;
-        Bridges[BridgeCount].DmaAbove4G           = TRUE;
-        Bridges[BridgeCount].NoExtendedConfigSpace = FALSE;
-        Bridges[BridgeCount].AllocationAttributes = EFI_PCI_HOST_BRIDGE_COMBINE_MEM_PMEM |
-                                                    EFI_PCI_HOST_BRIDGE_MEM64_DECODE;
-
-        //
-        // When PcdPciDisableBusEnumeration is TRUE, PciBusDxe uses the
-        // lightweight enumerator which requires pre-assigned resources.
-        // Setting ResourceAssigned = TRUE causes CreateRootBridge to mark
-        // apertures as ResAllocated so Configuration emits them.
-        //
-        Bridges[BridgeCount].ResourceAssigned     = PcdGetBool(PcdPciDisableBusEnumeration);
-
-        //
-        // Bus aperture.
-        //
-        Bridges[BridgeCount].Bus.Base        = StartBus;
-        Bridges[BridgeCount].Bus.Limit       = EndBus;
-        Bridges[BridgeCount].Bus.Translation = 0;
-
-        //
-        // I/O aperture — empty (no legacy I/O supported).
-        //
-        Bridges[BridgeCount].Io.Base        = MAX_UINT64;
-        Bridges[BridgeCount].Io.Limit       = 0;
-        Bridges[BridgeCount].Io.Translation = 0;
-
-        //
-        // Low MMIO aperture (below 4 GB).
-        //
-        if (LowMmioLength > 0) {
-            if (LowMmioBase + LowMmioLength < LowMmioBase) {
-                DEBUG ((DEBUG_ERROR,
-                        "PCIe: LowMmio overflow: Base=%016lx Length=%016lx\n",
-                        LowMmioBase, LowMmioLength));
-                goto Cleanup;
-            }
-            Bridges[BridgeCount].Mem.Base        = LowMmioBase;
-            Bridges[BridgeCount].Mem.Limit       = LowMmioBase + LowMmioLength - 1;
-            Bridges[BridgeCount].Mem.Translation = 0;
-        } else {
-            Bridges[BridgeCount].Mem.Base        = MAX_UINT64;
-            Bridges[BridgeCount].Mem.Limit       = 0;
-            Bridges[BridgeCount].Mem.Translation = 0;
-        }
-
-        //
-        // High MMIO aperture (above 4 GB).
-        //
-        if (HighMmioLength > 0) {
-            if (HighMmioBase + HighMmioLength < HighMmioBase) {
-                DEBUG ((DEBUG_ERROR,
-                        "PCIe: HighMmio overflow: Base=%016lx Length=%016lx\n",
-                        HighMmioBase, HighMmioLength));
-                goto Cleanup;
-            }
-            Bridges[BridgeCount].MemAbove4G.Base        = HighMmioBase;
-            Bridges[BridgeCount].MemAbove4G.Limit       = HighMmioBase + HighMmioLength - 1;
-            Bridges[BridgeCount].MemAbove4G.Translation = 0;
-        } else {
-            Bridges[BridgeCount].MemAbove4G.Base        = MAX_UINT64;
-            Bridges[BridgeCount].MemAbove4G.Limit       = 0;
-            Bridges[BridgeCount].MemAbove4G.Translation = 0;
-        }
-
-        //
-        // Prefetchable MMIO — empty (no prefetchable distinction needed).
-        //
-        Bridges[BridgeCount].PMem.Base        = MAX_UINT64;
-        Bridges[BridgeCount].PMem.Limit       = 0;
-        Bridges[BridgeCount].PMem.Translation = 0;
-
-        Bridges[BridgeCount].PMemAbove4G.Base        = MAX_UINT64;
-        Bridges[BridgeCount].PMemAbove4G.Limit       = 0;
-        Bridges[BridgeCount].PMemAbove4G.Translation = 0;
-
-        //
-        // Device path — ACPI(PNP0A08, UID from host).
-        //
-        Bridges[BridgeCount].DevicePath = CreateRootBridgeDevicePath (Apertures[i].Uid);
-        if (Bridges[BridgeCount].DevicePath == NULL) {
-            DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Failed to create device path\n"));
-            goto Cleanup;
-        }
-
-        BridgeCount++;
+        break;
+      }
     }
 
-    if (BridgeCount == 0) {
+    if (!McfgFound) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "PCIe: Aperture segment %u has no matching MCFG entry\n",
+        Segment
+        ));
+      goto Cleanup;
+    }
+
+    if (EndBus < StartBus) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "PCIe: Invalid bus range for segment %u: Start=%u End=%u\n",
+        Segment,
+        StartBus,
+        EndBus
+        ));
+      goto Cleanup;
+    }
+
+    DEBUG ((
+      DEBUG_INFO,
+      "PCIe: Bridge[%u]: Seg=%u Bus=%u..%u EcamBase=%016lx LowMmio=%016lx+%016lx HighMmio=%016lx+%016lx\n",
+      BridgeCount,
+      Segment,
+      StartBus,
+      EndBus,
+      EcamBase,
+      LowMmioBase,
+      LowMmioLength,
+      HighMmioBase,
+      HighMmioLength
+      ));
+
+    Bridges[BridgeCount].Segment               = Segment;
+    Bridges[BridgeCount].Supports              = 0;
+    Bridges[BridgeCount].Attributes            = 0;
+    Bridges[BridgeCount].DmaAbove4G            = TRUE;
+    Bridges[BridgeCount].NoExtendedConfigSpace = FALSE;
+    Bridges[BridgeCount].AllocationAttributes  = EFI_PCI_HOST_BRIDGE_COMBINE_MEM_PMEM |
+                                                 EFI_PCI_HOST_BRIDGE_MEM64_DECODE;
+
+    //
+    // When PcdPciDisableBusEnumeration is TRUE, PciBusDxe uses the
+    // lightweight enumerator which requires pre-assigned resources.
+    // Setting ResourceAssigned = TRUE causes CreateRootBridge to mark
+    // apertures as ResAllocated so Configuration emits them.
+    //
+    Bridges[BridgeCount].ResourceAssigned = PcdGetBool (PcdPciDisableBusEnumeration);
+
+    //
+    // Bus aperture.
+    //
+    Bridges[BridgeCount].Bus.Base        = StartBus;
+    Bridges[BridgeCount].Bus.Limit       = EndBus;
+    Bridges[BridgeCount].Bus.Translation = 0;
+
+    //
+    // I/O aperture — empty (no legacy I/O supported).
+    //
+    Bridges[BridgeCount].Io.Base        = MAX_UINT64;
+    Bridges[BridgeCount].Io.Limit       = 0;
+    Bridges[BridgeCount].Io.Translation = 0;
+
+    //
+    // Low MMIO aperture (below 4 GB).
+    //
+    if (LowMmioLength > 0) {
+      if (LowMmioBase + LowMmioLength < LowMmioBase) {
+        DEBUG ((
+          DEBUG_ERROR,
+          "PCIe: LowMmio overflow: Base=%016lx Length=%016lx\n",
+          LowMmioBase,
+          LowMmioLength
+          ));
         goto Cleanup;
+      }
+
+      Bridges[BridgeCount].Mem.Base        = LowMmioBase;
+      Bridges[BridgeCount].Mem.Limit       = LowMmioBase + LowMmioLength - 1;
+      Bridges[BridgeCount].Mem.Translation = 0;
+    } else {
+      Bridges[BridgeCount].Mem.Base        = MAX_UINT64;
+      Bridges[BridgeCount].Mem.Limit       = 0;
+      Bridges[BridgeCount].Mem.Translation = 0;
     }
 
-    DEBUG ((DEBUG_INFO, "PciHostBridgeLib: Returning %u root bridges\n", BridgeCount));
+    //
+    // High MMIO aperture (above 4 GB).
+    //
+    if (HighMmioLength > 0) {
+      if (HighMmioBase + HighMmioLength < HighMmioBase) {
+        DEBUG ((
+          DEBUG_ERROR,
+          "PCIe: HighMmio overflow: Base=%016lx Length=%016lx\n",
+          HighMmioBase,
+          HighMmioLength
+          ));
+        goto Cleanup;
+      }
 
-    *Count = BridgeCount;
-    return Bridges;
+      Bridges[BridgeCount].MemAbove4G.Base        = HighMmioBase;
+      Bridges[BridgeCount].MemAbove4G.Limit       = HighMmioBase + HighMmioLength - 1;
+      Bridges[BridgeCount].MemAbove4G.Translation = 0;
+    } else {
+      Bridges[BridgeCount].MemAbove4G.Base        = MAX_UINT64;
+      Bridges[BridgeCount].MemAbove4G.Limit       = 0;
+      Bridges[BridgeCount].MemAbove4G.Translation = 0;
+    }
+
+    //
+    // Prefetchable MMIO — empty (no prefetchable distinction needed).
+    //
+    Bridges[BridgeCount].PMem.Base        = MAX_UINT64;
+    Bridges[BridgeCount].PMem.Limit       = 0;
+    Bridges[BridgeCount].PMem.Translation = 0;
+
+    Bridges[BridgeCount].PMemAbove4G.Base        = MAX_UINT64;
+    Bridges[BridgeCount].PMemAbove4G.Limit       = 0;
+    Bridges[BridgeCount].PMemAbove4G.Translation = 0;
+
+    //
+    // Device path — ACPI(PNP0A08, UID from host).
+    //
+    Bridges[BridgeCount].DevicePath = CreateRootBridgeDevicePath (Apertures[i].Uid);
+    if (Bridges[BridgeCount].DevicePath == NULL) {
+      DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Failed to create device path\n"));
+      goto Cleanup;
+    }
+
+    BridgeCount++;
+  }
+
+  if (BridgeCount == 0) {
+    goto Cleanup;
+  }
+
+  DEBUG ((DEBUG_INFO, "PciHostBridgeLib: Returning %u root bridges\n", BridgeCount));
+
+  *Count = BridgeCount;
+  return Bridges;
 
 Cleanup:
-    for (i = 0; i < BridgeCount; i++) {
-        FreePool (Bridges[i].DevicePath);
-    }
-    FreePool (Bridges);
-    *Count = 0;
-    return NULL;
+  for (i = 0; i < BridgeCount; i++) {
+    FreePool (Bridges[i].DevicePath);
+  }
+
+  FreePool (Bridges);
+  *Count = 0;
+  return NULL;
 }
 
 /**
@@ -299,21 +334,21 @@ Cleanup:
 VOID
 EFIAPI
 PciHostBridgeFreeRootBridges (
-    PCI_ROOT_BRIDGE  *Bridges,
-    UINTN            Count
-    )
+  PCI_ROOT_BRIDGE  *Bridges,
+  UINTN            Count
+  )
 {
-    UINTN  i;
+  UINTN  i;
 
-    if (Bridges == NULL) {
-        return;
-    }
+  if (Bridges == NULL) {
+    return;
+  }
 
-    for (i = 0; i < Count; i++) {
-        FreePool (Bridges[i].DevicePath);
-    }
+  for (i = 0; i < Count; i++) {
+    FreePool (Bridges[i].DevicePath);
+  }
 
-    FreePool (Bridges);
+  FreePool (Bridges);
 }
 
 /**
@@ -326,14 +361,14 @@ PciHostBridgeFreeRootBridges (
 VOID
 EFIAPI
 PciHostBridgeResourceConflict (
-    EFI_HANDLE  HostBridgeHandle,
-    VOID        *Configuration
-    )
+  EFI_HANDLE  HostBridgeHandle,
+  VOID        *Configuration
+  )
 {
-    //
-    // In a virtual machine, resource conflicts should not occur since
-    // the VMM controls all resource allocation.  Log and continue.
-    //
-    DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Resource conflict detected!\n"));
-    ASSERT (FALSE);
+  //
+  // In a virtual machine, resource conflicts should not occur since
+  // the VMM controls all resource allocation.  Log and continue.
+  //
+  DEBUG ((DEBUG_ERROR, "PciHostBridgeLib: Resource conflict detected!\n"));
+  ASSERT (FALSE);
 }

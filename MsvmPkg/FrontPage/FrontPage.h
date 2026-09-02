@@ -23,46 +23,43 @@
 //
 extern UINT8  FrontPageVfrBin[];
 
-extern EFI_FORM_BROWSER2_PROTOCOL      *mFormBrowser2;
+extern EFI_FORM_BROWSER2_PROTOCOL  *mFormBrowser2;
 
-extern UINTN    mCallbackKey;
+extern UINTN  mCallbackKey;
 
 //
 // Boot video resolution and text mode.
 //
-extern UINT32    mBootHorizontalResolution;
-extern UINT32    mBootVerticalResolution;
-extern UINT32    mBootTextModeColumn;
-extern UINT32    mBootTextModeRow;
+extern UINT32  mBootHorizontalResolution;
+extern UINT32  mBootVerticalResolution;
+extern UINT32  mBootTextModeColumn;
+extern UINT32  mBootTextModeRow;
 //
 // BIOS setup video resolution and text mode.
 //
-extern UINT32    mSetupTextModeColumn;
-extern UINT32    mSetupTextModeRow;
-extern UINT32    mSetupHorizontalResolution;
-extern UINT32    mSetupVerticalResolution;
-
+extern UINT32  mSetupTextModeColumn;
+extern UINT32  mSetupTextModeRow;
+extern UINT32  mSetupHorizontalResolution;
+extern UINT32  mSetupVerticalResolution;
 
 #define ONE_SECOND  10000000
-
-
 
 #define FRONT_PAGE_CALLBACK_DATA_SIGNATURE  SIGNATURE_32 ('F', 'P', 'C', 'B')
 
 typedef struct {
-  UINTN                           Signature;
+  UINTN                             Signature;
 
   //
   // HII relative handles
   //
-  EFI_HII_HANDLE                  HiiHandle;
-  EFI_HANDLE                      DriverHandle;
-  EFI_STRING_ID                   *LanguageToken;
+  EFI_HII_HANDLE                    HiiHandle;
+  EFI_HANDLE                        DriverHandle;
+  EFI_STRING_ID                     *LanguageToken;
 
   //
   // Produced protocols
   //
-  EFI_HII_CONFIG_ACCESS_PROTOCOL  ConfigAccess;
+  EFI_HII_CONFIG_ACCESS_PROTOCOL    ConfigAccess;
 } FRONT_PAGE_CALLBACK_DATA;
 
 #define EFI_FP_CALLBACK_DATA_FROM_THIS(a) \
@@ -74,7 +71,7 @@ typedef struct {
 
 extern FRONT_PAGE_CALLBACK_DATA  gFrontPagePrivate;
 
-extern EFI_HII_CONFIG_ROUTING_PROTOCOL   *mHiiConfigRouting;
+extern EFI_HII_CONFIG_ROUTING_PROTOCOL  *mHiiConfigRouting;
 
 /**
   Initialize HII information for the FrontPage
@@ -88,9 +85,7 @@ extern EFI_HII_CONFIG_ROUTING_PROTOCOL   *mHiiConfigRouting;
 **/
 EFI_STATUS
 InitializeFrontPage (
-  IN BOOLEAN    InitializeHiiData
+  IN BOOLEAN  InitializeHiiData
   );
 
-
 #endif // _FRONT_PAGE_H_
-

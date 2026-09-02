@@ -33,97 +33,93 @@
 //
 // Information on a currently pending event.
 //
-typedef struct
-{
-    RING_HANDLE                 Handle;
-    EFI_EVENT_DESCRIPTOR        Metadata;
-    UINTN                       CacheSize;
-    VOID*                       Cache;
+typedef struct {
+  RING_HANDLE             Handle;
+  EFI_EVENT_DESCRIPTOR    Metadata;
+  UINTN                   CacheSize;
+  VOID                    *Cache;
 } EVENT_PENDING_INFO;
 
 //
 // Internal enumeration context
 //
-typedef struct
-{
-    RING_HANDLE                 RingEnum;
-    UINT32                      BufferSize;
-    UINT8                       Buffer[];
+typedef struct {
+  RING_HANDLE    RingEnum;
+  UINT32         BufferSize;
+  UINT8          Buffer[];
 } EVENT_ENUM_CONTEXT;
 
 //
 // Internal representation of an event channel
 //
-typedef struct
-{
-    EFI_GUID                    Id;
-    EVENT_CHANNEL_INFO          Attributes;
-    //
-    // Cached pending event information
-    //
-    EVENT_PENDING_INFO          Pending;
-    EFI_LOCK                    Lock;
-    //
-    // Channel Stats, note that the Lost field is unused,
-    // it is maintained by the ring buffer.
-    //
-    EVENT_CHANNEL_STATISTICS    Stats;
-    //
-    // Pre-allocated below 4GB for the BIOS data port. This buffer is retained
-    // for the channel lifetime so flushing does not change the memory map.
-    //
-    VOID                        *FlushBuffer;
-    //
-    // Backing store for event data
-    //
-    EFI_RING_BUFFER             Ring;
+typedef struct {
+  EFI_GUID                    Id;
+  EVENT_CHANNEL_INFO          Attributes;
+  //
+  // Cached pending event information
+  //
+  EVENT_PENDING_INFO          Pending;
+  EFI_LOCK                    Lock;
+  //
+  // Channel Stats, note that the Lost field is unused,
+  // it is maintained by the ring buffer.
+  //
+  EVENT_CHANNEL_STATISTICS    Stats;
+  //
+  // Pre-allocated below 4GB for the BIOS data port. This buffer is retained
+  // for the channel lifetime so flushing does not change the memory map.
+  //
+  VOID                        *FlushBuffer;
+  //
+  // Backing store for event data
+  //
+  EFI_RING_BUFFER             Ring;
 } EVENT_CHANNEL;
 
 //
 //  Channel Id GUID must be the first field in the EVENT_CHANNEL
 //  as it is used as the object lookup key in the handle table.
 //
-STATIC_ASSERT_1(OFFSET_OF(EVENT_CHANNEL,Id) == 0);
+STATIC_ASSERT_1 (OFFSET_OF (EVENT_CHANNEL, Id) == 0);
 
 //
 // Number of bytes to increase the enumeration bounce buffer by
 // See EventEnumerate
 //
-#define EVENT_ENUM_BUFFER_STEP_SIZE 256
+#define EVENT_ENUM_BUFFER_STEP_SIZE  256
 
 //
 // Handle table for managing channels.
 //
-EFI_HANDLE mEventChannels;
+EFI_HANDLE  mEventChannels;
 
-const EFI_EVENTLOG_PROTOCOL mEfiEventLogProtocol =
+const EFI_EVENTLOG_PROTOCOL  mEfiEventLogProtocol =
 {
-    EventChannelCreate,
-    EventChannelFlush,
-    EventChannelReset,
-    EventChannelStatistics,
-    EventEnumerate,
-    EventLog,
-    EventPendingGet,
-    EventPendingCommit
+  EventChannelCreate,
+  EventChannelFlush,
+  EventChannelReset,
+  EventChannelStatistics,
+  EventEnumerate,
+  EventLog,
+  EventPendingGet,
+  EventPendingCommit
 };
 
-
 EFI_STATUS
-EventPendingCommitInternal(
-    IN      EVENT_CHANNEL              *Channel
-    );
+EventPendingCommitInternal (
+  IN      EVENT_CHANNEL  *Channel
+  );
 
 VOID
-EventPendingCleanup(
-    IN      EVENT_CHANNEL              *Channel
-    );
+EventPendingCleanup (
+  IN      EVENT_CHANNEL  *Channel
+  );
 
+VOID *
+EventAllocate32BitMemory (
+  IN      UINT32  Size
+  )
 
-VOID*
-EventAllocate32BitMemory(
-    IN      UINT32                      Size
-    )
 /*++
 
 Routine Description:
@@ -141,23 +137,29 @@ Return Value:
 
 --*/
 {
-    EFI_PHYSICAL_ADDRESS address = (BASE_4GB - 1ULL);
+  EFI_PHYSICAL_ADDRESS  address = (BASE_4GB - 1ULL);
 
-    if (EFI_ERROR(gBS->AllocatePages(AllocateMaxAddress,
-                                     EfiBootServicesData,
-                                     EFI_SIZE_TO_PAGES(Size),
-                                     (EFI_PHYSICAL_ADDRESS*) &address)))
-    {
-        return NULL;
-    }
+  if (EFI_ERROR (
+        gBS->AllocatePages (
+               AllocateMaxAddress,
+               EfiBootServicesData,
+               EFI_SIZE_TO_PAGES (Size),
+               (EFI_PHYSICAL_ADDRESS *)&address
+               )
+        ))
+  {
+    return NULL;
+  }
 
-    return (VOID*)(UINTN)address;
+  return (VOID *)(UINTN)address;
 }
+
 static inline
 VOID
-EventChannelLock(
-    IN      EVENT_CHANNEL              *Channel
-    )
+EventChannelLock (
+  IN      EVENT_CHANNEL  *Channel
+  )
+
 /*++
 
 Routine Description:
@@ -174,14 +176,15 @@ Return Value:
 
 --*/
 {
-    EfiAcquireLock(&Channel->Lock);
+  EfiAcquireLock (&Channel->Lock);
 }
 
 static inline
 VOID
-EventChannelUnlock(
-    IN      EVENT_CHANNEL              *Channel
-    )
+EventChannelUnlock (
+  IN      EVENT_CHANNEL  *Channel
+  )
+
 /*++
 
 Routine Description:
@@ -198,15 +201,15 @@ Return Value:
 
 --*/
 {
-    EfiReleaseLock(&Channel->Lock);
+  EfiReleaseLock (&Channel->Lock);
 }
 
-
 EVENT_CHANNEL *
-EventChannelFromGuid(
-    IN      const EFI_GUID             *Channel,
-    OUT     EFI_HANDLE                 *Handle
-    )
+EventChannelFromGuid (
+  IN      const EFI_GUID  *Channel,
+  OUT     EFI_HANDLE      *Handle
+  )
+
 /*++
 
 Routine Description:
@@ -227,29 +230,28 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel = NULL;
+  EVENT_CHANNEL  *channel = NULL;
 
-    channel = EfiHandleTableLookupByKey(mEventChannels,
-                Channel,
-                sizeof(*Channel),
-                Handle);
+  channel = EfiHandleTableLookupByKey (
+              mEventChannels,
+              Channel,
+              sizeof (*Channel),
+              Handle
+              );
 
-    if (channel != NULL)
-    {
-        return channel;
-    }
-    else
-    {
-        *Handle = INVALID_EVENT_HANDLE;
-        return NULL;
-    }
+  if (channel != NULL) {
+    return channel;
+  } else {
+    *Handle = INVALID_EVENT_HANDLE;
+    return NULL;
+  }
 }
 
-
 EVENT_CHANNEL *
-EventChannelFromHandle(
-    IN      const EFI_HANDLE            Channel
-    )
+EventChannelFromHandle (
+  IN      const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -267,27 +269,26 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel = NULL;
+  EVENT_CHANNEL  *channel = NULL;
 
-    if (Channel == INVALID_EVENT_HANDLE)
-    {
-        return NULL;
-    }
+  if (Channel == INVALID_EVENT_HANDLE) {
+    return NULL;
+  }
 
-    channel = EfiHandleTableLookupByHandle(mEventChannels, Channel);
+  channel = EfiHandleTableLookupByHandle (mEventChannels, Channel);
 
-    return channel;
+  return channel;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelFlushCallback(
-    IN      const EFI_HANDLE            TableHandle,
-    IN      VOID                       *CallbackContext,
-    IN      const EFI_HANDLE            ObjectHandle,
-    IN      VOID                       *Object
-    )
+EventChannelFlushCallback (
+  IN      const EFI_HANDLE  TableHandle,
+  IN      VOID              *CallbackContext,
+  IN      const EFI_HANDLE  ObjectHandle,
+  IN      VOID              *Object
+  )
+
 /*++
 
 Routine Description:
@@ -315,109 +316,104 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    EFI_HV_PROTECTION_HANDLE protectionHandle;
-    BIOS_EVENT_CHANNEL *channelDescriptor;
-    EVENT_CHANNEL *channel   = (EVENT_CHANNEL *)Object;
-    UINT32         dataSize  = channel->Ring.Size;
-    UINT32         allocSize = dataSize + sizeof(*channelDescriptor);
-    UINT64 physicalAddress;
-    UINT64 virtualAddress;
-    BOOLEAN hostEmulatorsPresent = PcdGetBool(PcdHostEmulatorsWhenHardwareIsolated);
+  EFI_STATUS                status;
+  EFI_HV_PROTECTION_HANDLE  protectionHandle;
+  BIOS_EVENT_CHANNEL        *channelDescriptor;
+  EVENT_CHANNEL             *channel  = (EVENT_CHANNEL *)Object;
+  UINT32                    dataSize  = channel->Ring.Size;
+  UINT32                    allocSize = dataSize + sizeof (*channelDescriptor);
+  UINT64                    physicalAddress;
+  UINT64                    virtualAddress;
+  BOOLEAN                   hostEmulatorsPresent = PcdGetBool (PcdHostEmulatorsWhenHardwareIsolated);
 
+  //
+  // Use the region allocated when the channel was created. The BIOS data
+  // port only accepts 32-bit addresses, and allocating here would change
+  // the memory map when called from an ExitBootServices notification.
+  //
+  channelDescriptor = channel->FlushBuffer;
+
+  EventChannelLock (channel);
+
+  if (IsHardwareIsolatedNoParavisor () && hostEmulatorsPresent) {
     //
-    // Use the region allocated when the channel was created. The BIOS data
-    // port only accepts 32-bit addresses, and allocating here would change
-    // the memory map when called from an ExitBootServices notification.
+    // In a hardware isolated system, making a chunk of guest memory visible to host
+    // scrambles that chunk of memory. Memory block needs to be re-populated with data.
     //
-    channelDescriptor = channel->FlushBuffer;
+    status = mHvIvm->MakeAddressRangeHostVisible (
+                       mHvIvm,
+                       (HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE),
+                       (void *)channelDescriptor,
+                       EFI_SIZE_TO_PAGES (allocSize) * EFI_PAGE_SIZE,
+                       FALSE,
+                       &protectionHandle
+                       );
 
-    EventChannelLock(channel);
-
-    if (IsHardwareIsolatedNoParavisor() && hostEmulatorsPresent)
-    {
-        //
-        // In a hardware isolated system, making a chunk of guest memory visible to host
-        // scrambles that chunk of memory. Memory block needs to be re-populated with data.
-        //
-        status = mHvIvm->MakeAddressRangeHostVisible(mHvIvm,
-                                        (HV_MAP_GPA_READABLE | HV_MAP_GPA_WRITABLE),
-                                        (void*)channelDescriptor,
-                                        EFI_SIZE_TO_PAGES(allocSize) * EFI_PAGE_SIZE,
-                                        FALSE,
-                                        &protectionHandle);
-
-        if (EFI_ERROR(status))
-        {
-            goto Exit;
-        }
-
-        //
-        // After making memory chunk host visible, guest needs virtual address to access memory.
-        //
-        physicalAddress = (UINT64)channelDescriptor;
-        physicalAddress += PcdGet64(PcdIsolationSharedGpaBoundary);
-        virtualAddress = (physicalAddress | PcdGet64(PcdIsolationSharedGpaCanonicalizationBitmask));
-        channelDescriptor = (BIOS_EVENT_CHANNEL *)virtualAddress;
+    if (EFI_ERROR (status)) {
+      goto Exit;
     }
 
     //
-    // Forcefully commit any pending event before flushing the ring.
+    // After making memory chunk host visible, guest needs virtual address to access memory.
     //
-    if (channel->Pending.Handle != INVALID_RING_HANDLE)
-    {
-        channel->Pending.Metadata.Flags |= EVENT_FLAG_INCOMPLETE;
-        EventPendingCommitInternal(channel);
-    }
+    physicalAddress   = (UINT64)channelDescriptor;
+    physicalAddress  += PcdGet64 (PcdIsolationSharedGpaBoundary);
+    virtualAddress    = (physicalAddress | PcdGet64 (PcdIsolationSharedGpaCanonicalizationBitmask));
+    channelDescriptor = (BIOS_EVENT_CHANNEL *)virtualAddress;
+  }
 
+  //
+  // Forcefully commit any pending event before flushing the ring.
+  //
+  if (channel->Pending.Handle != INVALID_RING_HANDLE) {
+    channel->Pending.Metadata.Flags |= EVENT_FLAG_INCOMPLETE;
+    EventPendingCommitInternal (channel);
+  }
+
+  //
+  // Flatten the ring data before flushing to the bios device.
+  //
+  channelDescriptor->DataSize = channel->Ring.Size;
+  RingBufferFlatten (&channel->Ring, &channelDescriptor->DataSize, channelDescriptor->Data);
+
+  channelDescriptor->Channel       = channel->Id;
+  channelDescriptor->EventsLost    = channel->Ring.Stats.LostWrites;
+  channelDescriptor->EventsWritten = channel->Stats.Written;
+
+  //
+  // Flush the log to a persistent storage. If there is a host BIOS device, that
+  // works like our persistent storage. If not, currently don't do anything.
+  //
+  if (IsHardwareIsolatedNoParavisor () && !hostEmulatorsPresent) {
     //
-    // Flatten the ring data before flushing to the bios device.
+    // TODO: Ideally, these would go into some persistent across boot storage like CMOS, Flash or EFI partition.
     //
-    channelDescriptor->DataSize = channel->Ring.Size;
-    RingBufferFlatten(&channel->Ring, &channelDescriptor->DataSize, channelDescriptor->Data);
+  } else {
+    WriteBiosDevice (BiosConfigEventLogFlush, (UINT32)(UINTN)channelDescriptor);
+  }
 
-    channelDescriptor->Channel       = channel->Id;
-    channelDescriptor->EventsLost    = channel->Ring.Stats.LostWrites;
-    channelDescriptor->EventsWritten = channel->Stats.Written;
+  if (IsHardwareIsolatedNoParavisor () && hostEmulatorsPresent) {
+    mHvIvm->MakeAddressRangeNotHostVisible (mHvIvm, &protectionHandle);
+  }
 
-    //
-    // Flush the log to a persistent storage. If there is a host BIOS device, that
-    // works like our persistent storage. If not, currently don't do anything.
-    //
-    if (IsHardwareIsolatedNoParavisor() && !hostEmulatorsPresent)
-    {
-        //
-        // TODO: Ideally, these would go into some persistent across boot storage like CMOS, Flash or EFI partition.
-        //
-    }
-    else
-    {
-        WriteBiosDevice(BiosConfigEventLogFlush, (UINT32)(UINTN)channelDescriptor);
-    }
-
-    if (IsHardwareIsolatedNoParavisor() && hostEmulatorsPresent)
-    {
-        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &protectionHandle);
-    }
-
-    channel->Stats.Flush++;
-    status = EFI_SUCCESS;
+  channel->Stats.Flush++;
+  status = EFI_SUCCESS;
 
 Exit:
-    EventChannelUnlock(channel);
+  EventChannelUnlock (channel);
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelResetCallback(
-    IN      const EFI_HANDLE            TableHandle,
-    IN      VOID                       *CallbackContext,
-    IN      const EFI_HANDLE            ObjectHandle,
-    IN      VOID                       *Object
-    )
+EventChannelResetCallback (
+  IN      const EFI_HANDLE  TableHandle,
+  IN      VOID              *CallbackContext,
+  IN      const EFI_HANDLE  ObjectHandle,
+  IN      VOID              *Object
+  )
+
 /*++
 
 Routine Description:
@@ -443,24 +439,24 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel = (EVENT_CHANNEL *)Object;
+  EVENT_CHANNEL  *channel = (EVENT_CHANNEL *)Object;
 
-    EventChannelLock(channel);
-    EventPendingCleanup(channel);
+  EventChannelLock (channel);
+  EventPendingCleanup (channel);
 
-    channel->Stats.Reset++;
-    channel->Stats.Written = 0;
-    RingBufferReset(&channel->Ring);
+  channel->Stats.Reset++;
+  channel->Stats.Written = 0;
+  RingBufferReset (&channel->Ring);
 
-    EventChannelUnlock(channel);
-    return EFI_SUCCESS;
+  EventChannelUnlock (channel);
+  return EFI_SUCCESS;
 }
 
-
 EFI_STATUS
-EventPendingCommitInternal(
-    IN          EVENT_CHANNEL          *Channel
-    )
+EventPendingCommitInternal (
+  IN          EVENT_CHANNEL  *Channel
+  )
+
 /*++
 
 Routine Description:
@@ -479,50 +475,54 @@ Return Value:
 
 --*/
 {
-    UINT32     ioSize;
-    EFI_STATUS status;
+  UINT32      ioSize;
+  EFI_STATUS  status;
 
-    //
-    // Flush metadata then data.
-    //
-    Channel->Pending.Metadata.Flags &= (~EVENT_FLAG_PENDING);
-    Channel->Pending.Metadata.CommitTime = GetPerformanceCounter();
-    ioSize = sizeof(EFI_EVENT_DESCRIPTOR);
+  //
+  // Flush metadata then data.
+  //
+  Channel->Pending.Metadata.Flags     &= (~EVENT_FLAG_PENDING);
+  Channel->Pending.Metadata.CommitTime = GetPerformanceCounter ();
+  ioSize                               = sizeof (EFI_EVENT_DESCRIPTOR);
 
-    status = RingBufferIo(&Channel->Ring,
-                Channel->Pending.Handle,
-                DataWrite,
-                0,
-                &Channel->Pending.Metadata,
-                &ioSize);
+  status = RingBufferIo (
+             &Channel->Ring,
+             Channel->Pending.Handle,
+             DataWrite,
+             0,
+             &Channel->Pending.Metadata,
+             &ioSize
+             );
 
-    ASSERT_EFI_ERROR(status);
+  ASSERT_EFI_ERROR (status);
 
-    if ((Channel->Pending.Cache != NULL) &&
-        (Channel->Pending.Metadata.DataSize > 0))
-    {
-        ioSize = Channel->Pending.Metadata.DataSize;
+  if ((Channel->Pending.Cache != NULL) &&
+      (Channel->Pending.Metadata.DataSize > 0))
+  {
+    ioSize = Channel->Pending.Metadata.DataSize;
 
-        status = RingBufferIo(&Channel->Ring,
-                    Channel->Pending.Handle,
-                    DataWrite,
-                    sizeof(EFI_EVENT_DESCRIPTOR),
-                    Channel->Pending.Cache,
-                    &ioSize);
+    status = RingBufferIo (
+               &Channel->Ring,
+               Channel->Pending.Handle,
+               DataWrite,
+               sizeof (EFI_EVENT_DESCRIPTOR),
+               Channel->Pending.Cache,
+               &ioSize
+               );
 
-        ASSERT_EFI_ERROR(status);
-    }
+    ASSERT_EFI_ERROR (status);
+  }
 
-    EventPendingCleanup(Channel);
+  EventPendingCleanup (Channel);
 
-    return status;
+  return status;
 }
 
-
 VOID
-EventPendingCleanup(
-    IN          EVENT_CHANNEL          *Channel
-    )
+EventPendingCleanup (
+  IN          EVENT_CHANNEL  *Channel
+  )
+
 /*++
 
 Routine Description:
@@ -539,22 +539,22 @@ Return Value:
 
 --*/
 {
-    //
-    // Reset the pending info.
-    // Note that the cache buffer is not freed
-    //
-    ZeroMem(&Channel->Pending.Metadata, sizeof(EFI_EVENT_DESCRIPTOR));
-    Channel->Pending.Handle = INVALID_RING_HANDLE;
+  //
+  // Reset the pending info.
+  // Note that the cache buffer is not freed
+  //
+  ZeroMem (&Channel->Pending.Metadata, sizeof (EFI_EVENT_DESCRIPTOR));
+  Channel->Pending.Handle = INVALID_RING_HANDLE;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelCreate(
-    IN              const EFI_GUID         *Channel,
-    IN OPTIONAL     EVENT_CHANNEL_INFO     *Attributes,
-    OUT OPTIONAL    EFI_HANDLE             *Handle
-    )
+EventChannelCreate (
+  IN              const EFI_GUID      *Channel,
+  IN OPTIONAL     EVENT_CHANNEL_INFO  *Attributes,
+  OUT OPTIONAL    EFI_HANDLE          *Handle
+  )
+
 /*++
 
 Routine Description:
@@ -581,117 +581,112 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel = NULL;
-    EFI_HANDLE    handle   = INVALID_EVENT_HANDLE;
-    UINTN         allocSize;
-    EFI_STATUS    status;
-    UINT32        flushBufferSize;
-    VOID          *flushBuffer = NULL;
+  EVENT_CHANNEL  *channel = NULL;
+  EFI_HANDLE     handle   = INVALID_EVENT_HANDLE;
+  UINTN          allocSize;
+  EFI_STATUS     status;
+  UINT32         flushBufferSize;
+  VOID           *flushBuffer = NULL;
 
-    //
-    // Try to find the channel.
-    // If found the channel has already been created
-    // Just return the handle if the caller wants it.
-    //
-    channel = EventChannelFromGuid(Channel, &handle);
+  //
+  // Try to find the channel.
+  // If found the channel has already been created
+  // Just return the handle if the caller wants it.
+  //
+  channel = EventChannelFromGuid (Channel, &handle);
 
-    if (channel != NULL)
-    {
-        status = EFI_SUCCESS;
-        goto Exit;
-    }
+  if (channel != NULL) {
+    status = EFI_SUCCESS;
+    goto Exit;
+  }
 
-    //
-    // No channel was found, this is an error for open only requests.
-    //
-    if (Attributes == NULL)
-    {
-        status = EFI_NOT_FOUND;
-        goto Exit;
-    }
+  //
+  // No channel was found, this is an error for open only requests.
+  //
+  if (Attributes == NULL) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
 
-    //
-    // BufferSize must be power of two
-    //
-    if ((Attributes->BufferSize & (Attributes->BufferSize - 1)) != 0)
-    {
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  //
+  // BufferSize must be power of two
+  //
+  if ((Attributes->BufferSize & (Attributes->BufferSize - 1)) != 0) {
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
-    //
-    // Fixed sized channels must have a buffer size that is a multiple of
-    // the record size.
-    //
-    if ((Attributes->Flags & EVENT_CHANNEL_FIXED_RECORDS) &&
-        ((Attributes->RecordSize == 0) ||
-         ((Attributes->BufferSize % Attributes->RecordSize) != 0)))
-    {
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
-    }
+  //
+  // Fixed sized channels must have a buffer size that is a multiple of
+  // the record size.
+  //
+  if ((Attributes->Flags & EVENT_CHANNEL_FIXED_RECORDS) &&
+      ((Attributes->RecordSize == 0) ||
+       ((Attributes->BufferSize % Attributes->RecordSize) != 0)))
+  {
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
 
-    if (Attributes->BufferSize > (MAX_UINT32 - sizeof(BIOS_EVENT_CHANNEL)))
-    {
-        status = EFI_BAD_BUFFER_SIZE;
-        goto Exit;
-    }
+  if (Attributes->BufferSize > (MAX_UINT32 - sizeof (BIOS_EVENT_CHANNEL))) {
+    status = EFI_BAD_BUFFER_SIZE;
+    goto Exit;
+  }
 
-    //
-    // Pre-allocate the flush buffer below 4GB for the BIOS data port. We
-    // allocate it here so that we can safe during EBS when we cannot
-    // tolerate memory map changes. It is boot services data and will be
-    // released to the OS after EBS.
-    //
-    flushBufferSize = Attributes->BufferSize + sizeof(BIOS_EVENT_CHANNEL);
-    flushBuffer = EventAllocate32BitMemory(flushBufferSize);
-    if (flushBuffer == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Exit;
-    }
+  //
+  // Pre-allocate the flush buffer below 4GB for the BIOS data port. We
+  // allocate it here so that we can safe during EBS when we cannot
+  // tolerate memory map changes. It is boot services data and will be
+  // released to the OS after EBS.
+  //
+  flushBufferSize = Attributes->BufferSize + sizeof (BIOS_EVENT_CHANNEL);
+  flushBuffer     = EventAllocate32BitMemory (flushBufferSize);
+  if (flushBuffer == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
 
-    allocSize = sizeof(EVENT_CHANNEL) + Attributes->BufferSize;
+  allocSize = sizeof (EVENT_CHANNEL) + Attributes->BufferSize;
 
-    status = EfiHandleTableAllocateObject(mEventChannels, allocSize, (void**)&channel, &handle);
+  status = EfiHandleTableAllocateObject (mEventChannels, allocSize, (void **)&channel, &handle);
 
-    if (EFI_ERROR(status))
-    {
-        FreePages(flushBuffer, EFI_SIZE_TO_PAGES(flushBufferSize));
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    FreePages (flushBuffer, EFI_SIZE_TO_PAGES (flushBufferSize));
+    goto Exit;
+  }
 
-    CopyGuid(&channel->Id, Channel);
-    CopyMem(&channel->Attributes, Attributes, sizeof(channel->Attributes));
-    channel->FlushBuffer = flushBuffer;
+  CopyGuid (&channel->Id, Channel);
+  CopyMem (&channel->Attributes, Attributes, sizeof (channel->Attributes));
+  channel->FlushBuffer = flushBuffer;
 
-    EfiInitializeLock(&channel->Lock, Attributes->Tpl);
-    channel->Pending.Handle    = INVALID_RING_HANDLE;
-    channel->Pending.Cache     = NULL;
-    channel->Pending.CacheSize = 0;
+  EfiInitializeLock (&channel->Lock, Attributes->Tpl);
+  channel->Pending.Handle    = INVALID_RING_HANDLE;
+  channel->Pending.Cache     = NULL;
+  channel->Pending.CacheSize = 0;
 
-    status = RingBufferInitialize(&channel->Ring,
-        Attributes->BufferSize,
-        ((Attributes->Flags & EVENT_CHANNEL_OVERWRITE_RECORDS) ? RING_BUFFER_OVERWRITE : 0));
+  status = RingBufferInitialize (
+             &channel->Ring,
+             Attributes->BufferSize,
+             ((Attributes->Flags & EVENT_CHANNEL_OVERWRITE_RECORDS) ? RING_BUFFER_OVERWRITE : 0)
+             );
 
-    ASSERT_EFI_ERROR(status);
+  ASSERT_EFI_ERROR (status);
 
 Exit:
 
-    if (Handle != NULL)
-    {
-        *Handle = handle;
-    }
+  if (Handle != NULL) {
+    *Handle = handle;
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelFlush(
-    IN      const EFI_HANDLE            Channel
-    )
+EventChannelFlush (
+  IN      const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -711,38 +706,32 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (Channel == INVALID_EVENT_HANDLE)
-    {
-        //
-        //  Enumerate all channels and flush them.
-        //
-        status = EfiHandleTableEnumerateObjects(mEventChannels, NULL, EventChannelFlushCallback);
+  if (Channel == INVALID_EVENT_HANDLE) {
+    //
+    //  Enumerate all channels and flush them.
+    //
+    status = EfiHandleTableEnumerateObjects (mEventChannels, NULL, EventChannelFlushCallback);
+  } else {
+    EVENT_CHANNEL  *channel = EventChannelFromHandle (Channel);
+
+    if (channel != NULL) {
+      status = EventChannelFlushCallback (NULL, NULL, Channel, channel);
+    } else {
+      status = EFI_NOT_FOUND;
     }
-    else
-    {
-        EVENT_CHANNEL *channel = EventChannelFromHandle(Channel);
+  }
 
-        if (channel != NULL)
-        {
-            status = EventChannelFlushCallback(NULL, NULL, Channel, channel);
-        }
-        else
-        {
-            status = EFI_NOT_FOUND;
-        }
-    }
-
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelReset(
-    IN      const EFI_HANDLE            Channel
-    )
+EventChannelReset (
+  IN      const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -760,39 +749,33 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if (Channel == INVALID_EVENT_HANDLE)
-    {
-        //
-        //  Enumerate all channels and reset them.
-        //
-        status = EfiHandleTableEnumerateObjects(mEventChannels, NULL, EventChannelResetCallback);
+  if (Channel == INVALID_EVENT_HANDLE) {
+    //
+    //  Enumerate all channels and reset them.
+    //
+    status = EfiHandleTableEnumerateObjects (mEventChannels, NULL, EventChannelResetCallback);
+  } else {
+    EVENT_CHANNEL  *channel = EventChannelFromHandle (Channel);
+
+    if (channel != NULL) {
+      status = EventChannelResetCallback (NULL, NULL, Channel, channel);
+    } else {
+      status = EFI_NOT_FOUND;
     }
-    else
-    {
-        EVENT_CHANNEL *channel = EventChannelFromHandle(Channel);
+  }
 
-        if (channel != NULL)
-        {
-            status = EventChannelResetCallback(NULL, NULL, Channel, channel);
-        }
-        else
-        {
-            status = EFI_NOT_FOUND;
-        }
-    }
-
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventChannelStatistics(
-    IN      const EFI_HANDLE            Channel,
-    OUT     EVENT_CHANNEL_STATISTICS   *Stats
-    )
+EventChannelStatistics (
+  IN      const EFI_HANDLE          Channel,
+  OUT     EVENT_CHANNEL_STATISTICS  *Stats
+  )
+
 /*++
 
 Routine Description:
@@ -812,32 +795,29 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel = EventChannelFromHandle(Channel);
+  EVENT_CHANNEL  *channel = EventChannelFromHandle (Channel);
 
-    ASSERT(Stats != NULL);
+  ASSERT (Stats != NULL);
 
-    if (channel != NULL)
-    {
-        CopyMem(Stats, &channel->Stats, sizeof(*Stats));
-        Stats->Lost = channel->Ring.Stats.LostWrites;
+  if (channel != NULL) {
+    CopyMem (Stats, &channel->Stats, sizeof (*Stats));
+    Stats->Lost = channel->Ring.Stats.LostWrites;
 
-        return EFI_SUCCESS;
-    }
-    else
-    {
-        return EFI_NOT_FOUND;
-    }
+    return EFI_SUCCESS;
+  } else {
+    return EFI_NOT_FOUND;
+  }
 }
-
 
 EFI_STATUS
 EFIAPI
-EventEnumerate(
-    IN      const EFI_HANDLE            Channel,
-    IN OUT  EFI_HANDLE                 *Enumerator,
-    OUT     EFI_EVENT_DESCRIPTOR       *Metadata,
-    OUT     VOID                      **Event
-    )
+EventEnumerate (
+  IN      const EFI_HANDLE      Channel,
+  IN OUT  EFI_HANDLE            *Enumerator,
+  OUT     EFI_EVENT_DESCRIPTOR  *Metadata,
+  OUT     VOID                  **Event
+  )
+
 /*++
 
 Routine Description:
@@ -865,156 +845,147 @@ Return Value:
 
 --*/
 {
-    EVENT_ENUM_CONTEXT  *enumContext = NULL;
-    VOID                *data = NULL;
-    EVENT_CHANNEL       *channel;
-    EFI_EVENT_DESCRIPTOR eventMeta;
-    RING_HANDLE     curItem;
-    UINT32          curItemSize;
-    UINT32          readSize;
-    UINT32          contextSize;
-    EFI_STATUS      status;
-    BOOLEAN         channelLocked = FALSE;
+  EVENT_ENUM_CONTEXT    *enumContext = NULL;
+  VOID                  *data        = NULL;
+  EVENT_CHANNEL         *channel;
+  EFI_EVENT_DESCRIPTOR  eventMeta;
+  RING_HANDLE           curItem;
+  UINT32                curItemSize;
+  UINT32                readSize;
+  UINT32                contextSize;
+  EFI_STATUS            status;
+  BOOLEAN               channelLocked = FALSE;
 
-    ZeroMem(&eventMeta, sizeof(eventMeta));
+  ZeroMem (&eventMeta, sizeof (eventMeta));
 
-    channel = EventChannelFromHandle(Channel);
+  channel = EventChannelFromHandle (Channel);
 
-    if (channel == NULL)
-    {
-        status = EFI_NOT_FOUND;
+  if (channel == NULL) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
+
+  ASSERT (Enumerator != NULL);
+  ASSERT (Metadata != NULL);
+  ASSERT (Event != NULL);
+
+  enumContext = *Enumerator;
+
+  if (enumContext == NULL) {
+    //
+    // Setup up ring enumerator and initial bounce buffer.
+    //
+    contextSize = EVENT_ENUM_BUFFER_STEP_SIZE;
+    enumContext = AllocateZeroPool (sizeof (EVENT_ENUM_CONTEXT) + contextSize);
+
+    if (enumContext == NULL) {
+      status = EFI_OUT_OF_RESOURCES;
+      goto Exit;
+    }
+
+    enumContext->RingEnum   = INVALID_RING_HANDLE;
+    enumContext->BufferSize = contextSize;
+  }
+
+  EventChannelLock (channel);
+  channelLocked = TRUE;
+
+  //
+  // Enumerate the current item.
+  //
+  status = RingBufferHandleEnumerate (
+             &channel->Ring,
+             &enumContext->RingEnum,
+             &curItem,
+             &curItemSize
+             );
+
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  //
+  // Read the event metadata for the current item.
+  //
+  readSize = sizeof (EFI_EVENT_DESCRIPTOR);
+  status   = RingBufferIo (&channel->Ring, curItem, DataRead, 0, &eventMeta, &readSize);
+
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  if (eventMeta.Flags & EVENT_FLAG_PENDING) {
+    ASSERT (channel->Pending.CacheSize >= eventMeta.DataSize);
+    data = channel->Pending.Cache;
+  } else {
+    //
+    // The current item is not pending so we need to read the data from the ring.
+    // If the current enum bounce buffer is too small, reallocate the context and
+    // buffer.
+    //
+    if (eventMeta.DataSize > enumContext->BufferSize) {
+      EVENT_ENUM_CONTEXT  *newContext;
+
+      contextSize = ALIGN_VALUE (eventMeta.DataSize, EVENT_ENUM_BUFFER_STEP_SIZE);
+      newContext  = AllocateZeroPool (sizeof (EVENT_ENUM_CONTEXT) + contextSize);
+
+      if (newContext == NULL) {
+        status = EFI_OUT_OF_RESOURCES;
         goto Exit;
-    }
+      }
 
-    ASSERT(Enumerator != NULL);
-    ASSERT(Metadata != NULL);
-    ASSERT(Event != NULL);
+      newContext->RingEnum   = enumContext->RingEnum;
+      newContext->BufferSize = contextSize;
 
-    enumContext = *Enumerator;
-
-    if (enumContext == NULL)
-    {
-        //
-        // Setup up ring enumerator and initial bounce buffer.
-        //
-        contextSize = EVENT_ENUM_BUFFER_STEP_SIZE;
-        enumContext = AllocateZeroPool(sizeof(EVENT_ENUM_CONTEXT) + contextSize);
-
-        if (enumContext == NULL)
-        {
-            status = EFI_OUT_OF_RESOURCES;
-            goto Exit;
-        }
-
-        enumContext->RingEnum   = INVALID_RING_HANDLE;
-        enumContext->BufferSize = contextSize;
-    }
-
-    EventChannelLock(channel);
-    channelLocked = TRUE;
-
-    //
-    // Enumerate the current item.
-    //
-    status = RingBufferHandleEnumerate(&channel->Ring,
-                        &enumContext->RingEnum,
-                        &curItem,
-                        &curItemSize);
-
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
+      gBS->FreePool (enumContext);
+      enumContext = newContext;
     }
 
     //
-    // Read the event metadata for the current item.
+    // Read the event data, skipping past the metadata.
     //
-    readSize = sizeof(EFI_EVENT_DESCRIPTOR);
-    status = RingBufferIo(&channel->Ring, curItem, DataRead, 0, &eventMeta, &readSize);
+    readSize = enumContext->BufferSize;
+    status   = RingBufferIo (
+                 &channel->Ring,
+                 curItem,
+                 DataRead,
+                 sizeof (EFI_EVENT_DESCRIPTOR),
+                 &enumContext->Buffer,
+                 &readSize
+                 );
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
+    if (EFI_ERROR (status)) {
+      goto Exit;
     }
 
-    if (eventMeta.Flags & EVENT_FLAG_PENDING)
-    {
-        ASSERT(channel->Pending.CacheSize >= eventMeta.DataSize);
-        data = channel->Pending.Cache;
-    }
-    else
-    {
-        //
-        // The current item is not pending so we need to read the data from the ring.
-        // If the current enum bounce buffer is too small, reallocate the context and
-        // buffer.
-        //
-        if (eventMeta.DataSize > enumContext->BufferSize)
-        {
-            EVENT_ENUM_CONTEXT *newContext;
-
-            contextSize = ALIGN_VALUE(eventMeta.DataSize, EVENT_ENUM_BUFFER_STEP_SIZE);
-            newContext = AllocateZeroPool(sizeof(EVENT_ENUM_CONTEXT) + contextSize);
-
-            if (newContext == NULL)
-            {
-                status = EFI_OUT_OF_RESOURCES;
-                goto Exit;
-            }
-
-            newContext->RingEnum   = enumContext->RingEnum;
-            newContext->BufferSize = contextSize;
-
-            gBS->FreePool(enumContext);
-            enumContext = newContext;
-        }
-
-        //
-        // Read the event data, skipping past the metadata.
-        //
-        readSize = enumContext->BufferSize;
-        status = RingBufferIo(&channel->Ring,
-                    curItem,
-                    DataRead,
-                    sizeof(EFI_EVENT_DESCRIPTOR),
-                    &enumContext->Buffer,
-                    &readSize);
-
-        if (EFI_ERROR(status))
-        {
-            goto Exit;
-        }
-
-        ASSERT(readSize == eventMeta.DataSize);
-        data = enumContext->Buffer;
-    }
+    ASSERT (readSize == eventMeta.DataSize);
+    data = enumContext->Buffer;
+  }
 
 Exit:
 
-    if (channelLocked)
-    {
-        EventChannelUnlock(channel);
-    }
+  if (channelLocked) {
+    EventChannelUnlock (channel);
+  }
 
-    if (!EFI_ERROR(status))
-    {
-        ASSIGN_STRUCT(Metadata, &eventMeta);
-    }
+  if (!EFI_ERROR (status)) {
+    ASSIGN_STRUCT (Metadata, &eventMeta);
+  }
 
-    *Enumerator = enumContext;
-    *Event      = data;
+  *Enumerator = enumContext;
+  *Event      = data;
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLog(
-    IN          const EFI_HANDLE            Channel,
-    IN          const EFI_EVENT_DESCRIPTOR *Event,
-    IN OPTIONAL const VOID                 *Data
-    )
+EventLog (
+  IN          const EFI_HANDLE            Channel,
+  IN          const EFI_EVENT_DESCRIPTOR  *Event,
+  IN OPTIONAL const VOID                  *Data
+  )
+
 /*++
 
 Routine Description:
@@ -1041,184 +1012,182 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL      *channel;
-    RING_HANDLE         eventHandle;
-    EFI_EVENT_DESCRIPTOR eventMeta;
-    UINT32              ioSize;
-    EFI_STATUS          status;
-    BOOLEAN             channelLocked = FALSE;
+  EVENT_CHANNEL         *channel;
+  RING_HANDLE           eventHandle;
+  EFI_EVENT_DESCRIPTOR  eventMeta;
+  UINT32                ioSize;
+  EFI_STATUS            status;
+  BOOLEAN               channelLocked = FALSE;
 
-    channel = EventChannelFromHandle(Channel);
+  channel = EventChannelFromHandle (Channel);
 
-    if (channel == NULL)
-    {
-        status = EFI_NOT_FOUND;
-        goto Exit;
+  if (channel == NULL) {
+    status = EFI_NOT_FOUND;
+    goto Exit;
+  }
+
+  if (Event == NULL) {
+    status = EFI_INVALID_PARAMETER;
+    goto Exit;
+  }
+
+  EventChannelLock (channel);
+  channelLocked = TRUE;
+
+  //
+  // Note the order of operations below is design to ensure that any currently pending event
+  // is preserved until it can be assured that a new pending event will succeed i.e. don't
+  // lose two events if an error occurs.
+  //
+  // 1. Attempt to grow the pending data cache if needed.
+  //    If this fails, the new event is lost (the previously pending event, if any, is preserved)
+  // 2. Reserve space in the ring
+  //    If this fails, the new event is lost.
+  //    (the pending cache may be larger than needed at this point, but no data has been lost).
+  //
+  // -- From this point on, no failures should occur ---
+  //
+  // 3. Write the event descriptor to the ring (potentially marked as pending)
+  // 4. If the event is pending,
+  //    Commit any previous pending data (marked as incomplete) and cache the current event data.
+  //    Non-pending events will have their data written to the ring at this time.
+  //
+
+  if ((Event->Flags & EVENT_FLAG_PENDING) &&
+      (Data != NULL) &&
+      (Event->DataSize != 0) &&
+      (Event->DataSize > channel->Pending.CacheSize))
+  {
+    VOID  *cacheBuffer;
+
+    //
+    // Pending events can only be allowed at TPL_NOTIFY or lower
+    // since memory allocation is not available at higher TPLs
+    //
+    ASSERT (EfiGetCurrentTpl () <= TPL_NOTIFY);
+
+    //
+    // Attempt to resize the current buffer to accomodate the incoming data.
+    // Note that if this fails the currently pending data is not lost,
+    // only the current log operation.
+    //
+    cacheBuffer = ReallocatePool (
+                    channel->Pending.CacheSize,
+                    Event->DataSize,
+                    channel->Pending.Cache
+                    );
+
+    if (cacheBuffer == NULL) {
+      status = EFI_OUT_OF_RESOURCES;
+      goto Exit;
     }
 
-    if (Event == NULL)
-    {
-        status = EFI_INVALID_PARAMETER;
-        goto Exit;
+    channel->Pending.Cache     = cacheBuffer;
+    channel->Pending.CacheSize = Event->DataSize;
+  }
+
+  //
+  // Reserve space in the ring for an event header and the caller's data
+  // Write the initial header first then the associated data if not a pending event.
+  //
+  status = RingBufferReserve (
+             &channel->Ring,
+             Event->DataSize+sizeof (EFI_EVENT_DESCRIPTOR),
+             &eventHandle
+             );
+
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  //
+  // From this point on, errors should be avoided (and really should not occurr at all)
+  // as space has already been reserved in the ring.
+  //
+
+  CopyMem (&eventMeta, Event, sizeof (*Event));
+  eventMeta.HeaderSize = SIZEOF_EFI_EVENT_DESCRIPTOR_REVISION_1;
+  eventMeta.Flags      = (Event->Flags & EVENT_FLAG_PENDING);
+  eventMeta.CreateTime = GetPerformanceCounter ();
+  eventMeta.CommitTime = ((Event->Flags & EVENT_FLAG_PENDING) ? 0LL : eventMeta.CreateTime);
+
+  //
+  // Always write the descriptor into the ring.
+  // The enumeration code needs to look at the flags.
+  //
+  ioSize = sizeof (EFI_EVENT_DESCRIPTOR);
+  status = RingBufferIo (
+             &channel->Ring,
+             eventHandle,
+             DataWrite,
+             0,
+             &eventMeta,
+             &ioSize
+             );
+
+  if (EFI_ERROR (status)) {
+    ASSERT (FALSE);
+    goto Exit;
+  }
+
+  //
+  // Pending, write data into the cache
+  // Any currently pending event will be marked as incomplete and
+  // forcefully committed.
+  //
+  if (Event->Flags & EVENT_FLAG_PENDING) {
+    if (channel->Pending.Handle != INVALID_RING_HANDLE) {
+      channel->Pending.Metadata.Flags |= EVENT_FLAG_INCOMPLETE;
+      EventPendingCommitInternal (channel);
     }
 
-    EventChannelLock(channel);
-    channelLocked = TRUE;
+    channel->Pending.Handle = eventHandle;
+    CopyMem (&channel->Pending.Metadata, &eventMeta, sizeof (eventMeta));
 
-    //
-    // Note the order of operations below is design to ensure that any currently pending event
-    // is preserved until it can be assured that a new pending event will succeed i.e. don't
-    // lose two events if an error occurs.
-    //
-    // 1. Attempt to grow the pending data cache if needed.
-    //    If this fails, the new event is lost (the previously pending event, if any, is preserved)
-    // 2. Reserve space in the ring
-    //    If this fails, the new event is lost.
-    //    (the pending cache may be larger than needed at this point, but no data has been lost).
-    //
-    // -- From this point on, no failures should occur ---
-    //
-    // 3. Write the event descriptor to the ring (potentially marked as pending)
-    // 4. If the event is pending,
-    //    Commit any previous pending data (marked as incomplete) and cache the current event data.
-    //    Non-pending events will have their data written to the ring at this time.
-    //
+    ASSERT (Event->DataSize <= channel->Pending.CacheSize);
+    CopyMem (channel->Pending.Cache, Data, Event->DataSize);
+  }
+  //
+  // Non-Pending, write the data now.
+  //
+  else if ((Data != NULL) &&
+           (Event->DataSize != 0))
+  {
+    ioSize = Event->DataSize;
+    status = RingBufferIo (
+               &channel->Ring,
+               eventHandle,
+               DataWrite,
+               sizeof (EFI_EVENT_DESCRIPTOR),
+               (VOID *)Data,
+               &ioSize
+               );
 
-    if ((Event->Flags & EVENT_FLAG_PENDING) &&
-        (Data != NULL) &&
-        (Event->DataSize != 0) &&
-        (Event->DataSize > channel->Pending.CacheSize))
-    {
-        VOID* cacheBuffer;
-
-        //
-        // Pending events can only be allowed at TPL_NOTIFY or lower
-        // since memory allocation is not available at higher TPLs
-        //
-        ASSERT(EfiGetCurrentTpl() <= TPL_NOTIFY);
-
-        //
-        // Attempt to resize the current buffer to accomodate the incoming data.
-        // Note that if this fails the currently pending data is not lost,
-        // only the current log operation.
-        //
-        cacheBuffer = ReallocatePool(channel->Pending.CacheSize,
-                            Event->DataSize,
-                            channel->Pending.Cache);
-
-        if (cacheBuffer == NULL)
-        {
-            status = EFI_OUT_OF_RESOURCES;
-            goto Exit;
-        }
-
-        channel->Pending.Cache     = cacheBuffer;
-        channel->Pending.CacheSize = Event->DataSize;
+    if (EFI_ERROR (status)) {
+      ASSERT (FALSE);
+      goto Exit;
     }
+  }
 
-    //
-    // Reserve space in the ring for an event header and the caller's data
-    // Write the initial header first then the associated data if not a pending event.
-    //
-    status = RingBufferReserve(&channel->Ring,
-                Event->DataSize+sizeof(EFI_EVENT_DESCRIPTOR),
-                &eventHandle);
-
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
-
-    //
-    // From this point on, errors should be avoided (and really should not occurr at all)
-    // as space has already been reserved in the ring.
-    //
-
-
-    CopyMem(&eventMeta, Event, sizeof(*Event));
-    eventMeta.HeaderSize = SIZEOF_EFI_EVENT_DESCRIPTOR_REVISION_1;
-    eventMeta.Flags      = (Event->Flags & EVENT_FLAG_PENDING);
-    eventMeta.CreateTime = GetPerformanceCounter();
-    eventMeta.CommitTime = ((Event->Flags & EVENT_FLAG_PENDING) ? 0LL : eventMeta.CreateTime);
-
-    //
-    // Always write the descriptor into the ring.
-    // The enumeration code needs to look at the flags.
-    //
-    ioSize = sizeof(EFI_EVENT_DESCRIPTOR);
-    status = RingBufferIo(&channel->Ring,
-                eventHandle,
-                DataWrite,
-                0,
-                &eventMeta,
-                &ioSize);
-
-    if (EFI_ERROR(status))
-    {
-        ASSERT(FALSE);
-        goto Exit;
-    }
-
-    //
-    // Pending, write data into the cache
-    // Any currently pending event will be marked as incomplete and
-    // forcefully committed.
-    //
-    if (Event->Flags & EVENT_FLAG_PENDING)
-    {
-        if (channel->Pending.Handle != INVALID_RING_HANDLE)
-        {
-            channel->Pending.Metadata.Flags |= EVENT_FLAG_INCOMPLETE;
-            EventPendingCommitInternal(channel);
-        }
-
-        channel->Pending.Handle   = eventHandle;
-        CopyMem(&channel->Pending.Metadata, &eventMeta, sizeof(eventMeta));
-
-        ASSERT(Event->DataSize <= channel->Pending.CacheSize);
-        CopyMem(channel->Pending.Cache, Data, Event->DataSize);
-    }
-    //
-    // Non-Pending, write the data now.
-    //
-    else if ((Data != NULL) &&
-             (Event->DataSize != 0))
-    {
-        ioSize = Event->DataSize;
-        status = RingBufferIo(&channel->Ring,
-                    eventHandle,
-                    DataWrite,
-                    sizeof(EFI_EVENT_DESCRIPTOR),
-                    (VOID*)Data,
-                    &ioSize);
-
-        if (EFI_ERROR(status))
-        {
-            ASSERT(FALSE);
-            goto Exit;
-        }
-    }
-
-    channel->Stats.Written++;
+  channel->Stats.Written++;
 
 Exit:
 
-    if (channelLocked)
-    {
-        EventChannelUnlock(channel);
-    }
+  if (channelLocked) {
+    EventChannelUnlock (channel);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventPendingGet(
-    IN      const EFI_HANDLE            Channel,
-    OUT     EFI_EVENT_DESCRIPTOR       *Metadata,
-    OUT     VOID                      **Data
-    )
+EventPendingGet (
+  IN      const EFI_HANDLE      Channel,
+  OUT     EFI_EVENT_DESCRIPTOR  *Metadata,
+  OUT     VOID                  **Data
+  )
+
 /*++
 
 Routine Description:
@@ -1243,39 +1212,35 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_FOUND;
+  EFI_STATUS  status = EFI_NOT_FOUND;
 
-    EVENT_CHANNEL *channel = EventChannelFromHandle(Channel);
+  EVENT_CHANNEL  *channel = EventChannelFromHandle (Channel);
 
-    if (channel)
-    {
-        EventChannelLock(channel);
+  if (channel) {
+    EventChannelLock (channel);
 
-        if (EFI_ERROR(RingBufferHandleIsValid(&channel->Ring, channel->Pending.Handle)))
-        {
-            // Pending event has been invalidated by another operation on the ring.
-            EventPendingCleanup(channel);
-            *Data     = NULL;
-        }
-        else
-        {
-            ASSIGN_STRUCT(Metadata, &channel->Pending.Metadata);
-            *Data     = channel->Pending.Cache;
-            status    = EFI_SUCCESS;
-        }
-
-        EventChannelUnlock(channel);
+    if (EFI_ERROR (RingBufferHandleIsValid (&channel->Ring, channel->Pending.Handle))) {
+      // Pending event has been invalidated by another operation on the ring.
+      EventPendingCleanup (channel);
+      *Data = NULL;
+    } else {
+      ASSIGN_STRUCT (Metadata, &channel->Pending.Metadata);
+      *Data  = channel->Pending.Cache;
+      status = EFI_SUCCESS;
     }
 
-    return status;
-}
+    EventChannelUnlock (channel);
+  }
 
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
-EventPendingCommit(
-    IN      const EFI_HANDLE            Channel
-    )
+EventPendingCommit (
+  IN      const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -1293,34 +1258,31 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL *channel;
-    EFI_STATUS status = EFI_NOT_FOUND;
+  EVENT_CHANNEL  *channel;
+  EFI_STATUS     status = EFI_NOT_FOUND;
 
-    channel = EventChannelFromHandle(Channel);
+  channel = EventChannelFromHandle (Channel);
 
-    if (channel != NULL)
-    {
-        EventChannelLock(channel);
+  if (channel != NULL) {
+    EventChannelLock (channel);
 
-        if (EFI_ERROR(RingBufferHandleIsValid(&channel->Ring, channel->Pending.Handle)))
-        {
-            EventPendingCleanup(channel);
-        }
-        else
-        {
-            status = EventPendingCommitInternal(channel);
-        }
-
-        EventChannelUnlock(channel);
+    if (EFI_ERROR (RingBufferHandleIsValid (&channel->Ring, channel->Pending.Handle))) {
+      EventPendingCleanup (channel);
+    } else {
+      status = EventPendingCommitInternal (channel);
     }
 
-    return status;
-}
+    EventChannelUnlock (channel);
+  }
 
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
-EventLoggerInitialize()
+EventLoggerInitialize (
+  )
+
 /*++
 
 Routine Description:
@@ -1337,42 +1299,43 @@ Return Value:
 
 --*/
 {
-    EFI_HANDLE handle = NULL;
-    EFI_STATUS status;
+  EFI_HANDLE  handle = NULL;
+  EFI_STATUS  status;
 
-    const EFI_HANDLE_TABLE_INFO eventChannels =
-    {
-        AllocateZeroPool,
-        FreePool,
-        sizeof(EFI_GUID)
-    };
+  const EFI_HANDLE_TABLE_INFO  eventChannels =
+  {
+    AllocateZeroPool,
+    FreePool,
+    sizeof (EFI_GUID)
+  };
 
-    DEBUG((DEBUG_INIT, "Initializing Event Logger, Maximum %d Channels\n", FixedPcdGet32(PcdEventLogMaxChannels)));
+  DEBUG ((DEBUG_INIT, "Initializing Event Logger, Maximum %d Channels\n", FixedPcdGet32 (PcdEventLogMaxChannels)));
 
-    status = EfiHandleTableInitialize(&eventChannels,
-                FixedPcdGet32(PcdEventLogMaxChannels),
-                'B',
-                &mEventChannels);
+  status = EfiHandleTableInitialize (
+             &eventChannels,
+             FixedPcdGet32 (PcdEventLogMaxChannels),
+             'B',
+             &mEventChannels
+             );
 
-    if (EFI_ERROR(status))
-    {
-        ASSERT(FALSE);
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    ASSERT (FALSE);
+    goto Exit;
+  }
 
-    status = gBS->InstallMultipleProtocolInterfaces(
-              &handle,
-              &gEfiEventLogProtocolGuid,
-              &mEfiEventLogProtocol,
-              NULL);
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &handle,
+                  &gEfiEventLogProtocolGuid,
+                  &mEfiEventLogProtocol,
+                  NULL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "Failed to Register Event Log Protocol. Error %08x\n", status));
-        ASSERT(FALSE);
-    }
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to Register Event Log Protocol. Error %08x\n", status));
+    ASSERT (FALSE);
+  }
 
 Exit:
 
-    return status;
+  return status;
 }

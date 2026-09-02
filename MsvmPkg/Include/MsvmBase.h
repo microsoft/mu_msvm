@@ -5,8 +5,7 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 --*/
 
-
-#define FIELD_SIZE(TYPE, Field) (sizeof(((TYPE *)0)->Field))
+#define FIELD_SIZE(TYPE, Field)  (sizeof(((TYPE *)0)->Field))
 
 #define SIZEOF_THROUGH_FIELD(TYPE, Field) \
     (OFFSET_OF(TYPE, Field) + FIELD_SIZE(TYPE, Field))

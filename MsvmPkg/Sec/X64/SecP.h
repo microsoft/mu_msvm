@@ -9,131 +9,125 @@
 #include <stdint.h>
 #include "AllowNamelessAggregate.h"
 
-extern HV_HYPERVISOR_ISOLATION_CONFIGURATION mIsolationConfiguration;
+extern HV_HYPERVISOR_ISOLATION_CONFIGURATION  mIsolationConfiguration;
 
 typedef struct _TRAP_FRAME {
-    UINT64 P1;
-    UINT64 P2;
-    UINT64 P3;
-    UINT64 P4;
-    UINT64 XmmRegisters[12];
-    UINT64 Rax;
-    UINT64 Rcx;
-    UINT64 Rdx;
-    UINT64 Rbx;
-    UINT64 R8;
-    UINT64 R9;
-    UINT64 R10;
-    UINT64 R11;
-    UINT64 ErrorCode;
-    UINT64 Rip;
-    UINT64 SegCs;
-    UINT64 Rflags;
-    UINT64 Rsp;
-    UINT64 SegSs;
+  UINT64    P1;
+  UINT64    P2;
+  UINT64    P3;
+  UINT64    P4;
+  UINT64    XmmRegisters[12];
+  UINT64    Rax;
+  UINT64    Rcx;
+  UINT64    Rdx;
+  UINT64    Rbx;
+  UINT64    R8;
+  UINT64    R9;
+  UINT64    R10;
+  UINT64    R11;
+  UINT64    ErrorCode;
+  UINT64    Rip;
+  UINT64    SegCs;
+  UINT64    Rflags;
+  UINT64    Rsp;
+  UINT64    SegSs;
 } TRAP_FRAME, *PTRAP_FRAME;
 
 BOOLEAN
 SecInitializeHardwareIsolation (
-        UINT32 IsolationType,
-    IN  UEFI_IGVM_PARAMETER_INFO *ParameterInfo
-    );
+  UINT32                        IsolationType,
+  IN  UEFI_IGVM_PARAMETER_INFO  *ParameterInfo
+  );
 
-#define MSR_GHCB        0xC0010130
+#define MSR_GHCB  0xC0010130
 
 VOID
 SecVirtualCommunicationExceptionHandler (
-    VOID
-    );
+  VOID
+  );
 
-#define VC_EXIT_CODE_CPUID      0x72
-#define VC_EXIT_CODE_MSR        0x7C
+#define VC_EXIT_CODE_CPUID  0x72
+#define VC_EXIT_CODE_MSR    0x7C
 
-typedef struct _HV_PSP_CPUID_LEAF
-{
-    UINT32 EaxIn;
-    UINT32 EcxIn;
-    UINT64 XfemIn;
-    UINT64 XssIn;
-    UINT32 EaxOut;
-    UINT32 EbxOut;
-    UINT32 EcxOut;
-    UINT32 EdxOut;
-    UINT64 ReservedZ;
+typedef struct _HV_PSP_CPUID_LEAF {
+  UINT32    EaxIn;
+  UINT32    EcxIn;
+  UINT64    XfemIn;
+  UINT64    XssIn;
+  UINT32    EaxOut;
+  UINT32    EbxOut;
+  UINT32    EcxOut;
+  UINT32    EdxOut;
+  UINT64    ReservedZ;
 } HV_PSP_CPUID_LEAF, *PHV_PSP_CPUID_LEAF;
 
-#define HV_PSP_CPUID_LEAF_COUNT_MAX     64
+#define HV_PSP_CPUID_LEAF_COUNT_MAX  64
 
-typedef struct _HV_PSP_CPUID_PAGE
-{
-    UINT32 Count;
-    UINT32 ReservedZ1;
-    UINT64 ReservedZ2;
-    HV_PSP_CPUID_LEAF CpuidLeafInfo[HV_PSP_CPUID_LEAF_COUNT_MAX];
+typedef struct _HV_PSP_CPUID_PAGE {
+  UINT32               Count;
+  UINT32               ReservedZ1;
+  UINT64               ReservedZ2;
+  HV_PSP_CPUID_LEAF    CpuidLeafInfo[HV_PSP_CPUID_LEAF_COUNT_MAX];
 } HV_PSP_CPUID_PAGE, *PHV_PSP_CPUID_PAGE;
 
-
-typedef struct _SEC_CPUID_INFO
-{
-    UINT64 SupportedLeaves;
-    UINT32 MaximumLeafIndex;
+typedef struct _SEC_CPUID_INFO {
+  UINT64    SupportedLeaves;
+  UINT32    MaximumLeafIndex;
 } SEC_CPUID_INFO;
 
 VOID
 SecVirtualizationExceptionHandler (
-    VOID
-    );
+  VOID
+  );
 
 typedef struct _TDX_VE_INFO {
-    UINT32 ExitReason;
-    UINT32 Valid;
-    UINT64 ExitQualification;
-    UINT64 GuestLinearAddress;
-    UINT64 GuestPhysicalAddress;
-    UINT32 InstructionLength;
-    UINT32 InstructionInfo;
+  UINT32    ExitReason;
+  UINT32    Valid;
+  UINT64    ExitQualification;
+  UINT64    GuestLinearAddress;
+  UINT64    GuestPhysicalAddress;
+  UINT32    InstructionLength;
+  UINT32    InstructionInfo;
 } TDX_VE_INFO, *PTDX_VE_INFO;
 
-#define VE_EXIT_CODE_CPUID      10
-#define VE_EXIT_CODE_HLT        12
-#define VE_EXIT_CODE_IO         30
-#define VE_EXIT_CODE_RDMSR      31
-#define VE_EXIT_CODE_WRMSR      32
+#define VE_EXIT_CODE_CPUID  10
+#define VE_EXIT_CODE_HLT    12
+#define VE_EXIT_CODE_IO     30
+#define VE_EXIT_CODE_RDMSR  31
+#define VE_EXIT_CODE_WRMSR  32
 
 //
 // VM Exit qualification for IO instructions and IO SMIs.
 //
 
-typedef union _TDX_VE_EXIT_QUALIFICATION_IO
-{
-    UINT64 AsUINT64;
-    UINT32 AsUINT32;
-    struct
-    {
-        UINT32 AccessSize:2;
-        UINT32 Reserved1:1;
-        UINT32 In:1;
-        UINT32 String:1;
-        UINT32 RepPrefix:1;
-        UINT32 ImmediateOperand:1;
-        UINT32 Reserved2:9;
-        UINT32 PortNumber:16;
-    };
+typedef union _TDX_VE_EXIT_QUALIFICATION_IO {
+  UINT64    AsUINT64;
+  UINT32    AsUINT32;
+  struct {
+    UINT32    AccessSize       : 2;
+    UINT32    Reserved1        : 1;
+    UINT32    In               : 1;
+    UINT32    String           : 1;
+    UINT32    RepPrefix        : 1;
+    UINT32    ImmediateOperand : 1;
+    UINT32    Reserved2        : 9;
+    UINT32    PortNumber       : 16;
+  };
 } TDX_VE_EXIT_QUALIFICATION_IO, *PTDX_VE_EXIT_QUALIFICATION_IO;
 
 int64_t
-SecGetTdxVeInfo(
-    OUT PTDX_VE_INFO VeInfo
-    );
+SecGetTdxVeInfo (
+  OUT PTDX_VE_INFO  VeInfo
+  );
 
 int64_t
-SecGetTdInfo(
-    OUT UINT32 *GpaWidth
-    );
+SecGetTdInfo (
+  OUT UINT32  *GpaWidth
+  );
 
 UINT64
 MulDiv64 (
-    UINT64 Value,
-    UINT64 Multiplier,
-    UINT64 Divisor
-    );
+  UINT64  Value,
+  UINT64  Multiplier,
+  UINT64  Divisor
+  );

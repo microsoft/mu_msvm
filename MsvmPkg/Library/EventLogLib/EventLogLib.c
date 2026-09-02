@@ -11,11 +11,13 @@
 #include <Library/EventLogLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
-EFI_EVENTLOG_PROTOCOL *mEventLogProtocol = NULL;
+EFI_EVENTLOG_PROTOCOL  *mEventLogProtocol = NULL;
 
 static
 BOOLEAN
-EventLogGetProtocol()
+EventLogGetProtocol (
+  )
+
 /*++
 
 Routine Description:
@@ -34,29 +36,28 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    if ((mEventLogProtocol == NULL) &&
-        (gBS != NULL) &&
-        (gBS->LocateProtocol != NULL))
-    {
-        status = gBS->LocateProtocol (&gEfiEventLogProtocolGuid, NULL, (void**)&mEventLogProtocol);
-        if (EFI_ERROR (status))
-        {
-            mEventLogProtocol = NULL;
-        }
+  if ((mEventLogProtocol == NULL) &&
+      (gBS != NULL) &&
+      (gBS->LocateProtocol != NULL))
+  {
+    status = gBS->LocateProtocol (&gEfiEventLogProtocolGuid, NULL, (void **)&mEventLogProtocol);
+    if (EFI_ERROR (status)) {
+      mEventLogProtocol = NULL;
     }
+  }
 
-    return (mEventLogProtocol != NULL);
+  return (mEventLogProtocol != NULL);
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogConstructor(
-    IN  EFI_HANDLE          ImageHandle,
-    IN  EFI_SYSTEM_TABLE    *SystemTable
-    )
+EventLogConstructor (
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -76,18 +77,18 @@ Return Value:
 
 --*/
 {
-    EventLogGetProtocol();
-    return EFI_SUCCESS;
+  EventLogGetProtocol ();
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogChannelCreate(
-    IN              const EFI_GUID      *Channel,
-    IN OPTIONAL     EVENT_CHANNEL_INFO  *Attributes,
-    OUT OPTIONAL    EFI_HANDLE          *Handle
-    )
+EventLogChannelCreate (
+  IN              const EFI_GUID      *Channel,
+  IN OPTIONAL     EVENT_CHANNEL_INFO  *Attributes,
+  OUT OPTIONAL    EFI_HANDLE          *Handle
+  )
+
 /*++
 
 Routine Description:
@@ -110,23 +111,22 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->ChannelCreate(Channel, Attributes, Handle);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->ChannelCreate (Channel, Attributes, Handle);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogChannelOpen(
-    IN              const EFI_GUID  *Channel,
-    OUT OPTIONAL    EFI_HANDLE      *Handle
-    )
+EventLogChannelOpen (
+  IN              const EFI_GUID  *Channel,
+  OUT OPTIONAL    EFI_HANDLE      *Handle
+  )
+
 /*++
 
 Routine Description:
@@ -147,19 +147,19 @@ Return Value:
 
 --*/
 {
-    return EventLogChannelCreate(Channel, NULL, Handle);
+  return EventLogChannelCreate (Channel, NULL, Handle);
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogLib(
-    IN          const EFI_HANDLE    Channel,
-                UINT32              Flags,
-                const UINT32        EventId,
-                const UINT32        DataSize,
-    IN OPTIONAL const VOID          *Data
-    )
+EventLogLib (
+  IN          const EFI_HANDLE  Channel,
+  UINT32                        Flags,
+  const UINT32                  EventId,
+  const UINT32                  DataSize,
+  IN OPTIONAL const VOID        *Data
+  )
+
 /*++
 
 Routine Description:
@@ -185,29 +185,28 @@ Return Value:
 
 --*/
 {
-    EFI_EVENT_DESCRIPTOR event;
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_EVENT_DESCRIPTOR  event;
+  EFI_STATUS            status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        ZeroMem(&event, sizeof(event));
-        event.EventId  = EventId;
-        event.DataSize = DataSize;
-        event.Flags    = Flags;
-        status = mEventLogProtocol->EventLog(Channel, &event, Data);
-    }
+  if (EventLogGetProtocol ()) {
+    ZeroMem (&event, sizeof (event));
+    event.EventId  = EventId;
+    event.DataSize = DataSize;
+    event.Flags    = Flags;
+    status         = mEventLogProtocol->EventLog (Channel, &event, Data);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogPendingGet(
-    IN  const EFI_HANDLE        Channel,
-    OUT EFI_EVENT_DESCRIPTOR    *Metadata,
-    OUT VOID                    **Data
-    )
+EventLogPendingGet (
+  IN  const EFI_HANDLE      Channel,
+  OUT EFI_EVENT_DESCRIPTOR  *Metadata,
+  OUT VOID                  **Data
+  )
+
 /*++
 
 Routine Description:
@@ -230,22 +229,21 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->EventPendingGet(Channel, Metadata, Data);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->EventPendingGet (Channel, Metadata, Data);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogPendingCommit(
-    IN  const EFI_HANDLE    Channel
-    )
+EventLogPendingCommit (
+  IN  const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -264,22 +262,21 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->EventPendingCommit(Channel);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->EventPendingCommit (Channel);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogFlush(
-    IN  const EFI_HANDLE    Channel
-    )
+EventLogFlush (
+  IN  const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -297,22 +294,21 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->ChannelFlush(Channel);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->ChannelFlush (Channel);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogReset(
-    IN  const EFI_HANDLE    Channel
-    )
+EventLogReset (
+  IN  const EFI_HANDLE  Channel
+  )
+
 /*++
 
 Routine Description:
@@ -330,23 +326,22 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->ChannelReset(Channel);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->ChannelReset (Channel);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogStatistics(
-    IN  const EFI_HANDLE            Channel,
-    OUT EVENT_CHANNEL_STATISTICS    *Stats
-    )
+EventLogStatistics (
+  IN  const EFI_HANDLE          Channel,
+  OUT EVENT_CHANNEL_STATISTICS  *Stats
+  )
+
 /*++
 
 Routine Description:
@@ -366,24 +361,23 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status = EFI_NOT_READY;
+  EFI_STATUS  status = EFI_NOT_READY;
 
-    if (EventLogGetProtocol())
-    {
-        status = mEventLogProtocol->ChannelStatistics(Channel, Stats);
-    }
+  if (EventLogGetProtocol ()) {
+    status = mEventLogProtocol->ChannelStatistics (Channel, Stats);
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-EventLogEnumerate(
-    IN  const EFI_HANDLE                Channel,
-    IN  EFI_EVENTLOG_ENUMERATE_CALLBACK Callback,
-    IN  const VOID                      *Context
-    )
+EventLogEnumerate (
+  IN  const EFI_HANDLE                 Channel,
+  IN  EFI_EVENTLOG_ENUMERATE_CALLBACK  Callback,
+  IN  const VOID                       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -407,38 +401,34 @@ Return Value:
 
 --*/
 {
-    VOID            *eventData = NULL;
-    EFI_EVENT_DESCRIPTOR eventDesc;
-    EFI_HANDLE enumerator = NULL;
-    EFI_STATUS status     = EFI_NOT_READY;
-    BOOLEAN    keepGoing  = TRUE;
+  VOID                  *eventData = NULL;
+  EFI_EVENT_DESCRIPTOR  eventDesc;
+  EFI_HANDLE            enumerator = NULL;
+  EFI_STATUS            status     = EFI_NOT_READY;
+  BOOLEAN               keepGoing  = TRUE;
 
-    //
-    // FUTURE: provide filtering capabilities either here on in the
-    // protocol implementation.  Currently all callbacks need to perform their own
-    // filtering if needed.
-    //
+  //
+  // FUTURE: provide filtering capabilities either here on in the
+  // protocol implementation.  Currently all callbacks need to perform their own
+  // filtering if needed.
+  //
 
-    if (EventLogGetProtocol())
-    {
-        status = EFI_SUCCESS;
+  if (EventLogGetProtocol ()) {
+    status = EFI_SUCCESS;
 
-        while ((!EFI_ERROR(status)) && (keepGoing))
-        {
-            status = mEventLogProtocol->EventEnumerate(Channel, &enumerator, &eventDesc, &eventData);
+    while ((!EFI_ERROR (status)) && (keepGoing)) {
+      status = mEventLogProtocol->EventEnumerate (Channel, &enumerator, &eventDesc, &eventData);
 
-            if (!EFI_ERROR(status))
-            {
-                keepGoing = Callback((VOID*)Context, &eventDesc, eventData);
-            }
-        }
-
-        if (status == EFI_END_OF_FILE)
-        {
-            status = EFI_SUCCESS;
-        }
+      if (!EFI_ERROR (status)) {
+        keepGoing = Callback ((VOID *)Context, &eventDesc, eventData);
+      }
     }
 
-    gBS->FreePool(enumerator);
-    return status;
+    if (status == EFI_END_OF_FILE) {
+      status = EFI_SUCCESS;
+    }
+  }
+
+  gBS->FreePool (enumerator);
+  return status;
 }

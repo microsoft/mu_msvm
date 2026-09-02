@@ -23,36 +23,37 @@
                 FALSE Secure boot is disabled
 **/
 BOOLEAN
-IsSecureBootOn()
+IsSecureBootOn (
+  )
 {
-    EFI_STATUS  Status = EFI_DEVICE_ERROR;
-    UINT8      *Value = NULL;
-    UINTN       Size = 0;
+  EFI_STATUS  Status = EFI_DEVICE_ERROR;
+  UINT8       *Value = NULL;
+  UINTN       Size   = 0;
 
-    //
-    // For now, no hardware isolated platforms without a paravisor support secure boot.
-    //
-    if (IsHardwareIsolatedNoParavisor()) {
-        return FALSE;
-    }
-
-    Status = GetVariable2(L"SecureBoot", &gEfiGlobalVariableGuid, (VOID **)&Value, &Size);
-    if (EFI_ERROR (Status) || (Value == NULL)) {
-        DEBUG ((DEBUG_ERROR, "%a - Failed to read SecureBoot variable.  Status = %r\n", __func__, Status));
-        return FALSE;
-    }
-
-    ASSERT(Size == 1);
-
-    if(*Value == 1) {
-        DEBUG((DEBUG_INFO, "%a - Secure boot on\n", __func__));
-        FreePool (Value);
-        return TRUE;
-    }
-
-    DEBUG((DEBUG_INFO, "%a - Secure boot off\n", __func__));
-    FreePool (Value);
+  //
+  // For now, no hardware isolated platforms without a paravisor support secure boot.
+  //
+  if (IsHardwareIsolatedNoParavisor ()) {
     return FALSE;
+  }
+
+  Status = GetVariable2 (L"SecureBoot", &gEfiGlobalVariableGuid, (VOID **)&Value, &Size);
+  if (EFI_ERROR (Status) || (Value == NULL)) {
+    DEBUG ((DEBUG_ERROR, "%a - Failed to read SecureBoot variable.  Status = %r\n", __func__, Status));
+    return FALSE;
+  }
+
+  ASSERT (Size == 1);
+
+  if (*Value == 1) {
+    DEBUG ((DEBUG_INFO, "%a - Secure boot on\n", __func__));
+    FreePool (Value);
+    return TRUE;
+  }
+
+  DEBUG ((DEBUG_INFO, "%a - Secure boot off\n", __func__));
+  FreePool (Value);
+  return FALSE;
 }
 
 /**
@@ -62,28 +63,25 @@ IsSecureBootOn()
 **/
 EFI_STATUS
 EFIAPI
-PlatformDeviceStateHelperInit(
-    IN EFI_HANDLE                   ImageHandle,
-    IN EFI_SYSTEM_TABLE             *SystemTable
+PlatformDeviceStateHelperInit (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-    DEVICE_STATE CoreNotifications = GetDeviceState();
+  DEVICE_STATE  CoreNotifications = GetDeviceState ();
 
-    DEBUG((DEBUG_INFO, "Starting %a \n", __func__));
+  DEBUG ((DEBUG_INFO, "Starting %a \n", __func__));
 
-    //
-    // Validate/set secure boot state
-    //
-    if (IsSecureBootOn())
-    {
-        // It is illegal to enable debugging with secure boot
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(((CoreNotifications & DEVICE_STATE_SOURCE_DEBUG_ENABLED) == 0));
-    }
-    else
-    {
-        CoreNotifications |= DEVICE_STATE_SECUREBOOT_OFF;
-        AddDeviceState(CoreNotifications);
-    }
+  //
+  // Validate/set secure boot state
+  //
+  if (IsSecureBootOn ()) {
+    // It is illegal to enable debugging with secure boot
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (((CoreNotifications & DEVICE_STATE_SOURCE_DEBUG_ENABLED) == 0));
+  } else {
+    CoreNotifications |= DEVICE_STATE_SECUREBOOT_OFF;
+    AddDeviceState (CoreNotifications);
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

@@ -22,221 +22,212 @@
 #include <Library/PrintLib.h>
 #include <nvspprotocol.h>
 
-#define MAXIMUM_ETHERNET_PACKET_SIZE        1514
+#define MAXIMUM_ETHERNET_PACKET_SIZE  1514
 
 // TODO: Make the number of packets in the buffer a PCD variable.
-#define NVSC_DEFAULT_RECEIVE_BUFFER_SIZE    MAXIMUM_ETHERNET_PACKET_SIZE * 128
-#define NVSC_DEFAULT_SEND_BUFFER_SIZE       MAXIMUM_ETHERNET_PACKET_SIZE * 128
+#define NVSC_DEFAULT_RECEIVE_BUFFER_SIZE  MAXIMUM_ETHERNET_PACKET_SIZE * 128
+#define NVSC_DEFAULT_SEND_BUFFER_SIZE     MAXIMUM_ETHERNET_PACKET_SIZE * 128
 
-#define NETVSC_VERSION 1
+#define NETVSC_VERSION  1
 
-typedef struct _ETHERNET_HEADER
-{
-    UINT8 DestAddr[PXE_HWADDR_LEN_ETHER];
-    UINT8 SrcAddr[PXE_HWADDR_LEN_ETHER];
-    UINT16 Type;
+typedef struct _ETHERNET_HEADER {
+  UINT8     DestAddr[PXE_HWADDR_LEN_ETHER];
+  UINT8     SrcAddr[PXE_HWADDR_LEN_ETHER];
+  UINT16    Type;
 } ETHERNET_HEADER;
 
-typedef struct _RX_PACKET_INSTANCE
-{
-    VOID * PacketContext;
-    VOID * Buffer;
-    UINT32 BufferLength;
-    BOOLEAN CompletionNeeded;
+typedef struct _RX_PACKET_INSTANCE {
+  VOID       *PacketContext;
+  VOID       *Buffer;
+  UINT32     BufferLength;
+  BOOLEAN    CompletionNeeded;
 } RX_PACKET_INSTANCE;
 
-typedef struct _RX_QUEUE
-{
-    RX_PACKET_INSTANCE    *Buffer;
-    UINT32                Length;
-    UINT32                Head;
-    UINT32                Tail;
+typedef struct _RX_QUEUE {
+  RX_PACKET_INSTANCE    *Buffer;
+  UINT32                Length;
+  UINT32                Head;
+  UINT32                Tail;
 } RX_QUEUE;
 
-typedef struct _TX_QUEUE
-{
-    VOID      **Buffer;
-    UINT32    Length;
-    UINT32    Head;
-    UINT32    Tail;
+typedef struct _TX_QUEUE {
+  VOID      **Buffer;
+  UINT32    Length;
+  UINT32    Head;
+  UINT32    Tail;
 } TX_QUEUE;
 
-typedef struct _NIC_DATA_INSTANCE
-{
-    EFI_EMCL_PROTOCOL         *Emcl;
-    EFI_NETWORK_STATISTICS    Statistics;
-    UINTN                     SupportedStatisticsSize;
-    BOOLEAN                   MediaPresent;
-    BOOLEAN                   EmclStarted;
+typedef struct _NIC_DATA_INSTANCE {
+  EFI_EMCL_PROTOCOL         *Emcl;
+  EFI_NETWORK_STATISTICS    Statistics;
+  UINTN                     SupportedStatisticsSize;
+  BOOLEAN                   MediaPresent;
+  BOOLEAN                   EmclStarted;
 
-    UINT8                     PermNodeAddress[PXE_MAC_LENGTH];
-    UINT8                     CurrentNodeAddress[PXE_MAC_LENGTH];
-    UINT8                     BroadcastNodeAddress[PXE_MAC_LENGTH];
+  UINT8                     PermNodeAddress[PXE_MAC_LENGTH];
+  UINT8                     CurrentNodeAddress[PXE_MAC_LENGTH];
+  UINT8                     BroadcastNodeAddress[PXE_MAC_LENGTH];
 
-    EFI_EVENT                 RxFilterEvt;
-    EFI_STATUS                SetRxFilterStatus;
-    EFI_EVENT                 StnAddrEvt;
-    EFI_STATUS                GetStnAddrStatus;
-    EFI_EVENT                 InitRndisEvt;
-    EFI_STATUS                InitRndisStatus;
+  EFI_EVENT                 RxFilterEvt;
+  EFI_STATUS                SetRxFilterStatus;
+  EFI_EVENT                 StnAddrEvt;
+  EFI_STATUS                GetStnAddrStatus;
+  EFI_EVENT                 InitRndisEvt;
+  EFI_STATUS                InitRndisStatus;
 
-    VOID                      *RxBufferAllocation;
-    VOID                      *RxBuffer;
-    UINT32                    RxBufferPageCount;
-    UINT32                    RxQueueCount;
-    EFI_EMCL_GPADL            *RxGpadl;
-    BOOLEAN                   RxInterrupt;
-    BOOLEAN                   ReceiveStarted;
-    UINT8                     RxFilter;
+  VOID                      *RxBufferAllocation;
+  VOID                      *RxBuffer;
+  UINT32                    RxBufferPageCount;
+  UINT32                    RxQueueCount;
+  EFI_EMCL_GPADL            *RxGpadl;
+  BOOLEAN                   RxInterrupt;
+  BOOLEAN                   ReceiveStarted;
+  UINT8                     RxFilter;
 
-    VOID                      *TxBufferAllocation;
-    VOID                      *TxBuffer;
-    UINT32                    TxBufferPageCount;
-    UINT32                    TxBufCount;
-    UINT32                    TxSectionSize;
-    EFI_EMCL_GPADL            *TxGpadl;
-    BOOLEAN                   TxedInterrupt;
+  VOID                      *TxBufferAllocation;
+  VOID                      *TxBuffer;
+  UINT32                    TxBufferPageCount;
+  UINT32                    TxBufCount;
+  UINT32                    TxSectionSize;
+  EFI_EMCL_GPADL            *TxGpadl;
+  BOOLEAN                   TxedInterrupt;
 
-    RX_QUEUE                  RxPacketQueue;
-    TX_QUEUE                  FreeTxBuffersQueue;
-    TX_QUEUE                  TxedBuffersQueue;
+  RX_QUEUE                  RxPacketQueue;
+  TX_QUEUE                  FreeTxBuffersQueue;
+  TX_QUEUE                  TxedBuffersQueue;
 } NIC_DATA_INSTANCE;
 
-typedef struct _NETVSC_ADAPTER_CONTEXT
-{
-    EFI_HANDLE                  ControllerHandle;
-    EFI_HANDLE                  DeviceHandle;
-    EFI_DEVICE_PATH_PROTOCOL    *BaseDevPath;
-    EFI_DEVICE_PATH_PROTOCOL    *DevPath;
-    NIC_DATA_INSTANCE           NicInfo;
+typedef struct _NETVSC_ADAPTER_CONTEXT {
+  EFI_HANDLE                  ControllerHandle;
+  EFI_HANDLE                  DeviceHandle;
+  EFI_DEVICE_PATH_PROTOCOL    *BaseDevPath;
+  EFI_DEVICE_PATH_PROTOCOL    *DevPath;
+  NIC_DATA_INSTANCE           NicInfo;
 } NETVSC_ADAPTER_CONTEXT, *PNETVSC_ADAPTER_CONTEXT;
 
-typedef struct _TX_PACKET_CONTEXT
-{
-    NIC_DATA_INSTANCE      *AdapterInfo;
-    EFI_EXTERNAL_BUFFER    BufferInfo;
-    VOID                   *TxBuffer;
+typedef struct _TX_PACKET_CONTEXT {
+  NIC_DATA_INSTANCE      *AdapterInfo;
+  EFI_EXTERNAL_BUFFER    BufferInfo;
+  VOID                   *TxBuffer;
 } TX_PACKET_CONTEXT;
 
 EFI_STATUS
-NetvscInit(
-    IN  NIC_DATA_INSTANCE *AdapterInfo
-    );
+NetvscInit (
+  IN  NIC_DATA_INSTANCE  *AdapterInfo
+  );
 
 EFI_STATUS
-NetvscShutdown(
-    IN  NIC_DATA_INSTANCE *AdapterInfo
-    );
+NetvscShutdown (
+  IN  NIC_DATA_INSTANCE  *AdapterInfo
+  );
 
 EFI_STATUS
-NetvscSetFilter(
-    IN  NIC_DATA_INSTANCE *AdapterInfo,
-    IN  UINT32            newFilter
-    );
+NetvscSetFilter (
+  IN  NIC_DATA_INSTANCE  *AdapterInfo,
+  IN  UINT32             newFilter
+  );
 
 EFI_STATUS
-NetvscTransmit(
-    IN  NIC_DATA_INSTANCE               *AdapterInfo,
-    IN  VOID                            *Buffer,
-    IN  UINT32                          BufferSize
-    );
+NetvscTransmit (
+  IN  NIC_DATA_INSTANCE  *AdapterInfo,
+  IN  VOID               *Buffer,
+  IN  UINT32             BufferSize
+  );
 
 VOID
-NetvscReceiveCallback(
-    IN  VOID                                    *ReceiveContext,
-    IN  VOID                                    *PacketContext,
-    IN  VOID                                    *Buffer,
-    IN  UINT32                                  BufferLength,
-    IN  UINT16                                  TransferPageSetId,
-    IN  UINT32                                  RangeCount,
-    IN  EFI_TRANSFER_RANGE                      *Ranges
-    );
+NetvscReceiveCallback (
+  IN  VOID                *ReceiveContext,
+  IN  VOID                *PacketContext,
+  IN  VOID                *Buffer,
+  IN  UINT32              BufferLength,
+  IN  UINT16              TransferPageSetId,
+  IN  UINT32              RangeCount,
+  IN  EFI_TRANSFER_RANGE  *Ranges
+  );
 
 EFI_STATUS
-NetvscReceive(
-    IN      NIC_DATA_INSTANCE               *AdapterInfo,
-    OUT     VOID                            *Buffer,
-    IN OUT  UINTN                           *BufferSize,
-    OUT     UINTN                         *HeaderSize OPTIONAL,
-    OUT     EFI_MAC_ADDRESS               *SrcAddr OPTIONAL,
-    OUT     EFI_MAC_ADDRESS               *DestAddr OPTIONAL,
-    OUT     UINT16                        *Protocol OPTIONAL
-    );
+NetvscReceive (
+  IN      NIC_DATA_INSTANCE  *AdapterInfo,
+  OUT     VOID               *Buffer,
+  IN OUT  UINTN              *BufferSize,
+  OUT     UINTN              *HeaderSize OPTIONAL,
+  OUT     EFI_MAC_ADDRESS    *SrcAddr OPTIONAL,
+  OUT     EFI_MAC_ADDRESS    *DestAddr OPTIONAL,
+  OUT     UINT16             *Protocol OPTIONAL
+  );
 
 VOID
-NetvscResetStatistics(
-    IN  NIC_DATA_INSTANCE *AdapterInfo
-    );
+NetvscResetStatistics (
+  IN  NIC_DATA_INSTANCE  *AdapterInfo
+  );
 
 EFI_STATUS
-NvspStatusToEfiStatus(
-    IN  NVSP_STATUS nvspStatus
-);
+NvspStatusToEfiStatus (
+  IN  NVSP_STATUS  nvspStatus
+  );
 
 EFI_STATUS
-RxQueueInit(
-    IN  RX_QUEUE    *Queue,
-    IN  UINT32      Length
-    );
+RxQueueInit (
+  IN  RX_QUEUE  *Queue,
+  IN  UINT32    Length
+  );
 
 VOID
-RxQueueDestroy(
-    IN  RX_QUEUE *Queue
-    );
+RxQueueDestroy (
+  IN  RX_QUEUE  *Queue
+  );
 
 BOOLEAN
-RxQueueIsAlmostFull(
-    IN  RX_QUEUE *Queue
-    );
+RxQueueIsAlmostFull (
+  IN  RX_QUEUE  *Queue
+  );
 
 BOOLEAN
-RxQueueIsEmpty(
-    IN  RX_QUEUE *Queue
-    );
+RxQueueIsEmpty (
+  IN  RX_QUEUE  *Queue
+  );
 
 VOID
-RxQueueEnqueue(
-    IN  RX_QUEUE                *Queue,
-    IN  RX_PACKET_INSTANCE      *PacketInfo
-    );
+RxQueueEnqueue (
+  IN  RX_QUEUE            *Queue,
+  IN  RX_PACKET_INSTANCE  *PacketInfo
+  );
 
 VOID
-RxQueueDequeue(
-    IN  RX_QUEUE                *Queue,
-    OUT RX_PACKET_INSTANCE      *PacketInfo
-    );
+RxQueueDequeue (
+  IN  RX_QUEUE            *Queue,
+  OUT RX_PACKET_INSTANCE  *PacketInfo
+  );
 
 EFI_STATUS
-TxQueueInit(
-    IN  TX_QUEUE    *Queue,
-    IN  UINT32      Length
-    );
+TxQueueInit (
+  IN  TX_QUEUE  *Queue,
+  IN  UINT32    Length
+  );
 
 VOID
-TxQueueDestroy(
-    IN  TX_QUEUE *Queue
-    );
+TxQueueDestroy (
+  IN  TX_QUEUE  *Queue
+  );
 
 BOOLEAN
-TxQueueIsFull(
-    IN  TX_QUEUE *Queue
-    );
+TxQueueIsFull (
+  IN  TX_QUEUE  *Queue
+  );
 
 BOOLEAN
-TxQueueIsEmpty(
-    IN  TX_QUEUE *Queue
-    );
+TxQueueIsEmpty (
+  IN  TX_QUEUE  *Queue
+  );
 
 VOID
-TxQueueEnqueue(
-    IN  TX_QUEUE    *Queue,
-    IN  VOID        *TxBuffer
-    );
+TxQueueEnqueue (
+  IN  TX_QUEUE  *Queue,
+  IN  VOID      *TxBuffer
+  );
 
 VOID
-TxQueueDequeue(
-    IN  TX_QUEUE     *Queue,
-    OUT VOID        **TxBuffer
-    );
-
-
+TxQueueDequeue (
+  IN  TX_QUEUE  *Queue,
+  OUT VOID      **TxBuffer
+  );

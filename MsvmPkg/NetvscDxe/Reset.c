@@ -25,38 +25,36 @@ PxeReset (
   )
 {
   // MS_HYP_CHANGE BEGIN
-  EFI_STATUS status = EFI_SUCCESS;
-  EFI_NETWORK_STATISTICS savedStats;
-  UINT32 savedFilters;
+  EFI_STATUS              status = EFI_SUCCESS;
+  EFI_NETWORK_STATISTICS  savedStats;
+  UINT32                  savedFilters;
 
-  CopyMem(&savedStats, &Snp->AdapterContext->NicInfo.Statistics, sizeof(EFI_NETWORK_STATISTICS));
+  CopyMem (&savedStats, &Snp->AdapterContext->NicInfo.Statistics, sizeof (EFI_NETWORK_STATISTICS));
   savedFilters = Snp->AdapterContext->NicInfo.RxFilter;
 
-  status = NetvscShutdown(&Snp->AdapterContext->NicInfo);
-  if (EFI_ERROR(status))
-  {
+  status = NetvscShutdown (&Snp->AdapterContext->NicInfo);
+  if (EFI_ERROR (status)) {
     goto Cleanup;
   }
 
-  status = NetvscInit(&Snp->AdapterContext->NicInfo);
-  if (EFI_ERROR(status))
-  {
+  status = NetvscInit (&Snp->AdapterContext->NicInfo);
+  if (EFI_ERROR (status)) {
     goto Cleanup;
   }
 
-  CopyMem(&Snp->AdapterContext->NicInfo.Statistics, &savedStats, sizeof(EFI_NETWORK_STATISTICS));
+  CopyMem (&Snp->AdapterContext->NicInfo.Statistics, &savedStats, sizeof (EFI_NETWORK_STATISTICS));
 
-  status = NetvscSetFilter(&Snp->AdapterContext->NicInfo, savedFilters);
+  status = NetvscSetFilter (&Snp->AdapterContext->NicInfo, savedFilters);
 
 Cleanup:
 
-  if (EFI_ERROR(status))
-  {
+  if (EFI_ERROR (status)) {
     //
     // NetVsc could not be reset. Return NetVsc error.
     //
     return EFI_DEVICE_ERROR;
   }
+
   // MS_HYP_CHANGE BEGIN
 
   return EFI_SUCCESS;
@@ -88,7 +86,7 @@ Cleanup:
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Reset(
+SnpUndi32Reset (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ExtendedVerification
   )

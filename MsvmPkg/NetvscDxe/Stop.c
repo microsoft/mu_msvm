@@ -23,9 +23,8 @@ PxeStop (
   SNP_DRIVER  *Snp
   )
 {
-#if MS_HYP_CHANGE
-  switch (Snp->Mode.State)
-  {
+ #if MS_HYP_CHANGE
+  switch (Snp->Mode.State) {
     case EfiSimpleNetworkStarted:
       break;
 
@@ -35,7 +34,8 @@ PxeStop (
     default:
       return EFI_DEVICE_ERROR;
   }
-#else
+
+ #else
   if (Snp->Cdb == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Snp->Cdb is NULL\n", __func__));
     return EFI_DEVICE_ERROR;
@@ -69,7 +69,8 @@ PxeStop (
 
     return EFI_DEVICE_ERROR;
   }
-#endif
+
+ #endif
   //
   // Set simple network state to Stopped and return success.
   //
@@ -100,7 +101,7 @@ PxeStop (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Stop(
+SnpUndi32Stop (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This
   )
 {

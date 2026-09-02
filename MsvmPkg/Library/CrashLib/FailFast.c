@@ -1,4 +1,3 @@
-
 /** @file
   This file contains architecture specific functions for debugging a failure.
 
@@ -27,52 +26,54 @@
 
 **/
 VOID
-FailFast(
-    IN  UINTN               ErrorCode,
-    IN  UINTN               Param1,
-    IN  UINTN               Param2,
-    IN  UINTN               MessageBuffer,
-    IN  UINTN               MessageLength
-    )
+FailFast (
+  IN  UINTN  ErrorCode,
+  IN  UINTN  Param1,
+  IN  UINTN  Param2,
+  IN  UINTN  MessageBuffer,
+  IN  UINTN  MessageLength
+  )
 {
-    DEBUG((EFI_D_ERROR, "FailFast invoked.\n"));
-    ASSERT(FALSE);
+  DEBUG ((EFI_D_ERROR, "FailFast invoked.\n"));
+  ASSERT (FALSE);
 
-    ReportCrash(ErrorCode, Param1, Param2, MessageBuffer, MessageLength);
+  ReportCrash (ErrorCode, Param1, Param2, MessageBuffer, MessageLength);
 
-    //
-    // Tell the host to collect EFI diagnostics. Done unconditionally here
-    // (rather than from ReportCrash) so it runs even on hosts that don't
-    // expose the Hyper-V GuestCrashRegs enlightenment. Placed after
-    // ReportCrash so its DEBUG output is in the buffer the host reads.
-    //
-    NotifyHostToProcessEfiDiagnostics();
+  //
+  // Tell the host to collect EFI diagnostics. Done unconditionally here
+  // (rather than from ReportCrash) so it runs even on hosts that don't
+  // expose the Hyper-V GuestCrashRegs enlightenment. Placed after
+  // ReportCrash so its DEBUG output is in the buffer the host reads.
+  //
+  NotifyHostToProcessEfiDiagnostics ();
 
-    ResetAfterCrash(ErrorCode, Param1, Param2);
+  ResetAfterCrash (ErrorCode, Param1, Param2);
 }
 
 VOID
-FailFastFromMacro(
-    IN  UINTN               ErrorCode,
-    IN  CONST CHAR8 *       Component,
-    IN  UINTN               Line,
-    IN  CONST CHAR8 *       Description
-    )
+FailFastFromMacro (
+  IN  UINTN        ErrorCode,
+  IN  CONST CHAR8  *Component,
+  IN  UINTN        Line,
+  IN  CONST CHAR8  *Description
+  )
 {
-    CHAR8 buffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
+  CHAR8  buffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
 
-    //
-    // Write the crash message.
-    //
-    UINTN bytes = AsciiSPrint(buffer,
-                               HV_CRASH_MAXIMUM_MESSAGE_SIZE,
-                               "MsvmPkg FAIL_FAST\nDESCRIPTION: %a\nERROR: %d\nCOMPONENT: %a\nLINE: %d\n",
-                               Description,
-                               ErrorCode,
-                               Component,
-                               Line);
+  //
+  // Write the crash message.
+  //
+  UINTN  bytes = AsciiSPrint (
+                   buffer,
+                   HV_CRASH_MAXIMUM_MESSAGE_SIZE,
+                   "MsvmPkg FAIL_FAST\nDESCRIPTION: %a\nERROR: %d\nCOMPONENT: %a\nLINE: %d\n",
+                   Description,
+                   ErrorCode,
+                   Component,
+                   Line
+                   );
 
-    DEBUG((EFI_D_ERROR, "\n%a\n", buffer));
+  DEBUG ((EFI_D_ERROR, "\n%a\n", buffer));
 
-    FailFast(ErrorCode, 0, Line, (UINTN)&buffer, bytes);
+  FailFast (ErrorCode, 0, Line, (UINTN)&buffer, bytes);
 }

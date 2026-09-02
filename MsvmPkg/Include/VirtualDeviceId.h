@@ -8,6 +8,6 @@
 
 #pragma once
 
-extern GUID gSyntheticKeyboardClassGuid;
-extern GUID gSyntheticVideoClassGuid;
-extern GUID gSynthetic3dVideoClassGuid;
+extern GUID  gSyntheticKeyboardClassGuid;
+extern GUID  gSyntheticVideoClassGuid;
+extern GUID  gSynthetic3dVideoClassGuid;

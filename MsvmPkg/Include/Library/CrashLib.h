@@ -21,20 +21,20 @@
     if (!(Condition)) { FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR() } \
 
 VOID
-ReportCrash(
-    IN  UINTN              Param0,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2,
-    IN  UINTN              MessageBuffer,
-    IN  UINTN              MessageLength
-    );
+ReportCrash (
+  IN  UINTN  Param0,
+  IN  UINTN  Param1,
+  IN  UINTN  Param2,
+  IN  UINTN  MessageBuffer,
+  IN  UINTN  MessageLength
+  );
 
 VOID
-ResetAfterCrash(
-    IN  UINTN              ErrorCode,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2
-    );
+ResetAfterCrash (
+  IN  UINTN  ErrorCode,
+  IN  UINTN  Param1,
+  IN  UINTN  Param2
+  );
 
 /**
   Called when a fatal error is detected and the system cannot continue.
@@ -48,28 +48,30 @@ ResetAfterCrash(
 
 **/
 VOID
-FailFast(
-    IN  UINTN              ErrorCode,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2,
-    IN  UINTN              MessageBuffer,
-    IN  UINTN              MessageLength
-    );
+FailFast (
+  IN  UINTN  ErrorCode,
+  IN  UINTN  Param1,
+  IN  UINTN  Param2,
+  IN  UINTN  MessageBuffer,
+  IN  UINTN  MessageLength
+  );
 
 VOID
-FailFastFromMacro(
-    IN  UINTN              ErrorCode,
-    IN  CONST CHAR8 *      Component,
-    IN  UINTN              Line,
-    IN  CONST CHAR8 *      Description
-    );
+FailFastFromMacro (
+  IN  UINTN        ErrorCode,
+  IN  CONST CHAR8  *Component,
+  IN  UINTN        Line,
+  IN  CONST CHAR8  *Description
+  );
 
-#if defined(MDE_CPU_X64)
+#if defined (MDE_CPU_X64)
 VOID
 EFIAPI
-TripleFault(
-    IN  UINTN              ErrorCode,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2,
-    IN  UINTN              Param3);
+TripleFault (
+  IN  UINTN  ErrorCode,
+  IN  UINTN  Param1,
+  IN  UINTN  Param2,
+  IN  UINTN  Param3
+  );
+
 #endif
