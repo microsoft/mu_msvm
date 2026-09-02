@@ -56,8 +56,12 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager):
 
     def GetPackagesPath(self):
         workspace = self.GetWorkspaceRoot()
-        package_roots = ("", "MU_BASECORE", "Common/MU", "Feature/DEBUGGER")
-        return [os.path.join(workspace, path) for path in package_roots]
+        return [
+            workspace,
+            os.path.join(workspace, "MU_BASECORE"),
+            os.path.join(workspace, "Common/MU"),
+            os.path.join(workspace, "Feature/DEBUGGER"),
+        ]
 
     def GetWorkspaceRoot(self):
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
