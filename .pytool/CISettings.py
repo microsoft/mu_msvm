@@ -6,10 +6,12 @@
 ##
 
 import logging
-import os
+from pathlib import Path
 
 from edk2toolext.invocables.edk2_ci_build import CiBuildSettingsManager
 from edk2toolext.invocables.edk2_update import UpdateSettingsManager
+
+WORKSPACE_ROOT = str(Path(__file__).parent.parent)
 
 
 class Settings(CiBuildSettingsManager, UpdateSettingsManager):
@@ -55,16 +57,10 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager):
         return []
 
     def GetPackagesPath(self):
-        workspace = self.GetWorkspaceRoot()
-        return [
-            workspace,
-            os.path.join(workspace, "MU_BASECORE"),
-            os.path.join(workspace, "Common/MU"),
-            os.path.join(workspace, "Feature/DEBUGGER"),
-        ]
+        return (".", "MU_BASECORE", "Common/MU", "Feature/DEBUGGER")
 
     def GetWorkspaceRoot(self):
-        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return WORKSPACE_ROOT
 
     def GetName(self):
         return "MuMsvmSourceChecks"
