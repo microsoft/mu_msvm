@@ -21,6 +21,7 @@
 #include <Library/IoLib.h>
 #include <Library/PeiServicesLib.h>
 #include <Library/ResourcePublicationLib.h>
+#include <Ppi/ParameterConfig.h>
 #include <IsolationTypes.h>
 #include "Hv.h"
 #include "Config.h"
@@ -1732,16 +1733,41 @@ Return Value:
 
 --*/
 {
+    BOOLEAN hardwareIsolatedNoParavisor;
+    VOID *parameterConfigHeader;
+    MSVM_PARAMETER_CONFIG_PPI *parameterConfigPpi;
     EFI_STATUS status;
 
+    hardwareIsolatedNoParavisor = IsHardwareIsolatedNoParavisor();
+
     //
-    // If this is a hardware-isolated VM running without a paravisor, then no
-    // config blob is present.  Instead, the parameters were inserted in IGVM
-    // format and must be parsed as such.
+    // Older isolated images use the parameter format at the historical fixed
+    // address without providing an explicit pointer in their initial context.
     //
-    if (IsHardwareIsolatedNoParavisor())
+    parameterConfigHeader = hardwareIsolatedNoParavisor
+                                ? GetStartOfConfigBlob()
+                                : NULL;
+
+    //
+    // SEC receives the parameter configuration address in the architecture's
+    // initial VP context and publishes it through this PPI.
+    //
+    status = PeiServicesLocatePpi(
+                 &gMsvmParameterConfigPpiGuid,
+                 0,
+                 NULL,
+                 (VOID **)&parameterConfigPpi);
+    if (!EFI_ERROR(status) &&
+        (parameterConfigPpi->ParameterConfigHeader != NULL))
     {
-        status = GetIgvmConfigInfo();
+        parameterConfigHeader = parameterConfigPpi->ParameterConfigHeader;
+    }
+
+    if (parameterConfigHeader != NULL)
+    {
+        status = GetIgvmConfigInfo(
+                     parameterConfigHeader,
+                     hardwareIsolatedNoParavisor);
     }
     else
     {

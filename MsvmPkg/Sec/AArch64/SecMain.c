@@ -13,6 +13,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/ArmLib.h>
 #include <Library/DebugAgentLib.h>
+#include <Ppi/ParameterConfig.h>
 #include <Ppi/TemporaryRamSupport.h>
 #include <Ppi/SecPlatformType.h>
 
@@ -43,6 +44,8 @@ MSVM_SEC_PLATFORM_TYPE_PPI mSecPlatformTypePpi =
     MsvmSecPlatformHyperV
 };
 
+MSVM_PARAMETER_CONFIG_PPI mParameterConfigPpi;
+
 EFI_PEI_PPI_DESCRIPTOR mPrivateDispatchTable[] =
 {
     {
@@ -51,9 +54,14 @@ EFI_PEI_PPI_DESCRIPTOR mPrivateDispatchTable[] =
         &mTemporaryRamSupportPpi
     },
     {
-        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        EFI_PEI_PPI_DESCRIPTOR_PPI,
         &gMsvmSecPlatformTypePpiGuid,
         &mSecPlatformTypePpi
+    },
+    {
+        (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
+        &gMsvmParameterConfigPpiGuid,
+        &mParameterConfigPpi
     },
 };
 
@@ -121,7 +129,8 @@ EFIAPI
 SecStartupWithStack (
     IN  EFI_FIRMWARE_VOLUME_HEADER  *BootFv,
     IN  VOID                        *TopOfCurrentStack,
-    IN  UINT64                      PlatformType
+    IN  UINT64                      PlatformType,
+    IN OPTIONAL VOID                *ParameterConfigHeader
     )
 /*++
 
@@ -139,6 +148,9 @@ Arguments:
     PlatformType - Platform type from the loader (MSVM_SEC_PLATFORM_TYPE).
                    0 = HyperV (default), 1 = Generic.
 
+    ParameterConfigHeader - Supplies the optional parameter configuration
+                            header provided by the loader.
+
 Return Value:
 
     None.
@@ -152,11 +164,12 @@ Return Value:
     DEBUG((DEBUG_VERBOSE, sequence));
 
     DEBUG((DEBUG_VERBOSE,
-           ">>> SecStartupWithStack @ %p (%p, %p, 0x%llx)\n",
+           ">>> SecStartupWithStack @ %p (%p, %p, 0x%llx, %p)\n",
            SecStartupWithStack,
            BootFv,
            TopOfCurrentStack,
-           PlatformType
+           PlatformType,
+           ParameterConfigHeader
            ));
 
     //
@@ -171,6 +184,7 @@ Return Value:
         CpuDeadLoop();
     }
     mSecPlatformTypePpi.PlatformType = (MSVM_SEC_PLATFORM_TYPE)PlatformType;
+    mParameterConfigPpi.ParameterConfigHeader = ParameterConfigHeader;
 
     //
     // Initialize floating point operating environment

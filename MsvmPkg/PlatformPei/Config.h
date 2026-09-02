@@ -24,7 +24,8 @@ GetConfiguration(
 
 EFI_STATUS
 GetIgvmConfigInfo(
-    VOID
+    IN VOID     *ParameterConfigHeader,
+    IN BOOLEAN  HardwareIsolatedNoParavisor
     );
 
 VOID
