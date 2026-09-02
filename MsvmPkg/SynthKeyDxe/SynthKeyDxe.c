@@ -14,36 +14,33 @@
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverSupported(
-    IN          EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN          EFI_HANDLE                   Controller,
-    IN          EFI_DEVICE_PATH_PROTOCOL    *RemainingDevicePath
-    );
-
-
-EFI_STATUS
-EFIAPI
-SynthKeyDriverStart(
-    IN          EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN          EFI_HANDLE                   Controller,
-    IN          EFI_DEVICE_PATH_PROTOCOL    *RemainingDevicePath
-    );
-
+SynthKeyDriverSupported (
+  IN          EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN          EFI_HANDLE                   Controller,
+  IN          EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
+  );
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverStop(
-    IN          EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN          EFI_HANDLE                   Controller,
-    IN          UINTN                        NumberOfChildren,
-    IN          EFI_HANDLE                  *ChildHandleBuffer
-    );
+SynthKeyDriverStart (
+  IN          EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN          EFI_HANDLE                   Controller,
+  IN          EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
+  );
 
+EFI_STATUS
+EFIAPI
+SynthKeyDriverStop (
+  IN          EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN          EFI_HANDLE                   Controller,
+  IN          UINTN                        NumberOfChildren,
+  IN          EFI_HANDLE                   *ChildHandleBuffer
+  );
 
 VOID
-SynthKeyDriverCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      Device
-    );
+SynthKeyDriverCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  Device
+  );
 
 //
 // DriverBinding Protocol Instance - Define the driver entry points.
@@ -51,23 +48,23 @@ SynthKeyDriverCleanup(
 // and if the device returns EFI_SUCCESS
 // EFI_DRIVER_BINDING_START and finally EFI_DRIVER_BINDING_STOP.
 //
-EFI_DRIVER_BINDING_PROTOCOL gSynthKeyDriverBinding =
+EFI_DRIVER_BINDING_PROTOCOL  gSynthKeyDriverBinding =
 {
-    SynthKeyDriverSupported,
-    SynthKeyDriverStart,
-    SynthKeyDriverStop,
-    SYNTH_KEYBOARD_VERSION,
-    NULL,
-    NULL
+  SynthKeyDriverSupported,
+  SynthKeyDriverStart,
+  SynthKeyDriverStop,
+  SYNTH_KEYBOARD_VERSION,
+  NULL,
+  NULL
 };
-
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverEntry(
-    IN          EFI_HANDLE                  ImageHandle,
-    IN          EFI_SYSTEM_TABLE           *SystemTable
-    )
+SynthKeyDriverEntry (
+  IN          EFI_HANDLE        ImageHandle,
+  IN          EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -86,31 +83,33 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS              status;
+  EFI_STATUS  status;
 
-    //
-    // Install driver model protocol(s).
-    //
-    status = EfiLibInstallDriverBindingComponentName2(ImageHandle,
-                                                      SystemTable,
-                                                      &gSynthKeyDriverBinding,
-                                                      ImageHandle,
-                                                      &gSynthKeyComponentName,
-                                                      &gSynthKeyComponentName2);
+  //
+  // Install driver model protocol(s).
+  //
+  status = EfiLibInstallDriverBindingComponentName2 (
+             ImageHandle,
+             SystemTable,
+             &gSynthKeyDriverBinding,
+             ImageHandle,
+             &gSynthKeyComponentName,
+             &gSynthKeyComponentName2
+             );
 
-    ASSERT_EFI_ERROR(status);
+  ASSERT_EFI_ERROR (status);
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverSupported(
-    IN          EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN          EFI_HANDLE                   DeviceCandidate,
-    IN          EFI_DEVICE_PATH_PROTOCOL    *RemainingDevicePath
-    )
+SynthKeyDriverSupported (
+  IN          EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN          EFI_HANDLE                   DeviceCandidate,
+  IN          EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
+  )
+
 /*++
 
 Routine Description:
@@ -133,46 +132,48 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    ASSERT(This == &gSynthKeyDriverBinding);
+  ASSERT (This == &gSynthKeyDriverBinding);
 
-    //
-    // First verify that the device supports the VMBUS protocol
-    // EMCL calls require this.
-    //
-    status = gBS->OpenProtocol(DeviceCandidate,
-                               &gEfiVmbusProtocolGuid,
-                               NULL,
-                               This->DriverBindingHandle,
-                               DeviceCandidate,
-                               EFI_OPEN_PROTOCOL_TEST_PROTOCOL);
+  //
+  // First verify that the device supports the VMBUS protocol
+  // EMCL calls require this.
+  //
+  status = gBS->OpenProtocol (
+                  DeviceCandidate,
+                  &gEfiVmbusProtocolGuid,
+                  NULL,
+                  This->DriverBindingHandle,
+                  DeviceCandidate,
+                  EFI_OPEN_PROTOCOL_TEST_PROTOCOL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    status = EmclChannelTypeSupported(DeviceCandidate,
-                                      &gSyntheticKeyboardClassGuid,
-                                      This->DriverBindingHandle);
-
-    if (!(EFI_ERROR(status)))
-    {
-        DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard device found - handle %p \n", __func__, DeviceCandidate));
-    }
-
+  if (EFI_ERROR (status)) {
     return status;
-}
+  }
 
+  status = EmclChannelTypeSupported (
+             DeviceCandidate,
+             &gSyntheticKeyboardClassGuid,
+             This->DriverBindingHandle
+             );
+
+  if (!(EFI_ERROR (status))) {
+    DEBUG ((EFI_D_VERBOSE, "--- %a: synthetic keyboard device found - handle %p \n", __func__, DeviceCandidate));
+  }
+
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverStart(
-    IN          EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN          EFI_HANDLE                   Controller,
-    IN          EFI_DEVICE_PATH_PROTOCOL    *RemainingDevicePath
-    )
+SynthKeyDriverStart (
+  IN          EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN          EFI_HANDLE                   Controller,
+  IN          EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
+  )
+
 /*++
 
 Routine Description:
@@ -195,121 +196,118 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE  pDevice = NULL;
-    EFI_STATUS              status;
-    BOOLEAN                 emclInstalled = FALSE;
+  PSYNTH_KEYBOARD_DEVICE  pDevice = NULL;
+  EFI_STATUS              status;
+  BOOLEAN                 emclInstalled = FALSE;
 
-    ASSERT(This == &gSynthKeyDriverBinding);
+  ASSERT (This == &gSynthKeyDriverBinding);
 
-    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard starting - handle %p \n", __func__, Controller));
+  DEBUG ((EFI_D_VERBOSE, "--- %a: synthetic keyboard starting - handle %p \n", __func__, Controller));
 
-    //
-    // Install and open the EMCL protocol. This will be used for vmbus communication.
-    // EmclInstallProtocol may return EFI_ALREADY_STARTED if this instance was
-    // already started, in which case we will return immediately.
-    //
-    status = EmclInstallProtocol(Controller);
+  //
+  // Install and open the EMCL protocol. This will be used for vmbus communication.
+  // EmclInstallProtocol may return EFI_ALREADY_STARTED if this instance was
+  // already started, in which case we will return immediately.
+  //
+  status = EmclInstallProtocol (Controller);
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    emclInstalled = TRUE;
+  emclInstalled = TRUE;
 
-    //
-    // Allocate the private device context. Do this as early as possible
-    // so we can use common cleanup which assumes a device context was created.
-    //
-    pDevice = AllocateZeroPool(sizeof(SYNTH_KEYBOARD_DEVICE));
+  //
+  // Allocate the private device context. Do this as early as possible
+  // so we can use common cleanup which assumes a device context was created.
+  //
+  pDevice = AllocateZeroPool (sizeof (SYNTH_KEYBOARD_DEVICE));
 
-    if (pDevice == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
-        goto Cleanup;
-    }
+  if (pDevice == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-    pDevice->Signature  = SYNTH_KEYBOARD_DEVICE_SIGNATURE;
-    pDevice->Handle     = Controller;
+  pDevice->Signature = SYNTH_KEYBOARD_DEVICE_SIGNATURE;
+  pDevice->Handle    = Controller;
 
-    //
-    // Get an instance of the DevicePathProtocol, this will be used for
-    // reporting device status as the driver starts and stops.
-    //
-    status = gBS->OpenProtocol(Controller,
-                               &gEfiDevicePathProtocolGuid,
-                               (VOID **) &pDevice->DevicePath,
-                               This->DriverBindingHandle,
-                               Controller,
-                               EFI_OPEN_PROTOCOL_BY_DRIVER);
+  //
+  // Get an instance of the DevicePathProtocol, this will be used for
+  // reporting device status as the driver starts and stops.
+  //
+  status = gBS->OpenProtocol (
+                  Controller,
+                  &gEfiDevicePathProtocolGuid,
+                  (VOID **)&pDevice->DevicePath,
+                  This->DriverBindingHandle,
+                  Controller,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    SynthKeyReportStatus(pDevice, EFI_PROGRESS_CODE, EFI_P_PC_ENABLE);
+  SynthKeyReportStatus (pDevice, EFI_PROGRESS_CODE, EFI_P_PC_ENABLE);
 
-    status = gBS->OpenProtocol(Controller,
-                               &gEfiEmclProtocolGuid,
-                               (VOID **) &pDevice->Emcl,
-                               This->DriverBindingHandle,
-                               Controller,
-                               EFI_OPEN_PROTOCOL_BY_DRIVER);
+  status = gBS->OpenProtocol (
+                  Controller,
+                  &gEfiEmclProtocolGuid,
+                  (VOID **)&pDevice->Emcl,
+                  This->DriverBindingHandle,
+                  Controller,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to open the Emcl protocol - %r \n", __func__, status));
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to open the Emcl protocol - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-    //
-    // Device start for VMBUS devices is close to presense detect
-    // (It will attempt to open the channel, etc.)
-    //
-    SynthKeyReportStatus(pDevice, EFI_PROGRESS_CODE, EFI_P_PC_PRESENCE_DETECT);
+  //
+  // Device start for VMBUS devices is close to presense detect
+  // (It will attempt to open the channel, etc.)
+  //
+  SynthKeyReportStatus (pDevice, EFI_PROGRESS_CODE, EFI_P_PC_PRESENCE_DETECT);
 
-    // -------------- Device Specific
-    //
-    // Perform Device specific initialization
-    // This will setup the interfaces and needed info
-    //
-    status = SimpleTextInInitialize(pDevice);
+  // -------------- Device Specific
+  //
+  // Perform Device specific initialization
+  // This will setup the interfaces and needed info
+  //
+  status = SimpleTextInInitialize (pDevice);
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    return status;
+  return status;
 
 Cleanup:
 
-    DEBUG((EFI_D_ERROR, "--- %a: failed to start the synthetic keyboard - %r \n", __func__, status));
+  DEBUG ((EFI_D_ERROR, "--- %a: failed to start the synthetic keyboard - %r \n", __func__, status));
 
-    if (pDevice)
-    {
-        if (pDevice->DevicePath)
-        {
-            SynthKeyReportStatus(pDevice, EFI_ERROR_CODE, EFI_P_EC_CONTROLLER_ERROR);
-        }
-
-        SynthKeyDriverCleanup(pDevice);
+  if (pDevice) {
+    if (pDevice->DevicePath) {
+      SynthKeyReportStatus (pDevice, EFI_ERROR_CODE, EFI_P_EC_CONTROLLER_ERROR);
     }
 
-    if (emclInstalled)
-    {
-        EmclUninstallProtocol(pDevice->Handle);
-    }
+    SynthKeyDriverCleanup (pDevice);
+  }
 
-    return status;
+  if (emclInstalled) {
+    EmclUninstallProtocol (pDevice->Handle);
+  }
+
+  return status;
 }
 
 VOID
-SynthKeyDriverCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    )
+SynthKeyDriverCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  )
+
 /*++
 
 Routine Description:
@@ -331,42 +329,44 @@ Return Value:
 
 --*/
 {
-    ASSERT(pDevice);
+  ASSERT (pDevice);
 
-    //
-    // SimpleTextInCleanup can be called always and will
-    // handle partial or no-initialization.
-    //
-    SimpleTextInCleanup(pDevice);
+  //
+  // SimpleTextInCleanup can be called always and will
+  // handle partial or no-initialization.
+  //
+  SimpleTextInCleanup (pDevice);
 
-    if (pDevice->DevicePath)
-    {
-        gBS->CloseProtocol(pDevice->Handle,
-                           &gEfiDevicePathProtocolGuid,
-                           gSynthKeyDriverBinding.DriverBindingHandle,
-                           pDevice->Handle);
-    }
+  if (pDevice->DevicePath) {
+    gBS->CloseProtocol (
+           pDevice->Handle,
+           &gEfiDevicePathProtocolGuid,
+           gSynthKeyDriverBinding.DriverBindingHandle,
+           pDevice->Handle
+           );
+  }
 
-    if (pDevice->Emcl)
-    {
-        gBS->CloseProtocol(pDevice->Handle,
-                           &gEfiEmclProtocolGuid,
-                           gSynthKeyDriverBinding.DriverBindingHandle,
-                           pDevice->Handle);
-    }
+  if (pDevice->Emcl) {
+    gBS->CloseProtocol (
+           pDevice->Handle,
+           &gEfiEmclProtocolGuid,
+           gSynthKeyDriverBinding.DriverBindingHandle,
+           pDevice->Handle
+           );
+  }
 
-    gBS->FreePool(pDevice);
+  gBS->FreePool (pDevice);
 }
-
 
 EFI_STATUS
 EFIAPI
-SynthKeyDriverStop(
-  IN            EFI_DRIVER_BINDING_PROTOCOL *This,
+SynthKeyDriverStop (
+  IN            EFI_DRIVER_BINDING_PROTOCOL  *This,
   IN            EFI_HANDLE                   Controller,
   IN            UINTN                        NumberOfChildren,
-  IN            EFI_HANDLE                  *ChildHandleBuffer
+  IN            EFI_HANDLE                   *ChildHandleBuffer
   )
+
 /*++
 
 Routine Description:
@@ -392,61 +392,62 @@ Return Value:
 
 --*/
 {
-    EFI_SIMPLE_TEXT_INPUT_PROTOCOL *conIn;
-    PSYNTH_KEYBOARD_DEVICE          pDevice;
-    EFI_STATUS                      status;
+  EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *conIn;
+  PSYNTH_KEYBOARD_DEVICE          pDevice;
+  EFI_STATUS                      status;
 
-    ASSERT(This == &gSynthKeyDriverBinding);
+  ASSERT (This == &gSynthKeyDriverBinding);
 
-    DEBUG((EFI_D_VERBOSE, "--- %a: synthetic keyboard stopping - handle %p \n", __func__, Controller));
+  DEBUG ((EFI_D_VERBOSE, "--- %a: synthetic keyboard stopping - handle %p \n", __func__, Controller));
 
-    // ------------------- Device Specific
+  // ------------------- Device Specific
 
-    //
-    // Attempt to get our instance of simple text in. From there
-    // we'll get the device context.
-    //
-    status = gBS->OpenProtocol(Controller,
-                               &gEfiSimpleTextInProtocolGuid,
-                               (VOID **) &conIn,
-                               This->DriverBindingHandle,
-                               Controller,
-                               EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+  //
+  // Attempt to get our instance of simple text in. From there
+  // we'll get the device context.
+  //
+  status = gBS->OpenProtocol (
+                  Controller,
+                  &gEfiSimpleTextInProtocolGuid,
+                  (VOID **)&conIn,
+                  This->DriverBindingHandle,
+                  Controller,
+                  EFI_OPEN_PROTOCOL_GET_PROTOCOL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    status = gBS->OpenProtocol(Controller,
-                               &gEfiSimpleTextInputExProtocolGuid,
-                               NULL,
-                               This->DriverBindingHandle,
-                               Controller,
-                               EFI_OPEN_PROTOCOL_TEST_PROTOCOL);
+  status = gBS->OpenProtocol (
+                  Controller,
+                  &gEfiSimpleTextInputExProtocolGuid,
+                  NULL,
+                  This->DriverBindingHandle,
+                  Controller,
+                  EFI_OPEN_PROTOCOL_TEST_PROTOCOL
+                  );
 
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS (conIn);
 
-    pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS(conIn);
+  ASSERT (pDevice->Handle == Controller);
 
-    ASSERT(pDevice->Handle == Controller);
+  //
+  // Report that the keyboard is being disabled
+  //
+  SynthKeyReportStatus (pDevice, EFI_PROGRESS_CODE, EFI_P_PC_DISABLE);
 
-    //
-    // Report that the keyboard is being disabled
-    //
-    SynthKeyReportStatus(pDevice, EFI_PROGRESS_CODE, EFI_P_PC_DISABLE);
+  //
+  // Free other resources, this will call device specific cleanup as well.
+  //
+  SynthKeyDriverCleanup (pDevice);
+  pDevice = NULL;
 
-    //
-    // Free other resources, this will call device specific cleanup as well.
-    //
-    SynthKeyDriverCleanup(pDevice);
-    pDevice = NULL;
+  EmclUninstallProtocol (Controller);
 
-    EmclUninstallProtocol(Controller);
-
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

@@ -205,12 +205,13 @@ DefaultExceptionHandler (
     CharCount = AsciiSPrint (Buffer, sizeof (Buffer), "\n\nRecursive %a Exception at 0x%016lx\n", gExceptionTypeString[ExceptionType], SystemContext.SystemContextAArch64->ELR);
     SerialPortWrite ((UINT8 *)Buffer, CharCount);
 
-    FailFast(
+    FailFast (
       ExceptionType,
       0,
       0,
       (UINTN)Buffer,
-      CharCount);
+      CharCount
+      );
   }
 
   mRecursiveException = TRUE;
@@ -351,10 +352,11 @@ DefaultExceptionHandler (
   ASSERT (FALSE);
 
   // MS_HYP_CHANGE
-  FailFast(
+  FailFast (
     ExceptionType,
     0,
     0,
     (UINTN)Buffer,
-    CharCount);
+    CharCount
+    );
 }

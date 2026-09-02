@@ -5,6 +5,7 @@
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
+
 #ifndef __AZIHSM_H__
 #define __AZIHSM_H__
 
@@ -14,8 +15,8 @@
     0x38976D4E, 0x7454, 0x40CF, {0x9E, 0x12, 0x95, 0xCE, 0x61, 0xA4, 0xCD, 0x6C} \
   };
 
-// External declaration of the global GUID variable  
-extern EFI_GUID gMsvmAziHsmProtocolGuid;
+// External declaration of the global GUID variable
+extern EFI_GUID  gMsvmAziHsmProtocolGuid;
 
 // AziHsmProtocol definition
 typedef struct _AZIHSM_PROTOCOL {

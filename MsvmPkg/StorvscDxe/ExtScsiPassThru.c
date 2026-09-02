@@ -12,12 +12,13 @@
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruPassThru (
-    IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN      UINT8 *Target,
-    IN      UINT64 Lun,
-    IN OUT  EFI_EXT_SCSI_PASS_THRU_SCSI_REQUEST_PACKET *Packet,
-    IN      EFI_EVENT Event OPTIONAL
-    )
+  IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL             *This,
+  IN      UINT8                                       *Target,
+  IN      UINT64                                      Lun,
+  IN OUT  EFI_EXT_SCSI_PASS_THRU_SCSI_REQUEST_PACKET  *Packet,
+  IN      EFI_EVENT                                   Event OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -46,49 +47,48 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    STORVSC_ADAPTER_CONTEXT *instance;
+  EFI_STATUS               status;
+  STORVSC_ADAPTER_CONTEXT  *instance;
 
-    instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS(This);
+  instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS (This);
 
-    if (StorChannelSearchLunList(&instance->LunList, *Target, (UINT8)Lun) ==
-            NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (StorChannelSearchLunList (&instance->LunList, *Target, (UINT8)Lun) ==
+      NULL)
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    if (Event != NULL)
-    {
-        //
-        // This is a Non-Blocking IO request
-        //
-        status = StorChannelSendScsiRequest(
-            instance->ChannelContext,
-            Packet,
-            Target,
-            Lun,
-            Event);
-    }
-    else
-    {
-        status = StorChannelSendScsiRequestSync(
-            instance->ChannelContext,
-            Packet,
-            Target,
-            Lun);
-    }
+  if (Event != NULL) {
+    //
+    // This is a Non-Blocking IO request
+    //
+    status = StorChannelSendScsiRequest (
+               instance->ChannelContext,
+               Packet,
+               Target,
+               Lun,
+               Event
+               );
+  } else {
+    status = StorChannelSendScsiRequestSync (
+               instance->ChannelContext,
+               Packet,
+               Target,
+               Lun
+               );
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruGetNextTargetLun (
-    IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN OUT  UINT8 **Target,
-    IN OUT  UINT64 *Lun
-    )
+  IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This,
+  IN OUT  UINT8                            **Target,
+  IN OUT  UINT64                           *Lun
+  )
+
 /*++
 
 Routine Description:
@@ -117,78 +117,65 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    STORVSC_ADAPTER_CONTEXT *instance;
-    EFI_TPL tpl;
-    PTARGET_LUN entry;
-    LIST_ENTRY *listEntry;
-    BOOLEAN firstDevice = TRUE;
-    UINT32 index;
+  EFI_STATUS               status;
+  STORVSC_ADAPTER_CONTEXT  *instance;
+  EFI_TPL                  tpl;
+  PTARGET_LUN              entry;
+  LIST_ENTRY               *listEntry;
+  BOOLEAN                  firstDevice = TRUE;
+  UINT32                   index;
 
-    instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS(This);
+  instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS (This);
 
-    for (index = 0; index < TARGET_MAX_BYTES; index++)
-    {
-        if ((*Target)[index] != 0xFF)
-        {
-            firstDevice = FALSE;
-            break;
-        }
+  for (index = 0; index < TARGET_MAX_BYTES; index++) {
+    if ((*Target)[index] != 0xFF) {
+      firstDevice = FALSE;
+      break;
     }
+  }
 
-    tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-    if (IsListEmpty(&instance->LunList))
-    {
-        status = EFI_NOT_FOUND;
-    }
-    else if (firstDevice)
-    {
-        entry = BASE_CR(instance->LunList.ForwardLink, TARGET_LUN, ListEntry);
+  if (IsListEmpty (&instance->LunList)) {
+    status = EFI_NOT_FOUND;
+  } else if (firstDevice) {
+    entry    = BASE_CR (instance->LunList.ForwardLink, TARGET_LUN, ListEntry);
+    **Target = entry->TargetId;
+    *Lun     = entry->Lun;
+
+    status = EFI_SUCCESS;
+  } else {
+    listEntry = StorChannelSearchLunList (&instance->LunList, **Target, (UINT8)*Lun);
+
+    if (listEntry != NULL) {
+      if (listEntry->ForwardLink != &instance->LunList) {
+        entry    = BASE_CR (listEntry->ForwardLink, TARGET_LUN, ListEntry);
         **Target = entry->TargetId;
-        *Lun = entry->Lun;
+        *Lun     = entry->Lun;
 
         status = EFI_SUCCESS;
+      } else {
+        status = EFI_NOT_FOUND;
+      }
+    } else {
+      status = EFI_INVALID_PARAMETER;
     }
-    else
-    {
-        listEntry = StorChannelSearchLunList(&instance->LunList, **Target, (UINT8)*Lun);
+  }
 
-        if (listEntry != NULL)
-        {
-            if (listEntry->ForwardLink != &instance->LunList)
-            {
-                entry = BASE_CR(listEntry->ForwardLink, TARGET_LUN, ListEntry);
-                **Target = entry->TargetId;
-                *Lun = entry->Lun;
+  gBS->RestoreTPL (tpl);
 
-                status = EFI_SUCCESS;
-            }
-            else
-            {
-                status = EFI_NOT_FOUND;
-            }
-        }
-        else
-        {
-            status = EFI_INVALID_PARAMETER;
-        }
-    }
-
-    gBS->RestoreTPL(tpl);
-
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruBuildDevicePath (
-    IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN      UINT8 *Target,
-    IN      UINT64 Lun,
-    IN OUT  EFI_DEVICE_PATH_PROTOCOL **DevicePath
-    )
+  IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This,
+  IN      UINT8                            *Target,
+  IN      UINT64                           Lun,
+  IN OUT  EFI_DEVICE_PATH_PROTOCOL         **DevicePath
+  )
+
 /*++
 
 Routine Description:
@@ -217,64 +204,60 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    EFI_DEV_PATH *devicePathNode;
-    STORVSC_ADAPTER_CONTEXT *instance;
-    EFI_TPL tpl;
-    LIST_ENTRY *listEntry;
+  EFI_STATUS               status;
+  EFI_DEV_PATH             *devicePathNode;
+  STORVSC_ADAPTER_CONTEXT  *instance;
+  EFI_TPL                  tpl;
+  LIST_ENTRY               *listEntry;
 
-    if (DevicePath == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (DevicePath == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS(This);
+  instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS (This);
 
-    tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-    listEntry = StorChannelSearchLunList(&instance->LunList, *Target, (UINT8)Lun);
+  listEntry = StorChannelSearchLunList (&instance->LunList, *Target, (UINT8)Lun);
 
-    gBS->RestoreTPL(tpl);
+  gBS->RestoreTPL (tpl);
 
-    if (listEntry == NULL)
-    {
-        status = EFI_NOT_FOUND;
-        goto Cleanup;
-    }
+  if (listEntry == NULL) {
+    status = EFI_NOT_FOUND;
+    goto Cleanup;
+  }
 
-    devicePathNode = AllocatePool(sizeof(SCSI_DEVICE_PATH));
-    if (devicePathNode == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Cleanup;
-    }
+  devicePathNode = AllocatePool (sizeof (SCSI_DEVICE_PATH));
+  if (devicePathNode == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Cleanup;
+  }
 
-    devicePathNode->Scsi.Header.Type = MESSAGING_DEVICE_PATH;
-    devicePathNode->Scsi.Header.SubType = MSG_SCSI_DP;
-    devicePathNode->Scsi.Header.Length[0] = sizeof(SCSI_DEVICE_PATH) & 0xFF;
-    devicePathNode->Scsi.Header.Length[1] = (sizeof(SCSI_DEVICE_PATH) >> 8) & 0xFF;
+  devicePathNode->Scsi.Header.Type      = MESSAGING_DEVICE_PATH;
+  devicePathNode->Scsi.Header.SubType   = MSG_SCSI_DP;
+  devicePathNode->Scsi.Header.Length[0] = sizeof (SCSI_DEVICE_PATH) & 0xFF;
+  devicePathNode->Scsi.Header.Length[1] = (sizeof (SCSI_DEVICE_PATH) >> 8) & 0xFF;
 
-    devicePathNode->Scsi.Pun = *Target;
-    devicePathNode->Scsi.Lun = (UINT16) Lun;
+  devicePathNode->Scsi.Pun = *Target;
+  devicePathNode->Scsi.Lun = (UINT16)Lun;
 
-    *DevicePath = (EFI_DEVICE_PATH_PROTOCOL *) devicePathNode;
+  *DevicePath = (EFI_DEVICE_PATH_PROTOCOL *)devicePathNode;
 
-    status = EFI_SUCCESS;
+  status = EFI_SUCCESS;
 
 Cleanup:
-    return status;
-
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruGetTargetLun (
-    IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN  EFI_DEVICE_PATH_PROTOCOL *DevicePath,
-    OUT UINT8 **Target,
-    OUT UINT64 *Lun
-    )
+  IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This,
+  IN  EFI_DEVICE_PATH_PROTOCOL         *DevicePath,
+  OUT UINT8                            **Target,
+  OUT UINT64                           *Lun
+  )
+
 /*++
 
 Routine Description:
@@ -299,65 +282,63 @@ Return Value:
 
 --*/
 {
-    EFI_DEV_PATH *devicePathNode;
-    STORVSC_ADAPTER_CONTEXT *instance;
-    EFI_TPL tpl;
-    LIST_ENTRY* foundTargetLun;
+  EFI_DEV_PATH             *devicePathNode;
+  STORVSC_ADAPTER_CONTEXT  *instance;
+  EFI_TPL                  tpl;
+  LIST_ENTRY               *foundTargetLun;
 
-    instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS(This);
-    devicePathNode = (EFI_DEV_PATH *)DevicePath;
+  instance       = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS (This);
+  devicePathNode = (EFI_DEV_PATH *)DevicePath;
 
-    //
-    // Validate parameters passed in.
-    //
-    if (DevicePath == NULL || Target == NULL || Lun == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  //
+  // Validate parameters passed in.
+  //
+  if ((DevicePath == NULL) || (Target == NULL) || (Lun == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    if (*Target == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (*Target == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    //
-    // Check whether the DevicePath belongs to SCSI_DEVICE_PATH
-    //
-    if ((DevicePath->Type != MESSAGING_DEVICE_PATH) ||
-        (DevicePath->SubType != MSG_SCSI_DP) ||
-        (DevicePathNodeLength(DevicePath) != sizeof(SCSI_DEVICE_PATH)))
-    {
-        return EFI_UNSUPPORTED;
-    }
+  //
+  // Check whether the DevicePath belongs to SCSI_DEVICE_PATH
+  //
+  if ((DevicePath->Type != MESSAGING_DEVICE_PATH) ||
+      (DevicePath->SubType != MSG_SCSI_DP) ||
+      (DevicePathNodeLength (DevicePath) != sizeof (SCSI_DEVICE_PATH)))
+  {
+    return EFI_UNSUPPORTED;
+  }
 
-    SetMem(*Target, TARGET_MAX_BYTES, 0xFF);
+  SetMem (*Target, TARGET_MAX_BYTES, 0xFF);
 
-    tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
-    foundTargetLun = StorChannelSearchLunList(
-        &instance->LunList,
-        (UINT8) devicePathNode->Scsi.Pun,
-        (UINT8) devicePathNode->Scsi.Lun);
+  foundTargetLun = StorChannelSearchLunList (
+                     &instance->LunList,
+                     (UINT8)devicePathNode->Scsi.Pun,
+                     (UINT8)devicePathNode->Scsi.Lun
+                     );
 
-    gBS->RestoreTPL(tpl);
+  gBS->RestoreTPL (tpl);
 
-    if (foundTargetLun == NULL)
-    {
-        return EFI_NOT_FOUND;
-    }
+  if (foundTargetLun == NULL) {
+    return EFI_NOT_FOUND;
+  }
 
-    **Target = (UINT8) devicePathNode->Scsi.Pun;
-    *Lun = devicePathNode->Scsi.Lun;
+  **Target = (UINT8)devicePathNode->Scsi.Pun;
+  *Lun     = devicePathNode->Scsi.Lun;
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruResetChannel (
-    IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This
-    )
+  IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -375,17 +356,17 @@ Return Value:
 
 --*/
 {
-    return EFI_UNSUPPORTED;
+  return EFI_UNSUPPORTED;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruResetTargetLun (
-    IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN  UINT8 *Target,
-    IN  UINT64 Lun
-    )
+  IN  EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This,
+  IN  UINT8                            *Target,
+  IN  UINT64                           Lun
+  )
+
 /*++
 
 Routine Description:
@@ -407,16 +388,16 @@ Return Value:
 
 --*/
 {
-    return EFI_UNSUPPORTED;
+  return EFI_UNSUPPORTED;
 }
-
 
 EFI_STATUS
 EFIAPI
 StorvscExtScsiPassThruGetNextTarget (
-    IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL *This,
-    IN OUT  UINT8 **Target
-    )
+  IN      EFI_EXT_SCSI_PASS_THRU_PROTOCOL  *This,
+  IN OUT  UINT8                            **Target
+  )
+
 /*++
 
 Routine Description:
@@ -439,69 +420,57 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    STORVSC_ADAPTER_CONTEXT *instance;
-    UINT8 nextTarget;
-    INT16 currentTarget;
-    EFI_TPL tpl;
-    PTARGET_LUN entry;
-    LIST_ENTRY *listEntry;
-    BOOLEAN firstDevice = TRUE;
-    UINT32 index;
+  EFI_STATUS               status;
+  STORVSC_ADAPTER_CONTEXT  *instance;
+  UINT8                    nextTarget;
+  INT16                    currentTarget;
+  EFI_TPL                  tpl;
+  PTARGET_LUN              entry;
+  LIST_ENTRY               *listEntry;
+  BOOLEAN                  firstDevice = TRUE;
+  UINT32                   index;
 
-    instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS(This);
+  instance = STORVSC_ADAPTER_CONTEXT_FROM_EXT_SCSI_PASS_THRU_THIS (This);
 
-    for (index = 0; index < TARGET_MAX_BYTES; index++)
+  for (index = 0; index < TARGET_MAX_BYTES; index++) {
+    if ((*Target)[index] != 0xFF) {
+      firstDevice = FALSE;
+      break;
+    }
+  }
+
+  if (firstDevice) {
+    currentTarget = -1;
+  } else {
+    currentTarget = **Target;
+  }
+
+  tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+
+  if (IsListEmpty (&instance->LunList)) {
+    status = EFI_NOT_FOUND;
+  } else {
+    nextTarget = VMSTOR_MAX_TARGETS + 1;
+    for (listEntry = instance->LunList.ForwardLink;
+         listEntry->ForwardLink != &instance->LunList;
+         listEntry = listEntry->ForwardLink)
     {
-        if ((*Target)[index] != 0xFF)
-        {
-            firstDevice = FALSE;
-            break;
-        }
+      entry = BASE_CR (listEntry, TARGET_LUN, ListEntry);
+      if ((entry->TargetId > currentTarget) && (entry->TargetId < nextTarget)) {
+        nextTarget = entry->TargetId;
+      }
     }
 
-    if (firstDevice)
-    {
-        currentTarget = -1;
+    if (nextTarget <= VMSTOR_MAX_TARGETS) {
+      **Target = nextTarget;
+
+      status = EFI_SUCCESS;
+    } else {
+      status = EFI_NOT_FOUND;
     }
-    else
-    {
-        currentTarget = **Target;
-    }
+  }
 
-    tpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+  gBS->RestoreTPL (tpl);
 
-    if (IsListEmpty(&instance->LunList))
-    {
-        status = EFI_NOT_FOUND;
-    }
-    else
-    {
-        nextTarget = VMSTOR_MAX_TARGETS + 1;
-        for (listEntry = instance->LunList.ForwardLink;
-             listEntry->ForwardLink != &instance->LunList;
-             listEntry = listEntry->ForwardLink)
-        {
-            entry = BASE_CR(listEntry, TARGET_LUN, ListEntry);
-            if (entry->TargetId > currentTarget && entry->TargetId < nextTarget)
-            {
-                nextTarget = entry->TargetId;
-            }
-        }
-        if (nextTarget <= VMSTOR_MAX_TARGETS)
-        {
-            **Target = nextTarget;
-
-            status = EFI_SUCCESS;
-        }
-        else
-        {
-            status = EFI_NOT_FOUND;
-        }
-    }
-
-    gBS->RestoreTPL(tpl);
-
-    return status;
+  return status;
 }
-

@@ -9,35 +9,34 @@
 #pragma once
 #include <MsvmBase.h>
 
-#define SCSI_MAXIMUM_LUNS_PER_TARGET 255
+#define SCSI_MAXIMUM_LUNS_PER_TARGET  255
 
 //
 // Command Descriptor Block constants.
 //
-#define CDB6GENERIC_LENGTH                   6
-#define CDB10GENERIC_LENGTH                  10
-#define CDB12GENERIC_LENGTH                  12
+#define CDB6GENERIC_LENGTH   6
+#define CDB10GENERIC_LENGTH  10
+#define CDB12GENERIC_LENGTH  12
 
-#define SRB_STATUS_PENDING 0
-#define SRB_STATUS_SUCCESS 1
+#define SRB_STATUS_PENDING  0
+#define SRB_STATUS_SUCCESS  1
 
-typedef struct _SENSE_DATA
-{
-    UINT8 ErrorCode:7;
-    UINT8 Valid:1;
-    UINT8 SegmentNumber;
-    UINT8 SenseKey:4;
-    UINT8 Reserved:1;
-    UINT8 IncorrectLength:1;
-    UINT8 EndOfMedia:1;
-    UINT8 FileMark:1;
-    UINT8 Information[4];
-    UINT8 AdditionalSenseLength;
-    UINT8 CommandSpecificInformation[4];
-    UINT8 AdditionalSenseCode;
-    UINT8 AdditionalSenseCodeQualifier;
-    UINT8 FieldReplaceableUnitCode;
-    UINT8 SenseKeySpecific[3];
+typedef struct _SENSE_DATA {
+  UINT8    ErrorCode       : 7;
+  UINT8    Valid           : 1;
+  UINT8    SegmentNumber;
+  UINT8    SenseKey        : 4;
+  UINT8    Reserved        : 1;
+  UINT8    IncorrectLength : 1;
+  UINT8    EndOfMedia      : 1;
+  UINT8    FileMark        : 1;
+  UINT8    Information[4];
+  UINT8    AdditionalSenseLength;
+  UINT8    CommandSpecificInformation[4];
+  UINT8    AdditionalSenseCode;
+  UINT8    AdditionalSenseCodeQualifier;
+  UINT8    FieldReplaceableUnitCode;
+  UINT8    SenseKeySpecific[3];
 } SENSE_DATA, *PSENSE_DATA;
 
 //
@@ -48,17 +47,16 @@ typedef struct _SENSE_DATA FIXED_SENSE_DATA, *PFIXED_SENSE_DATA;
 //
 // Descriptor Sense Data Format
 //
-typedef struct _DESCRIPTOR_SENSE_DATA
-{
-    UINT8 ErrorCode:7;
-    UINT8 Reserved1:1;
-    UINT8 SenseKey:4;
-    UINT8 Reserved2:4;
-    UINT8 AdditionalSenseCode;
-    UINT8 AdditionalSenseCodeQualifier;
-    UINT8 Reserved3[3];
-    UINT8 AdditionalSenseLength;
-    UINT8 DescriptorBuffer[];
+typedef struct _DESCRIPTOR_SENSE_DATA {
+  UINT8    ErrorCode : 7;
+  UINT8    Reserved1 : 1;
+  UINT8    SenseKey  : 4;
+  UINT8    Reserved2 : 4;
+  UINT8    AdditionalSenseCode;
+  UINT8    AdditionalSenseCodeQualifier;
+  UINT8    Reserved3[3];
+  UINT8    AdditionalSenseLength;
+  UINT8    DescriptorBuffer[];
 } DESCRIPTOR_SENSE_DATA, *PDESCRIPTOR_SENSE_DATA;
 
 //
@@ -69,25 +67,22 @@ typedef struct _DESCRIPTOR_SENSE_DATA
 #define SCSI_SENSE_ERRORCODE_DESCRIPTOR_CURRENT   0x72
 #define SCSI_SENSE_ERRORCODE_DESCRIPTOR_DEFERRED  0x73
 
-typedef struct _LUN_LIST
-{
-    UINT8 LunListLength[4]; // sizeof LunSize * 8
-    UINT8 Reserved[4];
-    UINT8 Lun[1][8];        // 4 level of addressing.  2 bytes each.
+typedef struct _LUN_LIST {
+  UINT8    LunListLength[4]; // sizeof LunSize * 8
+  UINT8    Reserved[4];
+  UINT8    Lun[1][8];       // 4 level of addressing.  2 bytes each.
 } LUN_LIST, *PLUN_LIST;
 
 //
 // Maximum request sense buffer size
 //
-#define MAX_SENSE_BUFFER_SIZE 255
-
+#define MAX_SENSE_BUFFER_SIZE  255
 
 //
 // Obtain Error Code from the sense info buffer.
 // Note: Error Code is same as "Response Code" defined in SPC Specification.
 //
-#define ScsiGetSenseErrorCode(SenseInfoBuffer) (((UINT8*)(SenseInfoBuffer))[0] & 0x7f)
-
+#define ScsiGetSenseErrorCode(SenseInfoBuffer)  (((UINT8*)(SenseInfoBuffer))[0] & 0x7f)
 
 //
 // Determine if sense data is in Fixed format
@@ -112,10 +107,11 @@ typedef struct _LUN_LIST
 static inline
 BOOLEAN
 ScsiGetTotalSenseByteCountIndicated (
-   IN  VOID  *SenseInfoBuffer,
-   IN  UINT8 SenseInfoBufferLength,
-   OUT UINT8 *TotalByteCountIndicated
-   )
+  IN  VOID   *SenseInfoBuffer,
+  IN  UINT8  SenseInfoBufferLength,
+  OUT UINT8  *TotalByteCountIndicated
+  )
+
 /*++
 
 Description:
@@ -145,51 +141,54 @@ Returns:
 
 --*/
 {
-    BOOLEAN succeed = FALSE;
-    UINT8 byteCount = 0;
-    PFIXED_SENSE_DATA senseInfoBuffer = NULL;
+  BOOLEAN            succeed         = FALSE;
+  UINT8              byteCount       = 0;
+  PFIXED_SENSE_DATA  senseInfoBuffer = NULL;
 
-    if (SenseInfoBuffer == NULL ||
-        SenseInfoBufferLength == 0 ||
-        TotalByteCountIndicated == NULL)
+  if ((SenseInfoBuffer == NULL) ||
+      (SenseInfoBufferLength == 0) ||
+      (TotalByteCountIndicated == NULL))
+  {
+    return FALSE;
+  }
+
+  //
+  // Offset to AdditionalSenseLength field is same between
+  // Fixed and Descriptor format.
+  //
+  senseInfoBuffer = (PFIXED_SENSE_DATA)SenseInfoBuffer;
+
+  if (CONTAINS_FIELD (
+        senseInfoBuffer,
+        SenseInfoBufferLength,
+        AdditionalSenseLength
+        ))
+  {
+    if (senseInfoBuffer->AdditionalSenseLength <=
+        (MAX_SENSE_BUFFER_SIZE - SIZEOF_THROUGH_FIELD (FIXED_SENSE_DATA, AdditionalSenseLength)))
     {
-        return FALSE;
+      byteCount = senseInfoBuffer->AdditionalSenseLength
+                  + SIZEOF_THROUGH_FIELD (FIXED_SENSE_DATA, AdditionalSenseLength);
+
+      *TotalByteCountIndicated = byteCount;
+
+      succeed = TRUE;
     }
+  }
 
-    //
-    // Offset to AdditionalSenseLength field is same between
-    // Fixed and Descriptor format.
-    //
-    senseInfoBuffer = (PFIXED_SENSE_DATA)SenseInfoBuffer;
-
-    if (CONTAINS_FIELD(senseInfoBuffer,
-                           SenseInfoBufferLength,
-                           AdditionalSenseLength))
-    {
-        if (senseInfoBuffer->AdditionalSenseLength <=
-            (MAX_SENSE_BUFFER_SIZE - SIZEOF_THROUGH_FIELD(FIXED_SENSE_DATA, AdditionalSenseLength)))
-        {
-            byteCount = senseInfoBuffer->AdditionalSenseLength
-                        + SIZEOF_THROUGH_FIELD(FIXED_SENSE_DATA, AdditionalSenseLength);
-
-            *TotalByteCountIndicated = byteCount;
-
-            succeed = TRUE;
-        }
-    }
-
-    return succeed;
+  return succeed;
 }
 
 static inline
 BOOLEAN
 ScsiGetFixedSenseKeyAndCodes (
-   IN  VOID     *SenseInfoBuffer,
-   IN  UINT8    SenseInfoBufferLength,
-   OUT UINT8    *SenseKey OPTIONAL,
-   OUT UINT8    *AdditionalSenseCode OPTIONAL,
-   OUT UINT8    *AdditionalSenseCodeQualifier OPTIONAL
-   )
+  IN  VOID   *SenseInfoBuffer,
+  IN  UINT8  SenseInfoBufferLength,
+  OUT UINT8  *SenseKey OPTIONAL,
+  OUT UINT8  *AdditionalSenseCode OPTIONAL,
+  OUT UINT8  *AdditionalSenseCodeQualifier OPTIONAL
+  )
+
 /*++
 
 Description:
@@ -227,56 +226,51 @@ Returns:
 
 --*/
 {
-    PFIXED_SENSE_DATA fixedSenseData = (PFIXED_SENSE_DATA)SenseInfoBuffer;
-    BOOLEAN succeed = FALSE;
-    UINT32 dataLength = 0;
+  PFIXED_SENSE_DATA  fixedSenseData = (PFIXED_SENSE_DATA)SenseInfoBuffer;
+  BOOLEAN            succeed        = FALSE;
+  UINT32             dataLength     = 0;
 
-    if (SenseInfoBuffer == NULL || SenseInfoBufferLength == 0)
-    {
-        return FALSE;
+  if ((SenseInfoBuffer == NULL) || (SenseInfoBufferLength == 0)) {
+    return FALSE;
+  }
+
+  if (CONTAINS_FIELD (fixedSenseData, SenseInfoBufferLength, AdditionalSenseLength)) {
+    dataLength = fixedSenseData->AdditionalSenseLength + SIZEOF_THROUGH_FIELD (FIXED_SENSE_DATA, AdditionalSenseLength);
+
+    if (dataLength > SenseInfoBufferLength) {
+      dataLength = SenseInfoBufferLength;
     }
 
-    if (CONTAINS_FIELD(fixedSenseData, SenseInfoBufferLength, AdditionalSenseLength))
-    {
-        dataLength = fixedSenseData->AdditionalSenseLength + SIZEOF_THROUGH_FIELD(FIXED_SENSE_DATA, AdditionalSenseLength);
-
-        if (dataLength > SenseInfoBufferLength)
-        {
-            dataLength = SenseInfoBufferLength;
-        }
-
-        if (SenseKey != NULL)
-        {
-           *SenseKey = fixedSenseData->SenseKey;
-        }
-
-        if (AdditionalSenseCode != NULL)
-        {
-           *AdditionalSenseCode = CONTAINS_FIELD(fixedSenseData, dataLength, AdditionalSenseCode) ?
-                                  fixedSenseData->AdditionalSenseCode : 0;
-        }
-
-        if (AdditionalSenseCodeQualifier != NULL)
-        {
-           *AdditionalSenseCodeQualifier = CONTAINS_FIELD(fixedSenseData, dataLength, AdditionalSenseCodeQualifier) ?
-                                           fixedSenseData->AdditionalSenseCodeQualifier : 0;
-        }
-
-        succeed = TRUE;
+    if (SenseKey != NULL) {
+      *SenseKey = fixedSenseData->SenseKey;
     }
 
-    return succeed;
+    if (AdditionalSenseCode != NULL) {
+      *AdditionalSenseCode = CONTAINS_FIELD (fixedSenseData, dataLength, AdditionalSenseCode) ?
+                             fixedSenseData->AdditionalSenseCode : 0;
+    }
+
+    if (AdditionalSenseCodeQualifier != NULL) {
+      *AdditionalSenseCodeQualifier = CONTAINS_FIELD (fixedSenseData, dataLength, AdditionalSenseCodeQualifier) ?
+                                      fixedSenseData->AdditionalSenseCodeQualifier : 0;
+    }
+
+    succeed = TRUE;
+  }
+
+  return succeed;
 }
 
 static inline
 BOOLEAN
 ScsiGetDescriptorSenseKeyAndCodes (
-   IN  VOID     *SenseInfoBuffer,
-   IN  UINT8    SenseInfoBufferLength,
-   OUT UINT8    *SenseKey OPTIONAL,
-   OUT UINT8    *AdditionalSenseCode OPTIONAL,
-   OUT UINT8    *AdditionalSenseCodeQualifier OPTIONAL
-   )
+  IN  VOID   *SenseInfoBuffer,
+  IN  UINT8  SenseInfoBufferLength,
+  OUT UINT8  *SenseKey OPTIONAL,
+  OUT UINT8  *AdditionalSenseCode OPTIONAL,
+  OUT UINT8  *AdditionalSenseCodeQualifier OPTIONAL
+  )
+
 /*++
 
 Description:
@@ -311,35 +305,30 @@ Returns:
 
 --*/
 {
-    PDESCRIPTOR_SENSE_DATA descriptorSenseData = (PDESCRIPTOR_SENSE_DATA)SenseInfoBuffer;
-    BOOLEAN succeed = FALSE;
+  PDESCRIPTOR_SENSE_DATA  descriptorSenseData = (PDESCRIPTOR_SENSE_DATA)SenseInfoBuffer;
+  BOOLEAN                 succeed             = FALSE;
 
-    if (SenseInfoBuffer == NULL || SenseInfoBufferLength == 0)
-    {
-        return FALSE;
+  if ((SenseInfoBuffer == NULL) || (SenseInfoBufferLength == 0)) {
+    return FALSE;
+  }
+
+  if (CONTAINS_FIELD (descriptorSenseData, SenseInfoBufferLength, AdditionalSenseLength)) {
+    if (SenseKey) {
+      *SenseKey = descriptorSenseData->SenseKey;
     }
 
-    if (CONTAINS_FIELD(descriptorSenseData, SenseInfoBufferLength, AdditionalSenseLength))
-    {
-        if (SenseKey)
-        {
-            *SenseKey = descriptorSenseData->SenseKey;
-        }
-
-        if (AdditionalSenseCode != NULL)
-        {
-            *AdditionalSenseCode = descriptorSenseData->AdditionalSenseCode;
-        }
-
-        if (AdditionalSenseCodeQualifier != NULL)
-        {
-            *AdditionalSenseCodeQualifier = descriptorSenseData->AdditionalSenseCodeQualifier;
-        }
-
-        succeed = TRUE;
+    if (AdditionalSenseCode != NULL) {
+      *AdditionalSenseCode = descriptorSenseData->AdditionalSenseCode;
     }
 
-    return succeed;
+    if (AdditionalSenseCodeQualifier != NULL) {
+      *AdditionalSenseCodeQualifier = descriptorSenseData->AdditionalSenseCodeQualifier;
+    }
+
+    succeed = TRUE;
+  }
+
+  return succeed;
 }
 
 //
@@ -350,7 +339,7 @@ typedef UINT32 SCSI_SENSE_OPTIONS;
 //
 // No options are specified
 //
-#define SCSI_SENSE_OPTIONS_NONE                                      ((SCSI_SENSE_OPTIONS)0x00000000)
+#define SCSI_SENSE_OPTIONS_NONE  ((SCSI_SENSE_OPTIONS)0x00000000)
 
 //
 // If no known format is indicated in the sense buffer, interpret
@@ -361,13 +350,14 @@ typedef UINT32 SCSI_SENSE_OPTIONS;
 static inline
 BOOLEAN
 ScsiGetSenseKeyAndCodes (
-   IN  VOID  *SenseInfoBuffer,
-   IN  UINT8 SenseInfoBufferLength,
-   IN  SCSI_SENSE_OPTIONS Options,
-   OUT UINT8 *SenseKey OPTIONAL,
-   OUT UINT8 *AdditionalSenseCode OPTIONAL,
-   OUT UINT8 *AdditionalSenseCodeQualifier OPTIONAL
-   )
+  IN  VOID                *SenseInfoBuffer,
+  IN  UINT8               SenseInfoBufferLength,
+  IN  SCSI_SENSE_OPTIONS  Options,
+  OUT UINT8               *SenseKey OPTIONAL,
+  OUT UINT8               *AdditionalSenseCode OPTIONAL,
+  OUT UINT8               *AdditionalSenseCodeQualifier OPTIONAL
+  )
+
 /*++
 
 Description:
@@ -406,45 +396,46 @@ Returns:
 
 --*/
 {
-    BOOLEAN succeed = FALSE;
+  BOOLEAN  succeed = FALSE;
 
-    if (SenseInfoBuffer == NULL || SenseInfoBufferLength == 0)
-    {
-        return FALSE;
-    }
+  if ((SenseInfoBuffer == NULL) || (SenseInfoBufferLength == 0)) {
+    return FALSE;
+  }
 
-    if (IsDescriptorSenseDataFormat(SenseInfoBuffer))
+  if (IsDescriptorSenseDataFormat (SenseInfoBuffer)) {
+    succeed = ScsiGetDescriptorSenseKeyAndCodes (
+                SenseInfoBuffer,
+                SenseInfoBufferLength,
+                SenseKey,
+                AdditionalSenseCode,
+                AdditionalSenseCodeQualifier
+                );
+  } else {
+    if ((Options & SCSI_SENSE_OPTIONS_FIXED_FORMAT_IF_UNKNOWN_FORMAT_INDICATED) ||
+        IsFixedSenseDataFormat (SenseInfoBuffer))
     {
-        succeed = ScsiGetDescriptorSenseKeyAndCodes(SenseInfoBuffer,
-                                                    SenseInfoBufferLength,
-                                                    SenseKey,
-                                                    AdditionalSenseCode,
-                                                    AdditionalSenseCodeQualifier);
+      succeed = ScsiGetFixedSenseKeyAndCodes (
+                  SenseInfoBuffer,
+                  SenseInfoBufferLength,
+                  SenseKey,
+                  AdditionalSenseCode,
+                  AdditionalSenseCodeQualifier
+                  );
     }
-    else
-    {
-        if ((Options & SCSI_SENSE_OPTIONS_FIXED_FORMAT_IF_UNKNOWN_FORMAT_INDICATED) ||
-            IsFixedSenseDataFormat(SenseInfoBuffer))
-        {
-            succeed = ScsiGetFixedSenseKeyAndCodes(SenseInfoBuffer,
-                                                   SenseInfoBufferLength,
-                                                   SenseKey,
-                                                   AdditionalSenseCode,
-                                                   AdditionalSenseCodeQualifier);
-        }
-    }
+  }
 
-    return succeed;
+  return succeed;
 }
 
 static inline
 BOOLEAN
-ScsiConvertToFixedSenseFormat(
-    IN  VOID* SenseInfoBuffer,
-    IN  UINT8 SenseInfoBufferLength,
-    OUT VOID* OutBuffer,
-    IN  UINT8 OutBufferLength
-    )
+ScsiConvertToFixedSenseFormat (
+  IN  VOID   *SenseInfoBuffer,
+  IN  UINT8  SenseInfoBufferLength,
+  OUT VOID   *OutBuffer,
+  IN  UINT8  OutBufferLength
+  )
+
 /*++
 
 Description:
@@ -472,52 +463,47 @@ Returns:
 
 --*/
 {
-    BOOLEAN succeed = FALSE;
-    BOOLEAN validSense  = FALSE;
-    UINT8 senseKey = 0;
-    UINT8 additionalSenseCode = 0;
-    UINT8 additionalSenseCodeQualifier = 0;
-    PFIXED_SENSE_DATA outBuffer = (PFIXED_SENSE_DATA)OutBuffer;
+  BOOLEAN            succeed                      = FALSE;
+  BOOLEAN            validSense                   = FALSE;
+  UINT8              senseKey                     = 0;
+  UINT8              additionalSenseCode          = 0;
+  UINT8              additionalSenseCodeQualifier = 0;
+  PFIXED_SENSE_DATA  outBuffer                    = (PFIXED_SENSE_DATA)OutBuffer;
 
-    if (SenseInfoBuffer == NULL ||
-        SenseInfoBufferLength == 0 ||
-        OutBuffer == NULL ||
-        OutBufferLength < sizeof(FIXED_SENSE_DATA))
-    {
-        return FALSE;
+  if ((SenseInfoBuffer == NULL) ||
+      (SenseInfoBufferLength == 0) ||
+      (OutBuffer == NULL) ||
+      (OutBufferLength < sizeof (FIXED_SENSE_DATA)))
+  {
+    return FALSE;
+  }
+
+  if (IsDescriptorSenseDataFormat (SenseInfoBuffer)) {
+    ZeroMem (OutBuffer, OutBufferLength);
+
+    validSense = ScsiGetSenseKeyAndCodes (
+                   SenseInfoBuffer,
+                   SenseInfoBufferLength,
+                   SCSI_SENSE_OPTIONS_NONE,
+                   &senseKey,
+                   &additionalSenseCode,
+                   &additionalSenseCodeQualifier
+                   );
+    if (validSense) {
+      if (IsSenseDataCurrentError (SenseInfoBuffer)) {
+        outBuffer->ErrorCode = SCSI_SENSE_ERRORCODE_FIXED_CURRENT;
+      } else {
+        outBuffer->ErrorCode = SCSI_SENSE_ERRORCODE_FIXED_DEFERRED;
+      }
+
+      outBuffer->AdditionalSenseLength        = sizeof (FIXED_SENSE_DATA) - SIZEOF_THROUGH_FIELD (FIXED_SENSE_DATA, AdditionalSenseLength);
+      outBuffer->SenseKey                     = senseKey;
+      outBuffer->AdditionalSenseCode          = additionalSenseCode;
+      outBuffer->AdditionalSenseCodeQualifier = additionalSenseCodeQualifier;
+
+      succeed = TRUE;
     }
+  }
 
-    if (IsDescriptorSenseDataFormat(SenseInfoBuffer))
-    {
-        ZeroMem(OutBuffer, OutBufferLength);
-
-        validSense = ScsiGetSenseKeyAndCodes(SenseInfoBuffer,
-                                             SenseInfoBufferLength,
-                                             SCSI_SENSE_OPTIONS_NONE,
-                                             &senseKey,
-                                             &additionalSenseCode,
-                                             &additionalSenseCodeQualifier);
-        if (validSense)
-        {
-            if (IsSenseDataCurrentError(SenseInfoBuffer))
-            {
-                outBuffer->ErrorCode = SCSI_SENSE_ERRORCODE_FIXED_CURRENT;
-            }
-            else
-            {
-                outBuffer->ErrorCode = SCSI_SENSE_ERRORCODE_FIXED_DEFERRED;
-            }
-
-            outBuffer->AdditionalSenseLength = sizeof(FIXED_SENSE_DATA) - SIZEOF_THROUGH_FIELD(FIXED_SENSE_DATA, AdditionalSenseLength);
-            outBuffer->SenseKey = senseKey;
-            outBuffer->AdditionalSenseCode = additionalSenseCode;
-            outBuffer->AdditionalSenseCodeQualifier = additionalSenseCodeQualifier;
-
-            succeed = TRUE;
-        }
-    }
-
-    return succeed;
+  return succeed;
 }
-
-

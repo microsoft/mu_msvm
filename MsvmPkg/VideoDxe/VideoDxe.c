@@ -10,28 +10,26 @@
 #include <VramSize.h>
 #include <Library/PcdLib.h>
 
-
-EFI_DRIVER_BINDING_PROTOCOL gVideoDxeDriverBinding =
+EFI_DRIVER_BINDING_PROTOCOL  gVideoDxeDriverBinding =
 {
-    VideoDxeDriverBindingSupported,
-    VideoDxeDriverBindingStart,
-    VideoDxeDriverBindingStop,
-    VIDEODXE_VERSION,
-    NULL,
-    NULL
+  VideoDxeDriverBindingSupported,
+  VideoDxeDriverBindingStart,
+  VideoDxeDriverBindingStop,
+  VIDEODXE_VERSION,
+  NULL,
+  NULL
 };
 
-
-EFI_HANDLE VideoDxeImageHandle;
-EFI_PHYSICAL_ADDRESS FrameBufferBaseAddress;
-
+EFI_HANDLE            VideoDxeImageHandle;
+EFI_PHYSICAL_ADDRESS  FrameBufferBaseAddress;
 
 EFI_STATUS
 EFIAPI
 VideoDxeDriverEntryPoint (
-    IN  EFI_HANDLE ImageHandle,
-    IN  EFI_SYSTEM_TABLE *SystemTable
-    )
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
+
 /*++
 
 Routine Description:
@@ -50,19 +48,20 @@ Return Value:
 
 --*/
 {
-    VideoDxeImageHandle = ImageHandle;
+  VideoDxeImageHandle = ImageHandle;
 
-    //
-    // Install UEFI Driver Model protocols.
-    //
-    return EfiLibInstallDriverBindingComponentName2(ImageHandle,
-                                                    SystemTable,
-                                                    &gVideoDxeDriverBinding,
-                                                    ImageHandle,
-                                                    &gVideoDxeComponentName,
-                                                    &gVideoDxeComponentName2);
+  //
+  // Install UEFI Driver Model protocols.
+  //
+  return EfiLibInstallDriverBindingComponentName2 (
+           ImageHandle,
+           SystemTable,
+           &gVideoDxeDriverBinding,
+           ImageHandle,
+           &gVideoDxeComponentName,
+           &gVideoDxeComponentName2
+           );
 }
-
 
 // -------------------------------------------
 //
@@ -70,14 +69,14 @@ Return Value:
 //
 // -------------------------------------------
 
-
 EFI_STATUS
 EFIAPI
-VideoDxeDriverBindingSupported(
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    )
+VideoDxeDriverBindingSupported (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -98,43 +97,47 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    EFI_VMBUS_PROTOCOL *vmbus;
+  EFI_STATUS          status;
+  EFI_VMBUS_PROTOCOL  *vmbus;
 
-    status = gBS->OpenProtocol(ControllerHandle,
-                               &gEfiVmbusProtocolGuid,
-                               (VOID **) &vmbus,
-                               This->DriverBindingHandle,
-                               ControllerHandle,
-                               EFI_OPEN_PROTOCOL_TEST_PROTOCOL);
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiVmbusProtocolGuid,
+                  (VOID **)&vmbus,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_TEST_PROTOCOL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    status = EmclChannelTypeSupported(ControllerHandle,
-                                      &gSyntheticVideoClassGuid,
-                                      This->DriverBindingHandle);
+  status = EmclChannelTypeSupported (
+             ControllerHandle,
+             &gSyntheticVideoClassGuid,
+             This->DriverBindingHandle
+             );
 
-    if (status == EFI_SUCCESS)
-    {
-        return status;
-    }
+  if (status == EFI_SUCCESS) {
+    return status;
+  }
 
-    return EmclChannelTypeSupported(ControllerHandle,
-                                    &gSynthetic3dVideoClassGuid,
-                                    This->DriverBindingHandle);
+  return EmclChannelTypeSupported (
+           ControllerHandle,
+           &gSynthetic3dVideoClassGuid,
+           This->DriverBindingHandle
+           );
 }
-
 
 EFI_STATUS
 EFIAPI
 VideoDxeDriverBindingStart (
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -159,184 +162,194 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    BOOLEAN driverStarted = FALSE;
-    BOOLEAN emclInstalled = FALSE;
-    VIDEODXE_CONTEXT* context = NULL;
+  EFI_STATUS        status;
+  BOOLEAN           driverStarted = FALSE;
+  BOOLEAN           emclInstalled = FALSE;
+  VIDEODXE_CONTEXT  *context      = NULL;
 
-    status = EmclInstallProtocol(ControllerHandle);
+  status = EmclInstallProtocol (ControllerHandle);
 
-    if (status == EFI_ALREADY_STARTED)
-    {
-        //
-        // It might be already installed so no more work is needed.
-        //
-        driverStarted = TRUE;
-        goto Cleanup;
-    }
-    else if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    emclInstalled = TRUE;
-
+  if (status == EFI_ALREADY_STARTED) {
     //
-    // Allocate the private device structure for video device
+    // It might be already installed so no more work is needed.
     //
-    context = AllocateZeroPool (sizeof (VIDEODXE_CONTEXT));
-    if (context == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Cleanup;
-    }
-
-    status = gBS->OpenProtocol(ControllerHandle,
-                               &gEfiEmclProtocolGuid,
-                               (VOID **) &context->Emcl,
-                               This->DriverBindingHandle,
-                               ControllerHandle,
-                               EFI_OPEN_PROTOCOL_BY_DRIVER);
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR,
-                "VideoDxeDriverBindingStart - OpenProtocol(Emcl) failed. Status %x\n",
-                status));
-        goto Cleanup;
-    }
-
-    context->Signature = VIDEODXE_CONTEXT_SIGNATURE;
-    context->Handle = ControllerHandle;
-
-    //
-    // Fill in the Graphics Output Protocol
-    //
-    context->GraphicsOutput.QueryMode = VideoGraphicsOutputQueryMode;
-    context->GraphicsOutput.SetMode   = VideoGraphicsOutputSetMode;
-    context->GraphicsOutput.Blt       = VideoGraphicsOutputBlt;
-    context->GraphicsOutput.Mode      = &context->Mode;
-    context->Mode.MaxMode         = 1;
-
-    // Set Mode to the current and only supported mode.
-    // FUTURE: If more modes are added, use a PCD to specify a default.
-    context->Mode.Mode            = 0;
-    context->Mode.Info            = &context->ModeInfo;
-    context->Mode.SizeOfInfo      = sizeof (context->ModeInfo);
-
-    //
-    // Allocate physical MMIO space for the frame buffer within the low
-    // MMIO gap.  Use EfiGcdAllocateAddress to ensure we stay within the
-    // VMBus MMIO region and never allocate from PCIe ECAM or BAR
-    // aperture ranges.
-    //
-    context->Mode.FrameBufferSize = DEFAULT_VRAM_SIZE_WIN8;
-    {
-        UINT64 GapBase = PcdGet64(PcdLowMmioGapBasePageNumber) * SIZE_4KB;
-        UINT64 GapEnd  = GapBase + PcdGet64(PcdLowMmioGapSizeInPages) * SIZE_4KB;
-
-        FrameBufferBaseAddress = GapBase;
-        status = gDS->AllocateMemorySpace(EfiGcdAllocateAddress,
-                                          EfiGcdMemoryTypeMemoryMappedIo,
-                                          0,
-                                          context->Mode.FrameBufferSize,
-                                          &FrameBufferBaseAddress,
-                                          VideoDxeImageHandle,
-                                          NULL);
-
-        if (EFI_ERROR(status)) {
-            DEBUG((DEBUG_ERROR,
-                   "VideoDxe: Failed to allocate FrameBuffer "
-                   "in MMIO gap [%016lx, %016lx)\n",
-                   GapBase, GapEnd));
-        }
-    }
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR,
-               "VideoDxeDriverBindingStart - "
-               "AllocateMemorySpace(MMIO) failed. Status %x\n",
-               status));
-        goto Cleanup;
-    }
-
-    DEBUG((DEBUG_VERBOSE,
-           "VideoDxe: FrameBuffer allocated at %016lx size %016lx\n",
-           FrameBufferBaseAddress, context->Mode.FrameBufferSize));
-
-    context->Mode.FrameBufferBase = FrameBufferBaseAddress;
-
-    context->ModeInfo.Version              = 0;
-    context->ModeInfo.HorizontalResolution = DEFAULT_SCREEN_WIDTH;
-    context->ModeInfo.VerticalResolution   = DEFAULT_SCREEN_HEIGHT;
-    context->ModeInfo.PixelFormat          = PixelBlueGreenRedReserved8BitPerColor;
-    context->ModeInfo.PixelsPerScanLine    = DEFAULT_SCREEN_WIDTH;
-
-
-    //
-    // "Open" the channel to the VSP.
-    //
-    status = VideoChannelOpen(context);
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR,
-               "VideoDxeDriverBindingStart - "
-               "VideoChannelOpen failed. Status %x\n",
-               status));
-        goto Cleanup;
-    }
-
-    //
-    // Create child handle and install Graphics Output Protocol
-    //
-    status = gBS->InstallMultipleProtocolInterfaces(&context->Handle,
-                                                    &mMsGopOverrideProtocolGuid,
-                                                    &context->GraphicsOutput,
-                                                    NULL);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR,
-               "VideoDxeDriverBindingStart - GOP install failed. Status %x\n",
-               status));
-        goto Cleanup;
-    }
-
     driverStarted = TRUE;
+    goto Cleanup;
+  } else if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
+
+  emclInstalled = TRUE;
+
+  //
+  // Allocate the private device structure for video device
+  //
+  context = AllocateZeroPool (sizeof (VIDEODXE_CONTEXT));
+  if (context == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Cleanup;
+  }
+
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiEmclProtocolGuid,
+                  (VOID **)&context->Emcl,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
+
+  if (EFI_ERROR (status)) {
+    DEBUG ((
+      EFI_D_ERROR,
+      "VideoDxeDriverBindingStart - OpenProtocol(Emcl) failed. Status %x\n",
+      status
+      ));
+    goto Cleanup;
+  }
+
+  context->Signature = VIDEODXE_CONTEXT_SIGNATURE;
+  context->Handle    = ControllerHandle;
+
+  //
+  // Fill in the Graphics Output Protocol
+  //
+  context->GraphicsOutput.QueryMode = VideoGraphicsOutputQueryMode;
+  context->GraphicsOutput.SetMode   = VideoGraphicsOutputSetMode;
+  context->GraphicsOutput.Blt       = VideoGraphicsOutputBlt;
+  context->GraphicsOutput.Mode      = &context->Mode;
+  context->Mode.MaxMode             = 1;
+
+  // Set Mode to the current and only supported mode.
+  // FUTURE: If more modes are added, use a PCD to specify a default.
+  context->Mode.Mode       = 0;
+  context->Mode.Info       = &context->ModeInfo;
+  context->Mode.SizeOfInfo = sizeof (context->ModeInfo);
+
+  //
+  // Allocate physical MMIO space for the frame buffer within the low
+  // MMIO gap.  Use EfiGcdAllocateAddress to ensure we stay within the
+  // VMBus MMIO region and never allocate from PCIe ECAM or BAR
+  // aperture ranges.
+  //
+  context->Mode.FrameBufferSize = DEFAULT_VRAM_SIZE_WIN8;
+  {
+    UINT64  GapBase = PcdGet64 (PcdLowMmioGapBasePageNumber) * SIZE_4KB;
+    UINT64  GapEnd  = GapBase + PcdGet64 (PcdLowMmioGapSizeInPages) * SIZE_4KB;
+
+    FrameBufferBaseAddress = GapBase;
+    status                 = gDS->AllocateMemorySpace (
+                                    EfiGcdAllocateAddress,
+                                    EfiGcdMemoryTypeMemoryMappedIo,
+                                    0,
+                                    context->Mode.FrameBufferSize,
+                                    &FrameBufferBaseAddress,
+                                    VideoDxeImageHandle,
+                                    NULL
+                                    );
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((
+        DEBUG_ERROR,
+        "VideoDxe: Failed to allocate FrameBuffer "
+        "in MMIO gap [%016lx, %016lx)\n",
+        GapBase,
+        GapEnd
+        ));
+    }
+  }
+
+  if (EFI_ERROR (status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "VideoDxeDriverBindingStart - "
+      "AllocateMemorySpace(MMIO) failed. Status %x\n",
+      status
+      ));
+    goto Cleanup;
+  }
+
+  DEBUG ((
+    DEBUG_VERBOSE,
+    "VideoDxe: FrameBuffer allocated at %016lx size %016lx\n",
+    FrameBufferBaseAddress,
+    context->Mode.FrameBufferSize
+    ));
+
+  context->Mode.FrameBufferBase = FrameBufferBaseAddress;
+
+  context->ModeInfo.Version              = 0;
+  context->ModeInfo.HorizontalResolution = DEFAULT_SCREEN_WIDTH;
+  context->ModeInfo.VerticalResolution   = DEFAULT_SCREEN_HEIGHT;
+  context->ModeInfo.PixelFormat          = PixelBlueGreenRedReserved8BitPerColor;
+  context->ModeInfo.PixelsPerScanLine    = DEFAULT_SCREEN_WIDTH;
+
+  //
+  // "Open" the channel to the VSP.
+  //
+  status = VideoChannelOpen (context);
+
+  if (EFI_ERROR (status)) {
+    DEBUG ((
+      EFI_D_ERROR,
+      "VideoDxeDriverBindingStart - "
+      "VideoChannelOpen failed. Status %x\n",
+      status
+      ));
+    goto Cleanup;
+  }
+
+  //
+  // Create child handle and install Graphics Output Protocol
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &context->Handle,
+                  &mMsGopOverrideProtocolGuid,
+                  &context->GraphicsOutput,
+                  NULL
+                  );
+  if (EFI_ERROR (status)) {
+    DEBUG ((
+      EFI_D_ERROR,
+      "VideoDxeDriverBindingStart - GOP install failed. Status %x\n",
+      status
+      ));
+    goto Cleanup;
+  }
+
+  driverStarted = TRUE;
 
 Cleanup:
 
-    if (!driverStarted)
-    {
-        if (context != NULL)
-        {
-            VideoChannelClose(context);
-        }
-
-        gBS->CloseProtocol(ControllerHandle,
-                           &gEfiEmclProtocolGuid,
-                           This->DriverBindingHandle,
-                           ControllerHandle);
-
-        if (emclInstalled)
-        {
-            EmclUninstallProtocol(ControllerHandle);
-        }
+  if (!driverStarted) {
+    if (context != NULL) {
+      VideoChannelClose (context);
     }
 
-    return status;
-}
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiEmclProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
 
+    if (emclInstalled) {
+      EmclUninstallProtocol (ControllerHandle);
+    }
+  }
+
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
 VideoDxeDriverBindingStop (
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  UINTN NumberOfChildren,
-    IN  EFI_HANDLE *ChildHandleBuffer
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  UINTN                        NumberOfChildren,
+  IN  EFI_HANDLE                   *ChildHandleBuffer
+  )
+
 /*++
 
 Routine Description:
@@ -359,64 +372,68 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *GraphicsOutput;
-    VIDEODXE_CONTEXT* context = NULL;
+  EFI_STATUS                    status;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
+  VIDEODXE_CONTEXT              *context = NULL;
 
-    status = gBS->OpenProtocol(ControllerHandle,
-                               &mMsGopOverrideProtocolGuid,
-                               (VOID **) &GraphicsOutput,
-                               This->DriverBindingHandle,
-                               ControllerHandle,
-                               EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &mMsGopOverrideProtocolGuid,
+                  (VOID **)&GraphicsOutput,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_GET_PROTOCOL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        status = EFI_DEVICE_ERROR;
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    status = EFI_DEVICE_ERROR;
+    goto Cleanup;
+  }
 
-    context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS(GraphicsOutput);
+  context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS (GraphicsOutput);
 
-    VideoChannelClose(context);
+  VideoChannelClose (context);
 
-    //
-    // Uninstall protocols on child handle
-    //
-    status = gBS->UninstallMultipleProtocolInterfaces(context->Handle,
-                                                      &mMsGopOverrideProtocolGuid,
-                                                      &context->GraphicsOutput,
-                                                      NULL);
-    //
-    // Unhook EMCL
-    //
-    gBS->CloseProtocol(ControllerHandle,
-                       &gEfiEmclProtocolGuid,
-                       This->DriverBindingHandle,
-                       ControllerHandle);
+  //
+  // Uninstall protocols on child handle
+  //
+  status = gBS->UninstallMultipleProtocolInterfaces (
+                  context->Handle,
+                  &mMsGopOverrideProtocolGuid,
+                  &context->GraphicsOutput,
+                  NULL
+                  );
+  //
+  // Unhook EMCL
+  //
+  gBS->CloseProtocol (
+         ControllerHandle,
+         &gEfiEmclProtocolGuid,
+         This->DriverBindingHandle,
+         ControllerHandle
+         );
 
-    EmclUninstallProtocol(ControllerHandle);
+  EmclUninstallProtocol (ControllerHandle);
 
 Cleanup:
-    return status;
+  return status;
 }
 
-
-//---------------------------------------------
+// ---------------------------------------------
 //
 // EFI_GRAPHICS_OUTPUT_PROTOCOL implementation.
 //
-//---------------------------------------------
-
+// ---------------------------------------------
 
 EFI_STATUS
 EFIAPI
 VideoGraphicsOutputQueryMode (
-    IN  EFI_GRAPHICS_OUTPUT_PROTOCOL          *This,
-    IN  UINT32                                ModeNumber,
-    OUT UINTN                                 *SizeOfInfo,
-    OUT EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  **Info
+  IN  EFI_GRAPHICS_OUTPUT_PROTOCOL          *This,
+  IN  UINT32                                ModeNumber,
+  OUT UINTN                                 *SizeOfInfo,
+  OUT EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  **Info
   )
+
 /*++
 
 Routine Description:
@@ -439,37 +456,38 @@ Return Value:
 
 --*/
 {
-    VIDEODXE_CONTEXT* context = NULL;
+  VIDEODXE_CONTEXT  *context = NULL;
 
-    if (This == NULL ||
-        Info == NULL ||
-        SizeOfInfo == NULL ||
-        ModeNumber >= This->Mode->MaxMode)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if ((This == NULL) ||
+      (Info == NULL) ||
+      (SizeOfInfo == NULL) ||
+      (ModeNumber >= This->Mode->MaxMode))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS(This);
+  context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS (This);
 
-    *Info = AllocateCopyPool(sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION),
-                             &context->ModeInfo);
-    if (*Info == NULL)
-    {
-        return EFI_OUT_OF_RESOURCES;
-    }
+  *Info = AllocateCopyPool (
+            sizeof (EFI_GRAPHICS_OUTPUT_MODE_INFORMATION),
+            &context->ModeInfo
+            );
+  if (*Info == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-    *SizeOfInfo = sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION);
+  *SizeOfInfo = sizeof (EFI_GRAPHICS_OUTPUT_MODE_INFORMATION);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-VideoGraphicsOutputSetMode(
-    IN   EFI_GRAPHICS_OUTPUT_PROTOCOL * This,
-    IN   UINT32                         ModeNumber
+VideoGraphicsOutputSetMode (
+  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL  *This,
+  IN   UINT32                        ModeNumber
   )
+
 /*++
 
 Routine Description:
@@ -488,40 +506,38 @@ Return Value:
 
 --*/
 {
-    if (This == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (This == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    if (ModeNumber >= This->Mode->MaxMode)
-    {
-        return EFI_UNSUPPORTED;
-    }
+  if (ModeNumber >= This->Mode->MaxMode) {
+    return EFI_UNSUPPORTED;
+  }
 
-    if (ModeNumber == This->Mode->Mode)
-    {
-        return EFI_SUCCESS;
-    }
-
-    This->Mode->Mode = ModeNumber;
-
+  if (ModeNumber == This->Mode->Mode) {
     return EFI_SUCCESS;
+  }
+
+  This->Mode->Mode = ModeNumber;
+
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
 EFIAPI
 VideoGraphicsOutputBlt (
-    IN   EFI_GRAPHICS_OUTPUT_PROTOCOL       *This,
-    IN   EFI_GRAPHICS_OUTPUT_BLT_PIXEL      *BltBuffer, OPTIONAL
-    IN   EFI_GRAPHICS_OUTPUT_BLT_OPERATION  BltOperation,
-    IN   UINTN                              SourceX,
-    IN   UINTN                              SourceY,
-    IN   UINTN                              DestinationX,
-    IN   UINTN                              DestinationY,
-    IN   UINTN                              Width,
-    IN   UINTN                              Height,
-    IN   UINTN                              Delta
+  IN   EFI_GRAPHICS_OUTPUT_PROTOCOL *This,
+  IN   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *BltBuffer, OPTIONAL
+  IN   EFI_GRAPHICS_OUTPUT_BLT_OPERATION  BltOperation,
+  IN   UINTN                              SourceX,
+  IN   UINTN                              SourceY,
+  IN   UINTN                              DestinationX,
+  IN   UINTN                              DestinationY,
+  IN   UINTN                              Width,
+  IN   UINTN                              Height,
+  IN   UINTN                              Delta
   )
+
 /*++
 
 Routine Description:
@@ -560,145 +576,149 @@ Return Value:
 
 --*/
 {
-    VIDEODXE_CONTEXT* context = NULL;
-    EFI_TPL         OriginalTPL;
-    UINTN           DstY;
-    UINTN           SrcY;
-    UINTN           BytesPerScanLine;
-    UINTN           BytesPerLine;
-    UINTN           Index;
+  VIDEODXE_CONTEXT  *context = NULL;
+  EFI_TPL           OriginalTPL;
+  UINTN             DstY;
+  UINTN             SrcY;
+  UINTN             BytesPerScanLine;
+  UINTN             BytesPerLine;
+  UINTN             Index;
 
-    //
-    // Check parameters
-    //
-    if (This == NULL || ((UINTN) BltOperation) >= EfiGraphicsOutputBltOperationMax)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
-    if (Width == 0 || Height == 0)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  //
+  // Check parameters
+  //
+  if ((This == NULL) || (((UINTN)BltOperation) >= EfiGraphicsOutputBltOperationMax)) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    //
-    // Get the private context of VideoDxe
-    //
-    context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS(This);
+  if ((Width == 0) || (Height == 0)) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    if (BltOperation == EfiBltVideoToBltBuffer)
-    {
-        //
-        // Video to BltBuffer: Source is Video, destination is BltBuffer
-        //
-        if (SourceY + Height > context->ModeInfo.VerticalResolution)
-        {
-            return EFI_INVALID_PARAMETER;
-        }
-        if (SourceX + Width > context->ModeInfo.HorizontalResolution)
-        {
-            return EFI_INVALID_PARAMETER;
-        }
-    } else {
+  //
+  // Get the private context of VideoDxe
+  //
+  context = VIDEODXE_CONTEXT_FROM_GRAPHICS_OUTPUT_THIS (This);
 
-        //
-        // BltBuffer to Video: Source is BltBuffer, destination is Video
-        //
-        if (DestinationY + Height > context->ModeInfo.VerticalResolution)
-        {
-            return EFI_INVALID_PARAMETER;
-        }
-        if (DestinationX + Width > context->ModeInfo.HorizontalResolution)
-        {
-            return EFI_INVALID_PARAMETER;
-        }
+  if (BltOperation == EfiBltVideoToBltBuffer) {
+    //
+    // Video to BltBuffer: Source is Video, destination is BltBuffer
+    //
+    if (SourceY + Height > context->ModeInfo.VerticalResolution) {
+      return EFI_INVALID_PARAMETER;
     }
 
-    BytesPerScanLine = context->ModeInfo.PixelsPerScanLine *
-                       sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
-    BytesPerLine     = Width * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
-
+    if (SourceX + Width > context->ModeInfo.HorizontalResolution) {
+      return EFI_INVALID_PARAMETER;
+    }
+  } else {
     //
-    // If Delta is zero, then the entire BltBuffer is being used.
+    // BltBuffer to Video: Source is BltBuffer, destination is Video
     //
-    if (Delta == 0)
-    {
-        Delta = Width * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
+    if (DestinationY + Height > context->ModeInfo.VerticalResolution) {
+      return EFI_INVALID_PARAMETER;
     }
 
-    //
-    // Raise to TPL Notify to synchronize writes the frame buffer.
-    //
-    OriginalTPL = gBS->RaiseTPL (TPL_NOTIFY);
+    if (DestinationX + Width > context->ModeInfo.HorizontalResolution) {
+      return EFI_INVALID_PARAMETER;
+    }
+  }
 
-    //
-    // Perform the Blt.
-    //
-    switch (BltOperation)
-    {
+  BytesPerScanLine = context->ModeInfo.PixelsPerScanLine *
+                     sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
+  BytesPerLine = Width * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
+
+  //
+  // If Delta is zero, then the entire BltBuffer is being used.
+  //
+  if (Delta == 0) {
+    Delta = Width * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL);
+  }
+
+  //
+  // Raise to TPL Notify to synchronize writes the frame buffer.
+  //
+  OriginalTPL = gBS->RaiseTPL (TPL_NOTIFY);
+
+  //
+  // Perform the Blt.
+  //
+  switch (BltOperation) {
     case EfiBltVideoToBltBuffer:
-        for (SrcY = SourceY, DstY = DestinationY;
-             DstY < (Height + DestinationY);
-             SrcY++, DstY++)
-        {
-            CopyMem((UINT8 *)BltBuffer + (DstY * Delta) +
-                        (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (SrcY * BytesPerScanLine) +
-                        (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    BytesPerLine);
-        }
-        break;
+      for (SrcY = SourceY, DstY = DestinationY;
+           DstY < (Height + DestinationY);
+           SrcY++, DstY++)
+      {
+        CopyMem (
+          (UINT8 *)BltBuffer + (DstY * Delta) +
+          (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (SrcY * BytesPerScanLine) +
+          (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          BytesPerLine
+          );
+      }
+
+      break;
 
     case EfiBltVideoToVideo:
-        for (Index = 0; Index < Height; Index++)
-        {
-            if (DestinationY <= SourceY)
-            {
-                SrcY  = SourceY + Index;
-                DstY  = DestinationY + Index;
-            } else {
-                SrcY  = SourceY + Height - Index - 1;
-                DstY  = DestinationY + Height - Index - 1;
-            }
-            CopyMem((UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
-                        (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (SrcY * BytesPerScanLine) +
-                        (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    BytesPerLine);
+      for (Index = 0; Index < Height; Index++) {
+        if (DestinationY <= SourceY) {
+          SrcY = SourceY + Index;
+          DstY = DestinationY + Index;
+        } else {
+          SrcY = SourceY + Height - Index - 1;
+          DstY = DestinationY + Height - Index - 1;
         }
-        break;
+
+        CopyMem (
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
+          (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (SrcY * BytesPerScanLine) +
+          (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          BytesPerLine
+          );
+      }
+
+      break;
 
     case EfiBltVideoFill:
-        SetMem32((UINT8 *)(UINTN)context->Mode.FrameBufferBase +
-                    (DestinationY * BytesPerScanLine) +
-                    (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                 BytesPerLine,
-                 *(UINT32 *)BltBuffer);
-        for (DstY = DestinationY + 1; DstY < (Height + DestinationY); DstY++)
-        {
-            CopyMem ((UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
-                         (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                     (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DestinationY * BytesPerScanLine) +
-                         (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                     BytesPerLine);
-        }
-        break;
+      SetMem32 (
+        (UINT8 *)(UINTN)context->Mode.FrameBufferBase +
+        (DestinationY * BytesPerScanLine) +
+        (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+        BytesPerLine,
+        *(UINT32 *)BltBuffer
+        );
+      for (DstY = DestinationY + 1; DstY < (Height + DestinationY); DstY++) {
+        CopyMem (
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
+          (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DestinationY * BytesPerScanLine) +
+          (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          BytesPerLine
+          );
+      }
+
+      break;
 
     case EfiBltBufferToVideo:
-        for (SrcY = SourceY, DstY = DestinationY; SrcY < (Height + SourceY); SrcY++, DstY++)
-        {
-            CopyMem((UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
-                        (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    (UINT8 *)BltBuffer + (SrcY * Delta) +
-                        (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
-                    BytesPerLine);
-        }
-        break;
+      for (SrcY = SourceY, DstY = DestinationY; SrcY < (Height + SourceY); SrcY++, DstY++) {
+        CopyMem (
+          (UINT8 *)(UINTN)context->Mode.FrameBufferBase + (DstY * BytesPerScanLine) +
+          (DestinationX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          (UINT8 *)BltBuffer + (SrcY * Delta) +
+          (SourceX * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)),
+          BytesPerLine
+          );
+      }
+
+      break;
 
     case EfiGraphicsOutputBltOperationMax:
-        break;
-    }
+      break;
+  }
 
-    gBS->RestoreTPL (OriginalTPL);
+  gBS->RestoreTPL (OriginalTPL);
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }

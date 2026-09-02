@@ -47,20 +47,20 @@ typedef UINT32 IOMMU_BOUNCE_MODE;
 // No bounce, no hypercalls. DMA hits guest memory directly and the
 // bounce pool is never allocated.
 //
-#define IOMMU_BOUNCE_MODE_NONE              0x00000000
+#define IOMMU_BOUNCE_MODE_NONE  0x00000000
 
 //
 // Funnel DMA through the pre-allocated bounce pool (pages allocated
 // below 4GB so they satisfy both 32-bit and 64-bit DMA). Set by
 // IsIsolated() and by the soft PcdForceDmaBounceEnabled override.
 //
-#define IOMMU_BOUNCE_MODE_BOUNCE            BIT0
+#define IOMMU_BOUNCE_MODE_BOUNCE  BIT0
 
 //
 // Make each bounce region host-visible via the HV IVM protocol
 // (MakeAddressRangeHostVisible / NotHostVisible). Set when IsIsolated().
 //
-#define IOMMU_BOUNCE_MODE_HOST_VISIBILITY   BIT1
+#define IOMMU_BOUNCE_MODE_HOST_VISIBILITY  BIT1
 
 //
 // Pin each bounce region via HvCallPinGpaPageRanges before the host
@@ -70,17 +70,16 @@ typedef UINT32 IOMMU_BOUNCE_MODE;
 // buffer. Composes with HOST_VISIBILITY for VA-backed paravisor-
 // isolated VMs.
 //
-#define IOMMU_BOUNCE_MODE_PINNING          BIT2
+#define IOMMU_BOUNCE_MODE_PINNING  BIT2
 
 //
 // Context for tracking per-range DMA preparation state.
 //
-typedef struct _IOMMU_DMA_RANGE_CONTEXT
-{
-    EFI_HV_PROTECTION_HANDLE     RangeProtectionHandle;
-    VOID                         *BaseAddress;
-    UINT32                       PageCount;
-    BOOLEAN                      PinApplied;
+typedef struct _IOMMU_DMA_RANGE_CONTEXT {
+  EFI_HV_PROTECTION_HANDLE    RangeProtectionHandle;
+  VOID                        *BaseAddress;
+  UINT32                      PageCount;
+  BOOLEAN                     PinApplied;
 } IOMMU_DMA_RANGE_CONTEXT;
 
 //
@@ -108,17 +107,16 @@ typedef struct _IOMMU_DMA_RANGE_CONTEXT
 //
 #define IOMMU_BOUNCE_BLOCK_SIGNATURE  SIGNATURE_32('i','o','m','b')
 
-typedef struct _IOMMU_BOUNCE_BLOCK
-{
-    UINT32                        Signature;
-    LIST_ENTRY                    Link;
-    VOID                          *BlockBase;          // contiguous host-visible base (private VA)
-    UINT32                        BlockPageCount;
-    UINT32                        BitmapWordCount;     // number of UINT64 words in AllocBitmap
-    UINT64                        *AllocBitmap;        // 1 bit per page; 1 = in use
-    UINT32                        InUsePageCount;
-    BOOLEAN                       IsPreparedForDma;
-    IOMMU_DMA_RANGE_CONTEXT       DmaContext;
+typedef struct _IOMMU_BOUNCE_BLOCK {
+  UINT32                     Signature;
+  LIST_ENTRY                 Link;
+  VOID                       *BlockBase;               // contiguous host-visible base (private VA)
+  UINT32                     BlockPageCount;
+  UINT32                     BitmapWordCount;          // number of UINT64 words in AllocBitmap
+  UINT64                     *AllocBitmap;             // 1 bit per page; 1 = in use
+  UINT32                     InUsePageCount;
+  BOOLEAN                    IsPreparedForDma;
+  IOMMU_DMA_RANGE_CONTEXT    DmaContext;
 } IOMMU_BOUNCE_BLOCK, *PIOMMU_BOUNCE_BLOCK;
 
 //
@@ -128,30 +126,27 @@ typedef struct _IOMMU_BOUNCE_BLOCK
 //
 #define IOMMU_MAP_CONTEXT_SIGNATURE  SIGNATURE_32('i','o','m','c')
 
-typedef struct _IOMMU_MAP_CONTEXT
-{
-    UINT32                        Signature;
-    EDKII_IOMMU_OPERATION         Operation;
-    VOID                          *HostAddress;
-    UINTN                         NumberOfBytes;
-    VOID                          *BounceBase;         // private VA of the sub-allocated bounce region
-    UINT32                        BouncePageCount;
-    PIOMMU_BOUNCE_BLOCK           BounceBlock;         // owning block
-    UINT32                        BounceStartPage;     // starting page index within block
+typedef struct _IOMMU_MAP_CONTEXT {
+  UINT32                   Signature;
+  EDKII_IOMMU_OPERATION    Operation;
+  VOID                     *HostAddress;
+  UINTN                    NumberOfBytes;
+  VOID                     *BounceBase;                // private VA of the sub-allocated bounce region
+  UINT32                   BouncePageCount;
+  PIOMMU_BOUNCE_BLOCK      BounceBlock;                // owning block
+  UINT32                   BounceStartPage;            // starting page index within block
 } IOMMU_MAP_CONTEXT, *PIOMMU_MAP_CONTEXT;
 
 //
 // ALLOC_CONTEXT - tracking structure for an active AllocateBuffer allocation.
 // Used by FreeBuffer to revoke host visibility.
 //
-typedef struct _IOMMU_ALLOC_CONTEXT
-{
-    LIST_ENTRY                    Link;
-    VOID                          *OriginalAddress;
-    UINTN                         Pages;
-    IOMMU_DMA_RANGE_CONTEXT       DmaContext;
+typedef struct _IOMMU_ALLOC_CONTEXT {
+  LIST_ENTRY                 Link;
+  VOID                       *OriginalAddress;
+  UINTN                      Pages;
+  IOMMU_DMA_RANGE_CONTEXT    DmaContext;
 } IOMMU_ALLOC_CONTEXT, *PIOMMU_ALLOC_CONTEXT;
-
 
 //
 // Bounce dispatch state, resolved once at driver entry. Consulted by
@@ -167,8 +162,8 @@ extern IOMMU_BOUNCE_MODE  mBounceMode;
 //
 IOMMU_BOUNCE_MODE
 IoMmuComputeBounceMode (
-    VOID
-    );
+  VOID
+  );
 
 //
 // Bounce buffer initialization. Allocates pool tracking state and locates
@@ -177,16 +172,16 @@ IoMmuComputeBounceMode (
 //
 EFI_STATUS
 IoMmuInitializeBounce (
-    VOID
-    );
+  VOID
+  );
 
 //
 // Returns TRUE if bounce buffering is active (isolated VM with IOMMU).
 //
 BOOLEAN
 IoMmuIsBounceActive (
-    VOID
-    );
+  VOID
+  );
 
 //
 // Returns TRUE if bounce regions must be made host-visible via the HV
@@ -195,44 +190,44 @@ IoMmuIsBounceActive (
 //
 BOOLEAN
 IoMmuRequiresHostVisibility (
-    VOID
-    );
+  VOID
+  );
 
 //
 // Returns TRUE if bounce regions must be pinned via the HV IVM protocol.
 //
 BOOLEAN
 IoMmuRequiresPinning (
-    VOID
-    );
+  VOID
+  );
 
 //
 // Address translation helpers for shared GPA.
 //
 EFI_PHYSICAL_ADDRESS
 IoMmuGetSharedPa (
-    IN VOID     *Address
-    );
+  IN VOID  *Address
+  );
 
 VOID *
 IoMmuGetSharedVa (
-    IN VOID     *Address
-    );
+  IN VOID  *Address
+  );
 
 //
 // DMA range preparation and release.
 //
 EFI_STATUS
 IoMmuPrepareAddressRangeForDma (
-    IN VOID                             *BaseAddress,
-    IN UINT32                           PageCount,
-    OUT IOMMU_DMA_RANGE_CONTEXT         *DmaContext
-    );
+  IN VOID                      *BaseAddress,
+  IN UINT32                    PageCount,
+  OUT IOMMU_DMA_RANGE_CONTEXT  *DmaContext
+  );
 
 VOID
 IoMmuReleaseAddressRangeFromDma (
-    IN IOMMU_DMA_RANGE_CONTEXT          *DmaContext
-    );
+  IN IOMMU_DMA_RANGE_CONTEXT  *DmaContext
+  );
 
 //
 // Bounce block pool - pre-allocated, DMA-prepared contiguous regions used
@@ -252,9 +247,9 @@ IoMmuReleaseAddressRangeFromDma (
 **/
 EFI_STATUS
 IoMmuPreAllocateBounceBlock (
-    IN  UINT32                  PageCount,
-    OUT PIOMMU_BOUNCE_BLOCK     *BlockOut
-    );
+  IN  UINT32               PageCount,
+  OUT PIOMMU_BOUNCE_BLOCK  *BlockOut
+  );
 
 /**
   Acquire a contiguous run of bounce pages from the pool. Allocates a new
@@ -271,11 +266,11 @@ IoMmuPreAllocateBounceBlock (
 **/
 EFI_STATUS
 IoMmuAcquireBouncePages (
-    IN  UINT32                  PageCount,
-    OUT PIOMMU_BOUNCE_BLOCK     *Block,
-    OUT UINT32                  *StartPageIndex,
-    OUT VOID                    **BounceBase
-    );
+  IN  UINT32               PageCount,
+  OUT PIOMMU_BOUNCE_BLOCK  *Block,
+  OUT UINT32               *StartPageIndex,
+  OUT VOID                 **BounceBase
+  );
 
 /**
   Release a previously acquired contiguous run of bounce pages back to the
@@ -288,7 +283,7 @@ IoMmuAcquireBouncePages (
 **/
 VOID
 IoMmuReleaseBouncePages (
-    IN PIOMMU_BOUNCE_BLOCK      Block,
-    IN UINT32                   StartPageIndex,
-    IN UINT32                   PageCount
-    );
+  IN PIOMMU_BOUNCE_BLOCK  Block,
+  IN UINT32               StartPageIndex,
+  IN UINT32               PageCount
+  );

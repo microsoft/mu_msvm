@@ -8,49 +8,54 @@
 
 #pragma once
 
-enum
-{
-    UefiIsolationTypeNone       = 0x00,
-    UefiIsolationTypeVbs        = 0x01,
-    UefiIsolationTypeSnp        = 0x02,
-    UefiIsolationTypeTdx        = 0x03,
+enum {
+  UefiIsolationTypeNone = 0x00,
+  UefiIsolationTypeVbs  = 0x01,
+  UefiIsolationTypeSnp  = 0x02,
+  UefiIsolationTypeTdx  = 0x03,
 };
 
 UINT32
-GetIsolationType();
+GetIsolationType (
+  );
 
 BOOLEAN
-IsParavisorPresent();
+IsParavisorPresent (
+  );
 
 BOOLEAN
-IsIsolatedEx(
-    UINT32 IsolationType
-    );
+IsIsolatedEx (
+  UINT32  IsolationType
+  );
 
 BOOLEAN
-IsIsolated();
+IsIsolated (
+  );
 
 BOOLEAN
-IsHardwareIsolatedEx(
-    UINT32 IsolationType
-    );
+IsHardwareIsolatedEx (
+  UINT32  IsolationType
+  );
 
 BOOLEAN
-IsHardwareIsolated();
+IsHardwareIsolated (
+  );
 
 BOOLEAN
-IsSoftwareIsolatedEx(
-    UINT32 IsolationType
-    );
+IsSoftwareIsolatedEx (
+  UINT32  IsolationType
+  );
 
 BOOLEAN
-IsSoftwareIsolated();
+IsSoftwareIsolated (
+  );
 
 BOOLEAN
-IsHardwareIsolatedNoParavisorEx(
-    UINT32 IsolationType,
-    BOOLEAN IsParavisorPresent
-    );
+IsHardwareIsolatedNoParavisorEx (
+  UINT32   IsolationType,
+  BOOLEAN  IsParavisorPresent
+  );
 
 BOOLEAN
-IsHardwareIsolatedNoParavisor();
+IsHardwareIsolatedNoParavisor (
+  );

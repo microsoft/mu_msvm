@@ -13,9 +13,9 @@
 #pragma once
 #include "DeclspecAlign.h"
 #if defined (MDE_CPU_X64)
-#define DECLSPEC_CACHEALIGN DECLSPEC_ALIGN (64)
+#define DECLSPEC_CACHEALIGN  DECLSPEC_ALIGN (64)
 #elif defined (MDE_CPU_AARCH64)
-#define DECLSPEC_CACHEALIGN DECLSPEC_ALIGN (128)
+#define DECLSPEC_CACHEALIGN  DECLSPEC_ALIGN (128)
 #else
-#error unknown target
+  #error unknown target
 #endif

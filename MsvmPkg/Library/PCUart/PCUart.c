@@ -10,31 +10,30 @@
 #include <Library/PcdLib.h>
 #include <Library/PCUart.h>
 
-
 //
 // 16550 UART register offsets and bitfields
 //
-#define R_UART_RXBUF          0
-#define R_UART_TXBUF          0
-#define R_UART_BAUD_LOW       0
-#define R_UART_BAUD_HIGH      1
-#define R_UART_FCR            2
-#define   B_UART_FCR_FIFOE    BIT0
-#define   B_UART_FCR_FIFO64   BIT5
-#define R_UART_LCR            3
-#define   B_UART_LCR_DLAB     BIT7
-#define R_UART_MCR            4
-#define   B_UART_MCR_DTRC     BIT0
-#define   B_UART_MCR_RTS      BIT1
-#define R_UART_LSR            5
-#define   B_UART_LSR_RXRDY    BIT0
-#define   B_UART_LSR_TXRDY    BIT5
-#define   B_UART_LSR_TEMT     BIT6
-#define R_UART_MSR            6
-#define   B_UART_MSR_CTS      BIT4
-#define   B_UART_MSR_DSR      BIT5
-#define   B_UART_MSR_RI       BIT6
-#define   B_UART_MSR_DCD      BIT7
+#define R_UART_RXBUF         0
+#define R_UART_TXBUF         0
+#define R_UART_BAUD_LOW      0
+#define R_UART_BAUD_HIGH     1
+#define R_UART_FCR           2
+#define   B_UART_FCR_FIFOE   BIT0
+#define   B_UART_FCR_FIFO64  BIT5
+#define R_UART_LCR           3
+#define   B_UART_LCR_DLAB    BIT7
+#define R_UART_MCR           4
+#define   B_UART_MCR_DTRC    BIT0
+#define   B_UART_MCR_RTS     BIT1
+#define R_UART_LSR           5
+#define   B_UART_LSR_RXRDY   BIT0
+#define   B_UART_LSR_TXRDY   BIT5
+#define   B_UART_LSR_TEMT    BIT6
+#define R_UART_MSR           6
+#define   B_UART_MSR_CTS     BIT4
+#define   B_UART_MSR_DSR     BIT5
+#define   B_UART_MSR_RI      BIT6
+#define   B_UART_MSR_DCD     BIT7
 
 /**
 
@@ -82,81 +81,77 @@ PCUartInitializePort (
   IN OUT EFI_STOP_BITS_TYPE  *StopBits
   )
 {
-    UINT32  Divisor;
-    UINT8   LcrData;
-    UINT8   LcrParity;
-    UINT8   LcrStop;
+  UINT32  Divisor;
+  UINT8   LcrData;
+  UINT8   LcrParity;
+  UINT8   LcrStop;
 
-    *ReceiveFifoDepth = 16;
+  *ReceiveFifoDepth = 16;
 
-    if ((*DataBits < 5) || (*DataBits > 8))
-    {
+  if ((*DataBits < 5) || (*DataBits > 8)) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  // Map 5..8 to 0..3
+  LcrData = (UINT8)(*DataBits - (UINT8)5);
+
+  switch (*Parity) {
+    case NoParity:
+      LcrParity = 0;
+      break;
+
+    case EvenParity:
+      LcrParity = 3;
+      break;
+
+    case OddParity:
+      LcrParity = 1;
+      break;
+
+    case SpaceParity:
+      LcrParity = 7;
+      break;
+
+    case MarkParity:
+      LcrParity = 5;
+      break;
+
+    default:
       return RETURN_INVALID_PARAMETER;
-    }
-    // Map 5..8 to 0..3
-    LcrData = (UINT8)(*DataBits - (UINT8)5);
+  }
 
-    switch (*Parity)
-    {
-        case NoParity:
-            LcrParity = 0;
-            break;
+  switch (*StopBits) {
+    case OneStopBit:
+      LcrStop = 0;
+      break;
 
-        case EvenParity:
-            LcrParity = 3;
-            break;
+    case OneFiveStopBits:
+    case TwoStopBits:
+      LcrStop = 1;
+      break;
 
-        case OddParity:
-            LcrParity = 1;
-            break;
+    default:
+      return RETURN_INVALID_PARAMETER;
+  }
 
-        case SpaceParity:
-            LcrParity = 7;
-            break;
+  // Calculate divisor for baud generator
+  //    Ref_Clk_Rate / Baud_Rate / 16
+  Divisor = UartClkInHz / ((UINT32)(*BaudRate) * 16);
+  if ((UartClkInHz % ((UINT32)(*BaudRate) * 16)) >= ((UINT32)(*BaudRate) * 8)) {
+    Divisor++;
+  }
 
-        case MarkParity:
-            LcrParity = 5;
-            break;
+  // Configure baud rate
+  IoWrite8 (UartBase + R_UART_LCR, B_UART_LCR_DLAB);
+  IoWrite8 (UartBase + R_UART_BAUD_HIGH, (UINT8)(Divisor >> 8));
+  IoWrite8 (UartBase + R_UART_BAUD_LOW, (UINT8)(Divisor & 0xff));
 
-        default:
-            return RETURN_INVALID_PARAMETER;
-    }
+  // Clear DLAB and configure Data Bits, Parity, and Stop Bits.
+  // Strip reserved bits from line control value
+  LcrData = (UINT8)((LcrParity << 3) | (LcrStop << 2) | LcrData);
+  IoWrite8 (UartBase + R_UART_LCR, (UINT8)(LcrData & 0x3F));
 
-    switch (*StopBits)
-    {
-        case OneStopBit:
-            LcrStop = 0;
-            break;
-
-        case OneFiveStopBits:
-        case TwoStopBits:
-            LcrStop = 1;
-            break;
-
-        default:
-            return RETURN_INVALID_PARAMETER;
-    }
-
-    // Calculate divisor for baud generator
-    //    Ref_Clk_Rate / Baud_Rate / 16
-    Divisor = UartClkInHz / ((UINT32)(*BaudRate) * 16);
-    if ((UartClkInHz % ((UINT32)(*BaudRate) * 16)) >= ((UINT32)(*BaudRate) * 8))
-    {
-        Divisor++;
-    }
-
-    // Configure baud rate
-    IoWrite8(UartBase + R_UART_LCR, B_UART_LCR_DLAB);
-    IoWrite8(UartBase + R_UART_BAUD_HIGH, (UINT8) (Divisor >> 8));
-    IoWrite8(UartBase + R_UART_BAUD_LOW, (UINT8) (Divisor & 0xff));
-
-    // Clear DLAB and configure Data Bits, Parity, and Stop Bits.
-    // Strip reserved bits from line control value
-    LcrData = (UINT8) ((LcrParity << 3) | (LcrStop << 2) | LcrData);
-    IoWrite8(UartBase + R_UART_LCR, (UINT8) (LcrData & 0x3F));
-
-    return RETURN_SUCCESS;
-
+  return RETURN_SUCCESS;
 }
 
 /**
@@ -186,32 +181,31 @@ PCUartInitializePort (
 **/
 RETURN_STATUS
 EFIAPI
-PCUartSetControl(
-    IN UINTN   UartBase,
-    IN UINT32  Control
-    )
+PCUartSetControl (
+  IN UINTN   UartBase,
+  IN UINT32  Control
+  )
 {
-    UINT8 mcr;
+  UINT8  mcr;
 
-    if ((Control & (~(EFI_SERIAL_REQUEST_TO_SEND | EFI_SERIAL_DATA_TERMINAL_READY))) != 0)
-    {
-        return RETURN_UNSUPPORTED;
-    }
+  if ((Control & (~(EFI_SERIAL_REQUEST_TO_SEND | EFI_SERIAL_DATA_TERMINAL_READY))) != 0) {
+    return RETURN_UNSUPPORTED;
+  }
 
-    mcr = IoRead8(UartBase + R_UART_MCR);
-    mcr &= (~(B_UART_MCR_DTRC | B_UART_MCR_RTS));
+  mcr  = IoRead8 (UartBase + R_UART_MCR);
+  mcr &= (~(B_UART_MCR_DTRC | B_UART_MCR_RTS));
 
-    if ((Control & EFI_SERIAL_DATA_TERMINAL_READY) == EFI_SERIAL_DATA_TERMINAL_READY)
-    {
-        mcr |= B_UART_MCR_DTRC;
-    }
-    if ((Control & EFI_SERIAL_REQUEST_TO_SEND) == EFI_SERIAL_REQUEST_TO_SEND)
-    {
-        mcr |= B_UART_MCR_RTS;
-    }
-    IoWrite8(UartBase + R_UART_MCR, mcr);
+  if ((Control & EFI_SERIAL_DATA_TERMINAL_READY) == EFI_SERIAL_DATA_TERMINAL_READY) {
+    mcr |= B_UART_MCR_DTRC;
+  }
 
-    return RETURN_SUCCESS;
+  if ((Control & EFI_SERIAL_REQUEST_TO_SEND) == EFI_SERIAL_REQUEST_TO_SEND) {
+    mcr |= B_UART_MCR_RTS;
+  }
+
+  IoWrite8 (UartBase + R_UART_MCR, mcr);
+
+  return RETURN_SUCCESS;
 }
 
 /**
@@ -249,59 +243,56 @@ PCUartSetControl(
 **/
 RETURN_STATUS
 EFIAPI
-PCUartGetControl(
-    IN UINTN     UartBase,
-    OUT UINT32  *Control
-    )
+PCUartGetControl (
+  IN UINTN    UartBase,
+  OUT UINT32  *Control
+  )
 {
-    UINT8 msr;
-    UINT8 mcr;
-    UINT8 lsr;
+  UINT8  msr;
+  UINT8  mcr;
+  UINT8  lsr;
 
-    *Control = 0;
+  *Control = 0;
 
-    msr = IoRead8(UartBase + R_UART_MSR);
+  msr = IoRead8 (UartBase + R_UART_MSR);
 
-    if ((msr & B_UART_MSR_CTS) == B_UART_MSR_CTS)
-    {
-        *Control |= EFI_SERIAL_CLEAR_TO_SEND;
-    }
-    if ((msr & B_UART_MSR_DSR) == B_UART_MSR_DSR)
-    {
-        *Control |= EFI_SERIAL_DATA_SET_READY;
-    }
-    if ((msr & B_UART_MSR_RI) == B_UART_MSR_RI)
-    {
-        *Control |= EFI_SERIAL_RING_INDICATE;
-    }
-    if ((msr & B_UART_MSR_DCD) == B_UART_MSR_DCD)
-    {
-        *Control |= EFI_SERIAL_CARRIER_DETECT;
-    }
+  if ((msr & B_UART_MSR_CTS) == B_UART_MSR_CTS) {
+    *Control |= EFI_SERIAL_CLEAR_TO_SEND;
+  }
 
-    mcr = IoRead8(UartBase + R_UART_MCR);
+  if ((msr & B_UART_MSR_DSR) == B_UART_MSR_DSR) {
+    *Control |= EFI_SERIAL_DATA_SET_READY;
+  }
 
-    if ((mcr & B_UART_MCR_DTRC) == B_UART_MCR_DTRC)
-    {
-        *Control |= EFI_SERIAL_DATA_TERMINAL_READY;
-    }
-    if ((mcr & B_UART_MCR_RTS) == B_UART_MCR_RTS)
-    {
-        *Control |= EFI_SERIAL_REQUEST_TO_SEND;
-    }
+  if ((msr & B_UART_MSR_RI) == B_UART_MSR_RI) {
+    *Control |= EFI_SERIAL_RING_INDICATE;
+  }
 
-    lsr = IoRead8(UartBase + R_UART_LSR);
+  if ((msr & B_UART_MSR_DCD) == B_UART_MSR_DCD) {
+    *Control |= EFI_SERIAL_CARRIER_DETECT;
+  }
 
-    if ((lsr & (B_UART_LSR_TEMT | B_UART_LSR_TXRDY)) == (B_UART_LSR_TEMT | B_UART_LSR_TXRDY))
-    {
-        *Control |= EFI_SERIAL_OUTPUT_BUFFER_EMPTY;
-    }
-    if ((lsr & B_UART_LSR_RXRDY) == 0)
-    {
-        *Control |= EFI_SERIAL_INPUT_BUFFER_EMPTY;
-    }
+  mcr = IoRead8 (UartBase + R_UART_MCR);
 
-    return RETURN_SUCCESS;
+  if ((mcr & B_UART_MCR_DTRC) == B_UART_MCR_DTRC) {
+    *Control |= EFI_SERIAL_DATA_TERMINAL_READY;
+  }
+
+  if ((mcr & B_UART_MCR_RTS) == B_UART_MCR_RTS) {
+    *Control |= EFI_SERIAL_REQUEST_TO_SEND;
+  }
+
+  lsr = IoRead8 (UartBase + R_UART_LSR);
+
+  if ((lsr & (B_UART_LSR_TEMT | B_UART_LSR_TXRDY)) == (B_UART_LSR_TEMT | B_UART_LSR_TXRDY)) {
+    *Control |= EFI_SERIAL_OUTPUT_BUFFER_EMPTY;
+  }
+
+  if ((lsr & B_UART_LSR_RXRDY) == 0) {
+    *Control |= EFI_SERIAL_INPUT_BUFFER_EMPTY;
+  }
+
+  return RETURN_SUCCESS;
 }
 
 /**
@@ -317,20 +308,22 @@ PCUartGetControl(
 UINTN
 EFIAPI
 PCUartWrite (
-  IN  UINTN    UartBase,
-  IN UINT8     *Buffer,
-  IN UINTN     NumberOfBytes
+  IN  UINTN  UartBase,
+  IN UINT8   *Buffer,
+  IN UINTN   NumberOfBytes
   )
 {
-    UINT8* CONST Final = &Buffer[NumberOfBytes];
+  UINT8 *CONST  Final = &Buffer[NumberOfBytes];
 
-    while (Buffer < Final)
-    {
-        // Wait until transmit holding register is empty
-        while((IoRead8(UartBase + R_UART_LSR) & B_UART_LSR_TXRDY) == 0);
-        IoWrite8(UartBase + R_UART_TXBUF, *Buffer++);
+  while (Buffer < Final) {
+    // Wait until transmit holding register is empty
+    while ((IoRead8 (UartBase + R_UART_LSR) & B_UART_LSR_TXRDY) == 0) {
     }
-    return NumberOfBytes;
+
+    IoWrite8 (UartBase + R_UART_TXBUF, *Buffer++);
+  }
+
+  return NumberOfBytes;
 }
 
 /**
@@ -345,19 +338,19 @@ PCUartWrite (
 **/
 UINTN
 EFIAPI
-PCUartRead(
-    IN  UINTN     UartBase,
-    OUT UINT8     *Buffer,
-    IN  UINTN     NumberOfBytes
-    )
+PCUartRead (
+  IN  UINTN  UartBase,
+  OUT UINT8  *Buffer,
+  IN  UINTN  NumberOfBytes
+  )
 {
-    UINTN   Count;
+  UINTN  Count;
 
-    for (Count = 0; (Count < NumberOfBytes) && PCUartPoll(UartBase); Count++, Buffer++)
-    {
-        *Buffer = IoRead8(UartBase + R_UART_RXBUF);
-    }
-    return Count;
+  for (Count = 0; (Count < NumberOfBytes) && PCUartPoll (UartBase); Count++, Buffer++) {
+    *Buffer = IoRead8 (UartBase + R_UART_RXBUF);
+  }
+
+  return Count;
 }
 
 /**
@@ -369,9 +362,9 @@ PCUartRead(
 **/
 BOOLEAN
 EFIAPI
-PCUartPoll(
-    IN  UINTN     UartBase
-    )
+PCUartPoll (
+  IN  UINTN  UartBase
+  )
 {
-    return (IoRead8(UartBase + R_UART_LSR) & B_UART_LSR_RXRDY);
+  return (IoRead8 (UartBase + R_UART_LSR) & B_UART_LSR_RXRDY);
 }

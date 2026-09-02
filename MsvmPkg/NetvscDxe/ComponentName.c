@@ -167,15 +167,15 @@ GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  mSimpleNetworkDriverName
   }
 };
 
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE gSimpleNetworkControllerNameTable[] = {
-    {
-        "eng;en",
-        L"Hyper-V Network Controller"
-    },
-    {
-        NULL,
-        NULL
-    }
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  gSimpleNetworkControllerNameTable[] = {
+  {
+    "eng;en",
+    L"Hyper-V Network Controller"
+  },
+  {
+    NULL,
+    NULL
+  }
 };
 
 /**
@@ -233,7 +233,6 @@ SimpleNetworkComponentNameGetDriverName (
            (BOOLEAN)(This == &gSimpleNetworkComponentName)
            );
 }
-
 
 /**
   Retrieves a Unicode string that is the user readable name of the controller
@@ -314,7 +313,7 @@ SimpleNetworkComponentNameGetControllerName (
   OUT CHAR16                       **ControllerName
   )
 {
-  EFI_STATUS                   Status;
+  EFI_STATUS  Status;
 
   if (ChildHandle != NULL) {
     return EFI_UNSUPPORTED;

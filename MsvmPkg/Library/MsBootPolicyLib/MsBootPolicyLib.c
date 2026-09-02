@@ -14,19 +14,25 @@
 /**
   Print the device path
 */
-static VOID PrintDevicePath(IN EFI_DEVICE_PATH_PROTOCOL *DevicePath) {
-    CHAR16                                  *ToText = NULL;
+static VOID
+PrintDevicePath (
+  IN EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  )
+{
+  CHAR16  *ToText = NULL;
 
-    if (DevicePath != NULL) {
-        ToText = ConvertDevicePathToText (DevicePath, TRUE, TRUE);
-    }
-    DEBUG((DEBUG_INFO,"%s",ToText)); // Output NewLine separately in case string is too long
-    DEBUG((DEBUG_INFO,"\n"));
+  if (DevicePath != NULL) {
+    ToText = ConvertDevicePathToText (DevicePath, TRUE, TRUE);
+  }
 
-    if (NULL != ToText) {
-        FreePool(ToText);
-    }
-    return;
+  DEBUG ((DEBUG_INFO, "%s", ToText)); // Output NewLine separately in case string is too long
+  DEBUG ((DEBUG_INFO, "\n"));
+
+  if (NULL != ToText) {
+    FreePool (ToText);
+  }
+
+  return;
 }
 
 /**
@@ -38,55 +44,58 @@ static VOID PrintDevicePath(IN EFI_DEVICE_PATH_PROTOCOL *DevicePath) {
 **/
 BOOLEAN
 EFIAPI
-MsBootPolicyLibIsDevicePathBootable(
-    EFI_DEVICE_PATH_PROTOCOL *DevicePath
-    ) {
-    BOOLEAN                             rc = TRUE;
-    EFI_DEVICE_PATH_PROTOCOL           *Node;
+MsBootPolicyLibIsDevicePathBootable (
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  )
+{
+  BOOLEAN                   rc = TRUE;
+  EFI_DEVICE_PATH_PROTOCOL  *Node;
 
-    DEBUG((DEBUG_INFO, "%a  Checking if the following device path is permitted to boot:\n", __func__));
+  DEBUG ((DEBUG_INFO, "%a  Checking if the following device path is permitted to boot:\n", __func__));
 
-    if (NULL == DevicePath) {
-        DEBUG((DEBUG_ERROR,"NULL device path\n"));
-        return TRUE;        // Don't know where this device is, so it is not "excluded"
+  if (NULL == DevicePath) {
+    DEBUG ((DEBUG_ERROR, "NULL device path\n"));
+    return TRUE;            // Don't know where this device is, so it is not "excluded"
+  }
+
+ #ifdef EFI_DEBUG
+  #define MAX_DEVICE_PATH_SIZE  0x100000// Arbitrary 1 MB max device path size.
+ #else
+  #define MAX_DEVICE_PATH_SIZE  0      // Don't check length on retail builds.
+ #endif
+
+  PrintDevicePath (DevicePath);
+  if (!IsDevicePathValid (DevicePath, MAX_DEVICE_PATH_SIZE)) {
+    DEBUG ((DEBUG_ERROR, "Invalid device path\n"));
+    return FALSE;
+  }
+
+  //
+  // 1. Check for USB devices (USB devices are also External Devices)
+  //
+  Node = DevicePath;
+  while (!IsDevicePathEnd (Node)) {
+    if (MESSAGING_DEVICE_PATH == Node->Type) {
+      // If any type of USB device
+      if ((MSG_USB_DP       == Node->SubType) ||         // don't allow booting
+          (MSG_USB_WWID_DP  == Node->SubType) ||
+          (MSG_USB_CLASS_DP == Node->SubType))
+      {
+        rc = FALSE;
+        break;
+      }
     }
 
-#ifdef EFI_DEBUG
-#define MAX_DEVICE_PATH_SIZE 0x100000  // Arbitrary 1 MB max device path size.
-#else
-#define MAX_DEVICE_PATH_SIZE 0         // Don't check length on retail builds.
-#endif
+    Node = NextDevicePathNode (Node);
+  }
 
-    PrintDevicePath(DevicePath);
-    if (!IsDevicePathValid(DevicePath,MAX_DEVICE_PATH_SIZE)) {
-        DEBUG((DEBUG_ERROR,"Invalid device path\n"));
-        return FALSE;
-    }
+  if (rc) {
+    DEBUG ((DEBUG_INFO, "Boot from this device is enabled\n"));
+  } else {
+    DEBUG ((DEBUG_ERROR, "Boot from this device has been prevented\n"));
+  }
 
-
-    //
-    // 1. Check for USB devices (USB devices are also External Devices)
-    //
-    Node = DevicePath;
-    while (!IsDevicePathEnd(Node)) {
-        if (MESSAGING_DEVICE_PATH == Node->Type) {       // If any type of USB device
-            if ((MSG_USB_DP       == Node->SubType) ||   // don't allow booting
-                (MSG_USB_WWID_DP  == Node->SubType) ||
-                (MSG_USB_CLASS_DP == Node->SubType)) {
-                rc = FALSE;
-                break;
-            }
-        }
-        Node = NextDevicePathNode (Node);
-    }
-
-
-    if (rc) {
-        DEBUG((DEBUG_INFO,"Boot from this device is enabled\n"));
-    } else {
-        DEBUG((DEBUG_ERROR,"Boot from this device has been prevented\n"));
-    }
-    return rc;
+  return rc;
 }
 
 /**
@@ -99,12 +108,11 @@ MsBootPolicyLibIsDevicePathBootable(
 BOOLEAN
 EFIAPI
 MsBootPolicyLibIsDeviceBootable (
-    EFI_HANDLE   ControllerHandle
-    ) {
-
-    return MsBootPolicyLibIsDevicePathBootable (DevicePathFromHandle (ControllerHandle));
+  EFI_HANDLE  ControllerHandle
+  )
+{
+  return MsBootPolicyLibIsDevicePathBootable (DevicePathFromHandle (ControllerHandle));
 }
-
 
 /**
  *Ask if the platform is requesting Settings Change
@@ -116,7 +124,7 @@ BOOLEAN
 EFIAPI
 MsBootPolicyLibIsSettingsBoot (
   VOID
-)
+  )
 {
   return FALSE;
 }
@@ -131,7 +139,7 @@ BOOLEAN
 EFIAPI
 MsBootPolicyLibIsAltBoot (
   VOID
-)
+  )
 {
   return FALSE;
 }
@@ -149,9 +157,9 @@ MsBootPolicyLibIsAltBoot (
 EFI_STATUS
 EFIAPI
 MsBootPolicyLibGetBootSequence (
-  BOOT_SEQUENCE **BootSequence,
-  BOOLEAN         AltBootRequest
-)
+  BOOT_SEQUENCE  **BootSequence,
+  BOOLEAN        AltBootRequest
+  )
 {
   return EFI_UNSUPPORTED;
 }
@@ -165,9 +173,9 @@ MsBootPolicyLibGetBootSequence (
 **/
 EFI_STATUS
 EFIAPI
-MsBootPolicyLibClearBootRequests(
-   VOID
-)
+MsBootPolicyLibClearBootRequests (
+  VOID
+  )
 {
   return EFI_SUCCESS;
 }

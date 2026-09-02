@@ -12,7 +12,7 @@
 
 #define FILLED_AT_RUNTIME  0
 
-#define FONT_DECL(TABLE, NAME )                     \
+#define FONT_DECL(TABLE, NAME)                     \
                                                     \
     static MS_UI_FONT_DESCRIPTION TABLE = {         \
         MS_UI_CUSTOM_FONT_ ## NAME ## _CELL_HEIGHT, \
@@ -24,7 +24,7 @@
         FILLED_AT_RUNTIME \
     };
 
-#define SCALE 75
+#define SCALE  75
 
 // The fonts for this platform are:
 #include <Resources/FontPackage_Selawik_Regular_8pt_Fixed.h>

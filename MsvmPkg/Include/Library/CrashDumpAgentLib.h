@@ -3,9 +3,9 @@
   unrecoverable error.
 
 **/
+
 #ifndef __CRASH_DUMP_AGENT_LIB_H__
 #define __CRASH_DUMP_AGENT_LIB_H__
-
 
 /**
   Called to initialize the crash dump agent.
@@ -15,10 +15,9 @@
 **/
 VOID
 EFIAPI
-InitializeCrashDumpAgent(
-    IN VOID               *HobList
-    );
-
+InitializeCrashDumpAgent (
+  IN VOID  *HobList
+  );
 
 /**
   Called when a fatal error is detected and the system cannot continue.
@@ -33,12 +32,12 @@ InitializeCrashDumpAgent(
 **/
 VOID
 EFIAPI
-EfiBugCheck(
-    IN  UINT32             BugCheckCode,
-    IN  UINTN              Param1,
-    IN  UINTN              Param2,
-    IN  UINTN              Param3,
-    IN  UINTN              Param4
-    );
+EfiBugCheck (
+  IN  UINT32  BugCheckCode,
+  IN  UINTN   Param1,
+  IN  UINTN   Param2,
+  IN  UINTN   Param3,
+  IN  UINTN   Param4
+  );
 
-#endif  // __CRASH_DUMP_AGENT_LIB_H__
+#endif // __CRASH_DUMP_AGENT_LIB_H__

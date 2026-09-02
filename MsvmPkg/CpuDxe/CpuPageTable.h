@@ -165,7 +165,7 @@ InstallEfiMemoryAttributeProtocol (
   IN EFI_HANDLE  Handle
   );
 
-#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
+#if MS_HYP_CHANGE && defined (MDE_CPU_X64)
 
 /*
   Initialize the page tables for MP support in TDX.
@@ -174,7 +174,7 @@ InstallEfiMemoryAttributeProtocol (
 */
 UINT64
 InitializeMpPageTables (
-  IN UINT64 ApMailbox
+  IN UINT64  ApMailbox
   );
 
 #endif // MS_HYP_CHANGE && MDE_CPU_X64

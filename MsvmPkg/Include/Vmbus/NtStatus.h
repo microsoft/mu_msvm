@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 typedef int32_t NTSTATUS;
-#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+#define NT_SUCCESS(Status)  (((NTSTATUS)(Status)) >= 0)
 
 //
 // MessageId: STATUS_REVISION_MISMATCH
@@ -17,5 +17,4 @@ typedef int32_t NTSTATUS;
 //
 // Indicates two revision levels are incompatible.
 //
-#define STATUS_REVISION_MISMATCH         ((NTSTATUS)0xC0000059L)
-
+#define STATUS_REVISION_MISMATCH  ((NTSTATUS)0xC0000059L)

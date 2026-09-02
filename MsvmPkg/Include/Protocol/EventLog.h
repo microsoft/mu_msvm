@@ -15,59 +15,55 @@
 ///  The event channel will always contain fixed size records
 ///  The RecordSize field of EVENT_CHANNEL_INFO defines the size.
 ///
-#define EVENT_CHANNEL_FIXED_RECORDS         0x00000001
+#define EVENT_CHANNEL_FIXED_RECORDS  0x00000001
 
 ///
 ///  When set and the underlying event record storage becomes full
 ///  older records will be overwritten to make room for newer ones.
 ///  When not set, newer records will fail to be logged.
 ///
-#define EVENT_CHANNEL_OVERWRITE_RECORDS     0x00000002
+#define EVENT_CHANNEL_OVERWRITE_RECORDS  0x00000002
 
 ///
 ///  Special handle value for invalid handles
 ///  Can also be used to trigger special behavior in some functions.
 ///
-#define INVALID_EVENT_HANDLE (EFI_HANDLE)((UINTN)-1)
-
+#define INVALID_EVENT_HANDLE  (EFI_HANDLE)((UINTN)-1)
 
 /**
   Defines the attributes of an event channel when creating it.
 **/
-typedef struct
-{
-    ///
-    /// TPL associated with the event channel.
-    /// Events can be logged at this TPL or lower.
-    ///
-    EFI_TPL Tpl;
-    ///
-    /// Flags defining the characteristics of the channel.
-    ///
-    UINT32  Flags;
-    ///
-    /// Defines the size of each event log entry in bytes.
-    /// Unused for variable sized records (initialize to 0)
-    ///
-    UINT32  RecordSize;
-    ///
-    /// Buffer size in bytes for the channel
-    /// This will be rounded to a multiple of RecordSize for fixed sized records.
-    ///
-    UINT32  BufferSize;
+typedef struct {
+  ///
+  /// TPL associated with the event channel.
+  /// Events can be logged at this TPL or lower.
+  ///
+  EFI_TPL    Tpl;
+  ///
+  /// Flags defining the characteristics of the channel.
+  ///
+  UINT32     Flags;
+  ///
+  /// Defines the size of each event log entry in bytes.
+  /// Unused for variable sized records (initialize to 0)
+  ///
+  UINT32     RecordSize;
+  ///
+  /// Buffer size in bytes for the channel
+  /// This will be rounded to a multiple of RecordSize for fixed sized records.
+  ///
+  UINT32     BufferSize;
 } EVENT_CHANNEL_INFO;
 
 /**
   Counters for various operations on an event channel
 **/
-typedef struct
-{
-    UINT32      Written;
-    UINT32      Lost;
-    UINT32      Reset;
-    UINT32      Flush;
+typedef struct {
+  UINT32    Written;
+  UINT32    Lost;
+  UINT32    Reset;
+  UINT32    Flush;
 } EVENT_CHANNEL_STATISTICS;
-
 
 /**
   Creates or Opens an event channel.
@@ -89,11 +85,10 @@ typedef struct
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_CHANNEL_CREATE)(
-    IN CONST EFI_GUID                *Channel,
-    IN       EVENT_CHANNEL_INFO      *Attributes OPTIONAL,
-    OUT      EFI_HANDLE              *Handle OPTIONAL
-    );
-
+  IN CONST EFI_GUID                *Channel,
+  IN       EVENT_CHANNEL_INFO      *Attributes OPTIONAL,
+  OUT      EFI_HANDLE              *Handle OPTIONAL
+  );
 
 /**
   Flushes an event channel to implementation defined peristant storage.
@@ -109,9 +104,8 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_CHANNEL_FLUSH)(
-    IN CONST EFI_HANDLE               Channel
-    );
-
+  IN CONST EFI_HANDLE               Channel
+  );
 
 /**
   Resets an event channel clearing all events.
@@ -126,9 +120,8 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_CHANNEL_RESET)(
-    IN CONST EFI_HANDLE               Channel
-    );
-
+  IN CONST EFI_HANDLE               Channel
+  );
 
 /**
   Retrieves statistics for an event channel
@@ -141,10 +134,9 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_CHANNEL_STATISTICS)(
-    IN CONST EFI_HANDLE               Channel,
-    OUT      EVENT_CHANNEL_STATISTICS *Stats
-    );
-
+  IN CONST EFI_HANDLE               Channel,
+  OUT      EVENT_CHANNEL_STATISTICS *Stats
+  );
 
 /**
   Enumerates the event entries present on an event channel.
@@ -169,11 +161,11 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_EVENT_ENUMERATE)(
-    IN CONST EFI_HANDLE               Channel,
-    IN OUT   EFI_HANDLE              *Enumerator,
-    OUT      EFI_EVENT_DESCRIPTOR    *Metadata,
-    OUT      VOID                   **Event
-    );
+  IN CONST EFI_HANDLE               Channel,
+  IN OUT   EFI_HANDLE              *Enumerator,
+  OUT      EFI_EVENT_DESCRIPTOR    *Metadata,
+  OUT      VOID                   **Event
+  );
 
 /**
   Logs a new event to the given event channel.
@@ -196,11 +188,10 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_EVENT_LOG)(
-    IN CONST EFI_HANDLE               Channel,
-    IN CONST EFI_EVENT_DESCRIPTOR    *EventDesc,
-    IN CONST VOID                    *Data OPTIONAL
-    );
-
+  IN CONST EFI_HANDLE               Channel,
+  IN CONST EFI_EVENT_DESCRIPTOR    *EventDesc,
+  IN CONST VOID                    *Data OPTIONAL
+  );
 
 /**
   Retrieves the currently pending event on the given channel.
@@ -219,11 +210,10 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_EVENT_PENDING_GET)(
-    IN  CONST EFI_HANDLE              Channel,
-    OUT       EFI_EVENT_DESCRIPTOR   *Metadata,
-    OUT       VOID                  **Data
-    );
-
+  IN  CONST EFI_HANDLE              Channel,
+  OUT       EFI_EVENT_DESCRIPTOR   *Metadata,
+  OUT       VOID                  **Data
+  );
 
 /**
   Commits the currently pending event on the given channel.
@@ -237,28 +227,26 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_EVENTLOG_EVENT_PENDING_COMMIT)(
-    IN CONST EFI_HANDLE            Channel
-    );
-
+  IN CONST EFI_HANDLE            Channel
+  );
 
 ///
 /// Provides flexible event logging services to the platform firmware.
 ///
-typedef struct _EFI_EVENTLOG_PROTOCOL
-{
-    EFI_EVENTLOG_CHANNEL_CREATE         ChannelCreate;
-    EFI_EVENTLOG_CHANNEL_FLUSH          ChannelFlush;
-    EFI_EVENTLOG_CHANNEL_RESET          ChannelReset;
-    EFI_EVENTLOG_CHANNEL_STATISTICS     ChannelStatistics;
-    EFI_EVENTLOG_EVENT_ENUMERATE        EventEnumerate;
-    EFI_EVENTLOG_EVENT_LOG              EventLog;
-    EFI_EVENTLOG_EVENT_PENDING_GET      EventPendingGet;
-    EFI_EVENTLOG_EVENT_PENDING_COMMIT   EventPendingCommit;
+typedef struct _EFI_EVENTLOG_PROTOCOL {
+  EFI_EVENTLOG_CHANNEL_CREATE          ChannelCreate;
+  EFI_EVENTLOG_CHANNEL_FLUSH           ChannelFlush;
+  EFI_EVENTLOG_CHANNEL_RESET           ChannelReset;
+  EFI_EVENTLOG_CHANNEL_STATISTICS      ChannelStatistics;
+  EFI_EVENTLOG_EVENT_ENUMERATE         EventEnumerate;
+  EFI_EVENTLOG_EVENT_LOG               EventLog;
+  EFI_EVENTLOG_EVENT_PENDING_GET       EventPendingGet;
+  EFI_EVENTLOG_EVENT_PENDING_COMMIT    EventPendingCommit;
 } EFI_EVENTLOG_PROTOCOL;
 
 #define EFI_EVENTLOG_PROTOCOL_GUID \
 { 0xe916bdda, 0x6c85, 0x45a0, {0x91, 0x79, 0xb4, 0x18, 0xd0, 0x3d, 0x71, 0x45}}
 
-extern EFI_GUID gEfiEventLogProtocolGuid;
+extern EFI_GUID  gEfiEventLogProtocolGuid;
 
-#endif  // __EFI_EVENTLOG_PROTOCOL_H__
+#endif // __EFI_EVENTLOG_PROTOCOL_H__

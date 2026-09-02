@@ -1622,8 +1622,8 @@ Done:
   return VerifyStatus;
 }
 
-
 // MS_HYP_CHANGE BEGIN
+
 /**
   Report status code for DXE image verfication.
 
@@ -1636,12 +1636,12 @@ Done:
 **/
 VOID
 ReportDxeImageVerificationStatusCode (
-  IN  CONST EFI_DEVICE_PATH_PROTOCOL   *File,
-  IN  UINTN                            StatusCode
+  IN  CONST EFI_DEVICE_PATH_PROTOCOL  *File,
+  IN  UINTN                           StatusCode
   )
 {
   if (!DxeImageVerificationStatusCodeReported) {
-    UINTN           ReportStatusCodeData[2];
+    UINTN  ReportStatusCodeData[2];
 
     ReportStatusCodeData[0] = (UINTN)File;
     ReportStatusCodeData[1] = StatusCode;
@@ -1653,14 +1653,14 @@ ReportDxeImageVerificationStatusCode (
       NULL,
       NULL,
       ReportStatusCodeData,
-      sizeof(ReportStatusCodeData)
+      sizeof (ReportStatusCodeData)
       );
 
     DxeImageVerificationStatusCodeReported = TRUE;
   }
 }
-// MS_HYP_CHANGE END
 
+// MS_HYP_CHANGE END
 
 /**
   Provide verification service for signed images, which include both signature validation
@@ -1760,7 +1760,7 @@ DxeImageVerificationHandler (
   IsFound           = FALSE;
   IsFoundInDatabase = FALSE;
   // MS_HYP_CHANGE BEGIN
-  CachedVerificationFailure = BootPending;
+  CachedVerificationFailure              = BootPending;
   DxeImageVerificationStatusCodeReported = FALSE;
   // MS_HYP_CHANGE END
 
@@ -1797,7 +1797,7 @@ DxeImageVerificationHandler (
   }
 
   if (Policy == NEVER_EXECUTE) {
-    ReportDxeImageVerificationStatusCode(File, SecureBootPolicyDenied);     // MS_HYP_CHANGE
+    ReportDxeImageVerificationStatusCode (File, SecureBootPolicyDenied);     // MS_HYP_CHANGE
     return EFI_ACCESS_DENIED;
   }
 
@@ -1807,7 +1807,7 @@ DxeImageVerificationHandler (
   //
   ASSERT (Policy != QUERY_USER_ON_SECURITY_VIOLATION && Policy != ALLOW_EXECUTE_ON_SECURITY_VIOLATION);
   if ((Policy == QUERY_USER_ON_SECURITY_VIOLATION) || (Policy == ALLOW_EXECUTE_ON_SECURITY_VIOLATION)) {
-    FAIL_FAST(EFI_SECURITY_VIOLATION, "Invalid secure boot policy");        // MS_HYP_CHANGE
+    FAIL_FAST (EFI_SECURITY_VIOLATION, "Invalid secure boot policy");        // MS_HYP_CHANGE
   }
 
   SecureBootSize = sizeof (SecureBoot);
@@ -1825,7 +1825,7 @@ DxeImageVerificationHandler (
   if ((VarStatus == EFI_SUCCESS) &&
       // MS_HYP_CHANGE: Hyper-V stack originally added EFI_VARIABLE_NON_VOLATILE to attributes,
       // so skip this check for compatibility
-      //(VarAttr == (EFI_VARIABLE_BOOTSERVICE_ACCESS |
+      // (VarAttr == (EFI_VARIABLE_BOOTSERVICE_ACCESS |
       //             EFI_VARIABLE_RUNTIME_ACCESS)) &&
       (SecureBoot == SECURE_BOOT_MODE_DISABLE))
   {
@@ -2064,7 +2064,7 @@ DxeImageVerificationHandler (
     if (EFI_ERROR (DbStatus) || IsFound) {
       Action = EFI_IMAGE_EXECUTION_AUTH_SIG_FOUND;
       DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but %s hash of image is found in DBX.\n", mHashTypeStr));
-      IsVerified = FALSE;
+      IsVerified                = FALSE;
       CachedVerificationFailure = SecureBootHashDenied;   // MS_HYP_CHANGE
       break;
     }
@@ -2092,7 +2092,7 @@ DxeImageVerificationHandler (
     // The Size in Certificate Table or the attribute certificate table is corrupted.
     //
     IsVerified = FALSE;
-    ReportDxeImageVerificationStatusCode(File, SecureBootFailed);     // MS_HYP_CHANGE
+    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);     // MS_HYP_CHANGE
   }
 
   if (IsVerified) {
@@ -2118,11 +2118,11 @@ DxeImageVerificationHandler (
     CopyMem (Signature->SignatureData, mImageDigest, mImageDigestSize);
   }
   // MS_HYP_CHANGE BEGIN
-  else
-  {
+  else {
     CachedVerificationFailure = SecureBootNeitherCertNorHashInDb;
     DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Neither certificate nor hash found in DB.\n"));
   }
+
   // MS_HYP_CHANGE END
 Failed:
   // MS_HYP_CHANGE BEGIN
@@ -2130,8 +2130,9 @@ Failed:
   // Report the specific verification failure reason if we cached one
   //
   if (CachedVerificationFailure != BootPending) {
-    ReportDxeImageVerificationStatusCode(File, CachedVerificationFailure);
+    ReportDxeImageVerificationStatusCode (File, CachedVerificationFailure);
   }
+
   // MS_HYP_CHANGE END
 
   //
@@ -2145,7 +2146,7 @@ Failed:
     AddImageExeInfo (Action, NameStr, File, SignatureList, SignatureListSize);
     DEBUG ((DEBUG_INFO, "The image doesn't pass verification: %s\n", NameStr));
     FreePool (NameStr);
-    ReportDxeImageVerificationStatusCode(File, SecureBootFailed);     // MS_HYP_CHANGE
+    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);     // MS_HYP_CHANGE
   }
 
   // MU_CHANGE End - CodeQL change - unguardednullreturndereference

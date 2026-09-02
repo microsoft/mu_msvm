@@ -20,16 +20,16 @@
 
 VOID
 AcpiPmControl (
-  UINTN SuspendType
+  UINTN  SuspendType
   )
 {
-  UINT16 value;
+  UINT16  value;
 
   ASSERT (SuspendType < 6);
 
-  value = IoRead16 (PowerMgmtDefaultBaseRegister + PowerMgmtControlRegOffset);
+  value  = IoRead16 (PowerMgmtDefaultBaseRegister + PowerMgmtControlRegOffset);
   value &= ~PowerMgmtControlSuspendTypeMask;
-  value |= (UINT16) (SuspendType << 10);
+  value |= (UINT16)(SuspendType << 10);
   value |= PowerMgmtControlSuspendEnableMask;
   IoWrite16 (PowerMgmtDefaultBaseRegister + PowerMgmtControlRegOffset, value);
   CpuDeadLoop ();
@@ -49,10 +49,12 @@ ResetCold (
   VOID
   )
 {
-  IoWrite8 (PowerMgmtDefaultBaseRegister + PowerMgmtResetRegister,
-            PowerMgmtResetValue);
+  IoWrite8 (
+    PowerMgmtDefaultBaseRegister + PowerMgmtResetRegister,
+    PowerMgmtResetValue
+    );
 
-  CpuDeadLoop();
+  CpuDeadLoop ();
 }
 
 /**
@@ -67,7 +69,7 @@ ResetWarm (
   VOID
   )
 {
-  ResetCold();
+  ResetCold ();
 }
 
 /**

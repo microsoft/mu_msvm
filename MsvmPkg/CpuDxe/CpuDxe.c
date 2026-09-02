@@ -22,15 +22,15 @@ BOOLEAN     mIsFlushingGCD;
 
 #define CPU_INTERRUPT_NUM  256
 
-#include <IsolationTypes.h>
-#include <Library/CrashLib.h>
+  #include <IsolationTypes.h>
+  #include <Library/CrashLib.h>
 
-#if defined(MDE_CPU_X64)
+  #if defined (MDE_CPU_X64)
 
-EFI_HV_PROTOCOL *mHv;
-EFI_EVENT   mEndOfDxeEvent;
+EFI_HV_PROTOCOL  *mHv;
+EFI_EVENT        mEndOfDxeEvent;
 
-#endif
+  #endif
 
 IA32_IDT_GATE_DESCRIPTOR  gIdtTable[CPU_INTERRUPT_NUM];
 BOOLEAN                   mStrictIsolation;
@@ -38,8 +38,8 @@ UINT32                    mIsolationType;
 
 #endif // MS_HYP_CHANGE
 
-BOOLEAN     mIsAllocatingPageTable = FALSE;
-UINT64      mTimerPeriod           = 0;
+BOOLEAN  mIsAllocatingPageTable = FALSE;
+UINT64   mTimerPeriod           = 0;
 
 EFI_CPU_ARCH_PROTOCOL  gCpu = {
   CpuFlushCpuDataCache,
@@ -176,9 +176,9 @@ CpuGetInterruptState (
     return EFI_INVALID_PARAMETER;
   }
 
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
   *State = GetInterruptState ();
-#endif
+ #endif
   return EFI_SUCCESS;
 }
 
@@ -267,10 +267,10 @@ CpuGetTimerValue (
   OUT UINT64                 *TimerPeriod OPTIONAL
   )
 {
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
   UINT64  BeginValue;
   UINT64  EndValue;
-#endif // MS_HYP_CHANGE
+ #endif // MS_HYP_CHANGE
 
   if (TimerValue == NULL) {
     return EFI_INVALID_PARAMETER;
@@ -283,12 +283,12 @@ CpuGetTimerValue (
   *TimerValue = AsmReadTsc ();
 
   if (TimerPeriod != NULL) {
-#if MS_HYP_CHANGE
-      //
-      // BugBug: Hard coded. Don't know how to do this generically
-      //
-      *TimerPeriod = 1000000000;
-#else // MS_HYP_CHANGE above
+ #if MS_HYP_CHANGE
+    //
+    // BugBug: Hard coded. Don't know how to do this generically
+    //
+    *TimerPeriod = 1000000000;
+ #else // MS_HYP_CHANGE above
     if (mTimerPeriod == 0) {
       //
       // Read time stamp counter before and after delay of 100 microseconds
@@ -310,7 +310,7 @@ CpuGetTimerValue (
     }
 
     *TimerPeriod = mTimerPeriod;
-#endif // MS_HYP_CHANGE
+ #endif // MS_HYP_CHANGE
   }
 
   return EFI_SUCCESS;
@@ -366,16 +366,17 @@ CpuSetMemoryAttributes (
   IN UINT64                 Attributes
   )
 {
-  RETURN_STATUS             Status;
-  MTRR_MEMORY_CACHE_TYPE    CacheType;
-#if !MS_HYP_CHANGE
+  RETURN_STATUS           Status;
+  MTRR_MEMORY_CACHE_TYPE  CacheType;
+
+ #if !MS_HYP_CHANGE
   EFI_STATUS                MpStatus;
   EFI_MP_SERVICES_PROTOCOL  *MpService;
   MTRR_SETTINGS             MtrrSettings;
-#endif // MS_HYP_CHANGE END
-  UINT64                    CacheAttributes;
-  UINT64                    MemoryAttributes;
-  MTRR_MEMORY_CACHE_TYPE    CurrentCacheType;
+ #endif // MS_HYP_CHANGE END
+  UINT64                  CacheAttributes;
+  UINT64                  MemoryAttributes;
+  MTRR_MEMORY_CACHE_TYPE  CurrentCacheType;
 
   //
   // If this function is called because GCD SetMemorySpaceAttributes () is called
@@ -411,11 +412,12 @@ CpuSetMemoryAttributes (
   }
 
   if (CacheAttributes != 0) {
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
     if (!IsMtrrSupported ()) {
       return EFI_UNSUPPORTED;
     }
-#endif // MS_HYP_CHANGE END
+
+ #endif // MS_HYP_CHANGE END
 
     switch (CacheAttributes) {
       case EFI_MEMORY_UC:
@@ -444,7 +446,7 @@ CpuSetMemoryAttributes (
 
     CurrentCacheType = MtrrGetMemoryAttribute (BaseAddress);
 
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
     //
     // If this system enforces hardware isolation with no paravisor, then
     // cache attribute changes are not possible.  However, this routine may
@@ -453,13 +455,13 @@ CpuSetMemoryAttributes (
     // attribute changes.
     //
     if (!mStrictIsolation && (CacheType != CacheWriteBack) && (CurrentCacheType != CacheType)) {
-
       if (!IsMtrrSupported ()) {
-          return EFI_INVALID_PARAMETER;
+        return EFI_INVALID_PARAMETER;
       }
-#else
+
+ #else
     if (CurrentCacheType != CacheType) {
-#endif // MS_HYP_CHANGE
+ #endif // MS_HYP_CHANGE
 
       //
       // call MTRR library function
@@ -469,7 +471,7 @@ CpuSetMemoryAttributes (
                  Length,
                  CacheType
                  );
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
       if (!RETURN_ERROR (Status)) {
         MpStatus = gBS->LocateProtocol (
                           &gEfiMpServiceProtocolGuid,
@@ -493,7 +495,8 @@ CpuSetMemoryAttributes (
           ASSERT (MpStatus == EFI_SUCCESS || MpStatus == EFI_NOT_STARTED);
         }
       }
-#endif // MS_HYP_CHANGE END
+
+ #endif // MS_HYP_CHANGE END
 
       if (EFI_ERROR (Status)) {
         return Status;
@@ -673,8 +676,8 @@ SetGcdMemorySpaceAttributes (
 
 #if MS_HYP_CHANGE
 
-UINT64      mValidMtrrAddressMask;
-UINT64      mValidMtrrBitsMask;
+UINT64  mValidMtrrAddressMask;
+UINT64  mValidMtrrBitsMask;
 
 FIXED_MTRR  mFixedMtrrTable[] = {
   {
@@ -733,6 +736,7 @@ FIXED_MTRR  mFixedMtrrTable[] = {
     0x1000
   },
 };
+
 /**
   Initializes the valid bits mask and valid address mask for MTRRs.
 
@@ -760,6 +764,7 @@ InitializeMtrrMask (
   mValidMtrrBitsMask    = LShiftU64 (1, PhysicalAddressBits) - 1;
   mValidMtrrAddressMask = mValidMtrrBitsMask & 0xfffffffffffff000ULL;
 }
+
 #endif // MS_HYP_CHANGE
 
 /**
@@ -789,7 +794,7 @@ RefreshMemoryAttributesFromMtrr (
                   );
   ASSERT_EFI_ERROR (Status);
 
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
   //
   // In 2405 of mu_basecore, calling the newer API
   // MtrrGetMemoryAttributesInMtrrSettings() will trigger assertions if invalid MTRR
@@ -806,11 +811,10 @@ RefreshMemoryAttributesFromMtrr (
   // N.B. this below upstream logic can only be enabled when OpenVMM sets MTRRs in an
   //   architecturally-correct way (not with Hyper-V compatibility).  Until then,
   //   also fall back to Hyper-V specific code that can deal with the peculiar MTRRs.
-  if (PcdGetBool(PcdMtrrsInitializedAtLoad))
-  {
-    RETURN_STATUS                    ReturnStatus;
-    MTRR_MEMORY_RANGE                *Ranges;
-    UINTN                            RangeCount;
+  if (PcdGetBool (PcdMtrrsInitializedAtLoad)) {
+    RETURN_STATUS      ReturnStatus;
+    MTRR_MEMORY_RANGE  *Ranges;
+    UINTN              RangeCount;
 
     RangeCount   = 0;
     ReturnStatus = MtrrGetMemoryAttributesInMtrrSettings (NULL, NULL, &RangeCount);
@@ -829,22 +833,21 @@ RefreshMemoryAttributesFromMtrr (
         GetMemorySpaceAttributeFromMtrrType (Ranges[Index].Type)
         );
     }
-  }
-  else
-#endif
+  } else
+ #endif
   {
-    UINTN                            SubIndex;
-    UINT64                           RegValue;
-    EFI_PHYSICAL_ADDRESS             BaseAddress;
-    UINT64                           Length;
-    UINT64                           Attributes;
-    UINT64                           CurrentAttributes;
-    UINT8                            MtrrType;
-    UINT64                           DefaultAttributes;
-    VARIABLE_MTRR                    VariableMtrr[MTRR_NUMBER_OF_VARIABLE_MTRR];
-    MTRR_FIXED_SETTINGS              MtrrFixedSettings;
-    UINT32                           FirmwareVariableMtrrCount;
-    UINT8                            DefaultMemoryType;
+    UINTN                 SubIndex;
+    UINT64                RegValue;
+    EFI_PHYSICAL_ADDRESS  BaseAddress;
+    UINT64                Length;
+    UINT64                Attributes;
+    UINT64                CurrentAttributes;
+    UINT8                 MtrrType;
+    UINT64                DefaultAttributes;
+    VARIABLE_MTRR         VariableMtrr[MTRR_NUMBER_OF_VARIABLE_MTRR];
+    MTRR_FIXED_SETTINGS   MtrrFixedSettings;
+    UINT32                FirmwareVariableMtrrCount;
+    UINT8                 DefaultMemoryType;
 
     FirmwareVariableMtrrCount = GetFirmwareVariableMtrrCount ();
     ASSERT (FirmwareVariableMtrrCount <= MTRR_NUMBER_OF_VARIABLE_MTRR);
@@ -875,11 +878,11 @@ RefreshMemoryAttributesFromMtrr (
       }
 
       gDS->SetMemorySpaceAttributes (
-            MemorySpaceMap[Index].BaseAddress,
-            MemorySpaceMap[Index].Length,
-            (MemorySpaceMap[Index].Attributes & ~EFI_CACHE_ATTRIBUTE_MASK) |
-            (MemorySpaceMap[Index].Capabilities & DefaultAttributes)
-            );
+             MemorySpaceMap[Index].BaseAddress,
+             MemorySpaceMap[Index].Length,
+             (MemorySpaceMap[Index].Attributes & ~EFI_CACHE_ATTRIBUTE_MASK) |
+             (MemorySpaceMap[Index].Capabilities & DefaultAttributes)
+             );
     }
 
     //
@@ -1032,11 +1035,12 @@ RefreshGcdMemoryAttributes (
     RefreshMemoryAttributesFromMtrr ();
   }
 
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
   if (IsPagingAndPageAddressExtensionsEnabled ()) {
     RefreshGcdMemoryAttributesFromPaging ();
   }
-#endif // MS_HYP_CHANGE
+
+ #endif // MS_HYP_CHANGE
 
   mIsFlushingGCD = FALSE;
 }
@@ -1049,7 +1053,7 @@ VOID
 InitInterruptDescriptorTable (
   VOID
   )
-{ 
+{
   EFI_STATUS                Status;
   EFI_VECTOR_HANDOFF_INFO   *VectorInfoList;
   EFI_VECTOR_HANDOFF_INFO   *VectorInfo;
@@ -1069,11 +1073,11 @@ InitInterruptDescriptorTable (
     //
     // Increase Interrupt Descriptor Table and Copy the old IDT table in
     //
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
     IdtTable = gIdtTable;
-#else
+ #else
     IdtTable = AllocateZeroPool (sizeof (IA32_IDT_GATE_DESCRIPTOR) * X86_CPU_INTERRUPT_NUM);
-#endif
+ #endif
     ASSERT (IdtTable != NULL);
     CopyMem (IdtTable, (VOID *)IdtDescriptor.Base, sizeof (IA32_IDT_GATE_DESCRIPTOR) * IdtEntryCount);
 
@@ -1089,7 +1093,7 @@ InitInterruptDescriptorTable (
   ASSERT_EFI_ERROR (Status);
 }
 
-#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
+#if MS_HYP_CHANGE && defined (MDE_CPU_X64)
 
 /**
   Callback function for end of DXE.
@@ -1102,51 +1106,48 @@ InitInterruptDescriptorTable (
 VOID
 EFIAPI
 EndOfDxeCallback (
-  IN EFI_EVENT                Event,
-  IN VOID                     *Context
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
   )
 {
-
-  MP_WAKEUP_MAILBOX *ApMailbox;
-  UINT32 ProcessorCount;
-  UINT32 VpIndex;
+  MP_WAKEUP_MAILBOX      *ApMailbox;
+  UINT32                 ProcessorCount;
+  UINT32                 VpIndex;
   HV_INITIAL_VP_CONTEXT  VpContext;
-  EFI_STATUS  Status;
-  EFI_PHYSICAL_ADDRESS PageTableBase = 0;
-  TDX_CONTEXT *TdxApStartContext;
-  UINT32 ApWaitInMailboxFunctionSize = 0;
+  EFI_STATUS             Status;
+  EFI_PHYSICAL_ADDRESS   PageTableBase = 0;
+  TDX_CONTEXT            *TdxApStartContext;
+  UINT32                 ApWaitInMailboxFunctionSize = 0;
 
-  ApMailbox = (MP_WAKEUP_MAILBOX *) PcdGet64(PcdAcpiMadtMpMailBoxAddress);
-  ProcessorCount = PcdGet32(PcdProcessorCount);
+  ApMailbox      = (MP_WAKEUP_MAILBOX *)PcdGet64 (PcdAcpiMadtMpMailBoxAddress);
+  ProcessorCount = PcdGet32 (PcdProcessorCount);
 
-  ASSERT(ApMailbox != NULL);
+  ASSERT (ApMailbox != NULL);
   ASSERT (mIsolationType == UefiIsolationTypeTdx);
   ASSERT (ProcessorCount > 1);
 
-  ZeroMem(&VpContext, sizeof(HV_INITIAL_VP_CONTEXT));
+  ZeroMem (&VpContext, sizeof (HV_INITIAL_VP_CONTEXT));
   ApMailbox->HasVcpuEnteredMailboxWait = 0;
 
-  Status = gBS->LocateProtocol(&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
-  if (EFI_ERROR(Status))
-  {
-      DEBUG((EFI_D_ERROR, "%a: Failed to locate the protocol.\n", __func__));
-      FAIL_FAST_INITIALIZATION_FAILURE(Status);
+  Status = gBS->LocateProtocol (&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "%a: Failed to locate the protocol.\n", __func__));
+    FAIL_FAST_INITIALIZATION_FAILURE (Status);
   }
 
   //
   // Setup the wake up code
   //
   ApWaitInMailboxFunctionSize = (UINT32)((UINT8 *)ApWaitInMailboxEnd - (UINT8 *)ApWaitInMailbox);
-  ASSERT(ApWaitInMailboxFunctionSize <= AP_WAIT_IN_MAILBOX_CODE_MAX_SIZE);
+  ASSERT (ApWaitInMailboxFunctionSize <= AP_WAIT_IN_MAILBOX_CODE_MAX_SIZE);
 
   //
   // Set up the pagetables, reset page and the execution environment.
   //
-  PageTableBase = InitializeMpPageTables((UINT64)ApMailbox);
-  if (PageTableBase == 0)
-  {
-      DEBUG((EFI_D_ERROR, "%a: Failed to initialize the page tables\n", __func__));
-      FAIL_FAST_INITIALIZATION_FAILURE(EFI_OUT_OF_RESOURCES);
+  PageTableBase = InitializeMpPageTables ((UINT64)ApMailbox);
+  if (PageTableBase == 0) {
+    DEBUG ((EFI_D_ERROR, "%a: Failed to initialize the page tables\n", __func__));
+    FAIL_FAST_INITIALIZATION_FAILURE (EFI_OUT_OF_RESOURCES);
   }
 
   CopyMem (
@@ -1155,62 +1156,60 @@ EndOfDxeCallback (
     ApWaitInMailboxFunctionSize
     );
 
-  TdxApStartContext = (TDX_CONTEXT *)((EFI_PHYSICAL_ADDRESS)(0xFFFFF000));
-  TdxApStartContext->gdtrLimit = 0;
-  TdxApStartContext->idtrLimit = 0;
+  TdxApStartContext               = (TDX_CONTEXT *)((EFI_PHYSICAL_ADDRESS)(0xFFFFF000));
+  TdxApStartContext->gdtrLimit    = 0;
+  TdxApStartContext->idtrLimit    = 0;
   TdxApStartContext->taskSelector = 0;
   TdxApStartContext->codeSelector = 0;
 
-  TdxApStartContext->cr3 = AsmReadCr3();
+  TdxApStartContext->cr3        = AsmReadCr3 ();
   TdxApStartContext->initialRip = (EFI_PHYSICAL_ADDRESS)ApMailbox->ApWaitInMailboxCode;
 
-  TdxApStartContext->r8 = (EFI_PHYSICAL_ADDRESS)ApMailbox;
+  TdxApStartContext->r8  = (EFI_PHYSICAL_ADDRESS)ApMailbox;
   TdxApStartContext->r10 = PageTableBase;
 
   //
   // Setup and start all the APs. VCPU0 is the BSP.
   //
-  for (VpIndex = 1; VpIndex < ProcessorCount; VpIndex++)
-  {
-
+  for (VpIndex = 1; VpIndex < ProcessorCount; VpIndex++) {
     //
     // Once startGate is setup, the Hypervisor could start the VP. All the context setup
     // should be completed before setting the startGate. After setting the startGate, the
     // context should not be modified until the AP has entered the mailbox wait.
     //
-    TdxApStartContext->r9 = VpIndex;
+    TdxApStartContext->r9        = VpIndex;
     TdxApStartContext->startGate = VpIndex;
-
 
     //
     // Wake up the processor so that it can start executing the AP wait loop.
     //
 
-    Status = mHv->StartApplicationProcessor(
+    Status = mHv->StartApplicationProcessor (
                     mHv,
                     VpIndex,
-                    &VpContext);
+                    &VpContext
+                    );
 
-    if (EFI_ERROR(Status))
-    {
-      DEBUG((EFI_D_ERROR, "%a: Failed to wakeup AP : %u\n", __func__, VpIndex));
-      FAIL_FAST_INITIALIZATION_FAILURE(Status);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((EFI_D_ERROR, "%a: Failed to wakeup AP : %u\n", __func__, VpIndex));
+      FAIL_FAST_INITIALIZATION_FAILURE (Status);
     }
 
     //
     // Wait for this AP to enter the wait loop before moving on to the next AP.
     //
 
-    DEBUG((EFI_D_INFO, "Waiting for AP(%u) to wait the mailbox. \n", VpIndex));
+    DEBUG ((EFI_D_INFO, "Waiting for AP(%u) to wait the mailbox. \n", VpIndex));
 
     while (ApMailbox->HasVcpuEnteredMailboxWait != 1) {
-      CpuPause();
+      CpuPause ();
     }
-    DEBUG((EFI_D_INFO, "AP(%u) is waiting in the mailbox\n", VpIndex));
+
+    DEBUG ((EFI_D_INFO, "AP(%u) is waiting in the mailbox\n", VpIndex));
     ApMailbox->HasVcpuEnteredMailboxWait = 0;
   }
 
-  gBS->CloseEvent(mEndOfDxeEvent);
+  gBS->CloseEvent (mEndOfDxeEvent);
 }
 
 #endif // MS_HYP_CHANGE && defined(MDE_CPU_X64)
@@ -1478,19 +1477,18 @@ InitializeCpu (
   EFI_STATUS  Status;
   EFI_EVENT   IdleLoopEvent;
 
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
   //
   // Determine whether hardware isolation is being enforced.  If so, then
   // certain aspects of hardware initialization are not supported when no
   // paravisor is present to handle them.
   //
-  if (IsHardwareIsolatedNoParavisor())
-  {
-      mStrictIsolation = TRUE;
+  if (IsHardwareIsolatedNoParavisor ()) {
+    mStrictIsolation = TRUE;
   }
 
-  mIsolationType = GetIsolationType();
-#endif// MS_HYP_CHANGE
+  mIsolationType = GetIsolationType ();
+ #endif // MS_HYP_CHANGE
 
   InitializePageTableLib ();
 
@@ -1510,16 +1508,16 @@ InitializeCpu (
   // Setup IDT pointer, IDT and interrupt entry points
   //
   InitInterruptDescriptorTable ();
-  
-#if MS_HYP_CHANGE
+
+ #if MS_HYP_CHANGE
   //
   // Enable the local APIC for Virtual Wire Mode.
   //
-  if (!mStrictIsolation)
-  {
+  if (!mStrictIsolation) {
     ProgramVirtualWireMode ();
   }
-#endif // MS_HYP_CHANGE
+
+ #endif // MS_HYP_CHANGE
 
   //
   // Install CPU Architectural Protocol
@@ -1547,12 +1545,12 @@ InitializeCpu (
   //
   RefreshGcdMemoryAttributes ();
 
-#if !MS_HYP_CHANGE
+ #if !MS_HYP_CHANGE
   //
   // Add and allocate local APIC memory mapped space
   //
   AddLocalApicMemorySpace (ImageHandle);
-#endif
+ #endif
 
   //
   // Setup a callback for idle events
@@ -1566,54 +1564,54 @@ InitializeCpu (
                   &IdleLoopEvent
                   );
 
-#if MS_HYP_CHANGE
-  if (EFI_ERROR(Status))
-  {
-    DEBUG((EFI_D_ERROR, "%a: Failed to create the idle events callback.\n", __func__));
+ #if MS_HYP_CHANGE
+  if (EFI_ERROR (Status)) {
+    DEBUG ((EFI_D_ERROR, "%a: Failed to create the idle events callback.\n", __func__));
     goto Cleanup;
   }
-#else
-  ASSERT_EFI_ERROR (Status);
-#endif // MS_HYP_CHANGE
 
-#if MS_HYP_CHANGE && defined(MDE_CPU_X64)
+ #else
+  ASSERT_EFI_ERROR (Status);
+ #endif // MS_HYP_CHANGE
+
+ #if MS_HYP_CHANGE && defined (MDE_CPU_X64)
   //
   // Setup a callback for end of DXE if this is a TDX guest with no paravisor.
   //
-  if (mIsolationType == UefiIsolationTypeTdx && !IsParavisorPresent())
-  {
-    if (PcdGet32(PcdProcessorCount) > 1)
-    {
-      Status = gBS->CreateEventEx(
+  if ((mIsolationType == UefiIsolationTypeTdx) && !IsParavisorPresent ()) {
+    if (PcdGet32 (PcdProcessorCount) > 1) {
+      Status = gBS->CreateEventEx (
                       EVT_NOTIFY_SIGNAL,
                       TPL_CALLBACK,
                       EndOfDxeCallback,
                       NULL,
                       &gEfiEndOfDxeEventGroupGuid,
-                      &mEndOfDxeEvent);
-      if (EFI_ERROR(Status))
-      {
-          DEBUG((EFI_D_ERROR, "%a: Failed to create the end of DXE callback.\n", __func__));
-          goto Cleanup;
+                      &mEndOfDxeEvent
+                      );
+      if (EFI_ERROR (Status)) {
+        DEBUG ((EFI_D_ERROR, "%a: Failed to create the end of DXE callback.\n", __func__));
+        goto Cleanup;
       }
     }
   }
-#endif // MS_HYP_CHANGE && MDE_CPU_X64
+
+ #endif // MS_HYP_CHANGE && MDE_CPU_X64
 
   // MS_HYP TODO: do we want this?
-#if !MU_CHANGE
+ #if !MU_CHANGE
   if ((GetDeviceState () & DEVICE_STATE_UNIT_TEST_MODE) != 0) {
     InstallMemoryProtectionNonstopModeProtocol (mCpuHandle);
   }
-#endif // MU_CHANGE
 
-#if !MS_HYP_CHANGE
+ #endif // MU_CHANGE
+
+ #if !MS_HYP_CHANGE
   InitializeMpSupport ();
-#endif
+ #endif
 
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
 Cleanup:
-#endif // MS_HYP_CHANGE
+ #endif // MS_HYP_CHANGE
 
   return Status;
 }

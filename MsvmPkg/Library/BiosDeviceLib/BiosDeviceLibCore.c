@@ -12,50 +12,51 @@
 #include <Library/IoLib.h>
 
 // Use MMIO access on ARM64 otherwise use IO access
-#if defined(MDE_CPU_AARCH64)
-#define _USING_BIOS_MMIO_ 1
-#elif defined(MDE_CPU_X64)
-#define _USING_BIOS_MMIO_ 0
+#if defined (MDE_CPU_AARCH64)
+#define _USING_BIOS_MMIO_  1
+#elif defined (MDE_CPU_X64)
+#define _USING_BIOS_MMIO_  0
 #else
-#error Unsupported Architecture
+  #error Unsupported Architecture
 #endif
 
 // Physical and virtual device base address
-UINTN       mBiosBaseAddressGpa = 0;
-UINTN       mBiosBaseAddress = 0;
+UINTN  mBiosBaseAddressGpa = 0;
+UINTN  mBiosBaseAddress    = 0;
 
 VOID
-SetupBaseAddress()
+SetupBaseAddress (
+  )
 {
-    mBiosBaseAddressGpa = (UINTN)PcdGet32(PcdBiosBaseAddress);
-    mBiosBaseAddress = mBiosBaseAddressGpa;
+  mBiosBaseAddressGpa = (UINTN)PcdGet32 (PcdBiosBaseAddress);
+  mBiosBaseAddress    = mBiosBaseAddressGpa;
 }
 
 VOID
-WriteBiosDevice(
-    IN UINT32 AddressRegisterValue,
-    IN UINT32 DataRegisterValue
-    )
+WriteBiosDevice (
+  IN UINT32  AddressRegisterValue,
+  IN UINT32  DataRegisterValue
+  )
 {
-#if _USING_BIOS_MMIO_
-    MmioWrite32(mBiosBaseAddress, AddressRegisterValue);
-    MmioWrite32(mBiosBaseAddress + 4, DataRegisterValue);
-#else
-    IoWrite32(mBiosBaseAddress, AddressRegisterValue);
-    IoWrite32(mBiosBaseAddress + 4, DataRegisterValue);
-#endif
+ #if _USING_BIOS_MMIO_
+  MmioWrite32 (mBiosBaseAddress, AddressRegisterValue);
+  MmioWrite32 (mBiosBaseAddress + 4, DataRegisterValue);
+ #else
+  IoWrite32 (mBiosBaseAddress, AddressRegisterValue);
+  IoWrite32 (mBiosBaseAddress + 4, DataRegisterValue);
+ #endif
 }
 
 UINT32
-ReadBiosDevice(
-    IN UINT32 AddressRegisterValue
-    )
+ReadBiosDevice (
+  IN UINT32  AddressRegisterValue
+  )
 {
-#if _USING_BIOS_MMIO_
-    MmioWrite32(mBiosBaseAddress, AddressRegisterValue);
-    return MmioRead32(mBiosBaseAddress + 4);
-#else
-    IoWrite32(mBiosBaseAddress, AddressRegisterValue);
-    return IoRead32(mBiosBaseAddress + 4);
-#endif
+ #if _USING_BIOS_MMIO_
+  MmioWrite32 (mBiosBaseAddress, AddressRegisterValue);
+  return MmioRead32 (mBiosBaseAddress + 4);
+ #else
+  IoWrite32 (mBiosBaseAddress, AddressRegisterValue);
+  return IoRead32 (mBiosBaseAddress + 4);
+ #endif
 }

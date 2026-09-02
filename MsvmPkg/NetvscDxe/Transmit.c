@@ -9,8 +9,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include "Snp.h"
 
-
 // MS_HYP_CHANGE BEGIN
+
 /**
   Create the meadia header for the given data buffer.
 
@@ -33,23 +33,23 @@ PxeFillHeader (
   UINT16           *ProtocolPtr
   )
 {
-  ETHERNET_HEADER    *macHeader;
-  UINT32             index;
-  EFI_MAC_ADDRESS    *sourceAddr;
+  ETHERNET_HEADER  *macHeader;
+  UINT32           index;
+  EFI_MAC_ADDRESS  *sourceAddr;
 
-  sourceAddr = SrcAddr == NULL? &Snp->Mode.CurrentAddress: SrcAddr;
-  macHeader = (ETHERNET_HEADER *) MacHeaderPtr;
+  sourceAddr = SrcAddr == NULL ? &Snp->Mode.CurrentAddress : SrcAddr;
+  macHeader  = (ETHERNET_HEADER *)MacHeaderPtr;
 
-  macHeader->Type = (UINT16) PXE_SWAP_UINT16 (*ProtocolPtr);
+  macHeader->Type = (UINT16)PXE_SWAP_UINT16 (*ProtocolPtr);
 
-  for (index = 0; index < PXE_HWADDR_LEN_ETHER; index++)
-  {
+  for (index = 0; index < PXE_HWADDR_LEN_ETHER; index++) {
     macHeader->DestAddr[index] = DestAddr->Addr[index];
-    macHeader->SrcAddr[index] = sourceAddr->Addr[index];
+    macHeader->SrcAddr[index]  = sourceAddr->Addr[index];
   }
 
   return EFI_SUCCESS;
 }
+
 // MS_HYP_CHANGE END
 
 /**
@@ -70,12 +70,12 @@ PxeTransmit (
   UINTN       BufferSize
   )
 {
-  EFI_STATUS        Status;
+  EFI_STATUS  Status;
 
   // MS_HYP_CHANGE BEGIN
-  Status = NetvscTransmit(&Snp->AdapterContext->NicInfo, Buffer, (UINT32) BufferSize);
+  Status = NetvscTransmit (&Snp->AdapterContext->NicInfo, Buffer, (UINT32)BufferSize);
 
-  switch (Status){
+  switch (Status) {
     case EFI_SUCCESS:
     case EFI_NOT_READY:
     case EFI_DEVICE_ERROR:
@@ -84,6 +84,7 @@ PxeTransmit (
     default:
       Status = EFI_DEVICE_ERROR;
   }
+
   // MS_HYP_CHANGE END
 
   return Status;
@@ -145,7 +146,7 @@ PxeTransmit (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Transmit(
+SnpUndi32Transmit (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN UINTN                        HeaderSize,
   IN UINTN                        BufferSize,
@@ -202,6 +203,7 @@ SnpUndi32Transmit(
     Status = EFI_INVALID_PARAMETER;
     goto ON_EXIT;
   }
+
   // MS_HYP_CHANGE END
 
   //

@@ -14,18 +14,17 @@
 
 #include <TpmInterface.h>           // Definitions specific to MSFT0101
 
-
 // Prototype for function in Tpm2Acpi.c
 EFI_STATUS
 EFIAPI
 InstallTpm2AcpiTable (
-    VOID
-    );
+  VOID
+  );
 
 UINT32
-ReadTpmPort(
-    IN UINT32 AddressRegisterValue
-);
+ReadTpmPort (
+  IN UINT32  AddressRegisterValue
+  );
 
 /**
   Constructor for the lib.
@@ -39,38 +38,39 @@ ReadTpmPort(
 EFI_STATUS
 EFIAPI
 MsvmTpm2InitLibConstructorDxe (
-  IN    EFI_HANDLE                  ImageHandle,
-  IN    EFI_SYSTEM_TABLE            *SystemTable
+  IN    EFI_HANDLE        ImageHandle,
+  IN    EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  EFI_STATUS    Status = EFI_SUCCESS;
-  UINT64        TpmBaseAddress;
-  UINT32        TcgProtocolVersion;
+  EFI_STATUS  Status = EFI_SUCCESS;
+  UINT64      TpmBaseAddress;
+  UINT32      TcgProtocolVersion;
 
-  DEBUG(( DEBUG_INFO, "%a()\n", __func__ ));
+  DEBUG ((DEBUG_INFO, "%a()\n", __func__));
 
   // If the TPM not enabled, do not perform any more TPM init.
-  if (CompareGuid (PcdGetPtr(PcdTpmInstanceGuid), &gEfiTpmDeviceInstanceNoneGuid) ||
-      CompareGuid (PcdGetPtr(PcdTpmInstanceGuid), &gEfiTpmDeviceInstanceTpm12Guid)){
+  if (CompareGuid (PcdGetPtr (PcdTpmInstanceGuid), &gEfiTpmDeviceInstanceNoneGuid) ||
+      CompareGuid (PcdGetPtr (PcdTpmInstanceGuid), &gEfiTpmDeviceInstanceTpm12Guid))
+  {
     DEBUG ((DEBUG_INFO, "No TPM2 instance required!\n"));
     return EFI_SUCCESS;
   }
 
-  TpmBaseAddress = FixedPcdGet64(PcdTpmBaseAddress);
-  TpmBaseAddress += PcdGetBool(PcdTpmLocalityRegsEnabled) ? 0x40 : 0;
+  TpmBaseAddress  = FixedPcdGet64 (PcdTpmBaseAddress);
+  TpmBaseAddress += PcdGetBool (PcdTpmLocalityRegsEnabled) ? 0x40 : 0;
 
   // Query the Tcg protocol version
-  TcgProtocolVersion = ReadTpmPort(TpmIoGetTcgProtocolVersion);
+  TcgProtocolVersion = ReadTpmPort (TpmIoGetTcgProtocolVersion);
 
   if ((TcgProtocolVersion != TcgProtocolTrEE) && (TcgProtocolVersion != TcgProtocolTcg2)) {
-    DEBUG(( DEBUG_ERROR, "%a - TPM device reports bad version! 0x%X\n", __func__, TcgProtocolVersion ));
+    DEBUG ((DEBUG_ERROR, "%a - TPM device reports bad version! 0x%X\n", __func__, TcgProtocolVersion));
     return EFI_DEVICE_ERROR;
   }
 
   // If we're good, we need to make sure that our instance of Tpm2DeviceLib
   // can talk with the device.
-  Tpm2RegisterTpm2DeviceLib( (TPM2_DEVICE_INTERFACE*)TpmBaseAddress );
-  Status = InstallTpm2AcpiTable();
+  Tpm2RegisterTpm2DeviceLib ((TPM2_DEVICE_INTERFACE *)TpmBaseAddress);
+  Status = InstallTpm2AcpiTable ();
 
   // NOTE: This will cause an ASSERT if the TCG protocol version is incorrect.
   //       It is assumed this would indicate a software misconfiguration.

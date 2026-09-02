@@ -125,7 +125,7 @@ PCUartSetControl (
 RETURN_STATUS
 EFIAPI
 PCUartGetControl (
-  IN UINTN     UartBase,
+  IN UINTN    UartBase,
   OUT UINT32  *Control
   );
 
@@ -142,9 +142,9 @@ PCUartGetControl (
 UINTN
 EFIAPI
 PCUartWrite (
-  IN  UINTN       UartBase,
-  IN  UINT8       *Buffer,
-  IN  UINTN       NumberOfBytes
+  IN  UINTN  UartBase,
+  IN  UINT8  *Buffer,
+  IN  UINTN  NumberOfBytes
   );
 
 /**
@@ -160,9 +160,9 @@ PCUartWrite (
 UINTN
 EFIAPI
 PCUartRead (
-  IN  UINTN       UartBase,
-  OUT UINT8       *Buffer,
-  IN  UINTN       NumberOfBytes
+  IN  UINTN  UartBase,
+  OUT UINT8  *Buffer,
+  IN  UINTN  NumberOfBytes
   );
 
 /**
@@ -175,8 +175,7 @@ PCUartRead (
 BOOLEAN
 EFIAPI
 PCUartPoll (
-  IN  UINTN       UartBase
+  IN  UINTN  UartBase
   );
 
 #endif
-

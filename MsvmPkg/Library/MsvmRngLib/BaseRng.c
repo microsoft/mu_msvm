@@ -48,7 +48,7 @@ GetRandomNumber16 (
   }
 
   if (!ArchIsRngSupported ()) {
-    return ProcessUsingHostEmulation(2, (UINT8 *)Rand);  // MS_HYP_CHANGE
+    return ProcessUsingHostEmulation (2, (UINT8 *)Rand);  // MS_HYP_CHANGE
   }
 
   //
@@ -89,7 +89,7 @@ GetRandomNumber32 (
   }
 
   if (!ArchIsRngSupported ()) {
-    return ProcessUsingHostEmulation(4, (UINT8 *)Rand);  // MS_HYP_CHANGE
+    return ProcessUsingHostEmulation (4, (UINT8 *)Rand);  // MS_HYP_CHANGE
   }
 
   //
@@ -130,7 +130,7 @@ GetRandomNumber64 (
   }
 
   if (!ArchIsRngSupported ()) {
-    return ProcessUsingHostEmulation(8, (UINT8 *)Rand);  // MS_HYP_CHANGE
+    return ProcessUsingHostEmulation (8, (UINT8 *)Rand);  // MS_HYP_CHANGE
   }
 
   //
@@ -169,9 +169,9 @@ GetRandomNumber128 (
   }
 
   // MS_HYP_CHANGE
-  //if (!ArchIsRngSupported ()) {
+  // if (!ArchIsRngSupported ()) {
   //  return FALSE;
-  //}
+  // }
 
   //
   // Read first 64 bits

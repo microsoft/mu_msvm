@@ -14,9 +14,10 @@
 #include <BiosInterface.h>
 
 UINT32
-GetNfitSize(
-    void
-    )
+GetNfitSize (
+  void
+  )
+
 /*++
 
 Routine Description:
@@ -33,13 +34,14 @@ Return Value:
 
 --*/
 {
-    return ReadBiosDevice(BiosConfigNfitSize);
+  return ReadBiosDevice (BiosConfigNfitSize);
 }
 
 void
-GetNfit(
-    UINT64 Address
-    )
+GetNfit (
+  UINT64  Address
+  )
+
 /*++
 
 Routine Description:
@@ -56,14 +58,15 @@ Return Value:
 
 --*/
 {
-    ASSERT((UINT64) Address < 0xFFFFFFFFULL);
-    WriteBiosDevice(BiosConfigNfitPopulate, (UINT32) Address);
+  ASSERT ((UINT64)Address < 0xFFFFFFFFULL);
+  WriteBiosDevice (BiosConfigNfitPopulate, (UINT32)Address);
 }
 
 void
-SetVpmemACPIBuffer(
-    UINT64 Address
-    )
+SetVpmemACPIBuffer (
+  UINT64  Address
+  )
+
 /*++
 
 Routine Description:
@@ -80,14 +83,15 @@ Return Value:
 
 --*/
 {
-    ASSERT((UINT64) Address < 0xFFFFFFFFULL);
-    WriteBiosDevice(BiosConfigVpmemSetACPIBuffer, (UINT32) Address);
+  ASSERT ((UINT64)Address < 0xFFFFFFFFULL);
+  WriteBiosDevice (BiosConfigVpmemSetACPIBuffer, (UINT32)Address);
 }
 
 void
-SetGenerationIdAddress(
-    UINT64 Value
-    )
+SetGenerationIdAddress (
+  UINT64  Value
+  )
+
 /*++
 
 Routine Description:
@@ -104,6 +108,6 @@ Return Value:
 
 --*/
 {
-    WriteBiosDevice(BiosConfigGenerationIdPtrLow, (UINT32)Value);
-    WriteBiosDevice(BiosConfigGenerationIdPtrHigh, (UINT32)(Value >> 32));
+  WriteBiosDevice (BiosConfigGenerationIdPtrLow, (UINT32)Value);
+  WriteBiosDevice (BiosConfigGenerationIdPtrHigh, (UINT32)(Value >> 32));
 }

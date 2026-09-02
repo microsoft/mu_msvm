@@ -8,10 +8,10 @@
 #include "CpuExceptionCommon.h"
 
 #if MS_HYP_CHANGE
-#include <Library/DebugLib.h>
-#include <Hv/HvGuestMsr.h>
-CHAR8 mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
-UINTN mDebugCursor;
+  #include <Library/DebugLib.h>
+  #include <Hv/HvGuestMsr.h>
+CHAR8  mDebugBuffer[HV_CRASH_MAXIMUM_MESSAGE_SIZE];
+UINTN  mDebugCursor;
 #endif // MS_HYP_CHANGE
 
 //
@@ -102,20 +102,20 @@ InternalPrintMessage (
 
   VA_START (Marker, Format);
 
-#if MS_HYP_CHANGE
+ #if MS_HYP_CHANGE
 
   // Convert the message to an ASCII String
-  UINTN Bytes = AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker);
+  UINTN  Bytes = AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker);
 
   // Send the print string to debug
-  DEBUG((DEBUG_ERROR, "%a", Buffer));
+  DEBUG ((DEBUG_ERROR, "%a", Buffer));
 
   // Copy to the debug page, if it fits
-  Bytes = MIN(Bytes, (sizeof mDebugBuffer) - (sizeof(mDebugBuffer[0]) * mDebugCursor));
-  CopyMem(&mDebugBuffer[mDebugCursor], &Buffer, Bytes);
+  Bytes = MIN (Bytes, (sizeof mDebugBuffer) - (sizeof (mDebugBuffer[0]) * mDebugCursor));
+  CopyMem (&mDebugBuffer[mDebugCursor], &Buffer, Bytes);
   mDebugCursor += Bytes;
 
-#else
+ #else
 
   // Convert the message to an ASCII String
   AsciiVSPrint (Buffer, sizeof (Buffer), Format, Marker);
@@ -123,7 +123,7 @@ InternalPrintMessage (
   // Send the print string to a Serial Port
   SerialPortWrite ((UINT8 *)Buffer, AsciiStrLen (Buffer));
 
-#endif
+ #endif
 
   VA_END (Marker);
 }

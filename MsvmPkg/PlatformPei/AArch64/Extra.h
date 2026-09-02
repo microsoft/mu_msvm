@@ -14,8 +14,8 @@
 
 VOID
 EFIAPI
-ConfigureCachesAndMmu(
-    IN  VOID* TranslationTable,
-        UINTN TCR,
-        UINTN MAIR
-    );
+ConfigureCachesAndMmu (
+  IN  VOID  *TranslationTable,
+  UINTN     TCR,
+  UINTN     MAIR
+  );

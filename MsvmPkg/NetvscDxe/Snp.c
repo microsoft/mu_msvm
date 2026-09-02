@@ -40,13 +40,13 @@ SnpNotifyExitBootServices (
   gBS->CloseEvent (Event);
 }
 
-
 EFI_STATUS
-AppendMac2DevPath(
-    OUT EFI_DEVICE_PATH_PROTOCOL      **DevPtr,
-    IN  EFI_DEVICE_PATH_PROTOCOL       *BaseDevPtr,
-    IN  SNP_DRIVER                     *Snp
+AppendMac2DevPath (
+  OUT EFI_DEVICE_PATH_PROTOCOL  **DevPtr,
+  IN  EFI_DEVICE_PATH_PROTOCOL  *BaseDevPtr,
+  IN  SNP_DRIVER                *Snp
   )
+
 /*++
 
 Routine Description:
@@ -71,76 +71,75 @@ Returns:
 
 --*/
 {
-    EFI_MAC_ADDRESS macAddress;
-    MAC_ADDR_DEVICE_PATH macAddrNode;
-    EFI_DEVICE_PATH_PROTOCOL *endNode;
-    UINT8 *devicePtr;
-    UINT16 totalPathLen;
-    UINT16 basePathLen;
-    EFI_STATUS status;
+  EFI_MAC_ADDRESS           macAddress;
+  MAC_ADDR_DEVICE_PATH      macAddrNode;
+  EFI_DEVICE_PATH_PROTOCOL  *endNode;
+  UINT8                     *devicePtr;
+  UINT16                    totalPathLen;
+  UINT16                    basePathLen;
+  EFI_STATUS                status;
 
-    CopyMem(&macAddress, &Snp->Mode.CurrentAddress, sizeof(EFI_MAC_ADDRESS));
+  CopyMem (&macAddress, &Snp->Mode.CurrentAddress, sizeof (EFI_MAC_ADDRESS));
 
-    //
-    // Fill the mac address node first.
-    //
-    ZeroMem((CHAR8 *)&macAddrNode, sizeof(macAddrNode));
+  //
+  // Fill the mac address node first.
+  //
+  ZeroMem ((CHAR8 *)&macAddrNode, sizeof (macAddrNode));
 
-    //
-    // The MAC address is intentionally *not* being put in this device node.
-    // This is because the MAC address is not always known prior to device
-    // power on in the Hyper-V host virtualizaton stack.  The virt stack is
-    // constructing and modifying device paths in boot entries prior to
-    // powering on this device.  There is now an explicit agreement between
-    // this driver and the Hyper-V management code that this device node
-    // will always contain zeros for the MAC address.
-    //
+  //
+  // The MAC address is intentionally *not* being put in this device node.
+  // This is because the MAC address is not always known prior to device
+  // power on in the Hyper-V host virtualizaton stack.  The virt stack is
+  // constructing and modifying device paths in boot entries prior to
+  // powering on this device.  There is now an explicit agreement between
+  // this driver and the Hyper-V management code that this device node
+  // will always contain zeros for the MAC address.
+  //
 
-    macAddrNode.Header.Type       = MESSAGING_DEVICE_PATH;
-    macAddrNode.Header.SubType    = MSG_MAC_ADDR_DP;
-    macAddrNode.Header.Length[0]  = sizeof(macAddrNode);
-    macAddrNode.Header.Length[1]  = 0;
+  macAddrNode.Header.Type      = MESSAGING_DEVICE_PATH;
+  macAddrNode.Header.SubType   = MSG_MAC_ADDR_DP;
+  macAddrNode.Header.Length[0] = sizeof (macAddrNode);
+  macAddrNode.Header.Length[1] = 0;
 
-    //
-    // Find the size of the base dev path.
-    //
-    endNode = BaseDevPtr;
+  //
+  // Find the size of the base dev path.
+  //
+  endNode = BaseDevPtr;
 
-    while (!IsDevicePathEnd(endNode))
-    {
-        endNode = NextDevicePathNode(endNode);
-    }
+  while (!IsDevicePathEnd (endNode)) {
+    endNode = NextDevicePathNode (endNode);
+  }
 
-    basePathLen = (UINT16)((UINTN)(endNode) - (UINTN)(BaseDevPtr));
+  basePathLen = (UINT16)((UINTN)(endNode) - (UINTN)(BaseDevPtr));
 
-    //
-    // Create space for full dev path.
-    //
-    totalPathLen = (UINT16)(basePathLen + sizeof(macAddrNode) + sizeof(EFI_DEVICE_PATH_PROTOCOL));
+  //
+  // Create space for full dev path.
+  //
+  totalPathLen = (UINT16)(basePathLen + sizeof (macAddrNode) + sizeof (EFI_DEVICE_PATH_PROTOCOL));
 
-    status = gBS->AllocatePool(
-        EfiBootServicesData,
-        totalPathLen,
-        (void**)&devicePtr);
+  status = gBS->AllocatePool (
+                  EfiBootServicesData,
+                  totalPathLen,
+                  (void **)&devicePtr
+                  );
 
-    if (status != EFI_SUCCESS)
-    {
-        goto Exit;
-    }
+  if (status != EFI_SUCCESS) {
+    goto Exit;
+  }
 
-    //
-    // Copy the base path, mac addr and end_dev_path nodes.
-    //
+  //
+  // Copy the base path, mac addr and end_dev_path nodes.
+  //
 
-    *DevPtr = (EFI_DEVICE_PATH_PROTOCOL *)devicePtr;
-    CopyMem(devicePtr, (CHAR8 *)BaseDevPtr, basePathLen);
-    devicePtr += basePathLen;
-    CopyMem(devicePtr, (CHAR8 *)&macAddrNode, sizeof(macAddrNode));
-    devicePtr += sizeof(macAddrNode);
-    CopyMem(devicePtr, (CHAR8 *)endNode, sizeof (EFI_DEVICE_PATH_PROTOCOL));
+  *DevPtr = (EFI_DEVICE_PATH_PROTOCOL *)devicePtr;
+  CopyMem (devicePtr, (CHAR8 *)BaseDevPtr, basePathLen);
+  devicePtr += basePathLen;
+  CopyMem (devicePtr, (CHAR8 *)&macAddrNode, sizeof (macAddrNode));
+  devicePtr += sizeof (macAddrNode);
+  CopyMem (devicePtr, (CHAR8 *)endNode, sizeof (EFI_DEVICE_PATH_PROTOCOL));
 
 Exit:
-    return status;
+  return status;
 }
 
 /**
@@ -169,46 +168,48 @@ SimpleNetworkDriverSupported (
   IN EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
   )
 {
-    EFI_STATUS status;
-    EFI_VMBUS_PROTOCOL *vmbus;
+  EFI_STATUS          status;
+  EFI_VMBUS_PROTOCOL  *vmbus;
 
-    status = gBS->OpenProtocol(
-        Controller,
-        &gEfiVmbusProtocolGuid,
-        (VOID **) &vmbus,
-        This->DriverBindingHandle,
-        Controller,
-        EFI_OPEN_PROTOCOL_BY_DRIVER);
+  status = gBS->OpenProtocol (
+                  Controller,
+                  &gEfiVmbusProtocolGuid,
+                  (VOID **)&vmbus,
+                  This->DriverBindingHandle,
+                  Controller,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    gBS->CloseProtocol(
-        Controller,
-        &gEfiVmbusProtocolGuid,
-        This->DriverBindingHandle,
-        Controller);
+  gBS->CloseProtocol (
+         Controller,
+         &gEfiVmbusProtocolGuid,
+         This->DriverBindingHandle,
+         Controller
+         );
 
-    status = EmclChannelTypeSupported(
-        Controller,
-        &gSyntheticNetworkClassGuid,
-        This->DriverBindingHandle);
+  status = EmclChannelTypeSupported (
+             Controller,
+             &gSyntheticNetworkClassGuid,
+             This->DriverBindingHandle
+             );
 
 Exit:
   return status;
 }
 
-
 VOID
 EFIAPI
 NetvscCleanupController (
-    IN  EFI_DRIVER_BINDING_PROTOCOL    *This,
-    IN  EFI_HANDLE                     ControllerHandle,
-    IN  BOOLEAN                        CloseDevicePathProtocol,
-    IN  BOOLEAN                        CloseEmclProtocol
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  BOOLEAN                      CloseDevicePathProtocol,
+  IN  BOOLEAN                      CloseEmclProtocol
+  )
+
 /**
 
 Routine Description:
@@ -231,42 +232,42 @@ Return Value:
 
 **/
 {
-    //
-    // Close protocols on the root handle
-    //
-    if (CloseDevicePathProtocol)
-    {
-        gBS->CloseProtocol(
-                ControllerHandle,
-                &gEfiDevicePathProtocolGuid,
-                This->DriverBindingHandle,
-                ControllerHandle);
-    }
+  //
+  // Close protocols on the root handle
+  //
+  if (CloseDevicePathProtocol) {
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiDevicePathProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
+  }
 
-    if (CloseEmclProtocol)
-    {
-        gBS->CloseProtocol(
-                ControllerHandle,
-                &gEfiEmclProtocolGuid,
-                This->DriverBindingHandle,
-                ControllerHandle);
-    }
+  if (CloseEmclProtocol) {
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiEmclProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
+  }
 
-    EmclUninstallProtocol(ControllerHandle);
+  EmclUninstallProtocol (ControllerHandle);
 }
-
 
 VOID
 EFIAPI
 NetvscCleanupDevice (
-    IN  EFI_DRIVER_BINDING_PROTOCOL    *This,
-    IN  EFI_HANDLE                     ControllerHandle,
-    IN  EFI_HANDLE                  DeviceHandle OPTIONAL,
-    IN  BOOLEAN                        SnpInstalled,
-    IN  BOOLEAN                        DevicePathInstalled,
-    IN  SNP_DRIVER                  *SnpDriver OPTIONAL,
-    IN  NETVSC_ADAPTER_CONTEXT      *AdapterContext OPTIONAL
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_HANDLE                   DeviceHandle OPTIONAL,
+  IN  BOOLEAN                      SnpInstalled,
+  IN  BOOLEAN                      DevicePathInstalled,
+  IN  SNP_DRIVER                   *SnpDriver OPTIONAL,
+  IN  NETVSC_ADAPTER_CONTEXT       *AdapterContext OPTIONAL
+  )
+
 /**
 
 Routine Description:
@@ -295,135 +296,123 @@ Return Value:
 
 **/
 {
-    EFI_DEVICE_PATH_PROTOCOL *DevicePath = NULL;
-    EFI_SIMPLE_NETWORK_PROTOCOL *SnpProtocol = NULL;
+  EFI_DEVICE_PATH_PROTOCOL     *DevicePath  = NULL;
+  EFI_SIMPLE_NETWORK_PROTOCOL  *SnpProtocol = NULL;
 
-    if (DeviceHandle == NULL && AdapterContext != NULL)
-    {
-        DeviceHandle = AdapterContext->DeviceHandle;
+  if ((DeviceHandle == NULL) && (AdapterContext != NULL)) {
+    DeviceHandle = AdapterContext->DeviceHandle;
+  }
+
+  //
+  // Obtain SnpProtocol if not present
+  //
+  if ((DeviceHandle != NULL) && SnpInstalled) {
+    ASSERT (DeviceHandle != NULL);
+    gBS->OpenProtocol (
+           DeviceHandle,
+           &gEfiSimpleNetworkProtocolGuid,
+           (void **)&SnpProtocol,
+           This->DriverBindingHandle,
+           ControllerHandle,
+           EFI_OPEN_PROTOCOL_GET_PROTOCOL
+           );
+  }
+
+  //
+  // Obtain SnpDriver if not present
+  //
+  if ((SnpDriver == NULL) && (SnpProtocol != NULL)) {
+    SnpDriver = EFI_SIMPLE_NETWORK_DEV_FROM_THIS (SnpProtocol);
+  }
+
+  //
+  // Obtain AdapterContext if not present
+  //
+  if ((AdapterContext == NULL) && (SnpDriver != NULL)) {
+    AdapterContext = SnpDriver->AdapterContext;
+  }
+
+  //
+  // Obtain DevicePath if not present
+  //
+  if (AdapterContext != NULL) {
+    DevicePath = AdapterContext->DevPath;
+  }
+
+  //
+  // Uninstall protocols on DeviceHandle
+  //
+  if ((DeviceHandle != NULL) && (SnpDriver != NULL)) {
+    if (SnpInstalled && (SnpProtocol != NULL)) {
+      gBS->UninstallMultipleProtocolInterfaces (
+             DeviceHandle,
+             &gEfiSimpleNetworkProtocolGuid,
+             SnpProtocol,
+             &gEfiAdapterInformationProtocolGuid,           // MS_HYP_CHANGE
+             &(SnpDriver->Aip),                             // MS_HYP_CHANGE
+             NULL
+             );
     }
 
-    //
-    // Obtain SnpProtocol if not present
-    //
-    if (DeviceHandle != NULL && SnpInstalled)
-    {
-        ASSERT(DeviceHandle != NULL);
-        gBS->OpenProtocol(
-            DeviceHandle,
-            &gEfiSimpleNetworkProtocolGuid,
-            (void**)&SnpProtocol,
-            This->DriverBindingHandle,
-            ControllerHandle,
-            EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
+      //
+      // Close EXIT_BOOT_SERVICES Event
+      //
+      gBS->CloseEvent (SnpDriver->ExitBootServicesEvent);
     }
 
-    //
-    // Obtain SnpDriver if not present
-    //
-    if (SnpDriver == NULL && SnpProtocol != NULL)
-    {
-        SnpDriver = EFI_SIMPLE_NETWORK_DEV_FROM_THIS (SnpProtocol);
+    if (AdapterContext->NicInfo.Emcl != NULL) {
+      PxeShutdown (SnpDriver);
+      PxeStop (SnpDriver);
+
+      gBS->CloseProtocol (
+             ControllerHandle,
+             &gEfiEmclProtocolGuid,
+             This->DriverBindingHandle,
+             DeviceHandle
+             );
     }
 
-    //
-    // Obtain AdapterContext if not present
-    //
-    if (AdapterContext == NULL && SnpDriver != NULL)
-    {
-        AdapterContext = SnpDriver->AdapterContext;
+    if (DevicePathInstalled) {
+      gBS->UninstallMultipleProtocolInterfaces (
+             DeviceHandle,
+             &gEfiDevicePathProtocolGuid,
+             AdapterContext->DevPath,
+             NULL
+             );
     }
+  }
 
-    //
-    // Obtain DevicePath if not present
-    //
-    if (AdapterContext != NULL)
-    {
-        DevicePath = AdapterContext->DevPath;
-    }
+  //
+  // Free DevicePath
+  //
+  if (DevicePath != NULL) {
+    gBS->FreePool (DevicePath);
+  }
 
-    //
-    // Uninstall protocols on DeviceHandle
-    //
-    if (DeviceHandle != NULL && SnpDriver != NULL)
-    {
-        if (SnpInstalled && SnpProtocol != NULL)
-        {
-            gBS->UninstallMultipleProtocolInterfaces(
-                    DeviceHandle,
-                    &gEfiSimpleNetworkProtocolGuid,
-                    SnpProtocol,
-                    &gEfiAdapterInformationProtocolGuid,    // MS_HYP_CHANGE
-                    &(SnpDriver->Aip),                      // MS_HYP_CHANGE
-                    NULL
-                    );
-        }
+  //
+  // Free SnpDriver
+  //
+  if (SnpDriver != NULL) {
+    gBS->FreePool (SnpDriver);
+  }
 
-        if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
-            //
-            // Close EXIT_BOOT_SERVICES Event
-            //
-            gBS->CloseEvent (SnpDriver->ExitBootServicesEvent);
-        }
-
-        if (AdapterContext->NicInfo.Emcl != NULL)
-        {
-            PxeShutdown (SnpDriver);
-            PxeStop (SnpDriver);
-
-            gBS->CloseProtocol(
-                    ControllerHandle,
-                    &gEfiEmclProtocolGuid,
-                    This->DriverBindingHandle,
-                    DeviceHandle
-                    );
-        }
-
-        if (DevicePathInstalled)
-        {
-            gBS->UninstallMultipleProtocolInterfaces(
-                    DeviceHandle,
-                    &gEfiDevicePathProtocolGuid,
-                    AdapterContext->DevPath,
-                    NULL
-                    );
-        }
-
-    }
-
-    //
-    // Free DevicePath
-    //
-    if (DevicePath != NULL)
-    {
-        gBS->FreePool(DevicePath);
-    }
-
-    //
-    // Free SnpDriver
-    //
-    if (SnpDriver != NULL)
-    {
-        gBS->FreePool(SnpDriver);
-    }
-
-    //
-    // Free AdapterContext
-    //
-    if (AdapterContext != NULL)
-    {
-        gBS->FreePool(AdapterContext);
-    }
+  //
+  // Free AdapterContext
+  //
+  if (AdapterContext != NULL) {
+    gBS->FreePool (AdapterContext);
+  }
 }
-
 
 EFI_STATUS
 EFIAPI
-NetvscInitializeController(
-    IN  EFI_DRIVER_BINDING_PROTOCOL    *This,
-    IN  EFI_HANDLE                     ControllerHandle,
-    OUT EFI_DEVICE_PATH_PROTOCOL      **BaseDevicePath
-    )
+NetvscInitializeController (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  OUT EFI_DEVICE_PATH_PROTOCOL     **BaseDevicePath
+  )
+
 /**
 
 Routine Description:
@@ -447,58 +436,57 @@ Return Value:
 
 **/
 {
-    EFI_STATUS status;
-    EFI_EMCL_PROTOCOL *emclProtocol = NULL;
+  EFI_STATUS         status;
+  EFI_EMCL_PROTOCOL  *emclProtocol = NULL;
 
-    //
-    // Connect to EMCL.
-    //
-    status = EmclInstallProtocol(ControllerHandle);
+  //
+  // Connect to EMCL.
+  //
+  status = EmclInstallProtocol (ControllerHandle);
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    status = gBS->OpenProtocol(
-        ControllerHandle,
-        &gEfiDevicePathProtocolGuid,
-        (VOID **)BaseDevicePath,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_BY_DRIVER);
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiDevicePathProtocolGuid,
+                  (VOID **)BaseDevicePath,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
 
-    if(EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    status = gBS->OpenProtocol(
-        ControllerHandle,
-        &gEfiEmclProtocolGuid,
-        (VOID **)&emclProtocol,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_BY_DRIVER);
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiEmclProtocolGuid,
+                  (VOID **)&emclProtocol,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
 
 Cleanup:
-    if (EFI_ERROR(status))
-    {
-        NetvscCleanupController(This, ControllerHandle, (*BaseDevicePath != NULL), (emclProtocol != NULL));
-    }
+  if (EFI_ERROR (status)) {
+    NetvscCleanupController (This, ControllerHandle, (*BaseDevicePath != NULL), (emclProtocol != NULL));
+  }
 
 Exit:
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-NetvscCreateDevice(
-    IN  EFI_DRIVER_BINDING_PROTOCOL   *This,
-    IN  EFI_HANDLE                    ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL      *BaseDevicePath
-    )
+NetvscCreateDevice (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *BaseDevicePath
+  )
+
 /**
 
 Routine Description:
@@ -519,245 +507,240 @@ Return Value:
 
 **/
 {
-    EFI_STATUS                 status;
-    SNP_DRIVER                 *snpDriver = NULL;
-    VOID                       *address;
-    PNETVSC_ADAPTER_CONTEXT    adapterContext = NULL;
-    BOOLEAN                    snpInstalled = FALSE;
-    BOOLEAN                    devicePathInstalled = FALSE;
+  EFI_STATUS               status;
+  SNP_DRIVER               *snpDriver = NULL;
+  VOID                     *address;
+  PNETVSC_ADAPTER_CONTEXT  adapterContext      = NULL;
+  BOOLEAN                  snpInstalled        = FALSE;
+  BOOLEAN                  devicePathInstalled = FALSE;
 
-    //
-    // Allocate and initialize the adapter context.
-    //
-    status = gBS->AllocatePool(
-        EfiBootServicesData,
-        sizeof (NETVSC_ADAPTER_CONTEXT),
-        (void**)&adapterContext);
+  //
+  // Allocate and initialize the adapter context.
+  //
+  status = gBS->AllocatePool (
+                  EfiBootServicesData,
+                  sizeof (NETVSC_ADAPTER_CONTEXT),
+                  (void **)&adapterContext
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    ZeroMem(adapterContext, sizeof (NETVSC_ADAPTER_CONTEXT));
+  ZeroMem (adapterContext, sizeof (NETVSC_ADAPTER_CONTEXT));
 
-    adapterContext->ControllerHandle = ControllerHandle;
-    adapterContext->BaseDevPath = BaseDevicePath;
+  adapterContext->ControllerHandle = ControllerHandle;
+  adapterContext->BaseDevPath      = BaseDevicePath;
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    }
+  //
+  // Allocate and initialize a new Simple Network Protocol structure.
+  //
+  status = gBS->AllocatePool (
+                  EfiBootServicesData,
+                  sizeof (SNP_DRIVER),
+                  &address
+                  );
 
-    //
-    // Allocate and initialize a new Simple Network Protocol structure.
-    //
-    status = gBS->AllocatePool(
-        EfiBootServicesData,
-        sizeof (SNP_DRIVER),
-        &address);
+  if (status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "\nCould not allocate SNP_DRIVER structure.\n"));
+    goto Cleanup;
+  }
 
-    if (status != EFI_SUCCESS)
-    {
-        DEBUG((EFI_D_ERROR, "\nCould not allocate SNP_DRIVER structure.\n"));
-        goto Cleanup;
-    }
+  snpDriver = (SNP_DRIVER *)(UINTN)address;
 
-    snpDriver = (SNP_DRIVER *) (UINTN) address;
+  ZeroMem (snpDriver, sizeof (SNP_DRIVER));
 
-    ZeroMem(snpDriver, sizeof (SNP_DRIVER));
+  snpDriver->Signature = SNP_DRIVER_SIGNATURE;
 
-    snpDriver->Signature  = SNP_DRIVER_SIGNATURE;
+  snpDriver->Snp.Revision       = EFI_SIMPLE_NETWORK_PROTOCOL_REVISION;
+  snpDriver->Snp.Start          = SnpUndi32Start;
+  snpDriver->Snp.Stop           = SnpUndi32Stop;
+  snpDriver->Snp.Initialize     = SnpUndi32Initialize;
+  snpDriver->Snp.Reset          = SnpUndi32Reset;
+  snpDriver->Snp.Shutdown       = SnpUndi32Shutdown;
+  snpDriver->Snp.ReceiveFilters = SnpUndi32ReceiveFilters;
+  snpDriver->Snp.StationAddress = SnpUndi32StationAddress;
+  snpDriver->Snp.Statistics     = SnpUndi32Statistics;
+  snpDriver->Snp.MCastIpToMac   = SnpUndi32McastIpToMac;
+  snpDriver->Snp.NvData         = SnpUndi32NvData;
+  snpDriver->Snp.GetStatus      = SnpUndi32GetStatus;
+  snpDriver->Snp.Transmit       = SnpUndi32Transmit;
+  snpDriver->Snp.Receive        = SnpUndi32Receive;
+  snpDriver->Snp.WaitForPacket  = NULL;
 
-    snpDriver->Snp.Revision       = EFI_SIMPLE_NETWORK_PROTOCOL_REVISION;
-    snpDriver->Snp.Start          = SnpUndi32Start;
-    snpDriver->Snp.Stop           = SnpUndi32Stop;
-    snpDriver->Snp.Initialize     = SnpUndi32Initialize;
-    snpDriver->Snp.Reset          = SnpUndi32Reset;
-    snpDriver->Snp.Shutdown       = SnpUndi32Shutdown;
-    snpDriver->Snp.ReceiveFilters = SnpUndi32ReceiveFilters;
-    snpDriver->Snp.StationAddress = SnpUndi32StationAddress;
-    snpDriver->Snp.Statistics     = SnpUndi32Statistics;
-    snpDriver->Snp.MCastIpToMac   = SnpUndi32McastIpToMac;
-    snpDriver->Snp.NvData         = SnpUndi32NvData;
-    snpDriver->Snp.GetStatus      = SnpUndi32GetStatus;
-    snpDriver->Snp.Transmit       = SnpUndi32Transmit;
-    snpDriver->Snp.Receive        = SnpUndi32Receive;
-    snpDriver->Snp.WaitForPacket  = NULL;
+  snpDriver->Snp.Mode = &snpDriver->Mode;
 
-    snpDriver->Snp.Mode           = &snpDriver->Mode;
+  // MS_HYP_CHANGE BEGIN - Initialize AIP protocol for media state reporting
+  snpDriver->Aip.GetInformation    = NetvscAipGetInformation;
+  snpDriver->Aip.SetInformation    = NetvscAipSetInformation;
+  snpDriver->Aip.GetSupportedTypes = NetvscAipGetSupportedTypes;
+  // MS_HYP_CHANGE END
 
-    // MS_HYP_CHANGE BEGIN - Initialize AIP protocol for media state reporting
-    snpDriver->Aip.GetInformation    = NetvscAipGetInformation;
-    snpDriver->Aip.SetInformation    = NetvscAipSetInformation;
-    snpDriver->Aip.GetSupportedTypes = NetvscAipGetSupportedTypes;
-    // MS_HYP_CHANGE END
+  snpDriver->AdapterContext = adapterContext;
 
-    snpDriver->AdapterContext     = adapterContext;
+  //
+  // Initialize Simple Network Protocol mode structure.
+  //
+  snpDriver->Mode.State               = EfiSimpleNetworkStopped;
+  snpDriver->Mode.HwAddressSize       = PXE_HWADDR_LEN_ETHER;
+  snpDriver->Mode.MediaHeaderSize     = PXE_MAC_HEADER_LEN_ETHER;
+  snpDriver->Mode.MaxPacketSize       = MAXIMUM_ETHERNET_PACKET_SIZE;
+  snpDriver->Mode.NvRamAccessSize     = 0;
+  snpDriver->Mode.NvRamSize           = 0;
+  snpDriver->Mode.IfType              = PXE_IFTYPE_ETHERNET;
+  snpDriver->Mode.MaxMCastFilterCount = MAX_MCAST_FILTER_CNT;
+  snpDriver->Mode.MCastFilterCount    = 0;
 
-    //
-    // Initialize Simple Network Protocol mode structure.
-    //
-    snpDriver->Mode.State               = EfiSimpleNetworkStopped;
-    snpDriver->Mode.HwAddressSize       = PXE_HWADDR_LEN_ETHER;
-    snpDriver->Mode.MediaHeaderSize     = PXE_MAC_HEADER_LEN_ETHER;
-    snpDriver->Mode.MaxPacketSize       = MAXIMUM_ETHERNET_PACKET_SIZE;
-    snpDriver->Mode.NvRamAccessSize     = 0;
-    snpDriver->Mode.NvRamSize           = 0;
-    snpDriver->Mode.IfType              = PXE_IFTYPE_ETHERNET;
-    snpDriver->Mode.MaxMCastFilterCount = MAX_MCAST_FILTER_CNT;
-    snpDriver->Mode.MCastFilterCount    = 0;
+  snpDriver->Mode.MediaPresentSupported = TRUE;
+  snpDriver->Mode.MediaPresent          = FALSE;
 
-    snpDriver->Mode.MediaPresentSupported = TRUE;
-    snpDriver->Mode.MediaPresent = FALSE;
+  snpDriver->Mode.MacAddressChangeable = FALSE;
+  snpDriver->Mode.MultipleTxSupported  = FALSE;
+  snpDriver->Mode.ReceiveFilterMask    = EFI_SIMPLE_NETWORK_RECEIVE_UNICAST;
+  snpDriver->Mode.ReceiveFilterMask   |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS_MULTICAST;
+  snpDriver->Mode.ReceiveFilterMask   |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS;
+  snpDriver->Mode.ReceiveFilterMask   |= EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST;
+  snpDriver->Mode.ReceiveFilterMask   |= EFI_SIMPLE_NETWORK_RECEIVE_MULTICAST;
+  snpDriver->Mode.ReceiveFilterMask   |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS_MULTICAST;
+  snpDriver->Mode.ReceiveFilterSetting = 0;
 
-    snpDriver->Mode.MacAddressChangeable = FALSE;
-    snpDriver->Mode.MultipleTxSupported = FALSE;
-    snpDriver->Mode.ReceiveFilterMask = EFI_SIMPLE_NETWORK_RECEIVE_UNICAST;
-    snpDriver->Mode.ReceiveFilterMask |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS_MULTICAST;
-    snpDriver->Mode.ReceiveFilterMask |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS;
-    snpDriver->Mode.ReceiveFilterMask |= EFI_SIMPLE_NETWORK_RECEIVE_BROADCAST;
-    snpDriver->Mode.ReceiveFilterMask |= EFI_SIMPLE_NETWORK_RECEIVE_MULTICAST;
-    snpDriver->Mode.ReceiveFilterMask |= EFI_SIMPLE_NETWORK_RECEIVE_PROMISCUOUS_MULTICAST;
-    snpDriver->Mode.ReceiveFilterSetting = 0;
+  //
+  // Create device handle and install SNP protocol on it
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &snpDriver->AdapterContext->DeviceHandle,
+                  &gEfiSimpleNetworkProtocolGuid,
+                  &(snpDriver->Snp),
+                  &gEfiAdapterInformationProtocolGuid, // MS_HYP_CHANGE
+                  &(snpDriver->Aip),                   // MS_HYP_CHANGE
+                  NULL
+                  );
 
-    //
-    // Create device handle and install SNP protocol on it
-    //
-    status = gBS->InstallMultipleProtocolInterfaces(
-        &snpDriver->AdapterContext->DeviceHandle,
-        &gEfiSimpleNetworkProtocolGuid,
-        &(snpDriver->Snp),
-        &gEfiAdapterInformationProtocolGuid,    // MS_HYP_CHANGE
-        &(snpDriver->Aip),                      // MS_HYP_CHANGE
-        NULL);
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  snpInstalled = TRUE;
 
-    snpInstalled = TRUE;
+  //
+  // Open EMCL protocol on the new device handle
+  //
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiEmclProtocolGuid,
+                  (VOID **)&adapterContext->NicInfo.Emcl,
+                  This->DriverBindingHandle,
+                  snpDriver->AdapterContext->DeviceHandle,
+                  EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER
+                  );
 
-    //
-    // Open EMCL protocol on the new device handle
-    //
-    status = gBS->OpenProtocol(
-                ControllerHandle,
-                &gEfiEmclProtocolGuid,
-                (VOID **)&adapterContext->NicInfo.Emcl,
-                This->DriverBindingHandle,
-                snpDriver->AdapterContext->DeviceHandle,
-                EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  //
+  // Calling Snp->Start
+  //
+  status = SnpUndi32Start (&snpDriver->Snp);
 
-    //
-    // Calling Snp->Start
-    //
-    status = SnpUndi32Start(&snpDriver->Snp);
+  if (status != EFI_SUCCESS) {
+    goto Cleanup;
+  }
 
-    if (status != EFI_SUCCESS)
-    {
-        goto Cleanup;
-    }
+  //
+  // The station address needs to be saved in the mode structure. We need to
+  // initialize the SNP driver first for this.
+  //
+  status = PxeInit (snpDriver, PXE_OPFLAGS_INITIALIZE_DO_NOT_DETECT_CABLE);
 
-    //
-    // The station address needs to be saved in the mode structure. We need to
-    // initialize the SNP driver first for this.
-    //
-    status              = PxeInit (snpDriver, PXE_OPFLAGS_INITIALIZE_DO_NOT_DETECT_CABLE);
+  if (EFI_ERROR (status)) {
+    SnpUndi32Stop (&snpDriver->Snp);
+    goto Cleanup;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        SnpUndi32Stop(&snpDriver->Snp);
-        goto Cleanup;
-    }
+  status = PxeGetStnAddr (snpDriver);
 
-    status = PxeGetStnAddr(snpDriver);
-
-    if (status != EFI_SUCCESS)
-    {
-        DEBUG ((EFI_D_ERROR, "\nSnp->get_station_addr() failed.\n"));
-        PxeShutdown (snpDriver);
-        PxeStop (snpDriver);
-        goto Cleanup;
-    }
-
-    //
-    // We should not leave SNP started and initialized here.
-    // The NetVsc layer will be started when upper layers call Snp->start.
-    // How ever, this DriverStart() must fill up the snp mode structure which
-    // contains the MAC address of the NIC. For this reason we started and
-    // initialized SNP here, now we are done, do a shutdown and stop of the
-    // NetVsc interface.
-    //
+  if (status != EFI_SUCCESS) {
+    DEBUG ((EFI_D_ERROR, "\nSnp->get_station_addr() failed.\n"));
     PxeShutdown (snpDriver);
     PxeStop (snpDriver);
+    goto Cleanup;
+  }
 
-    if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
-        //
-        // Create EXIT_BOOT_SERIVES Event
-        //
-        status = gBS->CreateEventEx (
-                        EVT_NOTIFY_SIGNAL,
-                        TPL_CALLBACK,
-                        SnpNotifyExitBootServices,
-                        snpDriver,
-                        &gEfiEventBeforeExitBootServicesGuid,
-                        &snpDriver->ExitBootServicesEvent
-                        );
+  //
+  // We should not leave SNP started and initialized here.
+  // The NetVsc layer will be started when upper layers call Snp->start.
+  // How ever, this DriverStart() must fill up the snp mode structure which
+  // contains the MAC address of the NIC. For this reason we started and
+  // initialized SNP here, now we are done, do a shutdown and stop of the
+  // NetVsc interface.
+  //
+  PxeShutdown (snpDriver);
+  PxeStop (snpDriver);
 
-        if (EFI_ERROR (status)) {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
-            goto Cleanup;
-        }
-    }
-
-    status = AppendMac2DevPath(
-        &snpDriver->AdapterContext->DevPath,
-        snpDriver->AdapterContext->BaseDevPath,
-        snpDriver);
-
-    if(EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
+  if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
     //
-    // Install the device path protocol to the device handle
+    // Create EXIT_BOOT_SERIVES Event
     //
-    status = gBS->InstallMultipleProtocolInterfaces(
-        &snpDriver->AdapterContext->DeviceHandle,
-        &gEfiDevicePathProtocolGuid,
-        snpDriver->AdapterContext->DevPath,
-        NULL);
+    status = gBS->CreateEventEx (
+                    EVT_NOTIFY_SIGNAL,
+                    TPL_CALLBACK,
+                    SnpNotifyExitBootServices,
+                    snpDriver,
+                    &gEfiEventBeforeExitBootServicesGuid,
+                    &snpDriver->ExitBootServicesEvent
+                    );
 
-    if(EFI_ERROR(status))
-    {
-        goto Cleanup;
+    if (EFI_ERROR (status)) {
+      DEBUG ((EFI_D_ERROR, "--- %a: failed to create the exit boot services event - %r \n", __func__, status));
+      goto Cleanup;
     }
+  }
 
-    devicePathInstalled = TRUE;
+  status = AppendMac2DevPath (
+             &snpDriver->AdapterContext->DevPath,
+             snpDriver->AdapterContext->BaseDevPath,
+             snpDriver
+             );
+
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
+
+  //
+  // Install the device path protocol to the device handle
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &snpDriver->AdapterContext->DeviceHandle,
+                  &gEfiDevicePathProtocolGuid,
+                  snpDriver->AdapterContext->DevPath,
+                  NULL
+                  );
+
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
+
+  devicePathInstalled = TRUE;
 
 Cleanup:
-    if (EFI_ERROR(status))
-    {
-        NetvscCleanupDevice(
-            This,
-            ControllerHandle,
-            NULL,
-            snpInstalled,
-            devicePathInstalled,
-            snpDriver,
-            adapterContext);
-    }
+  if (EFI_ERROR (status)) {
+    NetvscCleanupDevice (
+      This,
+      ControllerHandle,
+      NULL,
+      snpInstalled,
+      devicePathInstalled,
+      snpDriver,
+      adapterContext
+      );
+  }
 
-    return status;
+  return status;
 }
 
 /**
@@ -786,30 +769,27 @@ SimpleNetworkDriverStart (
   IN EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath
   )
 {
-    EFI_STATUS                 status;
-    EFI_DEVICE_PATH_PROTOCOL      *baseDevicePath;
+  EFI_STATUS                status;
+  EFI_DEVICE_PATH_PROTOCOL  *baseDevicePath;
 
-    status = NetvscInitializeController(This, Controller, &baseDevicePath);
+  status = NetvscInitializeController (This, Controller, &baseDevicePath);
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    status = NetvscCreateDevice(This, Controller, baseDevicePath);
+  status = NetvscCreateDevice (This, Controller, baseDevicePath);
 
-    if (EFI_ERROR(status))
-    {
-        NetvscCleanupController(This, Controller, TRUE, TRUE);
-        goto Exit;
-    }
+  if (EFI_ERROR (status)) {
+    NetvscCleanupController (This, Controller, TRUE, TRUE);
+    goto Exit;
+  }
 
-    status = EFI_SUCCESS;
+  status = EFI_SUCCESS;
 
 Exit:
-    return status;
+  return status;
 }
-
 
 /**
   Stop this driver on ControllerHandle. This service is called by the
@@ -831,51 +811,47 @@ Exit:
 **/
 EFI_STATUS
 EFIAPI
-SimpleNetworkDriverStop(
-    IN  EFI_DRIVER_BINDING_PROTOCOL    *This,
-    IN  EFI_HANDLE                     ControllerHandle,
-    IN  UINTN                          NumberOfChildren,
-    IN  EFI_HANDLE                     *ChildHandleBuffer
-    )
+SimpleNetworkDriverStop (
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  UINTN                        NumberOfChildren,
+  IN  EFI_HANDLE                   *ChildHandleBuffer
+  )
 {
-    EFI_HANDLE deviceHandle = NULL;
-    UINTN index;
+  EFI_HANDLE  deviceHandle = NULL;
+  UINTN       index;
 
-    if (NumberOfChildren > 0)
-    {
-        //
-        // Stop the created NIC device. Only one NIC device should be
-        // created.
-        //
-        ASSERT(NumberOfChildren == 1);
+  if (NumberOfChildren > 0) {
+    //
+    // Stop the created NIC device. Only one NIC device should be
+    // created.
+    //
+    ASSERT (NumberOfChildren == 1);
 
-        for (index = 0; index < NumberOfChildren; index++)
-        {
-            deviceHandle = ChildHandleBuffer[index];
-            NetvscCleanupDevice(This, ControllerHandle, deviceHandle, TRUE, TRUE, NULL, NULL);
-        }
+    for (index = 0; index < NumberOfChildren; index++) {
+      deviceHandle = ChildHandleBuffer[index];
+      NetvscCleanupDevice (This, ControllerHandle, deviceHandle, TRUE, TRUE, NULL, NULL);
     }
-    else
-    {
-        //
-        // Stop the root controller.
-        //
-        NetvscCleanupController(This, ControllerHandle, TRUE, TRUE);
-    }
+  } else {
+    //
+    // Stop the root controller.
+    //
+    NetvscCleanupController (This, ControllerHandle, TRUE, TRUE);
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
 //
 // Simple Network Protocol Driver Global Variables
 //
-EFI_DRIVER_BINDING_PROTOCOL gSimpleNetworkDriverBinding = {
-    SimpleNetworkDriverSupported,
-    SimpleNetworkDriverStart,
-    SimpleNetworkDriverStop,
-    0xa,
-    NULL,
-    NULL
+EFI_DRIVER_BINDING_PROTOCOL  gSimpleNetworkDriverBinding = {
+  SimpleNetworkDriverSupported,
+  SimpleNetworkDriverStart,
+  SimpleNetworkDriverStop,
+  0xa,
+  NULL,
+  NULL
 };
 
 /**
@@ -894,17 +870,17 @@ EFI_DRIVER_BINDING_PROTOCOL gSimpleNetworkDriverBinding = {
 **/
 EFI_STATUS
 EFIAPI
-InitializeSnpNiiDriver(
-    IN  EFI_HANDLE       ImageHandle,
-    IN  EFI_SYSTEM_TABLE *SystemTable
-    )
+InitializeSnpNiiDriver (
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
 {
-    return EfiLibInstallDriverBindingComponentName2(
-        ImageHandle,
-        SystemTable,
-        &gSimpleNetworkDriverBinding,
-        ImageHandle,
-        &gSimpleNetworkComponentName,
-        &gSimpleNetworkComponentName2);
+  return EfiLibInstallDriverBindingComponentName2 (
+           ImageHandle,
+           SystemTable,
+           &gSimpleNetworkDriverBinding,
+           ImageHandle,
+           &gSimpleNetworkComponentName,
+           &gSimpleNetworkComponentName2
+           );
 }
-

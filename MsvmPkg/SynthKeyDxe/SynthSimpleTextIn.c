@@ -11,7 +11,6 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-
 #include "SynthKeyDxe.h"
 #include "SynthSimpleTextIn.h"
 #include "SynthKeyChannel.h"
@@ -21,72 +20,71 @@
 // Private function prototypes and types
 //
 
-#define SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE      SIGNATURE_32 ('S', 'k', 'e', 'n')
+#define SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE  SIGNATURE_32 ('S', 'k', 'e', 'n')
 
 //
 // Tracks registered notification functions that will be called when the
 // requested key press event occurs.
 //
-typedef struct _SYNTH_KEYBOARD_EX_NOTIFY
-{
-  UINTN                               Signature;
-  LIST_ENTRY                          NotifyEntry;
+typedef struct _SYNTH_KEYBOARD_EX_NOTIFY {
+  UINTN                      Signature;
+  LIST_ENTRY                 NotifyEntry;
 
-  EFI_HANDLE                          NotifyHandle;
-  EFI_KEY_NOTIFY_FUNCTION             KeyNotificationFn;
-  EFI_KEY_DATA                        KeyData;
+  EFI_HANDLE                 NotifyHandle;
+  EFI_KEY_NOTIFY_FUNCTION    KeyNotificationFn;
+  EFI_KEY_DATA               KeyData;
 } SYNTH_KEYBOARD_EX_NOTIFY, *PSYNTH_KEYBOARD_EX_NOTIFY;
 
 VOID
-KeyNotifyFire(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    IN          EFI_KEY_DATA               *pKey
-    );
+KeyNotifyFire (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  IN          EFI_KEY_DATA            *pKey
+  );
 
 VOID
-KeyNotifyCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    );
+KeyNotifyCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  );
 
 BOOLEAN
-KeyNotifyIsKeyRegistered(
-    IN          EFI_KEY_DATA               *RegisteredData,
-    IN          EFI_KEY_DATA               *InputData
-    );
+KeyNotifyIsKeyRegistered (
+  IN          EFI_KEY_DATA  *RegisteredData,
+  IN          EFI_KEY_DATA  *InputData
+  );
 
 BOOLEAN
-KeyNotifyIsPartialKey(
-    IN          EFI_INPUT_KEY              *Key
-    );
+KeyNotifyIsPartialKey (
+  IN          EFI_INPUT_KEY  *Key
+  );
 
 VOID
-KeyBufferInitialize(
-    IN          EFI_KEY_BUFFER             *Queue
-    );
+KeyBufferInitialize (
+  IN          EFI_KEY_BUFFER  *Queue
+  );
 
 VOID
-KeyBufferInsert(
-    IN          EFI_KEY_BUFFER             *Queue,
-    IN          EFI_KEY_DATA               *KeyData
-    );
+KeyBufferInsert (
+  IN          EFI_KEY_BUFFER  *Queue,
+  IN          EFI_KEY_DATA    *KeyData
+  );
 
 EFI_STATUS
-KeyBufferRemove(
-    IN          EFI_KEY_BUFFER             *Queue,
-    OUT         EFI_KEY_DATA               *KeyData OPTIONAL
-    );
+KeyBufferRemove (
+  IN          EFI_KEY_BUFFER  *Queue,
+  OUT         EFI_KEY_DATA    *KeyData OPTIONAL
+  );
 
 BOOLEAN
-KeyBufferIsEmpty(
-    IN          EFI_KEY_BUFFER             *Queue
-    );
-
+KeyBufferIsEmpty (
+  IN          EFI_KEY_BUFFER  *Queue
+  );
 
 VOID
-SimpleTextInQueueKey(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    IN          EFI_KEY_DATA               *Key
-    )
+SimpleTextInQueueKey (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  IN          EFI_KEY_DATA            *Key
+  )
+
 /*++
 
 Routine Description:
@@ -106,29 +104,28 @@ Return Value:
 
 --*/
 {
+  //
+  // Reset on Ctrl-Alt-Del
+  // Note that the scan code here is the UEFI defined scan code and *not*
+  // the value from the PS2 keyboard.
+  //
+  if ((EFI_KEY_CTRL_ACTIVE (pDevice->State.KeyState.KeyShiftState)) &&
+      (EFI_KEY_ALT_ACTIVE (pDevice->State.KeyState.KeyShiftState)) &&
+      (Key->Key.ScanCode == SCAN_DELETE))
+  {
+    gRT->ResetSystem (EfiResetWarm, EFI_SUCCESS, 0, NULL);
+  }
 
-    //
-    // Reset on Ctrl-Alt-Del
-    // Note that the scan code here is the UEFI defined scan code and *not*
-    // the value from the PS2 keyboard.
-    //
-    if ((EFI_KEY_CTRL_ACTIVE(pDevice->State.KeyState.KeyShiftState)) &&
-        (EFI_KEY_ALT_ACTIVE(pDevice->State.KeyState.KeyShiftState)) &&
-        (Key->Key.ScanCode == SCAN_DELETE))
-    {
-        gRT->ResetSystem (EfiResetWarm, EFI_SUCCESS, 0, NULL);
-    }
-
-    KeyNotifyFire(pDevice, Key);
-    KeyBufferInsert(&pDevice->EfiKeyQueue, Key);
+  KeyNotifyFire (pDevice, Key);
+  KeyBufferInsert (&pDevice->EfiKeyQueue, Key);
 }
 
-
 EFI_STATUS
-SimpleTextInDequeueKey(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    OUT         EFI_KEY_DATA               *KeyData
-    )
+SimpleTextInDequeueKey (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  OUT         EFI_KEY_DATA            *KeyData
+  )
+
 /*++
 
 Routine Description:
@@ -148,32 +145,29 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS  status;
-    EFI_TPL     oldTpl;
+  EFI_STATUS  status;
+  EFI_TPL     oldTpl;
 
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
 
-    if (!pDevice->State.ChannelConnected)
-    {
-        status = EFI_DEVICE_ERROR;
-    }
-    else
-    {
-        status = KeyBufferRemove(&pDevice->EfiKeyQueue, KeyData);
-    }
+  if (!pDevice->State.ChannelConnected) {
+    status = EFI_DEVICE_ERROR;
+  } else {
+    status = KeyBufferRemove (&pDevice->EfiKeyQueue, KeyData);
+  }
 
-    gBS->RestoreTPL(oldTpl);
+  gBS->RestoreTPL (oldTpl);
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInReset(
-    IN          EFI_SIMPLE_TEXT_INPUT_PROTOCOL *This,
-    IN          BOOLEAN                         ExtendedVerification
-    )
+SimpleTextInReset (
+  IN          EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *This,
+  IN          BOOLEAN                         ExtendedVerification
+  )
+
 /*++
 
 Routine Description:
@@ -195,45 +189,44 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS(This);
-    EFI_STATUS              status = EFI_SUCCESS;
-    EFI_TPL                 oldTpl;
+  PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS (This);
+  EFI_STATUS              status  = EFI_SUCCESS;
+  EFI_TPL                 oldTpl;
 
-    SynthKeyReportStatus(pDevice, EFI_PROGRESS_CODE, EFI_P_PC_RESET);
+  SynthKeyReportStatus (pDevice, EFI_PROGRESS_CODE, EFI_P_PC_RESET);
 
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
 
-    if (!pDevice->State.ChannelConnected)
-    {
-        status = EFI_DEVICE_ERROR;
-    }
+  if (!pDevice->State.ChannelConnected) {
+    status = EFI_DEVICE_ERROR;
+  }
 
-    //
-    // UEFI SIMPLE_TEXT_INPUT_PROTOCOLPUT specification require the key buffer to
-    // be cleared on reset.
-    //
-    KeyBufferInitialize(&pDevice->EfiKeyQueue);
+  //
+  // UEFI SIMPLE_TEXT_INPUT_PROTOCOLPUT specification require the key buffer to
+  // be cleared on reset.
+  //
+  KeyBufferInitialize (&pDevice->EfiKeyQueue);
 
-    //
-    // Clear the shift and toggle states.
-    // Shift and toggle state are always valid (even if nothing is set),
-    // Indicate that here and forget about them.
-    //
-    pDevice->State.KeyState.KeyShiftState  = EFI_SHIFT_STATE_VALID;
-    pDevice->State.KeyState.KeyToggleState = EFI_TOGGLE_STATE_VALID;
+  //
+  // Clear the shift and toggle states.
+  // Shift and toggle state are always valid (even if nothing is set),
+  // Indicate that here and forget about them.
+  //
+  pDevice->State.KeyState.KeyShiftState  = EFI_SHIFT_STATE_VALID;
+  pDevice->State.KeyState.KeyToggleState = EFI_TOGGLE_STATE_VALID;
 
-    gBS->RestoreTPL(oldTpl);
+  gBS->RestoreTPL (oldTpl);
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInResetEx(
-    IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL   *This,
-    IN          BOOLEAN                              ExtendedVerification
-    )
+SimpleTextInResetEx (
+  IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
+  IN          BOOLEAN                            ExtendedVerification
+  )
+
 /*++
 
 Routine Description:
@@ -255,18 +248,18 @@ Return Value:
 
 --*/
 {
-  SYNTH_KEYBOARD_DEVICE *pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(This);
+  SYNTH_KEYBOARD_DEVICE  *pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX (This);
 
-  return SimpleTextInReset(&pDevice->ConIn, ExtendedVerification);
+  return SimpleTextInReset (&pDevice->ConIn, ExtendedVerification);
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInReadKeyStroke(
-    IN          EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *This,
-    OUT         EFI_INPUT_KEY                   *Key
-    )
+SimpleTextInReadKeyStroke (
+  IN          EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *This,
+  OUT         EFI_INPUT_KEY                   *Key
+  )
+
 /*++
 
 Routine Description:
@@ -289,46 +282,43 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS(This);
-    EFI_KEY_DATA            keyData;
-    EFI_STATUS              status = EFI_SUCCESS;
+  PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS (This);
+  EFI_KEY_DATA            keyData;
+  EFI_STATUS              status = EFI_SUCCESS;
 
-    //
-    // Get the next keystroke, looping to drop partial keystrokes.
-    // Partial keystrokes (signified by ScanCode and UnicodeChar both being NULL)
-    // are not returned by EFI_SIMPLE_TEXT_INPUT_PROTOCOL. If they are desired,
-    // EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL should be used.
-    //
-    while (TRUE)
-    {
-        status = SimpleTextInDequeueKey(pDevice, &keyData);
+  //
+  // Get the next keystroke, looping to drop partial keystrokes.
+  // Partial keystrokes (signified by ScanCode and UnicodeChar both being NULL)
+  // are not returned by EFI_SIMPLE_TEXT_INPUT_PROTOCOL. If they are desired,
+  // EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL should be used.
+  //
+  while (TRUE) {
+    status = SimpleTextInDequeueKey (pDevice, &keyData);
 
-        if (EFI_ERROR(status))
-        {
-            break;
-        }
-
-        if (!KeyNotifyIsPartialKey(&keyData.Key))
-        {
-            CopyMem(Key, &keyData.Key, sizeof(EFI_INPUT_KEY));
-            break;
-        }
-
-        //
-        // Partial keystroke, drop it and try again.
-        //
+    if (EFI_ERROR (status)) {
+      break;
     }
 
-    return status;
-}
+    if (!KeyNotifyIsPartialKey (&keyData.Key)) {
+      CopyMem (Key, &keyData.Key, sizeof (EFI_INPUT_KEY));
+      break;
+    }
 
+    //
+    // Partial keystroke, drop it and try again.
+    //
+  }
+
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
-SimpleTextInReadKeyStrokeEx(
-    IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
-    OUT         EFI_KEY_DATA                       *KeyData
-    )
+SimpleTextInReadKeyStrokeEx (
+  IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
+  OUT         EFI_KEY_DATA                       *KeyData
+  )
+
 /*++
 
 Routine Description:
@@ -354,23 +344,22 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(This);
+  PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX (This);
 
-    if (KeyData == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (KeyData == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    return SimpleTextInDequeueKey(pDevice, KeyData);
+  return SimpleTextInDequeueKey (pDevice, KeyData);
 }
-
 
 VOID
 EFIAPI
-SimpleTextInWaitForKey(
-    IN          EFI_EVENT                   Event,
-    IN          VOID                       *Context
-    )
+SimpleTextInWaitForKey (
+  IN          EFI_EVENT  Event,
+  IN          VOID       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -394,50 +383,46 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE      pDevice = (PSYNTH_KEYBOARD_DEVICE)Context;
-    EFI_TPL                     oldTpl;
+  PSYNTH_KEYBOARD_DEVICE  pDevice = (PSYNTH_KEYBOARD_DEVICE)Context;
+  EFI_TPL                 oldTpl;
 
-    if (!pDevice->State.ChannelConnected)
-    {
-        return;
+  if (!pDevice->State.ChannelConnected) {
+    return;
+  }
+
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
+
+  //
+  // See if there is a key in the buffer, looping to remove and skip
+  // partial keys since they are not supported in WaitforKey
+  //
+  while (!KeyBufferIsEmpty (&pDevice->EfiKeyQueue)) {
+    EFI_INPUT_KEY  *nextKey = &pDevice->EfiKeyQueue.Buffer[pDevice->EfiKeyQueue.Head].Key;
+
+    if (!KeyNotifyIsPartialKey (nextKey)) {
+      //
+      // there is pending value key, signal the event.
+      //
+      gBS->SignalEvent (Event);
+      break;
     }
 
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
-
     //
-    // See if there is a key in the buffer, looping to remove and skip
-    // partial keys since they are not supported in WaitforKey
+    // Drop the partial key.
     //
-    while (!KeyBufferIsEmpty(&pDevice->EfiKeyQueue))
-    {
-        EFI_INPUT_KEY *nextKey = &pDevice->EfiKeyQueue.Buffer[pDevice->EfiKeyQueue.Head].Key;
+    KeyBufferRemove (&pDevice->EfiKeyQueue, NULL);
+  }
 
-        if (!KeyNotifyIsPartialKey(nextKey))
-        {
-            //
-            // there is pending value key, signal the event.
-            //
-            gBS->SignalEvent(Event);
-            break;
-        }
-
-        //
-        // Drop the partial key.
-        //
-        KeyBufferRemove(&pDevice->EfiKeyQueue, NULL);
-
-    }
-
-    gBS->RestoreTPL (oldTpl);
+  gBS->RestoreTPL (oldTpl);
 }
-
 
 VOID
 EFIAPI
-SimpleTextInWaitForKeyEx(
-    IN          EFI_EVENT                   Event,
-    IN          VOID                       *Context
-    )
+SimpleTextInWaitForKeyEx (
+  IN          EFI_EVENT  Event,
+  IN          VOID       *Context
+  )
+
 /*++
 
 Routine Description:
@@ -460,16 +445,16 @@ Return Value:
 
 --*/
 {
-    SimpleTextInWaitForKey(Event, Context);
+  SimpleTextInWaitForKey (Event, Context);
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInSetState(
-    IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
-    IN          EFI_KEY_TOGGLE_STATE               *KeyToggleState
-    )
+SimpleTextInSetState (
+  IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
+  IN          EFI_KEY_TOGGLE_STATE               *KeyToggleState
+  )
+
 /*++
 
 Routine Description:
@@ -493,55 +478,51 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(This);
-    EFI_TPL                 oldTpl;
-    EFI_STATUS              status;
+  PSYNTH_KEYBOARD_DEVICE  pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX (This);
+  EFI_TPL                 oldTpl;
+  EFI_STATUS              status;
 
-    if (KeyToggleState == NULL)
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if (KeyToggleState == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    if ((*KeyToggleState & EFI_TOGGLE_STATE_VALID) != EFI_TOGGLE_STATE_VALID)
-    {
-        return EFI_UNSUPPORTED;
-    }
+  if ((*KeyToggleState & EFI_TOGGLE_STATE_VALID) != EFI_TOGGLE_STATE_VALID) {
+    return EFI_UNSUPPORTED;
+  }
 
-    if (!pDevice->State.ChannelConnected)
-    {
-        return EFI_DEVICE_ERROR;
-    }
+  if (!pDevice->State.ChannelConnected) {
+    return EFI_DEVICE_ERROR;
+  }
 
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
 
-    //
-    // Synchronize this with the key event processing callback.
-    // This is to keep a set of consistent flags if the callback tests a flag
-    // and then tests it again and expects both to be the same.
-    //
-    pDevice->State.KeyState.KeyToggleState = *KeyToggleState;
+  //
+  // Synchronize this with the key event processing callback.
+  // This is to keep a set of consistent flags if the callback tests a flag
+  // and then tests it again and expects both to be the same.
+  //
+  pDevice->State.KeyState.KeyToggleState = *KeyToggleState;
 
-    gBS->RestoreTPL(oldTpl);
+  gBS->RestoreTPL (oldTpl);
 
-    status = SynthKeyChannelSetIndicators(pDevice);
+  status = SynthKeyChannelSetIndicators (pDevice);
 
-    if (EFI_ERROR(status))
-    {
-        status = EFI_DEVICE_ERROR;
-    }
+  if (EFI_ERROR (status)) {
+    status = EFI_DEVICE_ERROR;
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInRegisterKeyNotify(
-    IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
-    IN          EFI_KEY_DATA                       *KeyData,
-    IN          EFI_KEY_NOTIFY_FUNCTION             KeyNotificationFunction,
-    OUT         EFI_HANDLE                         *NotifyHandle
-    )
+SimpleTextInRegisterKeyNotify (
+  IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
+  IN          EFI_KEY_DATA                       *KeyData,
+  IN          EFI_KEY_NOTIFY_FUNCTION            KeyNotificationFunction,
+  OUT         EFI_HANDLE                         *NotifyHandle
+  )
+
 /*++
 
 Routine Description:
@@ -573,84 +554,83 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE      pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(This);
-    PSYNTH_KEYBOARD_EX_NOTIFY   currentNotify;
-    PSYNTH_KEYBOARD_EX_NOTIFY   newNotify = NULL;
+  PSYNTH_KEYBOARD_DEVICE     pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX (This);
+  PSYNTH_KEYBOARD_EX_NOTIFY  currentNotify;
+  PSYNTH_KEYBOARD_EX_NOTIFY  newNotify = NULL;
 
-    LIST_ENTRY *link;
-    EFI_STATUS  status;
-    EFI_TPL     oldTpl;
+  LIST_ENTRY  *link;
+  EFI_STATUS  status;
+  EFI_TPL     oldTpl;
 
-    if ((KeyData == NULL) ||
-        (NotifyHandle == NULL) ||
-        (KeyNotificationFunction == NULL))
-    {
-        return EFI_INVALID_PARAMETER;
-    }
+  if ((KeyData == NULL) ||
+      (NotifyHandle == NULL) ||
+      (KeyNotificationFunction == NULL))
+  {
+    return EFI_INVALID_PARAMETER;
+  }
 
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
 
-    //
-    // See if the same combination of keydata and function callback is
-    // already registered. Return EFI_SUCCESS in that case.
-    //
-    for (link  = pDevice->NotifyList.ForwardLink;
-         link != &pDevice->NotifyList;
-         link  = link->ForwardLink)
-    {
-        currentNotify = CR(link,
-                           SYNTH_KEYBOARD_EX_NOTIFY,
-                           NotifyEntry,
-                           SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE);
+  //
+  // See if the same combination of keydata and function callback is
+  // already registered. Return EFI_SUCCESS in that case.
+  //
+  for (link  = pDevice->NotifyList.ForwardLink;
+       link != &pDevice->NotifyList;
+       link  = link->ForwardLink)
+  {
+    currentNotify = CR (
+                      link,
+                      SYNTH_KEYBOARD_EX_NOTIFY,
+                      NotifyEntry,
+                      SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE
+                      );
 
-        if (KeyNotifyIsKeyRegistered(&currentNotify->KeyData, KeyData))
-        {
-            if (currentNotify->KeyNotificationFn == KeyNotificationFunction)
-            {
-                newNotify = currentNotify->NotifyHandle;
-                status = EFI_SUCCESS;
-                goto Exit;
-            }
-        }
-    }
-
-    //
-    // No existing notfication matches the request,
-    // allocate a notification and save the necessary information.
-    //
-    newNotify = (PSYNTH_KEYBOARD_EX_NOTIFY)AllocateZeroPool(sizeof(SYNTH_KEYBOARD_EX_NOTIFY));
-
-    if (newNotify == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
+    if (KeyNotifyIsKeyRegistered (&currentNotify->KeyData, KeyData)) {
+      if (currentNotify->KeyNotificationFn == KeyNotificationFunction) {
+        newNotify = currentNotify->NotifyHandle;
+        status    = EFI_SUCCESS;
         goto Exit;
+      }
     }
+  }
 
-    CopyMem(&newNotify->KeyData, KeyData, sizeof(EFI_KEY_DATA));
+  //
+  // No existing notfication matches the request,
+  // allocate a notification and save the necessary information.
+  //
+  newNotify = (PSYNTH_KEYBOARD_EX_NOTIFY)AllocateZeroPool (sizeof (SYNTH_KEYBOARD_EX_NOTIFY));
 
-    newNotify->Signature         = SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE;
-    newNotify->KeyNotificationFn = KeyNotificationFunction;
-    newNotify->NotifyHandle      = (EFI_HANDLE)newNotify;
+  if (newNotify == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Exit;
+  }
 
-    InsertTailList (&pDevice->NotifyList, &newNotify->NotifyEntry);
+  CopyMem (&newNotify->KeyData, KeyData, sizeof (EFI_KEY_DATA));
 
-    status = EFI_SUCCESS;
+  newNotify->Signature         = SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE;
+  newNotify->KeyNotificationFn = KeyNotificationFunction;
+  newNotify->NotifyHandle      = (EFI_HANDLE)newNotify;
+
+  InsertTailList (&pDevice->NotifyList, &newNotify->NotifyEntry);
+
+  status = EFI_SUCCESS;
 
 Exit:
 
-    *NotifyHandle = newNotify;
-    gBS->RestoreTPL(oldTpl);
+  *NotifyHandle = newNotify;
+  gBS->RestoreTPL (oldTpl);
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
-SimpleTextInUnregisterKeyNotify(
-    IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
-    IN          EFI_HANDLE                          NotificationHandle
-    )
+SimpleTextInUnregisterKeyNotify (
+  IN          EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL  *This,
+  IN          EFI_HANDLE                         NotificationHandle
+  )
+
 /*++
 
 Routine Description:
@@ -672,59 +652,57 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_DEVICE      pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX(This);
-    PSYNTH_KEYBOARD_EX_NOTIFY   currentNotify;
+  PSYNTH_KEYBOARD_DEVICE     pDevice = SYNTH_KEYBOARD_DEVICE_FROM_THIS_EX (This);
+  PSYNTH_KEYBOARD_EX_NOTIFY  currentNotify;
 
-    LIST_ENTRY *link;
-    EFI_STATUS  status = EFI_INVALID_PARAMETER;
-    EFI_TPL     oldTpl;
+  LIST_ENTRY  *link;
+  EFI_STATUS  status = EFI_INVALID_PARAMETER;
+  EFI_TPL     oldTpl;
 
-    if (NotificationHandle == NULL)
-    {
-        return status;
-    }
-
-    if (((PSYNTH_KEYBOARD_EX_NOTIFY)NotificationHandle)->Signature != SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE)
-    {
-        return status;
-    }
-
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
-
-    //
-    // Search the notification list for a matching registration,
-    // removing and freeing it if found.
-    //
-    for (link  = pDevice->NotifyList.ForwardLink;
-         link != &pDevice->NotifyList;
-         link  = link->ForwardLink)
-    {
-        currentNotify = CR(link,
-                           SYNTH_KEYBOARD_EX_NOTIFY,
-                           NotifyEntry,
-                           SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE);
-
-        if (currentNotify->NotifyHandle == NotificationHandle)
-        {
-            RemoveEntryList(&currentNotify->NotifyEntry);
-
-            gBS->FreePool(currentNotify);
-            status = EFI_SUCCESS;
-            break;
-        }
-
-    }
-
-    gBS->RestoreTPL(oldTpl);
-
+  if (NotificationHandle == NULL) {
     return status;
+  }
+
+  if (((PSYNTH_KEYBOARD_EX_NOTIFY)NotificationHandle)->Signature != SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE) {
+    return status;
+  }
+
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
+
+  //
+  // Search the notification list for a matching registration,
+  // removing and freeing it if found.
+  //
+  for (link  = pDevice->NotifyList.ForwardLink;
+       link != &pDevice->NotifyList;
+       link  = link->ForwardLink)
+  {
+    currentNotify = CR (
+                      link,
+                      SYNTH_KEYBOARD_EX_NOTIFY,
+                      NotifyEntry,
+                      SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE
+                      );
+
+    if (currentNotify->NotifyHandle == NotificationHandle) {
+      RemoveEntryList (&currentNotify->NotifyEntry);
+
+      gBS->FreePool (currentNotify);
+      status = EFI_SUCCESS;
+      break;
+    }
+  }
+
+  gBS->RestoreTPL (oldTpl);
+
+  return status;
 }
 
-
 EFI_STATUS
-SimpleTextInInitialize(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    )
+SimpleTextInInitialize (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  )
+
 /*++
 
 Routine Description:
@@ -744,91 +722,92 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS  status;
+  EFI_STATUS  status;
 
-    InitializeListHead (&pDevice->NotifyList);
+  InitializeListHead (&pDevice->NotifyList);
 
-    pDevice->ConIn.Reset                 = SimpleTextInReset;
-    pDevice->ConIn.ReadKeyStroke         = SimpleTextInReadKeyStroke;
+  pDevice->ConIn.Reset         = SimpleTextInReset;
+  pDevice->ConIn.ReadKeyStroke = SimpleTextInReadKeyStroke;
 
-    pDevice->ConInEx.Reset               = SimpleTextInResetEx;
-    pDevice->ConInEx.ReadKeyStrokeEx     = SimpleTextInReadKeyStrokeEx;
-    pDevice->ConInEx.SetState            = SimpleTextInSetState;
-    pDevice->ConInEx.RegisterKeyNotify   = SimpleTextInRegisterKeyNotify;
-    pDevice->ConInEx.UnregisterKeyNotify = SimpleTextInUnregisterKeyNotify;
+  pDevice->ConInEx.Reset               = SimpleTextInResetEx;
+  pDevice->ConInEx.ReadKeyStrokeEx     = SimpleTextInReadKeyStrokeEx;
+  pDevice->ConInEx.SetState            = SimpleTextInSetState;
+  pDevice->ConInEx.RegisterKeyNotify   = SimpleTextInRegisterKeyNotify;
+  pDevice->ConInEx.UnregisterKeyNotify = SimpleTextInUnregisterKeyNotify;
 
-    status = gBS->CreateEvent(EVT_NOTIFY_WAIT,
-                              TPL_KEYBOARD_NOTIFY,
-                              SimpleTextInWaitForKey,
-                              pDevice,
-                              &pDevice->ConIn.WaitForKey);
+  status = gBS->CreateEvent (
+                  EVT_NOTIFY_WAIT,
+                  TPL_KEYBOARD_NOTIFY,
+                  SimpleTextInWaitForKey,
+                  pDevice,
+                  &pDevice->ConIn.WaitForKey
+                  );
 
-    if (EFI_ERROR (status))
-    {
-        goto ErrorExit;
-    }
+  if (EFI_ERROR (status)) {
+    goto ErrorExit;
+  }
 
-    status = gBS->CreateEvent(EVT_NOTIFY_WAIT,
-                              TPL_KEYBOARD_NOTIFY,
-                              SimpleTextInWaitForKeyEx,
-                              pDevice,
-                              &pDevice->ConInEx.WaitForKeyEx);
+  status = gBS->CreateEvent (
+                  EVT_NOTIFY_WAIT,
+                  TPL_KEYBOARD_NOTIFY,
+                  SimpleTextInWaitForKeyEx,
+                  pDevice,
+                  &pDevice->ConInEx.WaitForKeyEx
+                  );
 
-    if (EFI_ERROR (status))
-    {
-        goto ErrorExit;
-    }
+  if (EFI_ERROR (status)) {
+    goto ErrorExit;
+  }
 
-    //
-    // TODO: Rethink this, it could make adding to Reset() harder.
-    // e.g. If Reset needs to perform some action that requires the channel to be open.
-    //
-    // Use the reset handler to get things to their initial
-    // state. Ignore the return since this call will always fail
-    // with EFI_DEVICE_ERROR as the channel is not up yet but we want to perform the rest of the
-    // initialization.
-    //
-    SimpleTextInReset(&pDevice->ConIn, FALSE);
+  //
+  // TODO: Rethink this, it could make adding to Reset() harder.
+  // e.g. If Reset needs to perform some action that requires the channel to be open.
+  //
+  // Use the reset handler to get things to their initial
+  // state. Ignore the return since this call will always fail
+  // with EFI_DEVICE_ERROR as the channel is not up yet but we want to perform the rest of the
+  // initialization.
+  //
+  SimpleTextInReset (&pDevice->ConIn, FALSE);
 
-    status = SynthKeyChannelOpen(pDevice);
+  status = SynthKeyChannelOpen (pDevice);
 
-    if (EFI_ERROR(status))
-    {
-        goto ErrorExit;
-    }
+  if (EFI_ERROR (status)) {
+    goto ErrorExit;
+  }
 
-    //
-    // Install protocol interfaces for the keyboard device.
-    //
-    status = gBS->InstallMultipleProtocolInterfaces(&pDevice->Handle,
-                                                    &gEfiSimpleTextInProtocolGuid,
-                                                    &pDevice->ConIn,
-                                                    &gEfiSimpleTextInputExProtocolGuid,
-                                                    &pDevice->ConInEx,
-                                                    NULL);
+  //
+  // Install protocol interfaces for the keyboard device.
+  //
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &pDevice->Handle,
+                  &gEfiSimpleTextInProtocolGuid,
+                  &pDevice->ConIn,
+                  &gEfiSimpleTextInputExProtocolGuid,
+                  &pDevice->ConInEx,
+                  NULL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        goto ErrorExit;
-    }
+  if (EFI_ERROR (status)) {
+    goto ErrorExit;
+  }
 
-    pDevice->State.SimpleTextInstalled = TRUE;
+  pDevice->State.SimpleTextInstalled = TRUE;
 
 ErrorExit:
 
-    if (EFI_ERROR(status))
-    {
-        SimpleTextInCleanup(pDevice);
-    }
+  if (EFI_ERROR (status)) {
+    SimpleTextInCleanup (pDevice);
+  }
 
-    return status;
+  return status;
 }
 
-
 VOID
-SimpleTextInCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    )
+SimpleTextInCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  )
+
 /*++
 
 Routine Description:
@@ -846,72 +825,69 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS  status;
-    EFI_TPL     oldTpl;
+  EFI_STATUS  status;
+  EFI_TPL     oldTpl;
 
-    //
-    // Raise TPL so we don't race with the key press handler.
-    //
-    oldTpl = gBS->RaiseTPL(TPL_KEYBOARD_NOTIFY);
+  //
+  // Raise TPL so we don't race with the key press handler.
+  //
+  oldTpl = gBS->RaiseTPL (TPL_KEYBOARD_NOTIFY);
 
-    //
-    // Uninstall the SimpleTextIn and SimpleTextInEx protocols
-    // InstallMultipleProtocolInterfaces guarantees that all
-    // interfaces are installed on success, so if SimpleTextIn
-    // was installed, we know we can uninstall both protocols.
-    //
-    if (pDevice->State.SimpleTextInstalled)
-    {
-        status = gBS->UninstallMultipleProtocolInterfaces(pDevice->Handle,
-                                                          &gEfiSimpleTextInProtocolGuid,
-                                                          &pDevice->ConIn,
-                                                          &gEfiSimpleTextInputExProtocolGuid,
-                                                          &pDevice->ConInEx,
-                                                          NULL);
+  //
+  // Uninstall the SimpleTextIn and SimpleTextInEx protocols
+  // InstallMultipleProtocolInterfaces guarantees that all
+  // interfaces are installed on success, so if SimpleTextIn
+  // was installed, we know we can uninstall both protocols.
+  //
+  if (pDevice->State.SimpleTextInstalled) {
+    status = gBS->UninstallMultipleProtocolInterfaces (
+                    pDevice->Handle,
+                    &gEfiSimpleTextInProtocolGuid,
+                    &pDevice->ConIn,
+                    &gEfiSimpleTextInputExProtocolGuid,
+                    &pDevice->ConInEx,
+                    NULL
+                    );
 
-        if (EFI_ERROR(status))
-        {
-            goto Exit;
-        }
-
-        pDevice->State.SimpleTextInstalled = FALSE;
+    if (EFI_ERROR (status)) {
+      goto Exit;
     }
 
-    //
-    // Cleanup the VMBUS channel
-    //
-    status = SynthKeyChannelClose(pDevice);
+    pDevice->State.SimpleTextInstalled = FALSE;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        goto Exit;
-    }
+  //
+  // Cleanup the VMBUS channel
+  //
+  status = SynthKeyChannelClose (pDevice);
 
-    if (pDevice->ConIn.WaitForKey != NULL)
-    {
-        gBS->CloseEvent(pDevice->ConIn.WaitForKey);
-        pDevice->ConIn.WaitForKey = NULL;
-    }
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
 
-    if (pDevice->ConInEx.WaitForKeyEx != NULL)
-    {
-        gBS->CloseEvent(pDevice->ConInEx.WaitForKeyEx);
-        pDevice->ConInEx.WaitForKeyEx = NULL;
-    }
+  if (pDevice->ConIn.WaitForKey != NULL) {
+    gBS->CloseEvent (pDevice->ConIn.WaitForKey);
+    pDevice->ConIn.WaitForKey = NULL;
+  }
 
-    KeyNotifyCleanup(pDevice);
+  if (pDevice->ConInEx.WaitForKeyEx != NULL) {
+    gBS->CloseEvent (pDevice->ConInEx.WaitForKeyEx);
+    pDevice->ConInEx.WaitForKeyEx = NULL;
+  }
+
+  KeyNotifyCleanup (pDevice);
 
 Exit:
 
-    gBS->RestoreTPL(oldTpl);
+  gBS->RestoreTPL (oldTpl);
 }
 
-
 VOID
-KeyNotifyFire(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice,
-    IN          EFI_KEY_DATA               *pKey
-    )
+KeyNotifyFire (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice,
+  IN          EFI_KEY_DATA            *pKey
+  )
+
 /*++
 
 Routine Description:
@@ -931,33 +907,34 @@ Return Value:
 
 --*/
 {
-    PSYNTH_KEYBOARD_EX_NOTIFY  currentNotify;
-    LIST_ENTRY                *link;
+  PSYNTH_KEYBOARD_EX_NOTIFY  currentNotify;
+  LIST_ENTRY                 *link;
 
-    //
-    // Invoke notification functions if any match this key
-    //
-    for (link  = pDevice->NotifyList.ForwardLink;
-         link != &pDevice->NotifyList;
-         link  = link->ForwardLink)
-    {
-        currentNotify = CR(link,
-                           SYNTH_KEYBOARD_EX_NOTIFY,
-                           NotifyEntry,
-                           SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE);
+  //
+  // Invoke notification functions if any match this key
+  //
+  for (link  = pDevice->NotifyList.ForwardLink;
+       link != &pDevice->NotifyList;
+       link  = link->ForwardLink)
+  {
+    currentNotify = CR (
+                      link,
+                      SYNTH_KEYBOARD_EX_NOTIFY,
+                      NotifyEntry,
+                      SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE
+                      );
 
-        if (KeyNotifyIsKeyRegistered(&currentNotify->KeyData, pKey))
-        {
-            currentNotify->KeyNotificationFn(pKey);
-        }
+    if (KeyNotifyIsKeyRegistered (&currentNotify->KeyData, pKey)) {
+      currentNotify->KeyNotificationFn (pKey);
     }
+  }
 }
 
-
 VOID
-KeyNotifyCleanup(
-    IN          PSYNTH_KEYBOARD_DEVICE      pDevice
-    )
+KeyNotifyCleanup (
+  IN          PSYNTH_KEYBOARD_DEVICE  pDevice
+  )
+
 /*++
 
 Routine Description:
@@ -974,24 +951,25 @@ Return Value:
 
 --*/
 {
-    LIST_ENTRY *list = &pDevice->NotifyList;
+  LIST_ENTRY  *list = &pDevice->NotifyList;
 
-    while (!IsListEmpty(list))
-    {
-        PSYNTH_KEYBOARD_EX_NOTIFY notify = CR(list->ForwardLink,
-                                              SYNTH_KEYBOARD_EX_NOTIFY,
-                                              NotifyEntry,
-                                              SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE);
-        RemoveEntryList(list->ForwardLink);
-        gBS->FreePool(notify);
-    }
+  while (!IsListEmpty (list)) {
+    PSYNTH_KEYBOARD_EX_NOTIFY  notify = CR (
+                                          list->ForwardLink,
+                                          SYNTH_KEYBOARD_EX_NOTIFY,
+                                          NotifyEntry,
+                                          SYNTH_KEYBOARD_EX_NOTIFY_SIGNATURE
+                                          );
+    RemoveEntryList (list->ForwardLink);
+    gBS->FreePool (notify);
+  }
 }
 
-
 BOOLEAN
-KeyNotifyIsPartialKey(
-    IN          EFI_INPUT_KEY              *Key
-    )
+KeyNotifyIsPartialKey (
+  IN          EFI_INPUT_KEY  *Key
+  )
+
 /*++
 
 Routine Description:
@@ -1010,15 +988,15 @@ Return Value:
 
 --*/
 {
-    return (BOOLEAN)((Key->ScanCode == SCAN_NULL) && (Key->UnicodeChar == CHAR_NULL));
+  return (BOOLEAN)((Key->ScanCode == SCAN_NULL) && (Key->UnicodeChar == CHAR_NULL));
 }
 
-
 BOOLEAN
-KeyNotifyIsKeyRegistered(
-    IN          EFI_KEY_DATA               *RegisteredData,
-    IN          EFI_KEY_DATA               *InputData
-    )
+KeyNotifyIsKeyRegistered (
+  IN          EFI_KEY_DATA  *RegisteredData,
+  IN          EFI_KEY_DATA  *InputData
+  )
+
 /*++
 
 Routine Description:
@@ -1039,42 +1017,42 @@ Return Value:
 
 --*/
 {
-    ASSERT(RegisteredData != NULL);
-    ASSERT(InputData != NULL);
+  ASSERT (RegisteredData != NULL);
+  ASSERT (InputData != NULL);
 
-    //
-    // ScanCode and UnicodeChar always have to match.
-    //
-    if ((RegisteredData->Key.ScanCode    != InputData->Key.ScanCode) ||
-        (RegisteredData->Key.UnicodeChar != InputData->Key.UnicodeChar))
-    {
-        return FALSE;
-    }
+  //
+  // ScanCode and UnicodeChar always have to match.
+  //
+  if ((RegisteredData->Key.ScanCode    != InputData->Key.ScanCode) ||
+      (RegisteredData->Key.UnicodeChar != InputData->Key.UnicodeChar))
+  {
+    return FALSE;
+  }
 
-    //
-    // Assume values of zero in KeyShiftState or KeyToggleState indicate that
-    // these states could be ignored (like a wildcard).
-    //
-    if ((RegisteredData->KeyState.KeyShiftState != 0) &&
-        (RegisteredData->KeyState.KeyShiftState != InputData->KeyState.KeyShiftState))
-    {
-        return FALSE;
-    }
+  //
+  // Assume values of zero in KeyShiftState or KeyToggleState indicate that
+  // these states could be ignored (like a wildcard).
+  //
+  if ((RegisteredData->KeyState.KeyShiftState != 0) &&
+      (RegisteredData->KeyState.KeyShiftState != InputData->KeyState.KeyShiftState))
+  {
+    return FALSE;
+  }
 
-    if ((RegisteredData->KeyState.KeyToggleState != 0) &&
-        (RegisteredData->KeyState.KeyToggleState != InputData->KeyState.KeyToggleState))
-    {
-        return FALSE;
-    }
+  if ((RegisteredData->KeyState.KeyToggleState != 0) &&
+      (RegisteredData->KeyState.KeyToggleState != InputData->KeyState.KeyToggleState))
+  {
+    return FALSE;
+  }
 
-    return TRUE;
+  return TRUE;
 }
 
-
 VOID
-KeyBufferInitialize(
-    IN          EFI_KEY_BUFFER             *Queue
-    )
+KeyBufferInitialize (
+  IN          EFI_KEY_BUFFER  *Queue
+  )
+
 /*++
 
 Routine Description:
@@ -1091,15 +1069,15 @@ Return Value:
 
 --*/
 {
-    Queue->Head = Queue->Tail = 0;
+  Queue->Head = Queue->Tail = 0;
 }
 
-
 VOID
-KeyBufferInsert(
-    IN          EFI_KEY_BUFFER             *Queue,
-    IN          EFI_KEY_DATA               *KeyData
-    )
+KeyBufferInsert (
+  IN          EFI_KEY_BUFFER  *Queue,
+  IN          EFI_KEY_DATA    *KeyData
+  )
+
 /*++
 
 Routine Description:
@@ -1119,28 +1097,27 @@ Return Value:
 
 --*/
 {
-    UINTN newTail = (Queue->Tail + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
+  UINTN  newTail = (Queue->Tail + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
 
-    if (newTail == Queue->Head)
-    {
-        //
-        // Queue is full, drop the oldest item.
-        // this is done by advancing the head by one thus making
-        // room for one more entry.
-        //
-        Queue->Head = (Queue->Head + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
-    }
+  if (newTail == Queue->Head) {
+    //
+    // Queue is full, drop the oldest item.
+    // this is done by advancing the head by one thus making
+    // room for one more entry.
+    //
+    Queue->Head = (Queue->Head + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
+  }
 
-    CopyMem (&Queue->Buffer[Queue->Tail], KeyData, sizeof (EFI_KEY_DATA));
-    Queue->Tail = newTail;
+  CopyMem (&Queue->Buffer[Queue->Tail], KeyData, sizeof (EFI_KEY_DATA));
+  Queue->Tail = newTail;
 }
 
-
 EFI_STATUS
-KeyBufferRemove(
-    IN          EFI_KEY_BUFFER             *Queue,
-    OUT         EFI_KEY_DATA               *KeyData OPTIONAL
-    )
+KeyBufferRemove (
+  IN          EFI_KEY_BUFFER  *Queue,
+  OUT         EFI_KEY_DATA    *KeyData OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -1161,26 +1138,24 @@ Return Value:
 
 --*/
 {
-    if (KeyBufferIsEmpty(Queue))
-    {
-        return EFI_NOT_READY;
-    }
+  if (KeyBufferIsEmpty (Queue)) {
+    return EFI_NOT_READY;
+  }
 
-    if (KeyData != NULL)
-    {
-        CopyMem(KeyData, &Queue->Buffer[Queue->Head], sizeof(EFI_KEY_DATA));
-    }
+  if (KeyData != NULL) {
+    CopyMem (KeyData, &Queue->Buffer[Queue->Head], sizeof (EFI_KEY_DATA));
+  }
 
-    Queue->Head = (Queue->Head + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
+  Queue->Head = (Queue->Head + 1) % SYNTHKEY_KEY_BUFFER_SIZE;
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
 
-
 BOOLEAN
-KeyBufferIsEmpty(
-    IN      EFI_KEY_BUFFER                 *Queue
-    )
+KeyBufferIsEmpty (
+  IN      EFI_KEY_BUFFER  *Queue
+  )
+
 /*++
 
 Routine Description:
@@ -1198,5 +1173,5 @@ Return Value:
 
 --*/
 {
-    return (BOOLEAN)(Queue->Head == Queue->Tail);
+  return (BOOLEAN)(Queue->Head == Queue->Tail);
 }

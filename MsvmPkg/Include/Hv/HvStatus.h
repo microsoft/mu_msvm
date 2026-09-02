@@ -19,7 +19,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The specified hypercall succeeded
 //
-#define HV_STATUS_SUCCESS                ((HV_STATUS)0x0000)
+#define HV_STATUS_SUCCESS  ((HV_STATUS)0x0000)
 
 //
 // MessageId: HV_STATUS_INVALID_HYPERCALL_CODE
@@ -28,7 +28,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor does not support the operation because the specified hypercall code is not supported.
 //
-#define HV_STATUS_INVALID_HYPERCALL_CODE ((HV_STATUS)0x0002)
+#define HV_STATUS_INVALID_HYPERCALL_CODE  ((HV_STATUS)0x0002)
 
 //
 // MessageId: HV_STATUS_INVALID_HYPERCALL_INPUT
@@ -37,7 +37,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor does not support the operation because the encoding for the hypercall input register is not supported.
 //
-#define HV_STATUS_INVALID_HYPERCALL_INPUT ((HV_STATUS)0x0003)
+#define HV_STATUS_INVALID_HYPERCALL_INPUT  ((HV_STATUS)0x0003)
 
 //
 // MessageId: HV_STATUS_INVALID_ALIGNMENT
@@ -46,7 +46,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because a parameter has an invalid alignment.
 //
-#define HV_STATUS_INVALID_ALIGNMENT      ((HV_STATUS)0x0004)
+#define HV_STATUS_INVALID_ALIGNMENT  ((HV_STATUS)0x0004)
 
 //
 // MessageId: HV_STATUS_INVALID_PARAMETER
@@ -55,7 +55,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because an invalid parameter was specified.
 //
-#define HV_STATUS_INVALID_PARAMETER      ((HV_STATUS)0x0005)
+#define HV_STATUS_INVALID_PARAMETER  ((HV_STATUS)0x0005)
 
 //
 // MessageId: HV_STATUS_ACCESS_DENIED
@@ -64,7 +64,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // Access to the specified object was denied.
 //
-#define HV_STATUS_ACCESS_DENIED          ((HV_STATUS)0x0006)
+#define HV_STATUS_ACCESS_DENIED  ((HV_STATUS)0x0006)
 
 //
 // MessageId: HV_STATUS_INVALID_PARTITION_STATE
@@ -73,7 +73,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the partition is entering or in an invalid state.
 //
-#define HV_STATUS_INVALID_PARTITION_STATE ((HV_STATUS)0x0007)
+#define HV_STATUS_INVALID_PARTITION_STATE  ((HV_STATUS)0x0007)
 
 //
 // MessageId: HV_STATUS_OPERATION_DENIED
@@ -82,7 +82,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The operation is not allowed in the current state.
 //
-#define HV_STATUS_OPERATION_DENIED       ((HV_STATUS)0x0008)
+#define HV_STATUS_OPERATION_DENIED  ((HV_STATUS)0x0008)
 
 //
 // MessageId: HV_STATUS_UNKNOWN_PROPERTY
@@ -91,7 +91,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor does not recognize the specified partition property.
 //
-#define HV_STATUS_UNKNOWN_PROPERTY       ((HV_STATUS)0x0009)
+#define HV_STATUS_UNKNOWN_PROPERTY  ((HV_STATUS)0x0009)
 
 //
 // MessageId: HV_STATUS_PROPERTY_VALUE_OUT_OF_RANGE
@@ -100,7 +100,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The specified value of a partition property is out of range or violates an invariant.
 //
-#define HV_STATUS_PROPERTY_VALUE_OUT_OF_RANGE ((HV_STATUS)0x000A)
+#define HV_STATUS_PROPERTY_VALUE_OUT_OF_RANGE  ((HV_STATUS)0x000A)
 
 //
 // MessageId: HV_STATUS_INSUFFICIENT_MEMORY
@@ -109,7 +109,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // There is not enough memory in the hypervisor pool to complete the operation.
 //
-#define HV_STATUS_INSUFFICIENT_MEMORY    ((HV_STATUS)0x000B)
+#define HV_STATUS_INSUFFICIENT_MEMORY  ((HV_STATUS)0x000B)
 
 //
 // MessageId: HV_STATUS_PARTITION_TOO_DEEP
@@ -118,7 +118,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The maximum partition depth has been exceeded for the partition hierarchy.
 //
-#define HV_STATUS_PARTITION_TOO_DEEP     ((HV_STATUS)0x000C)
+#define HV_STATUS_PARTITION_TOO_DEEP  ((HV_STATUS)0x000C)
 
 //
 // MessageId: HV_STATUS_INVALID_PARTITION_ID
@@ -127,7 +127,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // A partition with the specified partition Id does not exist.
 //
-#define HV_STATUS_INVALID_PARTITION_ID   ((HV_STATUS)0x000D)
+#define HV_STATUS_INVALID_PARTITION_ID  ((HV_STATUS)0x000D)
 
 //
 // MessageId: HV_STATUS_INVALID_VP_INDEX
@@ -136,7 +136,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the specified VP index is invalid.
 //
-#define HV_STATUS_INVALID_VP_INDEX       ((HV_STATUS)0x000E)
+#define HV_STATUS_INVALID_VP_INDEX  ((HV_STATUS)0x000E)
 
 //
 // MessageId: HV_STATUS_NOT_FOUND
@@ -145,7 +145,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The iteration is complete; no addition items in the iteration could be found.
 //
-#define HV_STATUS_NOT_FOUND              ((HV_STATUS)0x0010)
+#define HV_STATUS_NOT_FOUND  ((HV_STATUS)0x0010)
 
 //
 // MessageId: HV_STATUS_INVALID_PORT_ID
@@ -154,7 +154,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the specified port identifier is invalid.
 //
-#define HV_STATUS_INVALID_PORT_ID        ((HV_STATUS)0x0011)
+#define HV_STATUS_INVALID_PORT_ID  ((HV_STATUS)0x0011)
 
 //
 // MessageId: HV_STATUS_INVALID_CONNECTION_ID
@@ -172,7 +172,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // You did not supply enough message buffers to send a message.
 //
-#define HV_STATUS_INSUFFICIENT_BUFFERS   ((HV_STATUS)0x0013)
+#define HV_STATUS_INSUFFICIENT_BUFFERS  ((HV_STATUS)0x0013)
 
 //
 // MessageId: HV_STATUS_NOT_ACKNOWLEDGED
@@ -181,7 +181,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The previous virtual interrupt has not been acknowledged.
 //
-#define HV_STATUS_NOT_ACKNOWLEDGED       ((HV_STATUS)0x0014)
+#define HV_STATUS_NOT_ACKNOWLEDGED  ((HV_STATUS)0x0014)
 
 //
 // MessageId: HV_STATUS_INVALID_VP_STATE
@@ -190,7 +190,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // A virtual processor is not in the correct state for the performance of the indicated operation.
 //
-#define HV_STATUS_INVALID_VP_STATE       ((HV_STATUS)0x0015)
+#define HV_STATUS_INVALID_VP_STATE  ((HV_STATUS)0x0015)
 
 //
 // MessageId: HV_STATUS_ACKNOWLEDGED
@@ -199,7 +199,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The previous virtual interrupt has already been acknowledged.
 //
-#define HV_STATUS_ACKNOWLEDGED           ((HV_STATUS)0x0016)
+#define HV_STATUS_ACKNOWLEDGED  ((HV_STATUS)0x0016)
 
 //
 // MessageId: HV_STATUS_INVALID_SAVE_RESTORE_STATE
@@ -208,7 +208,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The indicated partition is not in a valid state for saving or restoring.
 //
-#define HV_STATUS_INVALID_SAVE_RESTORE_STATE ((HV_STATUS)0x0017)
+#define HV_STATUS_INVALID_SAVE_RESTORE_STATE  ((HV_STATUS)0x0017)
 
 //
 // MessageId: HV_STATUS_INVALID_SYNIC_STATE
@@ -217,7 +217,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not complete the operation because a required feature of the synthetic interrupt controller (SynIC) was disabled.
 //
-#define HV_STATUS_INVALID_SYNIC_STATE    ((HV_STATUS)0x0018)
+#define HV_STATUS_INVALID_SYNIC_STATE  ((HV_STATUS)0x0018)
 
 //
 // MessageId: HV_STATUS_OBJECT_IN_USE
@@ -226,7 +226,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the object or value was either already in use or being used for a purpose that would not permit completing the operation.
 //
-#define HV_STATUS_OBJECT_IN_USE          ((HV_STATUS)0x0019)
+#define HV_STATUS_OBJECT_IN_USE  ((HV_STATUS)0x0019)
 
 //
 // MessageId: HV_STATUS_INVALID_PROXIMITY_DOMAIN_INFO
@@ -235,7 +235,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The proximity domain information is invalid.
 //
-#define HV_STATUS_INVALID_PROXIMITY_DOMAIN_INFO ((HV_STATUS)0x001A)
+#define HV_STATUS_INVALID_PROXIMITY_DOMAIN_INFO  ((HV_STATUS)0x001A)
 
 //
 // MessageId: HV_STATUS_NO_DATA
@@ -244,7 +244,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // An attempt to retrieve debugging data failed because none was available.
 //
-#define HV_STATUS_NO_DATA                ((HV_STATUS)0x001B)
+#define HV_STATUS_NO_DATA  ((HV_STATUS)0x001B)
 
 //
 // MessageId: HV_STATUS_INACTIVE
@@ -253,7 +253,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The physical connection being used for debuggging has not recorded any receive activity since the last operation.
 //
-#define HV_STATUS_INACTIVE               ((HV_STATUS)0x001C)
+#define HV_STATUS_INACTIVE  ((HV_STATUS)0x001C)
 
 //
 // MessageId: HV_STATUS_NO_RESOURCES
@@ -262,7 +262,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // There are not enough resources to complete the operation.
 //
-#define HV_STATUS_NO_RESOURCES           ((HV_STATUS)0x001D)
+#define HV_STATUS_NO_RESOURCES  ((HV_STATUS)0x001D)
 
 //
 // MessageId: HV_STATUS_FEATURE_UNAVAILABLE
@@ -271,7 +271,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // A hypervisor feature is not available to the user.
 //
-#define HV_STATUS_FEATURE_UNAVAILABLE    ((HV_STATUS)0x001E)
+#define HV_STATUS_FEATURE_UNAVAILABLE  ((HV_STATUS)0x001E)
 
 //
 // MessageId: HV_STATUS_PARTIAL_PACKET
@@ -280,7 +280,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The debug packet returned is only a partial packet due to an io error.
 //
-#define HV_STATUS_PARTIAL_PACKET         ((HV_STATUS)0x001F)
+#define HV_STATUS_PARTIAL_PACKET  ((HV_STATUS)0x001F)
 
 //
 // MessageId: HV_STATUS_PROCESSOR_FEATURE_NOT_SUPPORTED
@@ -289,7 +289,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The supplied restore state requires an unsupported processor feature.
 //
-#define HV_STATUS_PROCESSOR_FEATURE_NOT_SUPPORTED ((HV_STATUS)0x0020)
+#define HV_STATUS_PROCESSOR_FEATURE_NOT_SUPPORTED  ((HV_STATUS)0x0020)
 
 //
 // MessageId: HV_STATUS_PROCESSOR_CACHE_LINE_FLUSH_SIZE_INCOMPATIBLE
@@ -299,7 +299,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 // The supplied restore state requires requires a processor with a different
 // cache line flush size.
 //
-#define HV_STATUS_PROCESSOR_CACHE_LINE_FLUSH_SIZE_INCOMPATIBLE ((HV_STATUS)0x0030)
+#define HV_STATUS_PROCESSOR_CACHE_LINE_FLUSH_SIZE_INCOMPATIBLE  ((HV_STATUS)0x0030)
 
 //
 // MessageId: HV_STATUS_INSUFFICIENT_BUFFER
@@ -308,7 +308,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The specified buffer was too small to contain all of the requested data.
 //
-#define HV_STATUS_INSUFFICIENT_BUFFER    ((HV_STATUS)0x0033)
+#define HV_STATUS_INSUFFICIENT_BUFFER  ((HV_STATUS)0x0033)
 
 //
 // MessageId: HV_STATUS_INCOMPATIBLE_PROCESSOR
@@ -318,7 +318,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 // The supplied restore state is for an incompatible processor
 // vendor.
 //
-#define HV_STATUS_INCOMPATIBLE_PROCESSOR ((HV_STATUS)0x0037)
+#define HV_STATUS_INCOMPATIBLE_PROCESSOR  ((HV_STATUS)0x0037)
 
 //
 // MessageId: HV_STATUS_INSUFFICIENT_DEVICE_DOMAINS
@@ -329,7 +329,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 // hardware is currently in use. No domains are available to assign this device
 // to this partition.
 //
-#define HV_STATUS_INSUFFICIENT_DEVICE_DOMAINS ((HV_STATUS)0x0038)
+#define HV_STATUS_INSUFFICIENT_DEVICE_DOMAINS  ((HV_STATUS)0x0038)
 
 //
 // MessageId: HV_STATUS_CPUID_FEATURE_VALIDATION_ERROR
@@ -338,7 +338,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // Generic logical processor CPUID feature set validation error.
 //
-#define HV_STATUS_CPUID_FEATURE_VALIDATION_ERROR ((HV_STATUS)0x003C)
+#define HV_STATUS_CPUID_FEATURE_VALIDATION_ERROR  ((HV_STATUS)0x003C)
 
 //
 // MessageId: HV_STATUS_CPUID_XSAVE_FEATURE_VALIDATION_ERROR
@@ -347,7 +347,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // CPUID XSAVE feature validation error.
 //
-#define HV_STATUS_CPUID_XSAVE_FEATURE_VALIDATION_ERROR ((HV_STATUS)0x003D)
+#define HV_STATUS_CPUID_XSAVE_FEATURE_VALIDATION_ERROR  ((HV_STATUS)0x003D)
 
 //
 // MessageId: HV_STATUS_PROCESSOR_STARTUP_TIMEOUT
@@ -356,7 +356,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // Processor startup timed out.
 //
-#define HV_STATUS_PROCESSOR_STARTUP_TIMEOUT ((HV_STATUS)0x003E)
+#define HV_STATUS_PROCESSOR_STARTUP_TIMEOUT  ((HV_STATUS)0x003E)
 
 //
 // MessageId: HV_STATUS_SMX_ENABLED
@@ -365,7 +365,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // SMX enabled by the BIOS.
 //
-#define HV_STATUS_SMX_ENABLED ((HV_STATUS)0x003F)
+#define HV_STATUS_SMX_ENABLED  ((HV_STATUS)0x003F)
 
 //
 // MessageId: HV_STATUS_INVALID_LP_INDEX
@@ -374,7 +374,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the specified LP index is invalid.
 //
-#define HV_STATUS_INVALID_LP_INDEX ((HV_STATUS)0x0041)
+#define HV_STATUS_INVALID_LP_INDEX  ((HV_STATUS)0x0041)
 
 //
 // MessageId: HV_STATUS_INVALID_REGISTER_VALUE
@@ -383,7 +383,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The supplied register value is invalid.
 //
-#define HV_STATUS_INVALID_REGISTER_VALUE ((HV_STATUS)0x0050)
+#define HV_STATUS_INVALID_REGISTER_VALUE  ((HV_STATUS)0x0050)
 
 //
 // MessageId: HV_STATUS_INVALID_VTL_STATE
@@ -392,7 +392,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The supplied virtual trust level is not in the correct state to perform the requested operation.
 //
-#define HV_STATUS_INVALID_VTL_STATE ((HV_STATUS)0x0051)
+#define HV_STATUS_INVALID_VTL_STATE  ((HV_STATUS)0x0051)
 
 //
 // MessageId: HV_STATUS_NX_NOT_DETECTED
@@ -401,7 +401,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // NX not detected on the machine.
 //
-#define HV_STATUS_NX_NOT_DETECTED ((HV_STATUS)(0x0055))
+#define HV_STATUS_NX_NOT_DETECTED  ((HV_STATUS)(0x0055))
 
 //
 // MessageId: HV_STATUS_INVALID_DEVICE_ID
@@ -410,7 +410,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The supplied device ID is invalid.
 //
-#define HV_STATUS_INVALID_DEVICE_ID ((HV_STATUS)0x0057)
+#define HV_STATUS_INVALID_DEVICE_ID  ((HV_STATUS)0x0057)
 
 //
 // MessageId: HV_STATUS_INVALID_DEVICE_STATE
@@ -419,7 +419,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The operation is not allowed in the current device state.
 //
-#define HV_STATUS_INVALID_DEVICE_STATE ((HV_STATUS)0x0058)
+#define HV_STATUS_INVALID_DEVICE_STATE  ((HV_STATUS)0x0058)
 
 //
 // MessageId: HV_STATUS_PENDING_PAGE_REQUESTS
@@ -428,7 +428,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The device had pending page requests which were discarded.
 //
-#define HV_STATUS_PENDING_PAGE_REQUESTS ((HV_STATUS)0x0059)
+#define HV_STATUS_PENDING_PAGE_REQUESTS  ((HV_STATUS)0x0059)
 
 //
 // MessageId: HV_STATUS_PAGE_REQUEST_INVALID
@@ -438,7 +438,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 // The supplied page request specifies a memory access that the guest does not
 // have permissions to perform.
 //
-#define HV_STATUS_PAGE_REQUEST_INVALID ((HV_STATUS)0x0060)
+#define HV_STATUS_PAGE_REQUEST_INVALID  ((HV_STATUS)0x0060)
 
 //
 // MessageId: HV_STATUS_KEY_ALREADY_EXISTS
@@ -447,7 +447,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The entry cannot be added as another entry with the same key already exists.
 //
-#define HV_STATUS_KEY_ALREADY_EXISTS     ((HV_STATUS)0x0065)
+#define HV_STATUS_KEY_ALREADY_EXISTS  ((HV_STATUS)0x0065)
 
 //
 // MessageId: HV_STATUS_DEVICE_ALREADY_IN_DOMAIN
@@ -456,7 +456,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The device is already attached to the device domain.
 //
-#define HV_STATUS_DEVICE_ALREADY_IN_DOMAIN     ((HV_STATUS)0x0066)
+#define HV_STATUS_DEVICE_ALREADY_IN_DOMAIN  ((HV_STATUS)0x0066)
 
 //
 // MessageId: HV_STATUS_INVALID_CPU_GROUP_ID
@@ -465,7 +465,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // A CPU group with the specified CPU group Id does not exist.
 //
-#define HV_STATUS_INVALID_CPU_GROUP_ID ((HV_STATUS)0x006F)
+#define HV_STATUS_INVALID_CPU_GROUP_ID  ((HV_STATUS)0x006F)
 
 //
 // MessageId: HV_STATUS_INVALID_CPU_GROUP_STATE
@@ -474,7 +474,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The hypervisor could not perform the operation because the CPU group is entering or in an invalid state.
 //
-#define HV_STATUS_INVALID_CPU_GROUP_STATE ((HV_STATUS)0x0070)
+#define HV_STATUS_INVALID_CPU_GROUP_STATE  ((HV_STATUS)0x0070)
 
 //
 // MessageId: HV_STATUS_OPERATION_FAILED
@@ -483,7 +483,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // The requested operation failed.
 //
-#define HV_STATUS_OPERATION_FAILED       ((HV_STATUS)0x0071)
+#define HV_STATUS_OPERATION_FAILED  ((HV_STATUS)0x0071)
 
 //
 // MessageId: HV_STATUS_NOT_ALLOWED_WITH_NESTED_VIRT_ACTIVE
@@ -502,4 +502,4 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // There is not enough memory in the root partition's pool to complete the operation.
 //
-#define HV_STATUS_INSUFFICIENT_ROOT_MEMORY ((HV_STATUS)0x0073)
+#define HV_STATUS_INSUFFICIENT_ROOT_MEMORY  ((HV_STATUS)0x0073)

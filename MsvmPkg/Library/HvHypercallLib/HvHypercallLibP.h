@@ -12,28 +12,28 @@
 
 #include <Library/HvHypercallLib.h>
 
-#if defined(MDE_CPU_X64)
+#if defined (MDE_CPU_X64)
 
 HV_STATUS
-HvHypercallpIssueGhcbHypercall(
-    IN              HV_HYPERCALL_CONTEXT    *Context,
-                    HV_CALL_CODE            CallCode,
-    IN OPTIONAL     VOID                    *InputPage,
-                    UINT32                  CountOfElements,
-    OUT OPTIONAL    UINT32                  *ElementsProcessed
-    );
+HvHypercallpIssueGhcbHypercall (
+  IN              HV_HYPERCALL_CONTEXT  *Context,
+  HV_CALL_CODE                          CallCode,
+  IN OPTIONAL     VOID                  *InputPage,
+  UINT32                                CountOfElements,
+  OUT OPTIONAL    UINT32                *ElementsProcessed
+  );
 
 /// Functions that enable and disable interrupts, that are implemented based
 /// on the environment the library is built for.
 
 EFI_TPL
-HvHypercallpDisableInterrupts(
-    VOID
-    );
+HvHypercallpDisableInterrupts (
+  VOID
+  );
 
 VOID
-HvHypercallpEnableInterrupts(
-    EFI_TPL Tpl
-    );
+HvHypercallpEnableInterrupts (
+  EFI_TPL  Tpl
+  );
 
 #endif

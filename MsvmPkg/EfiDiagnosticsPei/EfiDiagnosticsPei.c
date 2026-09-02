@@ -92,11 +92,11 @@ PublishCurrentAdvancedLoggerGpa (
   IN VOID                       *Ppi             OPTIONAL
   )
 {
-  EFI_HOB_GUID_TYPE    *GuidHob;
-  ADVANCED_LOGGER_PTR  *LogPtr;
-  ADVANCED_LOGGER_INFO *LogInfo;
+  EFI_HOB_GUID_TYPE     *GuidHob;
+  ADVANCED_LOGGER_PTR   *LogPtr;
+  ADVANCED_LOGGER_INFO  *LogInfo;
 
-  DEBUG((DEBUG_INFO, "%a: Publishing Advanced Logger GPA.\n", __func__));
+  DEBUG ((DEBUG_INFO, "%a: Publishing Advanced Logger GPA.\n", __func__));
 
   GuidHob = GetFirstGuidHob (&gAdvancedLoggerHobGuid);
   if (GuidHob == NULL) {

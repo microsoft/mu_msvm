@@ -6,7 +6,6 @@
 
 **/
 
-
 #include <VmbusP.h>
 #include <IsolationTypes.h>
 
@@ -19,34 +18,34 @@
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 
-VMBUS_DEVICE_PATH gVmbusChannelNode =
+VMBUS_DEVICE_PATH  gVmbusChannelNode =
 {
+  {
     {
-        {
-            HARDWARE_DEVICE_PATH,
-            HW_VENDOR_DP,
-            {
-                (UINT8) (sizeof (VMBUS_DEVICE_PATH)),
-                (UINT8) ((sizeof (VMBUS_DEVICE_PATH)) >> 8)
-            }
-        },
-        EFI_VMBUS_CHANNEL_DEVICE_PATH_GUID
+      HARDWARE_DEVICE_PATH,
+      HW_VENDOR_DP,
+      {
+        (UINT8)(sizeof (VMBUS_DEVICE_PATH)),
+        (UINT8)((sizeof (VMBUS_DEVICE_PATH)) >> 8)
+      }
     },
-    {0},
-    {0}
+    EFI_VMBUS_CHANNEL_DEVICE_PATH_GUID
+  },
+  { 0 },
+  { 0 }
 };
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelPrepareGpadl (
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  VOID *Buffer,
-    IN  UINT32 BufferLength,
-    IN  UINT32 Flags,
-    IN  HV_MAP_GPA_FLAGS MapFlags,
-    OUT EFI_VMBUS_GPADL **Gpadl
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  VOID                *Buffer,
+  IN  UINT32              BufferLength,
+  IN  UINT32              Flags,
+  IN  HV_MAP_GPA_FLAGS    MapFlags,
+  OUT EFI_VMBUS_GPADL     **Gpadl
+  )
+
 /*++
 
 Routine Description:
@@ -81,128 +80,122 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    EFI_VMBUS_GPADL *gpadl;
-    BOOLEAN isRing;
-    EFI_STATUS status;
-    BOOLEAN zeroPages;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  EFI_VMBUS_GPADL        *gpadl;
+  BOOLEAN                isRing;
+  EFI_STATUS             status;
+  BOOLEAN                zeroPages;
 
-    if (BufferLength == 0)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
-        return status;
+  if (BufferLength == 0) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
+    return status;
+  }
+
+  //
+  // GPADLs that could be subject to isolation restrictions must be aligned
+  // to page boundaries.
+  //
+  if ((((UINTN)Buffer & (EFI_PAGE_SIZE - 1)) != 0) ||
+      ((BufferLength & (EFI_PAGE_SIZE - 1)) != 0))
+  {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: Gpadls are not aligned - %r \n", __func__, status));
+    return status;
+  }
+
+  if ((Flags & ~EFI_VMBUS_PREPARE_GPADL_FLAGS) != 0) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: invalid flags - %r \n", __func__, status));
+    return status;
+  }
+
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
+
+  //
+  // Allocate a structure to track the state of the GPADL.
+  //
+  gpadl = AllocatePool (sizeof (*gpadl));
+  if (gpadl == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
+    goto Cleanup;
+  }
+
+  gpadl->AllocatedBuffer  = Buffer;
+  gpadl->BufferLength     = BufferLength;
+  gpadl->NumberOfPages    = (UINT32)((UINTN)BufferLength >> EFI_PAGE_SHIFT);
+  gpadl->GpadlHandle      = 0;
+  gpadl->Legacy           = FALSE;
+  gpadl->ProtectionHandle = NULL;
+  zeroPages               = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES) != 0;
+
+  //
+  // Make the entire buffer visible to the host if required.
+  //
+  // N.B. On a hardware-isolated VM, whether or not the buffer needs to be
+  //      host-visible is determined by the purpose of the GPADL and the
+  //      channel's confidentiality flags.
+  //
+  isRing = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER) != 0;
+  if (IsIsolated () &&
+      ((isRing && !channelContext->ConfidentialRing) ||
+       (!isRing && ((channelContext->VmbusProtocol.Flags & EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY) == 0))))
+  {
+    status = mHvIvm->MakeAddressRangeHostVisible (
+                       mHvIvm,
+                       MapFlags,
+                       Buffer,
+                       BufferLength,
+                       zeroPages,
+                       &gpadl->ProtectionHandle
+                       );
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((EFI_D_ERROR, "--- %a: failed to make the buffer host visible - %r \n", __func__, status));
+      goto Cleanup;
     }
 
-    //
-    // GPADLs that could be subject to isolation restrictions must be aligned
-    // to page boundaries.
-    //
-    if ((((UINTN)Buffer & (EFI_PAGE_SIZE - 1)) != 0) ||
-        ((BufferLength & (EFI_PAGE_SIZE - 1)) != 0))
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: Gpadls are not aligned - %r \n", __func__, status));
-        return status;
+    gpadl->VisibleBufferPA = (UINTN)Buffer + mSharedGpaBoundary;
+    DEBUG ((EFI_D_VERBOSE, "--- %a: host-visible GPADL \n", __func__));
+  } else {
+    if (IsIsolated ()) {
+      DEBUG ((EFI_D_VERBOSE, "--- %a: non-host-visible GPADL \n", __func__));
     }
 
-    if ((Flags & ~EFI_VMBUS_PREPARE_GPADL_FLAGS) != 0)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid flags - %r \n", __func__, status));
-        return status;
+    gpadl->VisibleBufferPA = (UINTN)Buffer;
+    if (zeroPages) {
+      ZeroMem (Buffer, BufferLength);
     }
+  }
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
-
-    //
-    // Allocate a structure to track the state of the GPADL.
-    //
-    gpadl = AllocatePool(sizeof(*gpadl));
-    if (gpadl == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to allocate memory - %r \n", __func__, status));
-        goto Cleanup;
-    }
-
-    gpadl->AllocatedBuffer = Buffer;
-    gpadl->BufferLength = BufferLength;
-    gpadl->NumberOfPages = (UINT32)((UINTN)BufferLength >> EFI_PAGE_SHIFT);
-    gpadl->GpadlHandle = 0;
-    gpadl->Legacy = FALSE;
-    gpadl->ProtectionHandle = NULL;
-    zeroPages = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_ZERO_PAGES) != 0;
-
-    //
-    // Make the entire buffer visible to the host if required.
-    //
-    // N.B. On a hardware-isolated VM, whether or not the buffer needs to be
-    //      host-visible is determined by the purpose of the GPADL and the
-    //      channel's confidentiality flags.
-    //
-    isRing = (Flags & EFI_VMBUS_PREPARE_GPADL_FLAG_RING_BUFFER) != 0;
-    if (IsIsolated() &&
-        ((isRing && !channelContext->ConfidentialRing) ||
-         (!isRing && (channelContext->VmbusProtocol.Flags & EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY) == 0)))
-    {
-        status = mHvIvm->MakeAddressRangeHostVisible(mHvIvm,
-                                                     MapFlags,
-                                                     Buffer,
-                                                     BufferLength,
-                                                     zeroPages,
-                                                     &gpadl->ProtectionHandle);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((EFI_D_ERROR, "--- %a: failed to make the buffer host visible - %r \n", __func__, status));
-            goto Cleanup;
-        }
-
-        gpadl->VisibleBufferPA = (UINTN)Buffer + mSharedGpaBoundary;
-        DEBUG((EFI_D_VERBOSE, "--- %a: host-visible GPADL \n", __func__));
-    }
-    else
-    {
-        if (IsIsolated())
-        {
-            DEBUG((EFI_D_VERBOSE, "--- %a: non-host-visible GPADL \n", __func__));
-        }
-
-        gpadl->VisibleBufferPA = (UINTN)Buffer;
-        if (zeroPages)
-        {
-            ZeroMem(Buffer, BufferLength);
-        }
-    }
-
-    *Gpadl = gpadl;
-    status = EFI_SUCCESS;
+  *Gpadl = gpadl;
+  status = EFI_SUCCESS;
 
 Cleanup:
 
-    if (EFI_ERROR(status))
-    {
-        if (gpadl != NULL)
-        {
-            FreePool(gpadl);
-            gpadl = NULL;
-        }
+  if (EFI_ERROR (status)) {
+    if (gpadl != NULL) {
+      FreePool (gpadl);
+      gpadl = NULL;
     }
+  }
 
-    return status;
+  return status;
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelCreateGpadl (
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_VMBUS_GPADL *Gpadl
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_VMBUS_GPADL     *Gpadl
+  )
+
 /*++
 
 Routine Description:
@@ -226,143 +219,148 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    VMBUS_MESSAGE sendMessage;
-    VMBUS_MESSAGE *receiveMessage;
-    UINT32 numPfnInHeader;
-    UINT32 numPfnInBody;
-    UINT32 pfnIndex;
-    UINT32 pfnSent;
-    EFI_STATUS status;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  VMBUS_MESSAGE          sendMessage;
+  VMBUS_MESSAGE          *receiveMessage;
+  UINT32                 numPfnInHeader;
+  UINT32                 numPfnInBody;
+  UINT32                 pfnIndex;
+  UINT32                 pfnSent;
+  EFI_STATUS             status;
 
-    if (Gpadl->GpadlHandle != 0)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL handle - %r \n", __func__, status));
-        return status;
+  if (Gpadl->GpadlHandle != 0) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: invalid GPADL handle - %r \n", __func__, status));
+    return status;
+  }
+
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
+
+  status = VmbusRootGetFreeGpadl (
+             channelContext->RootContext,
+             &Gpadl->GpadlHandle
+             );
+  if (EFI_ERROR (status)) {
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to free the GPADL - %r \n", __func__, status));
+    goto Cleanup;
+  }
+
+  //
+  // Calculate how many pages the buffer spans and how many PFNs can fit in a
+  // header and body packet.
+  //
+  numPfnInHeader = (MAXIMUM_SYNIC_MESSAGE_BYTES -
+                    OFFSET_OF (VMBUS_CHANNEL_GPADL_HEADER, Range) -
+                    OFFSET_OF (GPA_RANGE, PfnArray)) / sizeof (UINT64);
+
+  numPfnInBody = (MAXIMUM_SYNIC_MESSAGE_BYTES -
+                  OFFSET_OF (VMBUS_CHANNEL_GPADL_BODY, Pfn)) / sizeof (UINT64);
+
+  //
+  // Create the GPADL header.
+  //
+  VmbusRootInitializeMessage (
+    &sendMessage,
+    ChannelMessageGpadlHeader,
+    MAXIMUM_SYNIC_MESSAGE_BYTES
+    );
+
+  sendMessage.GpadlHeader.ChildRelId  = channelContext->ChannelId;
+  sendMessage.GpadlHeader.Gpadl       = Gpadl->GpadlHandle;
+  sendMessage.GpadlHeader.RangeCount  = 1;
+  sendMessage.GpadlHeader.RangeBufLen = (UINT16)(sizeof (GPA_RANGE) +
+                                                 (Gpadl->NumberOfPages - 1) * sizeof (UINT64));
+
+  sendMessage.GpadlHeader.Range[0].ByteCount  = Gpadl->BufferLength;
+  sendMessage.GpadlHeader.Range[0].ByteOffset =
+    (UINT32)((UINTN)Gpadl->VisibleBufferPA & EFI_PAGE_MASK);
+
+  for (pfnIndex = 0; pfnIndex < MIN (Gpadl->NumberOfPages, numPfnInHeader); ++pfnIndex) {
+    sendMessage.GpadlHeader.Range[0].PfnArray[pfnIndex] =
+      ((UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT) + pfnIndex;
+  }
+
+  DEBUG ((
+    EFI_D_INFO,
+    "%a(%dnumPages=%d base=%p gpadlHandle=0x%x\n",
+    __func__,
+    __LINE__,
+    Gpadl->NumberOfPages,
+    (UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT,
+    Gpadl->GpadlHandle
+    ));
+
+  pfnSent = pfnIndex;
+  VmbusRootSendMessage (channelContext->RootContext, &sendMessage);
+
+  //
+  // Keep sending GPADL body packets until we run out of PFNs to send.
+  //
+  while (Gpadl->NumberOfPages - pfnSent > 0) {
+    VmbusRootInitializeMessage (
+      &sendMessage,
+      ChannelMessageGpadlBody,
+      MAXIMUM_SYNIC_MESSAGE_BYTES
+      );
+
+    sendMessage.GpadlBody.Gpadl = Gpadl->GpadlHandle;
+    for (pfnIndex = 0; pfnIndex < MIN (Gpadl->NumberOfPages - pfnSent, numPfnInBody); ++pfnIndex) {
+      sendMessage.GpadlBody.Pfn[pfnIndex] =
+        ((UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT) + pfnSent + pfnIndex;
     }
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+    pfnSent += pfnIndex;
+    VmbusRootSendMessage (channelContext->RootContext, &sendMessage);
+  }
 
-    status = VmbusRootGetFreeGpadl(channelContext->RootContext,
-                                   &Gpadl->GpadlHandle);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: failed to free the GPADL - %r \n", __func__, status));
-        goto Cleanup;
-    }
+  receiveMessage = NULL;
+  status         = VmbusRootWaitForGpadlResponse (
+                     channelContext->RootContext,
+                     Gpadl->GpadlHandle,
+                     &receiveMessage
+                     );
 
-    //
-    // Calculate how many pages the buffer spans and how many PFNs can fit in a
-    // header and body packet.
-    //
-    numPfnInHeader = (MAXIMUM_SYNIC_MESSAGE_BYTES -
-                      OFFSET_OF(VMBUS_CHANNEL_GPADL_HEADER, Range) -
-                      OFFSET_OF(GPA_RANGE, PfnArray)) / sizeof(UINT64);
+  ASSERT_EFI_ERROR (status);
 
-    numPfnInBody = (MAXIMUM_SYNIC_MESSAGE_BYTES -
-                    OFFSET_OF(VMBUS_CHANNEL_GPADL_BODY, Pfn)) / sizeof(UINT64);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Header.MessageType == ChannelMessageGpadlCreated);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Size == sizeof (receiveMessage->GpadlCreated));
 
-    //
-    // Create the GPADL header.
-    //
-    VmbusRootInitializeMessage(&sendMessage,
-                               ChannelMessageGpadlHeader,
-                               MAXIMUM_SYNIC_MESSAGE_BYTES);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->GpadlCreated.Gpadl == Gpadl->GpadlHandle);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->GpadlCreated.ChildRelId == channelContext->ChannelId);
 
-    sendMessage.GpadlHeader.ChildRelId = channelContext->ChannelId;
-    sendMessage.GpadlHeader.Gpadl = Gpadl->GpadlHandle;
-    sendMessage.GpadlHeader.RangeCount = 1;
-    sendMessage.GpadlHeader.RangeBufLen = (UINT16)(sizeof(GPA_RANGE) +
-        (Gpadl->NumberOfPages - 1) * sizeof(UINT64));
+  if (receiveMessage->GpadlCreated.CreationStatus != 0) {
+    status = EFI_OUT_OF_RESOURCES;
+    DEBUG ((EFI_D_ERROR, "--- %a: failed to create GPADL - %r \n", __func__, status));
+    goto Cleanup;
+  }
 
-    sendMessage.GpadlHeader.Range[0].ByteCount = Gpadl->BufferLength;
-    sendMessage.GpadlHeader.Range[0].ByteOffset =
-        (UINT32)((UINTN)Gpadl->VisibleBufferPA & EFI_PAGE_MASK);
-
-    for (pfnIndex = 0; pfnIndex < MIN(Gpadl->NumberOfPages, numPfnInHeader); ++pfnIndex)
-    {
-        sendMessage.GpadlHeader.Range[0].PfnArray[pfnIndex] =
-            ((UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT) + pfnIndex;
-    }
-
-    DEBUG((EFI_D_INFO,
-        "%a(%dnumPages=%d base=%p gpadlHandle=0x%x\n",
-        __func__,
-        __LINE__,
-        Gpadl->NumberOfPages,
-        (UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT,
-        Gpadl->GpadlHandle));
-
-    pfnSent = pfnIndex;
-    VmbusRootSendMessage(channelContext->RootContext, &sendMessage);
-
-    //
-    // Keep sending GPADL body packets until we run out of PFNs to send.
-    //
-    while (Gpadl->NumberOfPages - pfnSent > 0)
-    {
-        VmbusRootInitializeMessage(&sendMessage,
-                                   ChannelMessageGpadlBody,
-                                   MAXIMUM_SYNIC_MESSAGE_BYTES);
-
-        sendMessage.GpadlBody.Gpadl = Gpadl->GpadlHandle;
-        for (pfnIndex = 0; pfnIndex < MIN(Gpadl->NumberOfPages - pfnSent, numPfnInBody); ++pfnIndex)
-        {
-            sendMessage.GpadlBody.Pfn[pfnIndex] =
-                ((UINTN)Gpadl->VisibleBufferPA >> EFI_PAGE_SHIFT) + pfnSent + pfnIndex;
-        }
-
-        pfnSent += pfnIndex;
-        VmbusRootSendMessage(channelContext->RootContext, &sendMessage);
-    }
-
-    receiveMessage = NULL;
-    status = VmbusRootWaitForGpadlResponse(channelContext->RootContext,
-                                           Gpadl->GpadlHandle,
-                                           &receiveMessage);
-
-    ASSERT_EFI_ERROR(status);
-
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Header.MessageType == ChannelMessageGpadlCreated);
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Size == sizeof(receiveMessage->GpadlCreated));
-
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->GpadlCreated.Gpadl == Gpadl->GpadlHandle);
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->GpadlCreated.ChildRelId == channelContext->ChannelId);
-
-    if (receiveMessage->GpadlCreated.CreationStatus != 0)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        DEBUG((EFI_D_ERROR, "--- %a: failed to create GPADL - %r \n", __func__, status));
-        goto Cleanup;
-    }
-
-    status = EFI_SUCCESS;
+  status = EFI_SUCCESS;
 
 Cleanup:
-    if (EFI_ERROR(status))
-    {
-        if (Gpadl->GpadlHandle != 0)
-        {
-            VmbusRootReclaimGpadl(channelContext->RootContext, Gpadl->GpadlHandle);
-            Gpadl->GpadlHandle = 0;
-        }
+  if (EFI_ERROR (status)) {
+    if (Gpadl->GpadlHandle != 0) {
+      VmbusRootReclaimGpadl (channelContext->RootContext, Gpadl->GpadlHandle);
+      Gpadl->GpadlHandle = 0;
     }
+  }
 
-    return status;
+  return status;
 }
 
 EFI_STATUS
 EFIAPI
 VmbusChannelCreateGpadlLegacy (
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This,
-    IN  VOID *Buffer,
-    IN  UINT32 BufferLength,
-    OUT UINT32 *GpadlHandle
-    )
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This,
+  IN  VOID                       *Buffer,
+  IN  UINT32                     BufferLength,
+  OUT UINT32                     *GpadlHandle
+  )
+
 /*++
 
 Routine Description:
@@ -387,46 +385,46 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    EFI_VMBUS_GPADL gpadl;
-    EFI_STATUS status;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  EFI_VMBUS_GPADL        gpadl;
+  EFI_STATUS             status;
 
-    ZeroMem(&gpadl, sizeof(gpadl));
-    if (BufferLength == 0)
-    {
-        status = EFI_INVALID_PARAMETER;
-        DEBUG((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
-        return status;
-    }
-
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
-
-    gpadl.AllocatedBuffer = Buffer;
-    gpadl.VisibleBufferPA = (UINTN)Buffer;
-    gpadl.BufferLength = BufferLength;
-    gpadl.NumberOfPages = ((UINT32)((UINTN)Buffer & EFI_PAGE_MASK) + BufferLength +
-        EFI_PAGE_SIZE - 1) >> EFI_PAGE_SHIFT;
-    gpadl.Legacy = TRUE;
-
-    status = VmbusChannelCreateGpadl(&channelContext->VmbusProtocol, &gpadl);
-    if (!EFI_ERROR(status))
-    {
-        *GpadlHandle = gpadl.GpadlHandle;
-    }
-
+  ZeroMem (&gpadl, sizeof (gpadl));
+  if (BufferLength == 0) {
+    status = EFI_INVALID_PARAMETER;
+    DEBUG ((EFI_D_ERROR, "--- %a: invalid buffer length - %r \n", __func__, status));
     return status;
-}
+  }
 
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
+
+  gpadl.AllocatedBuffer = Buffer;
+  gpadl.VisibleBufferPA = (UINTN)Buffer;
+  gpadl.BufferLength    = BufferLength;
+  gpadl.NumberOfPages   = ((UINT32)((UINTN)Buffer & EFI_PAGE_MASK) + BufferLength +
+                           EFI_PAGE_SIZE - 1) >> EFI_PAGE_SHIFT;
+  gpadl.Legacy = TRUE;
+
+  status = VmbusChannelCreateGpadl (&channelContext->VmbusProtocol, &gpadl);
+  if (!EFI_ERROR (status)) {
+    *GpadlHandle = gpadl.GpadlHandle;
+  }
+
+  return status;
+}
 
 EFI_STATUS
 EFIAPI
 VmbusChannelDestroyGpadl (
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_VMBUS_GPADL *Gpadl
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_VMBUS_GPADL     *Gpadl
+  )
+
 /*++
 
 Routine Description:
@@ -454,78 +452,81 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    VMBUS_MESSAGE sendMessage;
-    VMBUS_MESSAGE *receiveMessage;
+  EFI_STATUS             status;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  VMBUS_MESSAGE          sendMessage;
+  VMBUS_MESSAGE          *receiveMessage;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    if (Gpadl->GpadlHandle != 0)
-    {
-        if (!VmbusRootValidateGpadl(channelContext->RootContext, Gpadl->GpadlHandle))
-        {
-            status = EFI_INVALID_PARAMETER;
-            DEBUG((EFI_D_ERROR, "--- %a: invalid GPADL - %r \n", __func__, status));
-            return status;
-        }
-
-        VmbusRootInitializeMessage(&sendMessage,
-                                   ChannelMessageGpadlTeardown,
-                                   sizeof(sendMessage.GpadlTeardown));
-
-        sendMessage.GpadlTeardown.ChildRelId = channelContext->ChannelId;
-        sendMessage.GpadlTeardown.Gpadl = Gpadl->GpadlHandle;
-        VmbusRootSendMessage(channelContext->RootContext, &sendMessage);
-        status = VmbusRootWaitForGpadlResponse(channelContext->RootContext,
-                                               Gpadl->GpadlHandle,
-                                               &receiveMessage);
-
-        ASSERT_EFI_ERROR(status);
-
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Size == sizeof(receiveMessage->GpadlTorndown));
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Header.MessageType == ChannelMessageGpadlTorndown);
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->GpadlTorndown.Gpadl == Gpadl->GpadlHandle);
-
-        VmbusRootReclaimGpadl(channelContext->RootContext, Gpadl->GpadlHandle);
-        Gpadl->GpadlHandle = 0;
+  if (Gpadl->GpadlHandle != 0) {
+    if (!VmbusRootValidateGpadl (channelContext->RootContext, Gpadl->GpadlHandle)) {
+      status = EFI_INVALID_PARAMETER;
+      DEBUG ((EFI_D_ERROR, "--- %a: invalid GPADL - %r \n", __func__, status));
+      return status;
     }
 
-    //
-    // Revoke host visibility on these pages as they may be reused once the
-    // GPADL has been deleted.
-    //
-    if (IsIsolated() &&
-        !Gpadl->Legacy &&
-        Gpadl->ProtectionHandle != NULL)
-    {
-        mHvIvm->MakeAddressRangeNotHostVisible(mHvIvm, &Gpadl->ProtectionHandle);
-    }
+    VmbusRootInitializeMessage (
+      &sendMessage,
+      ChannelMessageGpadlTeardown,
+      sizeof (sendMessage.GpadlTeardown)
+      );
 
-    //
-    // Legacy GPADL objects are not allocated; they are stack locals in the
-    // legacy entry points, and therefore should not be freed.  All other
-    // GPADL objects were allocated by PrepareGpadl and therefore should be
-    // freed here.
-    //
-    if (!Gpadl->Legacy)
-    {
-        FreePool(Gpadl);
-    }
+    sendMessage.GpadlTeardown.ChildRelId = channelContext->ChannelId;
+    sendMessage.GpadlTeardown.Gpadl      = Gpadl->GpadlHandle;
+    VmbusRootSendMessage (channelContext->RootContext, &sendMessage);
+    status = VmbusRootWaitForGpadlResponse (
+               channelContext->RootContext,
+               Gpadl->GpadlHandle,
+               &receiveMessage
+               );
 
-    return EFI_SUCCESS;
+    ASSERT_EFI_ERROR (status);
+
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Size == sizeof (receiveMessage->GpadlTorndown));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Header.MessageType == ChannelMessageGpadlTorndown);
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->GpadlTorndown.Gpadl == Gpadl->GpadlHandle);
+
+    VmbusRootReclaimGpadl (channelContext->RootContext, Gpadl->GpadlHandle);
+    Gpadl->GpadlHandle = 0;
+  }
+
+  //
+  // Revoke host visibility on these pages as they may be reused once the
+  // GPADL has been deleted.
+  //
+  if (IsIsolated () &&
+      !Gpadl->Legacy &&
+      (Gpadl->ProtectionHandle != NULL))
+  {
+    mHvIvm->MakeAddressRangeNotHostVisible (mHvIvm, &Gpadl->ProtectionHandle);
+  }
+
+  //
+  // Legacy GPADL objects are not allocated; they are stack locals in the
+  // legacy entry points, and therefore should not be freed.  All other
+  // GPADL objects were allocated by PrepareGpadl and therefore should be
+  // freed here.
+  //
+  if (!Gpadl->Legacy) {
+    FreePool (Gpadl);
+  }
+
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelDestroyGpadlLegacy (
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This,
-    IN  UINT32 GpadlHandle
-    )
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This,
+  IN  UINT32                     GpadlHandle
+  )
+
 /*++
 
 Routine Description:
@@ -546,31 +547,33 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    EFI_VMBUS_GPADL gpadl;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  EFI_VMBUS_GPADL        gpadl;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    gpadl.AllocatedBuffer = NULL;
-    gpadl.VisibleBufferPA = 0;
-    gpadl.BufferLength = 0;
-    gpadl.NumberOfPages = 0;
-    gpadl.GpadlHandle = GpadlHandle;
-    gpadl.Legacy = TRUE;
+  gpadl.AllocatedBuffer = NULL;
+  gpadl.VisibleBufferPA = 0;
+  gpadl.BufferLength    = 0;
+  gpadl.NumberOfPages   = 0;
+  gpadl.GpadlHandle     = GpadlHandle;
+  gpadl.Legacy          = TRUE;
 
-    return VmbusChannelDestroyGpadl(&channelContext->VmbusProtocol, &gpadl);
-
+  return VmbusChannelDestroyGpadl (&channelContext->VmbusProtocol, &gpadl);
 }
 
 UINT32
 EFIAPI
-VmbusChannelGetGpadlHandle(
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_VMBUS_GPADL *Gpadl
-    )
+VmbusChannelGetGpadlHandle (
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_VMBUS_GPADL     *Gpadl
+  )
+
 /*++
 
 Routine Description:
@@ -589,16 +592,16 @@ Return Value:
 
 --*/
 {
-    return Gpadl->GpadlHandle;
+  return Gpadl->GpadlHandle;
 }
 
-
-VOID*
+VOID *
 EFIAPI
-VmbusChannelGetGpadlBuffer(
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_VMBUS_GPADL *Gpadl
-    )
+VmbusChannelGetGpadlBuffer (
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_VMBUS_GPADL     *Gpadl
+  )
+
 /*++
 
 Routine Description:
@@ -618,24 +621,21 @@ Return Value:
 
 --*/
 {
-    if (Gpadl->VisibleBufferPA >= mSharedGpaBoundary)
-    {
-        return (VOID*)(Gpadl->VisibleBufferPA | mCanonicalizationMask);
-    }
-    else
-    {
-        return (VOID*)Gpadl->VisibleBufferPA;
-    }
+  if (Gpadl->VisibleBufferPA >= mSharedGpaBoundary) {
+    return (VOID *)(Gpadl->VisibleBufferPA | mCanonicalizationMask);
+  } else {
+    return (VOID *)Gpadl->VisibleBufferPA;
+  }
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelOpenChannel (
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_VMBUS_GPADL *RingBufferGpadl,
-    IN  UINT32 RingBufferPageOffset
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_VMBUS_GPADL     *RingBufferGpadl,
+  IN  UINT32              RingBufferPageOffset
+  )
+
 /*++
 
 Routine Description:
@@ -661,47 +661,50 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    VMBUS_MESSAGE sendMessage;
-    VMBUS_MESSAGE *receiveMessage;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  VMBUS_MESSAGE          sendMessage;
+  VMBUS_MESSAGE          *receiveMessage;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    VmbusRootInitializeMessage(&sendMessage,
-                               ChannelMessageOpenChannel,
-                               sizeof(sendMessage.OpenChannel));
+  VmbusRootInitializeMessage (
+    &sendMessage,
+    ChannelMessageOpenChannel,
+    sizeof (sendMessage.OpenChannel)
+    );
 
-    sendMessage.OpenChannel.ChildRelId = channelContext->ChannelId;
-    sendMessage.OpenChannel.RingBufferGpadlHandle = RingBufferGpadl->GpadlHandle;
-    sendMessage.OpenChannel.DownstreamRingBufferPageOffset = RingBufferPageOffset;
-    sendMessage.OpenChannel.TargetVp = mHv->GetCurrentVpIndex(mHv);
-    VmbusRootSendMessage(channelContext->RootContext, &sendMessage);
-    receiveMessage = VmbusRootWaitForChannelResponse(channelContext);
+  sendMessage.OpenChannel.ChildRelId                     = channelContext->ChannelId;
+  sendMessage.OpenChannel.RingBufferGpadlHandle          = RingBufferGpadl->GpadlHandle;
+  sendMessage.OpenChannel.DownstreamRingBufferPageOffset = RingBufferPageOffset;
+  sendMessage.OpenChannel.TargetVp                       = mHv->GetCurrentVpIndex (mHv);
+  VmbusRootSendMessage (channelContext->RootContext, &sendMessage);
+  receiveMessage = VmbusRootWaitForChannelResponse (channelContext);
 
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Size == sizeof(receiveMessage->OpenResult));
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->Header.MessageType == ChannelMessageOpenChannelResult);
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE(receiveMessage->OpenResult.ChildRelId == channelContext->ChannelId);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Size == sizeof (receiveMessage->OpenResult));
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->Header.MessageType == ChannelMessageOpenChannelResult);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (receiveMessage->OpenResult.ChildRelId == channelContext->ChannelId);
 
-    if (receiveMessage->OpenResult.Status != 0)
-    {
-        DEBUG((EFI_D_ERROR, "--- %a: could not open the channel - %r \n", __func__, EFI_OUT_OF_RESOURCES));
-        return EFI_OUT_OF_RESOURCES;
-    }
+  if (receiveMessage->OpenResult.Status != 0) {
+    DEBUG ((EFI_D_ERROR, "--- %a: could not open the channel - %r \n", __func__, EFI_OUT_OF_RESOURCES));
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelOpenChannelLegacy (
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This,
-    IN  UINT32 RingBufferGpadlHandle,
-    IN  UINT32 RingBufferPageOffset
-    )
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This,
+  IN  UINT32                     RingBufferGpadlHandle,
+  IN  UINT32                     RingBufferPageOffset
+  )
+
 /*++
 
 Routine Description:
@@ -725,32 +728,36 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    EFI_VMBUS_GPADL gpadl;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  EFI_VMBUS_GPADL        gpadl;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    gpadl.AllocatedBuffer = NULL;
-    gpadl.VisibleBufferPA = 0;
-    gpadl.BufferLength = 0;
-    gpadl.NumberOfPages = 0;
-    gpadl.GpadlHandle = RingBufferGpadlHandle;
-    gpadl.Legacy = TRUE;
+  gpadl.AllocatedBuffer = NULL;
+  gpadl.VisibleBufferPA = 0;
+  gpadl.BufferLength    = 0;
+  gpadl.NumberOfPages   = 0;
+  gpadl.GpadlHandle     = RingBufferGpadlHandle;
+  gpadl.Legacy          = TRUE;
 
-    return VmbusChannelOpenChannel(&channelContext->VmbusProtocol,
-                                   &gpadl,
-                                   RingBufferPageOffset);
+  return VmbusChannelOpenChannel (
+           &channelContext->VmbusProtocol,
+           &gpadl,
+           RingBufferPageOffset
+           );
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelCloseChannel (
-    IN  EFI_VMBUS_PROTOCOL *This
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -768,29 +775,33 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
-    VMBUS_MESSAGE sendMessage;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
+  VMBUS_MESSAGE          sendMessage;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    VmbusRootInitializeMessage(&sendMessage,
-                               ChannelMessageCloseChannel,
-                               sizeof(sendMessage.CloseChannel));
+  VmbusRootInitializeMessage (
+    &sendMessage,
+    ChannelMessageCloseChannel,
+    sizeof (sendMessage.CloseChannel)
+    );
 
-    sendMessage.CloseChannel.ChildRelId = channelContext->ChannelId;
-    VmbusRootSendMessage(channelContext->RootContext, &sendMessage);
-    return EFI_SUCCESS;
+  sendMessage.CloseChannel.ChildRelId = channelContext->ChannelId;
+  VmbusRootSendMessage (channelContext->RootContext, &sendMessage);
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelCloseChannelLegacy (
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This
-    )
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -808,23 +819,25 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    return VmbusChannelCloseChannel(&channelContext->VmbusProtocol);
+  return VmbusChannelCloseChannel (&channelContext->VmbusProtocol);
 }
-
 
 EFI_STATUS
 EFIAPI
-VmbusChannelRegisterIsr(
-    IN  EFI_VMBUS_PROTOCOL *This,
-    IN  EFI_EVENT Event OPTIONAL
-    )
+VmbusChannelRegisterIsr (
+  IN  EFI_VMBUS_PROTOCOL  *This,
+  IN  EFI_EVENT           Event OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -843,35 +856,38 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    if (Event != NULL)
-    {
-        VmbusRootSetInterruptEntry(channelContext->RootContext,
-                                   channelContext->ChannelId,
-                                   Event);
-    }
-    else
-    {
-        VmbusRootClearInterruptEntry(channelContext->RootContext,
-                                     channelContext->ChannelId);
-    }
+  if (Event != NULL) {
+    VmbusRootSetInterruptEntry (
+      channelContext->RootContext,
+      channelContext->ChannelId,
+      Event
+      );
+  } else {
+    VmbusRootClearInterruptEntry (
+      channelContext->RootContext,
+      channelContext->ChannelId
+      );
+  }
 
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-VmbusChannelRegisterIsrLegacy(
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This,
-    IN  EFI_EVENT Event OPTIONAL
-    )
+VmbusChannelRegisterIsrLegacy (
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This,
+  IN  EFI_EVENT                  Event OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -890,22 +906,24 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    return VmbusChannelRegisterIsr(&channelContext->VmbusProtocol, Event);
+  return VmbusChannelRegisterIsr (&channelContext->VmbusProtocol, Event);
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelSendInterrupt (
-    IN  EFI_VMBUS_PROTOCOL *This
-    )
+  IN  EFI_VMBUS_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -923,24 +941,28 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        VmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     VmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    return mHv->SignalEvent(mHv,
-                            channelContext->ConnectionId,
-                            0);
+  return mHv->SignalEvent (
+                mHv,
+                channelContext->ConnectionId,
+                0
+                );
 }
-
 
 EFI_STATUS
 EFIAPI
 VmbusChannelSendInterruptLegacy (
-    IN  EFI_VMBUS_LEGACY_PROTOCOL *This
-    )
+  IN  EFI_VMBUS_LEGACY_PROTOCOL  *This
+  )
+
 /*++
 
 Routine Description:
@@ -958,22 +980,25 @@ Return Value:
 
 --*/
 {
-    VMBUS_CHANNEL_CONTEXT *channelContext;
+  VMBUS_CHANNEL_CONTEXT  *channelContext;
 
-    channelContext = CR(This,
-                        VMBUS_CHANNEL_CONTEXT,
-                        LegacyVmbusProtocol,
-                        VMBUS_CHANNEL_CONTEXT_SIGNATURE);
+  channelContext = CR (
+                     This,
+                     VMBUS_CHANNEL_CONTEXT,
+                     LegacyVmbusProtocol,
+                     VMBUS_CHANNEL_CONTEXT_SIGNATURE
+                     );
 
-    return VmbusChannelSendInterrupt(&channelContext->VmbusProtocol);
+  return VmbusChannelSendInterrupt (&channelContext->VmbusProtocol);
 }
 
 VOID
-VmbusChannelInitializeContext(
-    IN OUT  VMBUS_CHANNEL_CONTEXT *ChannelContext,
-    IN      VMBUS_CHANNEL_OFFER_CHANNEL *Offer,
-    IN      VMBUS_ROOT_CONTEXT *RootContext
-    )
+VmbusChannelInitializeContext (
+  IN OUT  VMBUS_CHANNEL_CONTEXT        *ChannelContext,
+  IN      VMBUS_CHANNEL_OFFER_CHANNEL  *Offer,
+  IN      VMBUS_ROOT_CONTEXT           *RootContext
+  )
+
 /*++
 
 Routine Description:
@@ -994,72 +1019,71 @@ Return Value:
 
 --*/
 {
-    ZeroMem(ChannelContext, sizeof(*ChannelContext));
+  ZeroMem (ChannelContext, sizeof (*ChannelContext));
 
-    ChannelContext->Signature = VMBUS_CHANNEL_CONTEXT_SIGNATURE;
-    InitializeListHead(&ChannelContext->Link);
-    ChannelContext->DevicePath.VmbusRootNode = gVmbusRootNode;
-    CopyMem(&ChannelContext->DevicePath.VmbusChannelNode,
-            &gVmbusChannelNode,
-            sizeof(VMBUS_DEVICE_PATH));
+  ChannelContext->Signature = VMBUS_CHANNEL_CONTEXT_SIGNATURE;
+  InitializeListHead (&ChannelContext->Link);
+  ChannelContext->DevicePath.VmbusRootNode = gVmbusRootNode;
+  CopyMem (
+    &ChannelContext->DevicePath.VmbusChannelNode,
+    &gVmbusChannelNode,
+    sizeof (VMBUS_DEVICE_PATH)
+    );
 
-    ChannelContext->DevicePath.VmbusChannelNode.InterfaceType = Offer->InterfaceType;
-    ChannelContext->DevicePath.VmbusChannelNode.InterfaceInstance = Offer->InterfaceInstance;
-    ChannelContext->DevicePath.End = gEfiEndNode;
-    ChannelContext->ChannelId = Offer->ChildRelId;
-    ChannelContext->ConnectionId.AsUINT32 = Offer->ConnectionId;
-    ChannelContext->RootContext = RootContext;
-    gBS->CreateEvent(0,
-                     0,
-                     NULL,
-                     NULL,
-                     &ChannelContext->Response.Event);
+  ChannelContext->DevicePath.VmbusChannelNode.InterfaceType     = Offer->InterfaceType;
+  ChannelContext->DevicePath.VmbusChannelNode.InterfaceInstance = Offer->InterfaceInstance;
+  ChannelContext->DevicePath.End                                = gEfiEndNode;
+  ChannelContext->ChannelId                                     = Offer->ChildRelId;
+  ChannelContext->ConnectionId.AsUINT32                         = Offer->ConnectionId;
+  ChannelContext->RootContext                                   = RootContext;
+  gBS->CreateEvent (
+         0,
+         0,
+         NULL,
+         NULL,
+         &ChannelContext->Response.Event
+         );
 
-    ChannelContext->VmbusProtocol.PrepareGpadl = VmbusChannelPrepareGpadl;
-    ChannelContext->VmbusProtocol.CreateGpadl = VmbusChannelCreateGpadl;
-    ChannelContext->VmbusProtocol.DestroyGpadl = VmbusChannelDestroyGpadl;
-    ChannelContext->VmbusProtocol.GetGpadlHandle = VmbusChannelGetGpadlHandle;
-    ChannelContext->VmbusProtocol.GetGpadlBuffer = VmbusChannelGetGpadlBuffer;
-    ChannelContext->VmbusProtocol.OpenChannel = VmbusChannelOpenChannel;
-    ChannelContext->VmbusProtocol.CloseChannel = VmbusChannelCloseChannel;
-    ChannelContext->VmbusProtocol.RegisterIsr = VmbusChannelRegisterIsr;
-    ChannelContext->VmbusProtocol.SendInterrupt = VmbusChannelSendInterrupt;
+  ChannelContext->VmbusProtocol.PrepareGpadl   = VmbusChannelPrepareGpadl;
+  ChannelContext->VmbusProtocol.CreateGpadl    = VmbusChannelCreateGpadl;
+  ChannelContext->VmbusProtocol.DestroyGpadl   = VmbusChannelDestroyGpadl;
+  ChannelContext->VmbusProtocol.GetGpadlHandle = VmbusChannelGetGpadlHandle;
+  ChannelContext->VmbusProtocol.GetGpadlBuffer = VmbusChannelGetGpadlBuffer;
+  ChannelContext->VmbusProtocol.OpenChannel    = VmbusChannelOpenChannel;
+  ChannelContext->VmbusProtocol.CloseChannel   = VmbusChannelCloseChannel;
+  ChannelContext->VmbusProtocol.RegisterIsr    = VmbusChannelRegisterIsr;
+  ChannelContext->VmbusProtocol.SendInterrupt  = VmbusChannelSendInterrupt;
 
-    ChannelContext->LegacyVmbusProtocol.CreateGpadl = VmbusChannelCreateGpadlLegacy;
-    ChannelContext->LegacyVmbusProtocol.DestroyGpadl = VmbusChannelDestroyGpadlLegacy;
-    ChannelContext->LegacyVmbusProtocol.OpenChannel = VmbusChannelOpenChannelLegacy;
-    ChannelContext->LegacyVmbusProtocol.CloseChannel = VmbusChannelCloseChannelLegacy;
-    ChannelContext->LegacyVmbusProtocol.RegisterIsr = VmbusChannelRegisterIsrLegacy;
-    ChannelContext->LegacyVmbusProtocol.SendInterrupt = VmbusChannelSendInterruptLegacy;
+  ChannelContext->LegacyVmbusProtocol.CreateGpadl   = VmbusChannelCreateGpadlLegacy;
+  ChannelContext->LegacyVmbusProtocol.DestroyGpadl  = VmbusChannelDestroyGpadlLegacy;
+  ChannelContext->LegacyVmbusProtocol.OpenChannel   = VmbusChannelOpenChannelLegacy;
+  ChannelContext->LegacyVmbusProtocol.CloseChannel  = VmbusChannelCloseChannelLegacy;
+  ChannelContext->LegacyVmbusProtocol.RegisterIsr   = VmbusChannelRegisterIsrLegacy;
+  ChannelContext->LegacyVmbusProtocol.SendInterrupt = VmbusChannelSendInterruptLegacy;
 
-    if (Offer->Flags & VMBUS_OFFER_FLAG_NAMED_PIPE_MODE)
-    {
-        ChannelContext->VmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE;
-        ChannelContext->LegacyVmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE;
+  if (Offer->Flags & VMBUS_OFFER_FLAG_NAMED_PIPE_MODE) {
+    ChannelContext->VmbusProtocol.Flags       |= EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE;
+    ChannelContext->LegacyVmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_PIPE_MODE;
+  }
+
+  if (VmbusRootSupportsFeatureFlag (RootContext, VMBUS_FEATURE_FLAG_CONFIDENTIAL_CHANNELS)) {
+    if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_RING_BUFFER) != 0) {
+      DEBUG ((EFI_D_INFO, "--- %a: channel uses confidential ring buffer - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+      ChannelContext->ConfidentialRing = TRUE;
     }
 
-    if (VmbusRootSupportsFeatureFlag(RootContext, VMBUS_FEATURE_FLAG_CONFIDENTIAL_CHANNELS))
-    {
-        if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_RING_BUFFER) != 0)
-        {
-            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential ring buffer - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
-            ChannelContext->ConfidentialRing = TRUE;
-        }
-
-        if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_EXTERNAL_MEMORY) != 0)
-        {
-            DEBUG((EFI_D_INFO, "--- %a: channel uses confidential external memory - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
-            ChannelContext->VmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY;
-        }
+    if ((Offer->Flags & VMBUS_OFFER_FLAG_CONFIDENTIAL_EXTERNAL_MEMORY) != 0) {
+      DEBUG ((EFI_D_INFO, "--- %a: channel uses confidential external memory - {%g}-{%g}-%u\n", __func__, Offer->InterfaceType, Offer->InterfaceInstance, Offer->SubChannelIndex));
+      ChannelContext->VmbusProtocol.Flags |= EFI_VMBUS_PROTOCOL_FLAGS_CONFIDENTIAL_EXTERNAL_MEMORY;
     }
-
+  }
 }
 
-
 VOID
-VmbusChannelDestroyContext(
-    IN  VMBUS_CHANNEL_CONTEXT *ChannelContext
-    )
+VmbusChannelDestroyContext (
+  IN  VMBUS_CHANNEL_CONTEXT  *ChannelContext
+  )
+
 /*++
 
 Routine Description:
@@ -1076,10 +1100,8 @@ Return Value:
 
 --*/
 {
-    if (ChannelContext->Response.Event != NULL)
-    {
-        gBS->CloseEvent(ChannelContext->Response.Event);
-        ChannelContext->Response.Event = NULL;
-    }
+  if (ChannelContext->Response.Event != NULL) {
+    gBS->CloseEvent (ChannelContext->Response.Event);
+    ChannelContext->Response.Event = NULL;
+  }
 }
-

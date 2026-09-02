@@ -12,11 +12,10 @@
 //
 // Device status code groups
 //
-typedef enum
-{
-    DeviceStatusBootGroup       = 0x00010000,
-    DeviceStatusSecureBootGroup = 0x00020000,
-    DeviceStatusNetworkGroup    = 0x00030000
+typedef enum {
+  DeviceStatusBootGroup       = 0x00010000,
+  DeviceStatusSecureBootGroup = 0x00020000,
+  DeviceStatusNetworkGroup    = 0x00030000
 } BOOT_DEVICE_STATUS_GROUP;
 
 //
@@ -28,60 +27,58 @@ typedef enum
 // PlatformConsoleDeviceStatusString and the corresponding string table
 // in PlatformBdsString.uni must be updated
 //
-typedef enum
-{
-    BootPending = 0,
-    BootDeviceNoFilesystem              = DeviceStatusBootGroup,
-    BootDeviceNoLoader,
-    BootDeviceIncompatibleLoader,
-    BootDeviceReturnedFailure,
-    BootDeviceOsNotLoaded,
-    BootDeviceOsLoaded,
-    BootDeviceNoDevices,
-    BootDeviceLoadError,
-    SecureBootFailed                    = DeviceStatusSecureBootGroup,
-    SecureBootPolicyDenied,
-    SecureBootHashDenied,
-    SecureBootCertDenied,
-    SecureBootInvalidImage,
-    SecureBootUnsignedHashNotInDb,
-    SecureBootSignedHashNotFound,
-    SecureBootNeitherCertNorHashInDb,
-    NetworkBootMediaDisconnected        = DeviceStatusNetworkGroup,
-    NetworkBootDhcpFailed,
-    NetworkBootNoResponse,
-    NetworkBootBufferTooSmall,
-    NetworkBootDeviceError,
-    NetworkBootNoResources,
-    NetworkBootServerTimeout,
-    NetworkBootCancelled,
-    NetworkBootIcmpError,
-    NetworkBootTftpError,
-    NetworkBootNoBootFile,
-    NetworkBootUnexpectedFailure
+typedef enum {
+  BootPending            = 0,
+  BootDeviceNoFilesystem = DeviceStatusBootGroup,
+  BootDeviceNoLoader,
+  BootDeviceIncompatibleLoader,
+  BootDeviceReturnedFailure,
+  BootDeviceOsNotLoaded,
+  BootDeviceOsLoaded,
+  BootDeviceNoDevices,
+  BootDeviceLoadError,
+  SecureBootFailed = DeviceStatusSecureBootGroup,
+  SecureBootPolicyDenied,
+  SecureBootHashDenied,
+  SecureBootCertDenied,
+  SecureBootInvalidImage,
+  SecureBootUnsignedHashNotInDb,
+  SecureBootSignedHashNotFound,
+  SecureBootNeitherCertNorHashInDb,
+  NetworkBootMediaDisconnected = DeviceStatusNetworkGroup,
+  NetworkBootDhcpFailed,
+  NetworkBootNoResponse,
+  NetworkBootBufferTooSmall,
+  NetworkBootDeviceError,
+  NetworkBootNoResources,
+  NetworkBootServerTimeout,
+  NetworkBootCancelled,
+  NetworkBootIcmpError,
+  NetworkBootTftpError,
+  NetworkBootNoBootFile,
+  NetworkBootUnexpectedFailure
 } BOOT_DEVICE_STATUS;
 
 //
 // Returns the group portion of a BOOT_DEVICE_STATUS
 // See BOOT_DEVICE_STATUS_GROUP
 //
-#define GET_BOOT_DEVICE_STATUS_GROUP(status)    ((status) & 0xFFFF0000)
+#define GET_BOOT_DEVICE_STATUS_GROUP(status)  ((status) & 0xFFFF0000)
 
 //
 // Event Id for Device Boot Attempts
 //
-#define BOOT_DEVICE_EVENT_ID        1
+#define BOOT_DEVICE_EVENT_ID  1
 
 //
 // Information logged for a boot device.
 //
-typedef struct
-{
-    BOOT_DEVICE_STATUS          Status;
-    EFI_STATUS                  ExtendedStatus;
-    UINT16                      BootVariableNumber;
-    UINT32                      DevicePathSize;
-    UINT8                       DevicePath[];
+typedef struct {
+  BOOT_DEVICE_STATUS    Status;
+  EFI_STATUS            ExtendedStatus;
+  UINT16                BootVariableNumber;
+  UINT32                DevicePathSize;
+  UINT8                 DevicePath[];
 } BOOTEVENT_DEVICE_ENTRY;
 
 #define BOOT_EVENT_CHANNEL_GUID \

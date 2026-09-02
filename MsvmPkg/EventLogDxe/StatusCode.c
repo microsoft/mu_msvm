@@ -23,45 +23,42 @@
 
 EFI_STATUS
 EFIAPI
-ReportStatusCode(
-  IN  EFI_STATUS_CODE_TYPE     CodeType,
-  IN  EFI_STATUS_CODE_VALUE    Value,
-  IN  UINT32                   Instance,
-  IN  EFI_GUID                 *CallerId OPTIONAL,
-  IN  EFI_STATUS_CODE_DATA     *Data OPTIONAL
+ReportStatusCode (
+  IN  EFI_STATUS_CODE_TYPE   CodeType,
+  IN  EFI_STATUS_CODE_VALUE  Value,
+  IN  UINT32                 Instance,
+  IN  EFI_GUID               *CallerId OPTIONAL,
+  IN  EFI_STATUS_CODE_DATA   *Data OPTIONAL
   );
-
 
 //
 // GUID for status code event channel.
 //
-extern EFI_GUID gBootEventChannelGuid;
-extern EFI_GUID gStatusCodeEventChannelGuid;
+extern EFI_GUID  gBootEventChannelGuid;
+extern EFI_GUID  gStatusCodeEventChannelGuid;
 
-EFI_HANDLE  mEfiStatusCodeEventHandle;
+EFI_HANDLE         mEfiStatusCodeEventHandle;
 STATIC EFI_HANDLE  mBootEvent = INVALID_EVENT_HANDLE;
 
 //
 // CallerId field is valid.
 //
-#define EFI_STATUS_EVENT_HAS_CALLER_GUID    0x00000001
+#define EFI_STATUS_EVENT_HAS_CALLER_GUID  0x00000001
 //
 // Data field is valid.
 //
-#define EFI_STATUS_EVENT_HAS_DATA           0x00000002
+#define EFI_STATUS_EVENT_HAS_DATA  0x00000002
 
 //
 // Status code event log entry.
 //
-typedef struct
-{
-    UINT32                  Flags;
-    EFI_STATUS_CODE_VALUE   Value;
-    UINT32                  Instance;
-    EFI_GUID                CallerId;
-    EFI_STATUS_CODE_DATA    Data;
+typedef struct {
+  UINT32                   Flags;
+  EFI_STATUS_CODE_VALUE    Value;
+  UINT32                   Instance;
+  EFI_GUID                 CallerId;
+  EFI_STATUS_CODE_DATA     Data;
 } EFI_STATUS_CODE_EVENT;
-
 
 STATIC
 VOID
@@ -69,15 +66,14 @@ BootEventChannelInitialize (
   VOID
   )
 {
-    EVENT_CHANNEL_INFO Attributes;
+  EVENT_CHANNEL_INFO  Attributes;
 
-    Attributes.Flags      = 0;
-    Attributes.RecordSize = 0;
-    Attributes.BufferSize = PcdGet32 (PcdBootEventLogSize);
-    Attributes.Tpl        = TPL_NOTIFY;
-    (VOID)EventChannelCreate (&gBootEventChannelGuid, &Attributes, &mBootEvent);
+  Attributes.Flags      = 0;
+  Attributes.RecordSize = 0;
+  Attributes.BufferSize = PcdGet32 (PcdBootEventLogSize);
+  Attributes.Tpl        = TPL_NOTIFY;
+  (VOID)EventChannelCreate (&gBootEventChannelGuid, &Attributes, &mBootEvent);
 }
-
 
 STATIC
 EFI_STATUS
@@ -88,39 +84,38 @@ BootDeviceEventStart (
   IN EFI_STATUS                      ExtendedStatus
   )
 {
-    BOOTEVENT_DEVICE_ENTRY  *BootEvent;
-    EFI_EVENT_DESCRIPTOR    EventDescriptor;
-    UINTN                   DevicePathSize;
-    EFI_STATUS              Status;
+  BOOTEVENT_DEVICE_ENTRY  *BootEvent;
+  EFI_EVENT_DESCRIPTOR    EventDescriptor;
+  UINTN                   DevicePathSize;
+  EFI_STATUS              Status;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE) {
-        return EFI_NOT_READY;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
 
-    DevicePathSize = GetDevicePathSize (DevicePath);
-    ASSERT (DevicePathSize < PcdGet32 (PcdBootEventLogSize));
+  DevicePathSize = GetDevicePathSize (DevicePath);
+  ASSERT (DevicePathSize < PcdGet32 (PcdBootEventLogSize));
 
-    BootEvent = AllocateZeroPool (DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
-    if (BootEvent == NULL) {
-        return EFI_OUT_OF_RESOURCES;
-    }
+  BootEvent = AllocateZeroPool (DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
+  if (BootEvent == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-    BootEvent->Status             = InitialStatus;
-    BootEvent->ExtendedStatus     = ExtendedStatus;
-    BootEvent->DevicePathSize     = (UINT32)DevicePathSize;
-    BootEvent->BootVariableNumber = BootVariableNumber;
-    CopyMem (BootEvent->DevicePath, DevicePath, DevicePathSize);
+  BootEvent->Status             = InitialStatus;
+  BootEvent->ExtendedStatus     = ExtendedStatus;
+  BootEvent->DevicePathSize     = (UINT32)DevicePathSize;
+  BootEvent->BootVariableNumber = BootVariableNumber;
+  CopyMem (BootEvent->DevicePath, DevicePath, DevicePathSize);
 
-    ZeroMem (&EventDescriptor, sizeof (EventDescriptor));
-    EventDescriptor.Flags    = EVENT_FLAG_PENDING;
-    EventDescriptor.EventId  = BOOT_DEVICE_EVENT_ID;
-    EventDescriptor.DataSize = (UINT32)(DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
-    Status = EventLog (mBootEvent, &EventDescriptor, BootEvent);
+  ZeroMem (&EventDescriptor, sizeof (EventDescriptor));
+  EventDescriptor.Flags    = EVENT_FLAG_PENDING;
+  EventDescriptor.EventId  = BOOT_DEVICE_EVENT_ID;
+  EventDescriptor.DataSize = (UINT32)(DevicePathSize + sizeof (BOOTEVENT_DEVICE_ENTRY));
+  Status                   = EventLog (mBootEvent, &EventDescriptor, BootEvent);
 
-    FreePool (BootEvent);
-    return Status;
+  FreePool (BootEvent);
+  return Status;
 }
-
 
 STATIC
 EFI_STATUS
@@ -129,33 +124,32 @@ BootDeviceEventUpdate (
   IN EFI_STATUS          ExtendedStatus
   )
 {
-    BOOTEVENT_DEVICE_ENTRY  *BootEvent;
-    EFI_EVENT_DESCRIPTOR    EventDescriptor;
-    EFI_STATUS              EventStatus;
+  BOOTEVENT_DEVICE_ENTRY  *BootEvent;
+  EFI_EVENT_DESCRIPTOR    EventDescriptor;
+  EFI_STATUS              EventStatus;
 
-    if (mBootEvent == INVALID_EVENT_HANDLE) {
-        return EFI_NOT_READY;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
 
-    EventStatus = EventPendingGet (mBootEvent, &EventDescriptor, (VOID **)&BootEvent);
-    if (EFI_ERROR (EventStatus)) {
-        return EventStatus;
-    }
+  EventStatus = EventPendingGet (mBootEvent, &EventDescriptor, (VOID **)&BootEvent);
+  if (EFI_ERROR (EventStatus)) {
+    return EventStatus;
+  }
 
-    if (EventDescriptor.EventId != BOOT_DEVICE_EVENT_ID) {
-        return EFI_NOT_FOUND;
-    }
+  if (EventDescriptor.EventId != BOOT_DEVICE_EVENT_ID) {
+    return EFI_NOT_FOUND;
+  }
 
-    if (EventDescriptor.DataSize < sizeof (BOOTEVENT_DEVICE_ENTRY)) {
-        ASSERT (FALSE);
-        return EFI_INVALID_PARAMETER;
-    }
+  if (EventDescriptor.DataSize < sizeof (BOOTEVENT_DEVICE_ENTRY)) {
+    ASSERT (FALSE);
+    return EFI_INVALID_PARAMETER;
+  }
 
-    BootEvent->Status         = Status;
-    BootEvent->ExtendedStatus = ExtendedStatus;
-    return EFI_SUCCESS;
+  BootEvent->Status         = Status;
+  BootEvent->ExtendedStatus = ExtendedStatus;
+  return EFI_SUCCESS;
 }
-
 
 STATIC
 EFI_STATUS
@@ -163,13 +157,12 @@ BootDeviceEventComplete (
   VOID
   )
 {
-    if (mBootEvent == INVALID_EVENT_HANDLE) {
-        return EFI_NOT_READY;
-    }
+  if (mBootEvent == INVALID_EVENT_HANDLE) {
+    return EFI_NOT_READY;
+  }
 
-    return EventPendingCommit (mBootEvent);
+  return EventPendingCommit (mBootEvent);
 }
-
 
 /**
   Check if it's a Device Path pointing to BootManagerMenu.
@@ -181,24 +174,23 @@ BootDeviceEventComplete (
 **/
 BOOLEAN
 IsBootManagerMenuFilePath (
-  EFI_DEVICE_PATH_PROTOCOL     *DevicePath
-)
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  )
 {
-    EFI_HANDLE                      FvHandle;
-    VOID                            *NameGuid;
-    EFI_STATUS                      Status;
+  EFI_HANDLE  FvHandle;
+  VOID        *NameGuid;
+  EFI_STATUS  Status;
 
-    Status = gBS->LocateDevicePath (&gEfiFirmwareVolume2ProtocolGuid, &DevicePath, &FvHandle);
-    if (!EFI_ERROR (Status)) {
-        NameGuid = EfiGetNameGuidFromFwVolDevicePathNode ((CONST MEDIA_FW_VOL_FILEPATH_DEVICE_PATH *) DevicePath);
-        if (NameGuid != NULL) {
-            return CompareGuid (NameGuid, PcdGetPtr (PcdBootManagerMenuFile));
-        }
+  Status = gBS->LocateDevicePath (&gEfiFirmwareVolume2ProtocolGuid, &DevicePath, &FvHandle);
+  if (!EFI_ERROR (Status)) {
+    NameGuid = EfiGetNameGuidFromFwVolDevicePathNode ((CONST MEDIA_FW_VOL_FILEPATH_DEVICE_PATH *)DevicePath);
+    if (NameGuid != NULL) {
+      return CompareGuid (NameGuid, PcdGetPtr (PcdBootManagerMenuFile));
     }
+  }
 
-    return FALSE;
+  return FALSE;
 }
-
 
 /**
   Check if it's a Device Path pointing to Network Device.
@@ -210,48 +202,50 @@ IsBootManagerMenuFilePath (
 **/
 BOOLEAN
 IsNetworkDeviceFilePath (
-  EFI_DEVICE_PATH_PROTOCOL     *DevicePath
-)
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath
+  )
 {
-    VMBUS_DEVICE_PATH               *vmbusDevicePath;
-    VENDOR_DEVICE_PATH              *vendorDevicePath;
+  VMBUS_DEVICE_PATH   *vmbusDevicePath;
+  VENDOR_DEVICE_PATH  *vendorDevicePath;
 
-    while (!IsDevicePathEnd(DevicePath))
+  while (!IsDevicePathEnd (DevicePath)) {
+    if ((DevicePathType (DevicePath) == HARDWARE_DEVICE_PATH) &&
+        (DevicePathSubType (DevicePath) == HW_VENDOR_DP))
     {
-        if ((DevicePathType(DevicePath) == HARDWARE_DEVICE_PATH) &&
-            (DevicePathSubType(DevicePath) == HW_VENDOR_DP))
-        {
-            vendorDevicePath = (VENDOR_DEVICE_PATH*) DevicePath;
+      vendorDevicePath = (VENDOR_DEVICE_PATH *)DevicePath;
 
-            if (CompareGuid(
-                &vendorDevicePath->Guid,
-                &gEfiVmbusChannelDevicePathGuid))
-            {
-                vmbusDevicePath = (VMBUS_DEVICE_PATH*) DevicePath;
-                if (CompareGuid(
-                    &vmbusDevicePath->InterfaceType,
-                    &gSyntheticNetworkClassGuid))
-                {
-                    return TRUE;
-                }
-            }
+      if (CompareGuid (
+            &vendorDevicePath->Guid,
+            &gEfiVmbusChannelDevicePathGuid
+            ))
+      {
+        vmbusDevicePath = (VMBUS_DEVICE_PATH *)DevicePath;
+        if (CompareGuid (
+              &vmbusDevicePath->InterfaceType,
+              &gSyntheticNetworkClassGuid
+              ))
+        {
+          return TRUE;
         }
-        DevicePath = NextDevicePathNode(DevicePath);
+      }
     }
 
-    return FALSE;
-}
+    DevicePath = NextDevicePathNode (DevicePath);
+  }
 
+  return FALSE;
+}
 
 EFI_STATUS
 EFIAPI
-ReportStatusCode(
-    IN  EFI_STATUS_CODE_TYPE     CodeType,
-    IN  EFI_STATUS_CODE_VALUE    Value,
-    IN  UINT32                   Instance,
-    IN  EFI_GUID                *CallerId OPTIONAL,
-    IN  EFI_STATUS_CODE_DATA    *Data OPTIONAL
-    )
+ReportStatusCode (
+  IN  EFI_STATUS_CODE_TYPE   CodeType,
+  IN  EFI_STATUS_CODE_VALUE  Value,
+  IN  UINT32                 Instance,
+  IN  EFI_GUID               *CallerId OPTIONAL,
+  IN  EFI_STATUS_CODE_DATA   *Data OPTIONAL
+  )
+
 /*++
 
 Routine Description:
@@ -284,180 +278,165 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS_CODE_EVENT localEvent;
-    EFI_STATUS_CODE_EVENT *eventData = NULL;
-    EFI_EVENT_DESCRIPTOR eventDesc;
-    UINT32 size = 0;
-    static BOOLEAN EventAlreadyUpdated = FALSE;
+  EFI_STATUS_CODE_EVENT  localEvent;
+  EFI_STATUS_CODE_EVENT  *eventData = NULL;
+  EFI_EVENT_DESCRIPTOR   eventDesc;
+  UINT32                 size                = 0;
+  static BOOLEAN         EventAlreadyUpdated = FALSE;
 
-    ASSERT(EfiGetCurrentTpl() <= TPL_NOTIFY);
+  ASSERT (EfiGetCurrentTpl () <= TPL_NOTIFY);
 
-    if ((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_PROGRESS_CODE && Value == PcdGet32 (PcdProgressCodeOsLoaderLoad))
-    {
-        //
-        // Start a boot event for this device.
-        // Status for the boot device will be updated as needed in a distributed
-        // fashion (e.g. a PXE boot failure status will be update in the PXE code)
-        //
-        // The boot event will be completed before this function exits or
-        // in ExitBootServices.
-        //
-        // Set the initial boot status to indicate an I/O error.
-        // If an I/O error occurs, LoadImage doesn't return a useful
-        // status code.
-        //
-        // Note:
-        //   At this point the device path may not contain the Bootx64.efi
-        //   file path which may be appended later.  This omission is OK for
-        //   boot logging.
-        //
-        UINTN DevicePathData;
-        UINTN OptionNumber;
+  if (((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_PROGRESS_CODE) && (Value == PcdGet32 (PcdProgressCodeOsLoaderLoad))) {
+    //
+    // Start a boot event for this device.
+    // Status for the boot device will be updated as needed in a distributed
+    // fashion (e.g. a PXE boot failure status will be update in the PXE code)
+    //
+    // The boot event will be completed before this function exits or
+    // in ExitBootServices.
+    //
+    // Set the initial boot status to indicate an I/O error.
+    // If an I/O error occurs, LoadImage doesn't return a useful
+    // status code.
+    //
+    // Note:
+    //   At this point the device path may not contain the Bootx64.efi
+    //   file path which may be appended later.  This omission is OK for
+    //   boot logging.
+    //
+    UINTN  DevicePathData;
+    UINTN  OptionNumber;
 
-        if (Data != NULL && Data->Size == (sizeof(UINTN) * 2))
-        {
-           DevicePathData = *((UINTN *)(Data + 1));
+    if ((Data != NULL) && (Data->Size == (sizeof (UINTN) * 2))) {
+      DevicePathData = *((UINTN *)(Data + 1));
 
-           // Filter out FrontPage/BootManager
-           if (!IsBootManagerMenuFilePath((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData))
-           {
-              OptionNumber = *((UINTN *)(Data + 1) + 1);
-              DEBUG((DEBUG_INFO, "[HVBE] Starting new boot event. DP Ptr: 0x%X, OptionNumber: %d\n", DevicePathData, OptionNumber));
-              DEBUG((DEBUG_INFO, "[HVBE] DP: %s\n", ConvertDeviceNodeToText((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData, FALSE, FALSE)));
-              BootDeviceEventStart((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData, (UINT16)OptionNumber, BootDeviceOsLoaded, EFI_SUCCESS);
-           }
+      // Filter out FrontPage/BootManager
+      if (!IsBootManagerMenuFilePath ((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData)) {
+        OptionNumber = *((UINTN *)(Data + 1) + 1);
+        DEBUG ((DEBUG_INFO, "[HVBE] Starting new boot event. DP Ptr: 0x%X, OptionNumber: %d\n", DevicePathData, OptionNumber));
+        DEBUG ((DEBUG_INFO, "[HVBE] DP: %s\n", ConvertDeviceNodeToText ((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData, FALSE, FALSE)));
+        BootDeviceEventStart ((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData, (UINT16)OptionNumber, BootDeviceOsLoaded, EFI_SUCCESS);
+      }
 
-           EventAlreadyUpdated = FALSE;
+      EventAlreadyUpdated = FALSE;
+    }
+  } else if (((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_ERROR_CODE) && (Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_EC_BOOT_OPTION_LOAD_ERROR))) {
+    if (!EventAlreadyUpdated && (Data != NULL) && (Data->Size == (sizeof (UINTN) * 2))) {
+      UINTN  DevicePathData = *((UINTN *)(Data + 1));
+      UINTN  StatusCode     = *((UINTN *)(Data + 1) + 1);
+
+      if (GET_BOOT_DEVICE_STATUS_GROUP (StatusCode) == DeviceStatusSecureBootGroup) {
+        BootDeviceEventUpdate (StatusCode, EFI_ACCESS_DENIED);
+        DEBUG ((DEBUG_INFO, "[HVBE] Updating boot event: 0x%X, %r\n", StatusCode, EFI_ACCESS_DENIED));
+      } else if (IsNetworkDeviceFilePath ((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData)) {
+        BOOT_DEVICE_STATUS  DeviceStatus = NetworkBootUnexpectedFailure;
+        EFI_STATUS          Status       = (EFI_STATUS)StatusCode;
+
+        if (Status == EFI_BUFFER_TOO_SMALL) {
+          DeviceStatus = NetworkBootBufferTooSmall;
+        } else if (Status == EFI_DEVICE_ERROR) {
+          DeviceStatus = NetworkBootDeviceError;
+        } else if (Status == EFI_OUT_OF_RESOURCES) {
+          DeviceStatus = NetworkBootNoResources;
+        } else if (Status == EFI_NO_MEDIA) {
+          DeviceStatus = NetworkBootMediaDisconnected;
+        } else if (Status == EFI_NO_RESPONSE) {
+          DeviceStatus = NetworkBootNoResponse;
+        } else if (Status == EFI_TIMEOUT) {
+          DeviceStatus = NetworkBootServerTimeout;
+        } else if (Status == EFI_ABORTED) {
+          DeviceStatus = NetworkBootCancelled;
+        } else if (Status == EFI_ICMP_ERROR) {
+          DeviceStatus = NetworkBootIcmpError;
+        } else if (Status == EFI_TFTP_ERROR) {
+          DeviceStatus = NetworkBootTftpError;
+        } else if (Status == EFI_NOT_FOUND) {
+          DeviceStatus = NetworkBootNoBootFile;
+        } else {
+          DeviceStatus = NetworkBootUnexpectedFailure;
         }
+
+        BootDeviceEventUpdate (DeviceStatus, Status);
+        DEBUG ((DEBUG_INFO, "[HVBE] Updating boot event: 0x%X, %r\n", DeviceStatus, Status));
+      } else {
+        BootDeviceEventUpdate (BootDeviceOsNotLoaded, EFI_LOAD_ERROR);
+        DEBUG ((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceOsNotLoaded, EFI_LOAD_ERROR\n"));
+      }
+
+      BootDeviceEventComplete ();
+      DEBUG ((DEBUG_INFO, "[HVBE] Completing boot event\n"));
+      EventAlreadyUpdated = TRUE;
     }
-    else if ((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_ERROR_CODE && Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_EC_BOOT_OPTION_LOAD_ERROR))
-    {
-        if (!EventAlreadyUpdated && Data != NULL && Data->Size == (sizeof(UINTN) * 2))
-        {
-            UINTN DevicePathData = *((UINTN *)(Data + 1));
-            UINTN StatusCode = *((UINTN *)(Data + 1) + 1);
+  } else if (((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_ERROR_CODE) && (Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_EC_BOOT_OPTION_FAILED))) {
+    BootDeviceEventUpdate (BootDeviceReturnedFailure, EFI_NOT_STARTED);
+    DEBUG ((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceReturnedFailure, EFI_NOT_STARTED\n"));
+    BootDeviceEventComplete ();
+    DEBUG ((DEBUG_INFO, "[HVBE] Completing boot event\n"));
+  } else if (((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_PROGRESS_CODE) && (Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_PC_BOOT_OPTION_COMPLETE))) {
+    BootDeviceEventComplete ();
+    DEBUG ((DEBUG_INFO, "[HVBE] Completing boot event\n"));
+  }
 
-            if (GET_BOOT_DEVICE_STATUS_GROUP(StatusCode) == DeviceStatusSecureBootGroup)
-            {
-                BootDeviceEventUpdate(StatusCode, EFI_ACCESS_DENIED);
-                DEBUG((DEBUG_INFO, "[HVBE] Updating boot event: 0x%X, %r\n", StatusCode, EFI_ACCESS_DENIED));
-            }
-            else if (IsNetworkDeviceFilePath((EFI_DEVICE_PATH_PROTOCOL *)DevicePathData))
-            {
-                BOOT_DEVICE_STATUS DeviceStatus = NetworkBootUnexpectedFailure;
-                EFI_STATUS Status = (EFI_STATUS)StatusCode;
+  if ((Data != NULL) &&
+      (Data->HeaderSize >= sizeof (EFI_STATUS_CODE_DATA)))
+  {
+    //
+    // Subract out the size of the embedded EFI_STATUS_CODE_DATA
+    // to avoid over-allocating. The HeaderSize field will be set to the
+    // needed size.
+    //
+    size = (sizeof (EFI_STATUS_CODE_EVENT) - sizeof (EFI_STATUS_CODE_DATA)) +
+           Data->HeaderSize +
+           Data->Size;
 
-                if (Status == EFI_BUFFER_TOO_SMALL) {
-                  DeviceStatus = NetworkBootBufferTooSmall;
-                } else if (Status == EFI_DEVICE_ERROR) {
-                  DeviceStatus = NetworkBootDeviceError;
-                } else if (Status == EFI_OUT_OF_RESOURCES) {
-                  DeviceStatus = NetworkBootNoResources;
-                } else if (Status == EFI_NO_MEDIA) {
-                  DeviceStatus = NetworkBootMediaDisconnected;
-                } else if (Status == EFI_NO_RESPONSE) {
-                  DeviceStatus = NetworkBootNoResponse;
-                } else if (Status == EFI_TIMEOUT) {
-                  DeviceStatus = NetworkBootServerTimeout;
-                } else if (Status == EFI_ABORTED) {
-                  DeviceStatus = NetworkBootCancelled;
-                } else if (Status == EFI_ICMP_ERROR) {
-                  DeviceStatus = NetworkBootIcmpError;
-                } else if (Status == EFI_TFTP_ERROR) {
-                  DeviceStatus = NetworkBootTftpError;
-                } else if (Status == EFI_NOT_FOUND) {
-                  DeviceStatus = NetworkBootNoBootFile;
-                } else {
-                  DeviceStatus = NetworkBootUnexpectedFailure;
-                }
+    eventData = AllocateZeroPool (size);
 
-                BootDeviceEventUpdate(DeviceStatus, Status);
-                DEBUG((DEBUG_INFO, "[HVBE] Updating boot event: 0x%X, %r\n", DeviceStatus, Status));
-            }
-            else {
-               BootDeviceEventUpdate(BootDeviceOsNotLoaded, EFI_LOAD_ERROR);
-               DEBUG((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceOsNotLoaded, EFI_LOAD_ERROR\n"));
-            }
-
-            BootDeviceEventComplete();
-            DEBUG((DEBUG_INFO, "[HVBE] Completing boot event\n"));
-            EventAlreadyUpdated = TRUE;
-        }
+    if (eventData != NULL) {
+      CopyMem (&eventData->Data, Data, (Data->HeaderSize + Data->Size));
+      eventData->Flags |= EFI_STATUS_EVENT_HAS_DATA;
     }
-    else if ((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_ERROR_CODE && Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_EC_BOOT_OPTION_FAILED))
-    {
-        BootDeviceEventUpdate(BootDeviceReturnedFailure, EFI_NOT_STARTED);
-        DEBUG((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceReturnedFailure, EFI_NOT_STARTED\n"));
-        BootDeviceEventComplete();
-        DEBUG((DEBUG_INFO, "[HVBE] Completing boot event\n"));
-    }
-    else if ((CodeType & EFI_STATUS_CODE_TYPE_MASK) == EFI_PROGRESS_CODE && Value == (EFI_SOFTWARE_DXE_BS_DRIVER | EFI_SW_DXE_BS_PC_BOOT_OPTION_COMPLETE))
-    {
-        BootDeviceEventComplete();
-        DEBUG((DEBUG_INFO, "[HVBE] Completing boot event\n"));
-    }
+  }
 
-    if ((Data != NULL) &&
-        (Data->HeaderSize >= sizeof(EFI_STATUS_CODE_DATA)))
-    {
-        //
-        // Subract out the size of the embedded EFI_STATUS_CODE_DATA
-        // to avoid over-allocating. The HeaderSize field will be set to the
-        // needed size.
-        //
-        size = (sizeof(EFI_STATUS_CODE_EVENT) - sizeof(EFI_STATUS_CODE_DATA)) +
-               Data->HeaderSize +
-               Data->Size;
+  if (eventData == NULL) {
+    //
+    // No data was provided or allocating memory failed.
+    // Fallback to the local event and drop the data.
+    //
+    ZeroMem (&localEvent, sizeof (localEvent));
+    size      = sizeof (EFI_STATUS_CODE_EVENT);
+    eventData = &localEvent;
+  }
 
-        eventData = AllocateZeroPool(size);
+  if (CallerId != NULL) {
+    CopyGuid (&eventData->CallerId, CallerId);
+    eventData->Flags |= EFI_STATUS_EVENT_HAS_CALLER_GUID;
+  }
 
-        if (eventData != NULL)
-        {
-            CopyMem(&eventData->Data, Data, (Data->HeaderSize + Data->Size));
-            eventData->Flags |= EFI_STATUS_EVENT_HAS_DATA;
-        }
-    }
+  eventData->Instance = Instance;
+  eventData->Value    = Value;
 
-    if (eventData == NULL)
-    {
-        //
-        // No data was provided or allocating memory failed.
-        // Fallback to the local event and drop the data.
-        //
-        ZeroMem(&localEvent, sizeof(localEvent));
-        size  = sizeof(EFI_STATUS_CODE_EVENT);
-        eventData = &localEvent;
-    }
+  ZeroMem (&eventDesc, sizeof (eventDesc));
+  eventDesc.EventId  = CodeType;    // Use as EventId
+  eventDesc.DataSize = size;
 
-    if (CallerId != NULL)
-    {
-        CopyGuid(&eventData->CallerId, CallerId);
-        eventData->Flags |= EFI_STATUS_EVENT_HAS_CALLER_GUID;
-    }
+  EventLog (
+    mEfiStatusCodeEventHandle,
+    &eventDesc,
+    eventData
+    );
 
-    eventData->Instance = Instance;
-    eventData->Value    = Value;
+  if (eventData != &localEvent) {
+    gBS->FreePool (eventData);
+  }
 
-    ZeroMem(&eventDesc, sizeof(eventDesc));
-    eventDesc.EventId  = CodeType;  // Use as EventId
-    eventDesc.DataSize = size;
-
-    EventLog(mEfiStatusCodeEventHandle,
-        &eventDesc,
-        eventData);
-
-    if (eventData != &localEvent)
-    {
-        gBS->FreePool(eventData);
-    }
-
-    return EFI_SUCCESS;
+  return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
-StatusCodeRuntimeInitialize()
+StatusCodeRuntimeInitialize (
+  )
+
 /*++
 
 Routine Description:
@@ -476,93 +455,90 @@ Return Value:
 
 --*/
 {
-    EVENT_CHANNEL_INFO                Attributes;
-    EFI_PEI_HOB_POINTERS              Hob;
-    MEMORY_STATUSCODE_PACKET_HEADER  *PacketHeader;
-    MEMORY_STATUSCODE_RECORD         *Record;
-    UINTN                             Index;
-    UINTN                             MaxRecordNumber;
-    EFI_STATUS                        Status;
-    EFI_RSC_HANDLER_PROTOCOL          *RscHandlerProtocol = NULL;
+  EVENT_CHANNEL_INFO               Attributes;
+  EFI_PEI_HOB_POINTERS             Hob;
+  MEMORY_STATUSCODE_PACKET_HEADER  *PacketHeader;
+  MEMORY_STATUSCODE_RECORD         *Record;
+  UINTN                            Index;
+  UINTN                            MaxRecordNumber;
+  EFI_STATUS                       Status;
+  EFI_RSC_HANDLER_PROTOCOL         *RscHandlerProtocol = NULL;
 
-    DEBUG((DEBUG_INIT, "Initializing Status Code Event Channel\n"));
-    //
-    // Create the event channel for logging UEFI status codes.
-    //
-    Attributes.Flags      = EVENT_CHANNEL_OVERWRITE_RECORDS;
-    Attributes.BufferSize = PcdGet32(PcdStatusCodeEventLogSize);
-    Attributes.RecordSize = 0;
-    Attributes.Tpl        = TPL_NOTIFY;
+  DEBUG ((DEBUG_INIT, "Initializing Status Code Event Channel\n"));
+  //
+  // Create the event channel for logging UEFI status codes.
+  //
+  Attributes.Flags      = EVENT_CHANNEL_OVERWRITE_RECORDS;
+  Attributes.BufferSize = PcdGet32 (PcdStatusCodeEventLogSize);
+  Attributes.RecordSize = 0;
+  Attributes.Tpl        = TPL_NOTIFY;
 
-    Status = EventChannelCreate(&gStatusCodeEventChannelGuid, &Attributes, &mEfiStatusCodeEventHandle);
+  Status = EventChannelCreate (&gStatusCodeEventChannelGuid, &Attributes, &mEfiStatusCodeEventHandle);
 
-    if (EFI_ERROR(Status))
-    {
-        DEBUG((DEBUG_ERROR, "Failed to Create Status Code Event Channel. Error %08x\n", Status));
-        ASSERT(FALSE);
-        goto Exit;
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "Failed to Create Status Code Event Channel. Error %08x\n", Status));
+    ASSERT (FALSE);
+    goto Exit;
+  }
+
+  //
+  // EventLogDxe owns the event logger implementation, so use it directly
+  // rather than calling back through BootEventLogLib and the protocol.
+  //
+  BootEventChannelInitialize ();
+
+  //
+  // Replay Status code entries which were logged during the PEI phase.
+  // They are saved in a GUID HOB.
+  //
+  if (FeaturePcdGet (PcdStatusCodeReplayIn)) {
+    Hob.Raw = GetFirstGuidHob (&gMemoryStatusCodeRecordGuid);
+
+    if (Hob.Raw != NULL) {
+      PacketHeader    = (MEMORY_STATUSCODE_PACKET_HEADER *)GET_GUID_HOB_DATA (Hob.Guid);
+      MaxRecordNumber = (UINTN)PacketHeader->RecordIndex;
+      Record          = (MEMORY_STATUSCODE_RECORD *)(PacketHeader + 1);
+
+      if (PacketHeader->PacketIndex > 0) {
+        //
+        // RecordIndex has wrapped around. The record count is
+        // the maximum.
+        //
+        MaxRecordNumber = (UINTN)PacketHeader->MaxRecordsNumber;
+      }
+
+      //
+      // FUTURE: If the PEI status code ring buffer overflowed,
+      //  the buffer is not processed in order.
+      //   start at index RecordIndex,
+      //   go up and mask Index by the max size.
+      //   stop after processing MaxRecordNumber
+      //
+      for (Index = 0; Index < MaxRecordNumber; Index++) {
+        ReportStatusCode (
+          Record[Index].CodeType,
+          Record[Index].Value,
+          Record[Index].Instance,
+          NULL,            // PEI Phase events don't have a caller ID or extra data.
+          NULL
+          );
+      }
     }
+  }
 
-    //
-    // EventLogDxe owns the event logger implementation, so use it directly
-    // rather than calling back through BootEventLogLib and the protocol.
-    //
-    BootEventChannelInitialize ();
+  //
+  // Get Report Status Code Handler Protocol.
+  //
+  Status = gBS->LocateProtocol (&gEfiRscHandlerProtocolGuid, NULL, (VOID **)&RscHandlerProtocol);
+  ASSERT_EFI_ERROR (Status);
 
-    //
-    // Replay Status code entries which were logged during the PEI phase.
-    // They are saved in a GUID HOB.
-    //
-    if (FeaturePcdGet(PcdStatusCodeReplayIn))
-    {
-        Hob.Raw = GetFirstGuidHob(&gMemoryStatusCodeRecordGuid);
-
-        if (Hob.Raw != NULL)
-        {
-            PacketHeader    = (MEMORY_STATUSCODE_PACKET_HEADER *) GET_GUID_HOB_DATA (Hob.Guid);
-            MaxRecordNumber = (UINTN) PacketHeader->RecordIndex;
-            Record          = (MEMORY_STATUSCODE_RECORD *) (PacketHeader + 1);
-
-            if (PacketHeader->PacketIndex > 0)
-            {
-                //
-                // RecordIndex has wrapped around. The record count is
-                // the maximum.
-                //
-                MaxRecordNumber = (UINTN) PacketHeader->MaxRecordsNumber;
-            }
-
-            //
-            // FUTURE: If the PEI status code ring buffer overflowed,
-            //  the buffer is not processed in order.
-            //   start at index RecordIndex,
-            //   go up and mask Index by the max size.
-            //   stop after processing MaxRecordNumber
-            //
-            for (Index = 0; Index < MaxRecordNumber; Index++)
-            {
-                ReportStatusCode(Record[Index].CodeType,
-                    Record[Index].Value,
-                    Record[Index].Instance,
-                    NULL,  // PEI Phase events don't have a caller ID or extra data.
-                    NULL);
-            }
-        }
-    }
-
-    //
-    // Get Report Status Code Handler Protocol.
-    //
-    Status = gBS->LocateProtocol (&gEfiRscHandlerProtocolGuid, NULL, (VOID **) &RscHandlerProtocol);
-    ASSERT_EFI_ERROR (Status);
-
-    //
-    // Register report status code listener for Boot Events.
-    //
-    Status = RscHandlerProtocol->Register (ReportStatusCode, TPL_HIGH_LEVEL);
-    ASSERT_EFI_ERROR (Status);
+  //
+  // Register report status code listener for Boot Events.
+  //
+  Status = RscHandlerProtocol->Register (ReportStatusCode, TPL_HIGH_LEVEL);
+  ASSERT_EFI_ERROR (Status);
 
 Exit:
 
-    return Status;
+  return Status;
 }

@@ -44,11 +44,11 @@ SnpWaitForPacketNotify (
   }
 
   // MS_HYP_CHANGE BEGIN
-  NIC_DATA_INSTANCE *adapterInfo;
-  adapterInfo = &(((SNP_DRIVER *) SnpPtr)->AdapterContext->NicInfo);
-  if (!RxQueueIsEmpty(&adapterInfo->RxPacketQueue))
-  {
-  // MS_HYP_CHANGE END
+  NIC_DATA_INSTANCE  *adapterInfo;
+
+  adapterInfo = &(((SNP_DRIVER *)SnpPtr)->AdapterContext->NicInfo);
+  if (!RxQueueIsEmpty (&adapterInfo->RxPacketQueue)) {
+    // MS_HYP_CHANGE END
     gBS->SignalEvent (Event);
   }
 }

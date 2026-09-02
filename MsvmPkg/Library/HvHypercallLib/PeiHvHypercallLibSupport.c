@@ -10,21 +10,21 @@
 #include "UnreferencedParameter.h"
 
 EFI_TPL
-HvHypercallpDisableInterrupts(
-    VOID
-    )
+HvHypercallpDisableInterrupts (
+  VOID
+  )
 {
-    // In PEI, interrupts are always disabled. This value is passed
-    // back to HvHypercallpEnableInterrupts, which ignores it.
-    // This function is effectively no-op.
-    return TPL_APPLICATION;
+  // In PEI, interrupts are always disabled. This value is passed
+  // back to HvHypercallpEnableInterrupts, which ignores it.
+  // This function is effectively no-op.
+  return TPL_APPLICATION;
 }
 
 VOID
-HvHypercallpEnableInterrupts(
-    EFI_TPL Tpl
-    )
+HvHypercallpEnableInterrupts (
+  EFI_TPL  Tpl
+  )
 {
-    // In PEI, interrupts are always disabled. This function is a no-op.
-    UNREFERENCED_PARAMETER (Tpl);
+  // In PEI, interrupts are always disabled. This function is a no-op.
+  UNREFERENCED_PARAMETER (Tpl);
 }

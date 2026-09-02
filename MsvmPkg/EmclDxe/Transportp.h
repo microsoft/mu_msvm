@@ -12,6 +12,6 @@
 #include <Vmbus/VmbusPacketFormat.h>
 
 EFI_STATUS
-PkpInitRingBufferControl(
-    IN OUT PPACKET_LIB_CONTEXT Context
-    );
+PkpInitRingBufferControl (
+  IN OUT PPACKET_LIB_CONTEXT  Context
+  );

@@ -27,36 +27,34 @@ UINT16  mMaximalValidYear;
 
 #include <IsolationTypes.h>
 
-#if defined(MDE_CPU_AARCH64)
+#if defined (MDE_CPU_AARCH64)
 
-#include <Library/BiosDeviceLib.h>
-#include <BiosInterface.h>
+  #include <Library/BiosDeviceLib.h>
+  #include <BiosInterface.h>
 
 //
 // The struct used to marshal EFI_TIME to the BiosDevice.
 //
-#pragma pack(push, 1)
+  #pragma pack(push, 1)
 
-typedef struct _VM_EFI_TIME
-{
-    EFI_STATUS Status;
-    EFI_TIME   Time;
+typedef struct _VM_EFI_TIME {
+  EFI_STATUS    Status;
+  EFI_TIME      Time;
 } VM_EFI_TIME, *PVM_EFI_TIME;
 
-#pragma pack(pop)
+  #pragma pack(pop)
 
 //
 // Descriptor and Data buffers
 //
-static EFI_PHYSICAL_ADDRESS         mTimeBufferGpa   = 0;
-static PVM_EFI_TIME                 mTimeBuffer      = NULL;
+static EFI_PHYSICAL_ADDRESS  mTimeBufferGpa = 0;
+static PVM_EFI_TIME          mTimeBuffer    = NULL;
 
 #endif
 
-BOOLEAN                mHardwareIsolatedWithNoParavisor = FALSE;
+BOOLEAN  mHardwareIsolatedWithNoParavisor = FALSE;
 
 // MS_HYP_CHANGE END
-
 
 /**
   Returns the current time and date information, and the time-keeping capabilities
@@ -78,59 +76,54 @@ PcRtcEfiGetTime (
   OUT EFI_TIME_CAPABILITIES  *Capabilities  OPTIONAL
   )
 {
-
   // MS_HYP_CHANGE BEGIN
 
-  if (Time == NULL)
-  {
+  if (Time == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
-  if (mHardwareIsolatedWithNoParavisor)
-  {
+  if (mHardwareIsolatedWithNoParavisor) {
     //
     // Hardcode a zero value and return success here because the OS Loader will not
     // initialize if an error code is returned here.
     //
-    Time->Second = RTC_INIT_SECOND;
-    Time->Minute = RTC_INIT_MINUTE;
-    Time->Hour   = RTC_INIT_HOUR;
-    Time->Day    = RTC_INIT_DAY;
-    Time->Month  = RTC_INIT_MONTH;
-    Time->Year   = RTC_INIT_YEAR;
-    Time->Nanosecond  = 0;
-    Time->TimeZone = EFI_UNSPECIFIED_TIMEZONE;
-    Time->Daylight = 0;
+    Time->Second     = RTC_INIT_SECOND;
+    Time->Minute     = RTC_INIT_MINUTE;
+    Time->Hour       = RTC_INIT_HOUR;
+    Time->Day        = RTC_INIT_DAY;
+    Time->Month      = RTC_INIT_MONTH;
+    Time->Year       = RTC_INIT_YEAR;
+    Time->Nanosecond = 0;
+    Time->TimeZone   = EFI_UNSPECIFIED_TIMEZONE;
+    Time->Daylight   = 0;
     return EFI_SUCCESS;
   }
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
   //
   // Send intercept to get the current time.
   //
-  WriteBiosDevice(BiosConfigGetTime, (UINT32)mTimeBufferGpa);
+  WriteBiosDevice (BiosConfigGetTime, (UINT32)mTimeBufferGpa);
 
-  if (mTimeBuffer->Status != EFI_SUCCESS)
-  {
+  if (mTimeBuffer->Status != EFI_SUCCESS) {
     return mTimeBuffer->Status;
   }
 
   //
   // Copy time from BiosDevice into caller struct.
   //
-  CopyMem(Time, &mTimeBuffer->Time, sizeof(EFI_TIME));
+  CopyMem (Time, &mTimeBuffer->Time, sizeof (EFI_TIME));
 
   //
   // Report capabilities about our RTC device.
   //
-  if (Capabilities != NULL)
-  {
+  if (Capabilities != NULL) {
     Capabilities->Resolution = 1000;
     //
     // 1000 hertz
     //
-    Capabilities->Accuracy   = 50000000;
+    Capabilities->Accuracy = 50000000;
     //
     // 50 ppm
     //
@@ -139,13 +132,13 @@ PcRtcEfiGetTime (
 
   return EFI_SUCCESS;
 
-#else
+ #else
 
   // MS_HYP_CHANGE END
 
   return PcRtcGetTime (Time, Capabilities, &mModuleGlobal);
 
-#endif
+ #endif
 }
 
 /**
@@ -166,40 +159,38 @@ PcRtcEfiSetTime (
 {
   // MS_HYP_CHANGE BEGIN
 
-  if (Time == NULL)
-  {
+  if (Time == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
-  if (mHardwareIsolatedWithNoParavisor)
-  {
+  if (mHardwareIsolatedWithNoParavisor) {
     return EFI_UNSUPPORTED;
   }
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
   //
   // Copy parameters to buffer
   //
-  CopyMem(&mTimeBuffer->Time, Time, sizeof(EFI_TIME));
+  CopyMem (&mTimeBuffer->Time, Time, sizeof (EFI_TIME));
 
   //
   // Send intercept to BiosDevice to set time.
   //
-  WriteBiosDevice(BiosConfigSetTime, (UINT32)mTimeBufferGpa);
+  WriteBiosDevice (BiosConfigSetTime, (UINT32)mTimeBufferGpa);
 
   //
   // Return status set by BiosDevice.
   //
   return mTimeBuffer->Status;
 
-#else
+ #else
 
   // MS_HYP_CHANGE END
 
   return PcRtcSetTime (Time, &mModuleGlobal);
 
-#endif
+ #endif
 }
 
 /**
@@ -227,24 +218,22 @@ PcRtcEfiGetWakeupTime (
 {
   // MS_HYP_CHANGE BEGIN
 
-  if (mHardwareIsolatedWithNoParavisor)
-  {
+  if (mHardwareIsolatedWithNoParavisor) {
     return EFI_UNSUPPORTED;
   }
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
   return EFI_UNSUPPORTED;
 
-#else
+ #else
 
   // MS_HYP_CHANGE END
 
   return PcRtcGetWakeupTime (Enabled, Pending, Time, &mModuleGlobal);
 
-#endif
+ #endif
 }
-
 
 /**
   Sets the system wakeup alarm clock time.
@@ -269,22 +258,21 @@ PcRtcEfiSetWakeupTime (
 {
   // MS_HYP_CHANGE BEGIN
 
-  if (mHardwareIsolatedWithNoParavisor)
-  {
+  if (mHardwareIsolatedWithNoParavisor) {
     return EFI_UNSUPPORTED;
   }
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
   return EFI_UNSUPPORTED;
 
-#else
+ #else
 
   // MS_HYP_CHANGE END
 
   return PcRtcSetWakeupTime (Enabled, Time, &mModuleGlobal);
 
-#endif
+ #endif
 }
 
 /**
@@ -313,18 +301,17 @@ VirtualNotifyEvent (
 
   // MS_HYP_CHANGE BEGIN
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
   //
   // Physical addresses (GPAs) don't change. Get the new virtual address of
   // the time buffer.
   //
-  EfiConvertPointer(0x0, (VOID**)&mTimeBuffer);
+  EfiConvertPointer (0x0, (VOID **)&mTimeBuffer);
 
-#endif
+ #endif
 
   // MS_HYP_CHANGE END
-
 }
 
 //
@@ -427,37 +414,36 @@ InitializePcRtc (
   EDKII_VARIABLE_POLICY_PROTOCOL  *VariablePolicy = NULL;   // MU_CHANGE
 
   // MS_HYP_CHANGE BEGIN
-  BOOLEAN registerAddressChangeHandler = FALSE;
+  BOOLEAN  registerAddressChangeHandler = FALSE;
 
-  mHardwareIsolatedWithNoParavisor = IsHardwareIsolatedNoParavisor();
+  mHardwareIsolatedWithNoParavisor = IsHardwareIsolatedNoParavisor ();
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
   //
   // Allocate memory for Get/SetTime, under the 4GB boundry so 32 bit mmio
   // writes are ok.
   //
-  #define BELOW_4GB (0xFFFFFFFFULL)
+  #define BELOW_4GB  (0xFFFFFFFFULL)
   mTimeBufferGpa = BELOW_4GB;
-  Status = gBS->AllocatePages(AllocateMaxAddress,
-                              EfiRuntimeServicesData,
-                              EFI_SIZE_TO_PAGES(sizeof(VM_EFI_TIME)),
-                              &mTimeBufferGpa);
-  if (EFI_ERROR(Status))
-  {
+  Status         = gBS->AllocatePages (
+                          AllocateMaxAddress,
+                          EfiRuntimeServicesData,
+                          EFI_SIZE_TO_PAGES (sizeof (VM_EFI_TIME)),
+                          &mTimeBufferGpa
+                          );
+  if (EFI_ERROR (Status)) {
     mTimeBufferGpa = 0;
     ASSERT_EFI_ERROR (Status);
     return Status;
   }
 
-
   //
   // Addresses are identity mapped until runtime ie GVA == GPA.
   //
-  mTimeBuffer = (PVM_EFI_TIME)mTimeBufferGpa;
+  mTimeBuffer                  = (PVM_EFI_TIME)mTimeBufferGpa;
   registerAddressChangeHandler = TRUE;
-#else
+ #else
   // MS_HYP_CHANGE END
-
 
   EfiInitializeLock (&mModuleGlobal.RtcLock, TPL_CALLBACK);
   mModuleGlobal.CenturyRtcAddress = GetCenturyRtcAddress ();
@@ -476,35 +462,35 @@ InitializePcRtc (
 
   // MS_HYP_CHANGE BEGIN
   // Skip RTC device library init as none is present when isolated with no paravisor.
-  if (!mHardwareIsolatedWithNoParavisor)
-  {
-  // MS_HYP_CHANGE END
-    Status = PcRtcInit(&mModuleGlobal);
-    ASSERT_EFI_ERROR(Status);
+  if (!mHardwareIsolatedWithNoParavisor) {
+    // MS_HYP_CHANGE END
+    Status = PcRtcInit (&mModuleGlobal);
+    ASSERT_EFI_ERROR (Status);
 
-    Status = gBS->CreateEventEx(
-        EVT_NOTIFY_SIGNAL,
-        TPL_CALLBACK,
-        PcRtcAcpiTableChangeCallback,
-        NULL,
-        &gEfiAcpi10TableGuid,
-        &Event
-        );
-    ASSERT_EFI_ERROR(Status);
+    Status = gBS->CreateEventEx (
+                    EVT_NOTIFY_SIGNAL,
+                    TPL_CALLBACK,
+                    PcRtcAcpiTableChangeCallback,
+                    NULL,
+                    &gEfiAcpi10TableGuid,
+                    &Event
+                    );
+    ASSERT_EFI_ERROR (Status);
 
-    Status = gBS->CreateEventEx(
-        EVT_NOTIFY_SIGNAL,
-        TPL_CALLBACK,
-        PcRtcAcpiTableChangeCallback,
-        NULL,
-        &gEfiAcpiTableGuid,
-        &Event
-        );
-    ASSERT_EFI_ERROR(Status);
+    Status = gBS->CreateEventEx (
+                    EVT_NOTIFY_SIGNAL,
+                    TPL_CALLBACK,
+                    PcRtcAcpiTableChangeCallback,
+                    NULL,
+                    &gEfiAcpiTableGuid,
+                    &Event
+                    );
+    ASSERT_EFI_ERROR (Status);
 
-  // MS_HYP_CHANGE BEGIN
+    // MS_HYP_CHANGE BEGIN
   }
-#endif
+
+ #endif
   // MS_HYP_CHANGE END
 
   gRT->GetTime       = PcRtcEfiGetTime;
@@ -523,7 +509,8 @@ InitializePcRtc (
     goto Cleanup; // MS_HYP_CHANGE
   }
 
-  if (registerAddressChangeHandler || FeaturePcdGet (PcdRtcUseMmio)) {  // MS_HYP_CHANGE
+  if (registerAddressChangeHandler || FeaturePcdGet (PcdRtcUseMmio)) {
+    // MS_HYP_CHANGE
     // Register for the virtual address change event
     Status = gBS->CreateEventEx (
                     EVT_NOTIFY_SIGNAL,
@@ -540,19 +527,19 @@ InitializePcRtc (
 
 Cleanup:
 
-#if defined(MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_AARCH64)
 
-  if (EFI_ERROR(Status))
-  {
-    if (mTimeBufferGpa != 0)
-    {
-      gBS->FreePages(mTimeBufferGpa,
-                      EFI_SIZE_TO_PAGES(sizeof(VM_EFI_TIME)));
+  if (EFI_ERROR (Status)) {
+    if (mTimeBufferGpa != 0) {
+      gBS->FreePages (
+             mTimeBufferGpa,
+             EFI_SIZE_TO_PAGES (sizeof (VM_EFI_TIME))
+             );
       mTimeBufferGpa = 0;
     }
   }
 
-#endif
+ #endif
 
   // MS_HYP_CHANGE END
 

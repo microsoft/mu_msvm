@@ -58,7 +58,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32Statistics(
+SnpUndi32Statistics (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      Reset,
   IN OUT UINTN                    *StatisticsSize  OPTIONAL,
@@ -71,7 +71,7 @@ SnpUndi32Statistics(
   UINTN              Index;
   EFI_TPL            OldTpl;
   EFI_STATUS         Status;
-  NIC_DATA_INSTANCE *adapterInfo; // MS_HYP_CHANGE
+  NIC_DATA_INSTANCE  *adapterInfo; // MS_HYP_CHANGE
 
   //
   // Get pointer to SNP driver instance for *This.
@@ -80,7 +80,7 @@ SnpUndi32Statistics(
     return EFI_INVALID_PARAMETER;
   }
 
-  Snp = EFI_SIMPLE_NETWORK_DEV_FROM_THIS (This);
+  Snp         = EFI_SIMPLE_NETWORK_DEV_FROM_THIS (This);
   adapterInfo = &Snp->AdapterContext->NicInfo;  // MS_HYP_CHANGE
 
   OldTpl = gBS->RaiseTPL (TPL_CALLBACK);
@@ -112,7 +112,7 @@ SnpUndi32Statistics(
 
   // MS_HYP_CHANGE BEGIN
   if (Reset) {
-    NetvscResetStatistics(adapterInfo);
+    NetvscResetStatistics (adapterInfo);
     Status = EFI_SUCCESS;
     goto ON_EXIT;
   }
@@ -129,8 +129,8 @@ SnpUndi32Statistics(
   //
   // MS_HYP_CHANGE BEGIN
   ZeroMem (StatisticsTable, *StatisticsSize);
-  outStp  = (UINT64 *)StatisticsTable;
-  inStp   = (UINT64 *)&adapterInfo->Statistics;
+  outStp = (UINT64 *)StatisticsTable;
+  inStp  = (UINT64 *)&adapterInfo->Statistics;
 
   for (Index = 0; Index < 64; Index++, outStp++, inStp++) {
     //
@@ -141,7 +141,7 @@ SnpUndi32Statistics(
       break;
     }
 
-    *outStp  = *inStp;
+    *outStp = *inStp;
   }
 
   Size = Snp->AdapterContext->NicInfo.SupportedStatisticsSize;

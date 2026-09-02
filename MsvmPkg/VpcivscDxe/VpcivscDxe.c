@@ -18,84 +18,95 @@
 #include <Vmbus/NtStatus.h>
 #include <IsolationTypes.h>
 
-#define AZIHSM_VENDOR_ID 0x1414
-#define AZIHSM_DEVICE_ID 0xC003
+#define AZIHSM_VENDOR_ID  0x1414
+#define AZIHSM_DEVICE_ID  0xC003
 
-EFI_DRIVER_BINDING_PROTOCOL gVpcivscDriverBinding =
+EFI_DRIVER_BINDING_PROTOCOL  gVpcivscDriverBinding =
 {
-    VpcivscDriverBindingSupported,
-    VpcivscDriverBindingStart,
-    VpcivscDriverBindingStop,
-    VPCIVSC_DRIVER_VERSION,
-    NULL,
-    NULL
+  VpcivscDriverBindingSupported,
+  VpcivscDriverBindingStart,
+  VpcivscDriverBindingStop,
+  VPCIVSC_DRIVER_VERSION,
+  NULL,
+  NULL
 };
 
-VPCI_DEVICE_CONTEXT gVpciDeviceContextTemplate =
+VPCI_DEVICE_CONTEXT  gVpciDeviceContextTemplate =
 {
-    VPCI_DEVICE_CONTEXT_SIGNATURE,
-    { // PciIo Protocol
-        VpcivscPciIoPollMem,
-        VpcivscPciIoPollIo,
-        {
-            VpcivscPciIoMemRead,
-            VpcivscPciIoMemWrite
-        },
-        {
-            VpcivscPciIoIoRead,
-            VpcivscPciIoIoWrite
-        },
-        {
-            VpcivscPciIoConfigRead,
-            VpcivscPciIoConfigWrite
-        },
-        VpcivscPciIoCopyMem,
-        VpcivscPciIoMap,
-        VpcivscPciIoUnmap,
-        VpcivscPciIoAllocateBuffer,
-        VpcivscPciIoFreeBuffer,
-        VpcivscPciIoFlush,
-        VpcivscPciIoGetLocation,
-        VpcivscPciIoAttributes,
-        VpcivscPciIoGetBarAttributes,
-        VpcivscPciIoSetBarAttributes,
-        0, // RomSize
-        NULL // RomImage
+  VPCI_DEVICE_CONTEXT_SIGNATURE,
+  {   // PciIo Protocol
+    VpcivscPciIoPollMem,
+    VpcivscPciIoPollIo,
+    {
+      VpcivscPciIoMemRead,
+      VpcivscPciIoMemWrite
     },
-    0, // Handle
-    NULL, // DevicePath
-    {{{{0}}}}, // RawBars
-    {{0}}, // MappedBars
-    NULL, // VPCIVSC_CONTEXT *VpcivscContext
-    {{{0}}}, // Slot
+    {
+      VpcivscPciIoIoRead,
+      VpcivscPciIoIoWrite
+    },
+    {
+      VpcivscPciIoConfigRead,
+      VpcivscPciIoConfigWrite
+    },
+    VpcivscPciIoCopyMem,
+    VpcivscPciIoMap,
+    VpcivscPciIoUnmap,
+    VpcivscPciIoAllocateBuffer,
+    VpcivscPciIoFreeBuffer,
+    VpcivscPciIoFlush,
+    VpcivscPciIoGetLocation,
+    VpcivscPciIoAttributes,
+    VpcivscPciIoGetBarAttributes,
+    VpcivscPciIoSetBarAttributes,
+    0,     // RomSize
+    NULL   // RomImage
+  },
+  0,    // Handle
+  NULL, // DevicePath
+  {
+    {
+      {
+        { 0 }
+      }
+    }
+  },           // RawBars
+  {
+    { 0 }
+  },      // MappedBars
+  NULL,   // VPCIVSC_CONTEXT *VpcivscContext
+  {
+    {
+      { 0 }
+    }
+  },         // Slot
 };
 
-VPCIVSC_CONTEXT gVpcivscContextTemplate =
+VPCIVSC_CONTEXT  gVpcivscContextTemplate =
 {
-    VPCIVSC_CONTEXT_SIGNATURE, // Signature
-    0, // Handle
-    NULL, // Emcl
-    NULL, // DevicePath
-    NULL, // EFI_EVENT WaitForBusRelationsMessage
-    NULL, // VPCI_DEVICE_DESCRIPTION *Devices
-    0, // DeviceCount
-    NULL, // VPCI_DEVICE_CONTEXT *NvmeDevices
-    0, // NvmeDeviceCount
-    NULL, // VPCI_DEVICE_CONTEXT *AziHsmDevices
-    0, // AziHsmDeviceCount
+  VPCIVSC_CONTEXT_SIGNATURE, // Signature
+  0,                         // Handle
+  NULL,                      // Emcl
+  NULL,                      // DevicePath
+  NULL,                      // EFI_EVENT WaitForBusRelationsMessage
+  NULL,                      // VPCI_DEVICE_DESCRIPTION *Devices
+  0,                         // DeviceCount
+  NULL,                      // VPCI_DEVICE_CONTEXT *NvmeDevices
+  0,                         // NvmeDeviceCount
+  NULL,                      // VPCI_DEVICE_CONTEXT *AziHsmDevices
+  0,                         // AziHsmDeviceCount
 };
 
 // Packet completion structure used during packet completion callback
-typedef struct _VPCIVSC_COMPLETION_CONTEXT
-{
-    EFI_EVENT WaitForCompletion;
-    VOID* CompletionPacket;
-    UINT32 CompletionPacketLength;
-    UINT32 BytesCopied;
+typedef struct _VPCIVSC_COMPLETION_CONTEXT {
+  EFI_EVENT    WaitForCompletion;
+  VOID         *CompletionPacket;
+  UINT32       CompletionPacketLength;
+  UINT32       BytesCopied;
 } VPCIVSC_COMPLETION_CONTEXT, *PVPCIVSC_COMPLETION_CONTEXT;
 
-UINTN mSharedGpaBoundary;
-UINT64 mCanonicalizationMask;
+UINTN   mSharedGpaBoundary;
+UINT64  mCanonicalizationMask;
 
 //
 // VmBus incoming ring buffer page count
@@ -107,33 +118,37 @@ UINT64 mCanonicalizationMask;
 // or 8.5 4K pages, round up to nearest power of two for some breathing
 // room.
 //
-#define RING_BUFFER_INCOMING_PAGE_COUNT    16
-#define RING_BUFFER_OUTGOING_PAGE_COUNT    16
+#define RING_BUFFER_INCOMING_PAGE_COUNT  16
+#define RING_BUFFER_OUTGOING_PAGE_COUNT  16
 
 /// \brief      Debug print a VPCI device.
 ///
 /// \param[in]  Device  The device to print
 ///
 VOID
-DebugPrintVpciDevice(
-    CONST PVPCI_DEVICE_DESCRIPTION Device
-    )
+DebugPrintVpciDevice (
+  CONST PVPCI_DEVICE_DESCRIPTION  Device
+  )
 {
-    DEBUG((DEBUG_VPCI_INFO,
-        "ID:\n \t VendorId %x \n\t DeviceId %x \n\t RevisionId %x \n\t ProgIf %x \n\t SubClass %x \n\t BaseClass %x \n\t SubVendorID %x \n\t SubSystemID %x \n",
-        Device->IDs.VendorID,
-        Device->IDs.DeviceID,
-        Device->IDs.RevisionID,
-        Device->IDs.ProgIf,
-        Device->IDs.SubClass,
-        Device->IDs.BaseClass,
-        Device->IDs.SubVendorID,
-        Device->IDs.SubSystemID));
+  DEBUG ((
+    DEBUG_VPCI_INFO,
+    "ID:\n \t VendorId %x \n\t DeviceId %x \n\t RevisionId %x \n\t ProgIf %x \n\t SubClass %x \n\t BaseClass %x \n\t SubVendorID %x \n\t SubSystemID %x \n",
+    Device->IDs.VendorID,
+    Device->IDs.DeviceID,
+    Device->IDs.RevisionID,
+    Device->IDs.ProgIf,
+    Device->IDs.SubClass,
+    Device->IDs.BaseClass,
+    Device->IDs.SubVendorID,
+    Device->IDs.SubSystemID
+    ));
 
-    DEBUG((DEBUG_VPCI_INFO,
-        "Slot %x SerialNumber %x\n",
-        Device->Slot,
-        Device->SerialNumber));
+  DEBUG ((
+    DEBUG_VPCI_INFO,
+    "Slot %x SerialNumber %x\n",
+    Device->Slot,
+    Device->SerialNumber
+    ));
 }
 
 /// \brief      Checks if a given device is an NVME device or not.
@@ -143,18 +158,18 @@ DebugPrintVpciDevice(
 /// \return     True if NVME device, False otherwise.
 ///
 BOOLEAN
-IsNvmeDevice(
-    CONST PVPCI_DEVICE_DESCRIPTION Device
-    )
+IsNvmeDevice (
+  CONST PVPCI_DEVICE_DESCRIPTION  Device
+  )
 {
-    if (Device->IDs.BaseClass == 0x1 &&
-        Device->IDs.SubClass == 0x8 &&
-        Device->IDs.ProgIf == 0x2)
-    {
-        return TRUE;
-    }
+  if ((Device->IDs.BaseClass == 0x1) &&
+      (Device->IDs.SubClass == 0x8) &&
+      (Device->IDs.ProgIf == 0x2))
+  {
+    return TRUE;
+  }
 
-    return FALSE;
+  return FALSE;
 }
 
 /// \brief      Checks if a given device is an Azure Integrated HSM device or not.
@@ -164,19 +179,18 @@ IsNvmeDevice(
 /// \return     True if Azure Integrated HSM device, False otherwise.
 ///
 BOOLEAN
-IsAziHsmDevice(
-    CONST PVPCI_DEVICE_DESCRIPTION Device
-    )
+IsAziHsmDevice (
+  CONST PVPCI_DEVICE_DESCRIPTION  Device
+  )
 {
-    if (Device->IDs.VendorID == AZIHSM_VENDOR_ID &&  // Microsoft Vendor ID
-        Device->IDs.DeviceID == AZIHSM_DEVICE_ID)     // Azure Integrated HSM Device ID
-    {
-        return TRUE;
-    }
+  if ((Device->IDs.VendorID == AZIHSM_VENDOR_ID) &&  // Microsoft Vendor ID
+      (Device->IDs.DeviceID == AZIHSM_DEVICE_ID))    // Azure Integrated HSM Device ID
+  {
+    return TRUE;
+  }
 
-    return FALSE;
+  return FALSE;
 }
-
 
 /// \brief      The callback function called by EMCL when a packet is received
 ///             on the channel.
@@ -195,83 +209,81 @@ IsAziHsmDevice(
 /// \param[in]  Ranges             The EFI transfer ranges
 ///
 VOID
-VpciChannelReceivePacketCallback(
-    IN  VOID *ReceiveContext,
-    IN  VOID *PacketContext,
-    IN  VOID *Buffer,
-    IN  UINT32 BufferLength,
-    IN  UINT16 TransferPageSetId,
-    IN  UINT32 RangeCount,
-    IN  EFI_TRANSFER_RANGE *Ranges
-    )
+VpciChannelReceivePacketCallback (
+  IN  VOID                *ReceiveContext,
+  IN  VOID                *PacketContext,
+  IN  VOID                *Buffer,
+  IN  UINT32              BufferLength,
+  IN  UINT16              TransferPageSetId,
+  IN  UINT32              RangeCount,
+  IN  EFI_TRANSFER_RANGE  *Ranges
+  )
 {
-    PVPCIVSC_CONTEXT context = ReceiveContext;
-    PVPCI_PACKET_HEADER header = Buffer;
-    UINT32 sizeRequired = 0;
+  PVPCIVSC_CONTEXT     context      = ReceiveContext;
+  PVPCI_PACKET_HEADER  header       = Buffer;
+  UINT32               sizeRequired = 0;
 
-    if (BufferLength < sizeof(*header))
-    {
-        DEBUG((DEBUG_ERROR, "Recv VPCI channel packet less than header size!\n"));
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
+  if (BufferLength < sizeof (*header)) {
+    DEBUG ((DEBUG_ERROR, "Recv VPCI channel packet less than header size!\n"));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
+
+  // See if it's a VpciMsgBusRelations packet, those are the only ones we care about.
+
+  DEBUG ((DEBUG_VPCI_INFO, "Recv VPCI channel packet with type 0x%x, len 0x%x\n", header->MessageType, BufferLength));
+
+  if (header->MessageType == VpciMsgBusRelations) {
+    // Since this is data coming from the host, validate before proceeding
+    if (BufferLength < (UINT32)OFFSET_OF (VPCI_QUERY_BUS_RELATIONS, Devices)) {
+      DEBUG ((DEBUG_ERROR, "Recv VPCI channel packet very short\n"));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
     }
 
-    // See if it's a VpciMsgBusRelations packet, those are the only ones we care about.
+    PVPCI_QUERY_BUS_RELATIONS  busRelationsPacket = Buffer;
 
-    DEBUG((DEBUG_VPCI_INFO, "Recv VPCI channel packet with type 0x%x, len 0x%x\n", header->MessageType, BufferLength));
-
-    if (header->MessageType == VpciMsgBusRelations)
-    {
-        // Since this is data coming from the host, validate before proceeding
-        if (BufferLength < (UINT32) OFFSET_OF(VPCI_QUERY_BUS_RELATIONS, Devices))
-        {
-            DEBUG((DEBUG_ERROR, "Recv VPCI channel packet very short\n"));
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-        PVPCI_QUERY_BUS_RELATIONS busRelationsPacket = Buffer;
-
-        if (busRelationsPacket->DeviceCount > VPCI_MAX_DEVICES_PER_BUS)
-        {
-            DEBUG((DEBUG_ERROR, "Recv VPCI bus relations packet with too many devices (%d)\n", busRelationsPacket->DeviceCount));
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-
-        if (busRelationsPacket->DeviceCount == 0)
-        {
-            DEBUG((DEBUG_ERROR, "vpci child device list empty!\n"));
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-
-        DEBUG((DEBUG_VPCI_INFO, "Recv VpciMsgBusRelations packet, number of child devices 0x%x\n", busRelationsPacket->Devices));
-
-        sizeRequired = context->DeviceCount * sizeof(VPCI_DEVICE_DESCRIPTION) + OFFSET_OF(VPCI_QUERY_BUS_RELATIONS, Devices);
-
-        if (BufferLength < sizeRequired)
-        {
-            DEBUG((DEBUG_ERROR, "Recv VPCI bus relations packet with not enough size for all devices.  Size: %x\n", BufferLength));
-            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-        }
-
-        // Signal that we have received a valid VpciMsgBusRelations packet.
-        gBS->SignalEvent(context->WaitForBusRelationsMessage);
-
-        // Allocate a buffer to hold the child devices.
-        context->DeviceCount = busRelationsPacket->DeviceCount;
-        context->Devices = AllocateCopyPool(context->DeviceCount * sizeof(VPCI_DEVICE_DESCRIPTION),
-            busRelationsPacket->Devices);
-
-        DEBUG((DEBUG_VPCI_INFO, "Printing all child devices..\n"));
-        for (UINTN i = 0; i < context->DeviceCount; i++)
-        {
-            DebugPrintVpciDevice(&context->Devices[i]);
-        }
+    if (busRelationsPacket->DeviceCount > VPCI_MAX_DEVICES_PER_BUS) {
+      DEBUG ((DEBUG_ERROR, "Recv VPCI bus relations packet with too many devices (%d)\n", busRelationsPacket->DeviceCount));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
     }
 
-    // Complete the packet.
-    DEBUG((DEBUG_VPCI_INFO, "Completing VPCI recv packet.\n"));
-    context->Emcl->Base.CompletePacket(&context->Emcl->Base,
-        PacketContext,
-        Buffer,
-        BufferLength);
+    if (busRelationsPacket->DeviceCount == 0) {
+      DEBUG ((DEBUG_ERROR, "vpci child device list empty!\n"));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    DEBUG ((DEBUG_VPCI_INFO, "Recv VpciMsgBusRelations packet, number of child devices 0x%x\n", busRelationsPacket->Devices));
+
+    sizeRequired = context->DeviceCount * sizeof (VPCI_DEVICE_DESCRIPTION) + OFFSET_OF (VPCI_QUERY_BUS_RELATIONS, Devices);
+
+    if (BufferLength < sizeRequired) {
+      DEBUG ((DEBUG_ERROR, "Recv VPCI bus relations packet with not enough size for all devices.  Size: %x\n", BufferLength));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    // Signal that we have received a valid VpciMsgBusRelations packet.
+    gBS->SignalEvent (context->WaitForBusRelationsMessage);
+
+    // Allocate a buffer to hold the child devices.
+    context->DeviceCount = busRelationsPacket->DeviceCount;
+    context->Devices     = AllocateCopyPool (
+                             context->DeviceCount * sizeof (VPCI_DEVICE_DESCRIPTION),
+                             busRelationsPacket->Devices
+                             );
+
+    DEBUG ((DEBUG_VPCI_INFO, "Printing all child devices..\n"));
+    for (UINTN i = 0; i < context->DeviceCount; i++) {
+      DebugPrintVpciDevice (&context->Devices[i]);
+    }
+  }
+
+  // Complete the packet.
+  DEBUG ((DEBUG_VPCI_INFO, "Completing VPCI recv packet.\n"));
+  context->Emcl->Base.CompletePacket (
+                        &context->Emcl->Base,
+                        PacketContext,
+                        Buffer,
+                        BufferLength
+                        );
 }
 
 // \brief      Completion routine called by EMCL when sending a packet.
@@ -285,33 +297,32 @@ VpciChannelReceivePacketCallback(
 // \return     EFI_SUCCESS
 //
 void
-VpciChannelSendCompletionCallback(
-    IN  VOID *Context OPTIONAL,
-    IN  VOID *Buffer,
-    IN  UINT32 BufferLength
-    )
+VpciChannelSendCompletionCallback (
+  IN  VOID    *Context OPTIONAL,
+  IN  VOID    *Buffer,
+  IN  UINT32  BufferLength
+  )
 {
-    // Context is the response buffer info, check if big enough, copy if so
-    PVPCIVSC_COMPLETION_CONTEXT completionContext = Context;
+  // Context is the response buffer info, check if big enough, copy if so
+  PVPCIVSC_COMPLETION_CONTEXT  completionContext = Context;
 
-    DEBUG((DEBUG_VPCI_INFO, "Got vpci completion packet of size 0x%x\n", BufferLength));
+  DEBUG ((DEBUG_VPCI_INFO, "Got vpci completion packet of size 0x%x\n", BufferLength));
 
-    if ((completionContext->CompletionPacketLength != 0) &&
-            (BufferLength < completionContext->CompletionPacketLength))
-    {
-        DEBUG((DEBUG_ERROR, "Recv VPCI packet with unexpected size:\n"));
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-    }
+  if ((completionContext->CompletionPacketLength != 0) &&
+      (BufferLength < completionContext->CompletionPacketLength))
+  {
+    DEBUG ((DEBUG_ERROR, "Recv VPCI packet with unexpected size:\n"));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
 
-    if (completionContext->CompletionPacket != NULL)
-    {
-        UINT32 copyAmount = MIN(BufferLength, completionContext->CompletionPacketLength);
-        completionContext->BytesCopied = copyAmount;
+  if (completionContext->CompletionPacket != NULL) {
+    UINT32  copyAmount = MIN (BufferLength, completionContext->CompletionPacketLength);
+    completionContext->BytesCopied = copyAmount;
 
-        CopyMem(completionContext->CompletionPacket, Buffer, copyAmount);
-    }
+    CopyMem (completionContext->CompletionPacket, Buffer, copyAmount);
+  }
 
-    gBS->SignalEvent(completionContext->WaitForCompletion);
+  gBS->SignalEvent (completionContext->WaitForCompletion);
 }
 
 /// \brief      Sends a synchronous packet to the VSP.
@@ -328,85 +339,84 @@ VpciChannelSendCompletionCallback(
 /// \return     EFI_SUCCESS on successful send, error otherwise.
 ///
 EFI_STATUS
-VpciChannelSendPacketSync(
-    IN  PVPCIVSC_CONTEXT Context,
-    IN  VOID* Packet,
-    IN  UINT32 PacketLength,
-    OUT VOID* CompletionPacket OPTIONAL,
-    IN  UINT32 CompletionPacketSize OPTIONAL,
-    OUT UINT32* CompletionPacketBytesReceived OPTIONAL
-    )
+VpciChannelSendPacketSync (
+  IN  PVPCIVSC_CONTEXT  Context,
+  IN  VOID              *Packet,
+  IN  UINT32            PacketLength,
+  OUT VOID              *CompletionPacket OPTIONAL,
+  IN  UINT32            CompletionPacketSize OPTIONAL,
+  OUT UINT32            *CompletionPacketBytesReceived OPTIONAL
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    UINTN signaledEventIndex = 0;
-    VPCIVSC_COMPLETION_CONTEXT completionContext = { NULL, NULL, 0, 0 };
-    completionContext.CompletionPacket = CompletionPacket;
-    completionContext.CompletionPacketLength = CompletionPacketSize;
-    EFI_EVENT timerEvent;
-    EFI_EVENT waitList[2];
+  EFI_STATUS                  status             = EFI_DEVICE_ERROR;
+  UINTN                       signaledEventIndex = 0;
+  VPCIVSC_COMPLETION_CONTEXT  completionContext  = { NULL, NULL, 0, 0 };
 
-    status = gBS->CreateEvent(0, 0, NULL, NULL, &completionContext.WaitForCompletion);
+  completionContext.CompletionPacket       = CompletionPacket;
+  completionContext.CompletionPacketLength = CompletionPacketSize;
+  EFI_EVENT  timerEvent;
+  EFI_EVENT  waitList[2];
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  status = gBS->CreateEvent (0, 0, NULL, NULL, &completionContext.WaitForCompletion);
 
-    status = gBS->CreateEvent(EVT_TIMER,
-                              0,
-                              NULL,
-                              NULL,
-                              &timerEvent);
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  status = gBS->CreateEvent (
+                  EVT_TIMER,
+                  0,
+                  NULL,
+                  NULL,
+                  &timerEvent
+                  );
 
-    status = Context->Emcl->Base.SendPacket(&Context->Emcl->Base,
-        Packet,
-        PacketLength,
-        NULL,
-        0,
-        VpciChannelSendCompletionCallback,
-        (void**)&completionContext);
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
+  status = Context->Emcl->Base.SendPacket (
+                                 &Context->Emcl->Base,
+                                 Packet,
+                                 PacketLength,
+                                 NULL,
+                                 0,
+                                 VpciChannelSendCompletionCallback,
+                                 (void **)&completionContext
+                                 );
 
-    gBS->SetTimer (
-            timerEvent,
-            TimerRelative,
-            VPCIVSC_WAIT_FOR_HOST_TIMEOUT
-            );
-    waitList[0] = completionContext.WaitForCompletion;
-    waitList[1] = timerEvent;
-    status = gBS->WaitForEvent(2, waitList, &signaledEventIndex);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci WaitForEvent failed!\n"));
-        goto Cleanup;
-    }
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    // If the timer expired, fail fast.
-    if (signaledEventIndex == 1)
-    {
-        DEBUG((DEBUG_ERROR, "Host did not send a completion packet!\n"));
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-    }
+  gBS->SetTimer (
+         timerEvent,
+         TimerRelative,
+         VPCIVSC_WAIT_FOR_HOST_TIMEOUT
+         );
+  waitList[0] = completionContext.WaitForCompletion;
+  waitList[1] = timerEvent;
+  status      = gBS->WaitForEvent (2, waitList, &signaledEventIndex);
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "vpci WaitForEvent failed!\n"));
+    goto Cleanup;
+  }
 
-    DEBUG((DEBUG_VPCI_INFO, "vpci vsc packet sent got 0x%x byte completion back copied\n", completionContext.BytesCopied));
-    *CompletionPacketBytesReceived = completionContext.BytesCopied;
+  // If the timer expired, fail fast.
+  if (signaledEventIndex == 1) {
+    DEBUG ((DEBUG_ERROR, "Host did not send a completion packet!\n"));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
+
+  DEBUG ((DEBUG_VPCI_INFO, "vpci vsc packet sent got 0x%x byte completion back copied\n", completionContext.BytesCopied));
+  *CompletionPacketBytesReceived = completionContext.BytesCopied;
 
 Cleanup:
-    if (completionContext.WaitForCompletion != NULL)
-    {
-        gBS->CloseEvent(completionContext.WaitForCompletion);
-    }
+  if (completionContext.WaitForCompletion != NULL) {
+    gBS->CloseEvent (completionContext.WaitForCompletion);
+  }
 
-    return status;
+  return status;
 }
 
 /// \brief      Open the channel to the VSP, setup EMCL callbacks.
@@ -416,32 +426,34 @@ Cleanup:
 /// \return     EFI_SUCCESS or error on failure.
 ///
 EFI_STATUS
-VpciChannelOpen(
-    IN  PVPCIVSC_CONTEXT Context
-    )
+VpciChannelOpen (
+  IN  PVPCIVSC_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
+  EFI_STATUS  status = EFI_DEVICE_ERROR;
 
-    status = Context->Emcl->Base.SetReceiveCallback(&Context->Emcl->Base,
-        VpciChannelReceivePacketCallback,
-        Context,
-        TPL_VPCIVSC_CALLBACK
-        );
+  status = Context->Emcl->Base.SetReceiveCallback (
+                                 &Context->Emcl->Base,
+                                 VpciChannelReceivePacketCallback,
+                                 Context,
+                                 TPL_VPCIVSC_CALLBACK
+                                 );
 
-    ASSERT_EFI_ERROR(status);
+  ASSERT_EFI_ERROR (status);
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    status = Context->Emcl->Base.StartChannel(&Context->Emcl->Base,
-        RING_BUFFER_INCOMING_PAGE_COUNT,
-        RING_BUFFER_OUTGOING_PAGE_COUNT);
-
-    ASSERT_EFI_ERROR(status);
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  status = Context->Emcl->Base.StartChannel (
+                                 &Context->Emcl->Base,
+                                 RING_BUFFER_INCOMING_PAGE_COUNT,
+                                 RING_BUFFER_OUTGOING_PAGE_COUNT
+                                 );
+
+  ASSERT_EFI_ERROR (status);
+
+  return status;
 }
 
 /// \brief      Close the channel. The VSP should reset the VSP state machine in
@@ -450,11 +462,11 @@ VpciChannelOpen(
 /// \param[in]  Context  The VSC context
 ///
 VOID
-VpciChannelClose(
-    IN  PVPCIVSC_CONTEXT Context
-    )
+VpciChannelClose (
+  IN  PVPCIVSC_CONTEXT  Context
+  )
 {
-    Context->Emcl->Base.StopChannel(&Context->Emcl->Base);
+  Context->Emcl->Base.StopChannel (&Context->Emcl->Base);
 }
 
 /// \brief      Negotiate the protocol with the VSP. See corresponding windows
@@ -465,71 +477,65 @@ VpciChannelClose(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciChannelNegotiateProtocol(
-    IN  PVPCIVSC_CONTEXT Context
-    )
+VpciChannelNegotiateProtocol (
+  IN  PVPCIVSC_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    VPCI_QUERY_PROTOCOL_VERSION versionPacket;
-    VPCI_PROTOCOL_VERSION_REPLY replyPacket;
-    UINT32 replyPacketSize = sizeof(replyPacket);
-    UINT32 replyPacketBytesRecv = 0;
+  EFI_STATUS                   status = EFI_DEVICE_ERROR;
+  VPCI_QUERY_PROTOCOL_VERSION  versionPacket;
+  VPCI_PROTOCOL_VERSION_REPLY  replyPacket;
+  UINT32                       replyPacketSize      = sizeof (replyPacket);
+  UINT32                       replyPacketBytesRecv = 0;
 
-    ZeroMem(&versionPacket, sizeof(versionPacket));
-    ZeroMem(&replyPacket, sizeof(replyPacket));
+  ZeroMem (&versionPacket, sizeof (versionPacket));
+  ZeroMem (&replyPacket, sizeof (replyPacket));
 
-    // Negotiate only latest protocol - don't support older ones
-    versionPacket.Header.MessageType = VpciMsgQueryProtocolVersion;
-    versionPacket.ProtocolVersion = VPCI_PROTOCOL_VERSION_CURRENT;
+  // Negotiate only latest protocol - don't support older ones
+  versionPacket.Header.MessageType = VpciMsgQueryProtocolVersion;
+  versionPacket.ProtocolVersion    = VPCI_PROTOCOL_VERSION_CURRENT;
 
-    status = VpciChannelSendPacketSync(Context,
-        &versionPacket,
-        sizeof(versionPacket),
-        &replyPacket,
-        replyPacketSize,
-        &replyPacketBytesRecv);
+  status = VpciChannelSendPacketSync (
+             Context,
+             &versionPacket,
+             sizeof (versionPacket),
+             &replyPacket,
+             replyPacketSize,
+             &replyPacketBytesRecv
+             );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    if (replyPacketBytesRecv != replyPacketSize)
-    {
-        // Reply packet size didn't match, give up.
-        return EFI_DEVICE_ERROR;
-    }
-
-    // Check the reply status
-    NTSTATUS ntStatus = replyPacket.Header.Status;
-
-    if (NT_SUCCESS(ntStatus))
-    {
-        // Version accepted by VSP
-        // N.B. The reply doesn't contain the version we negotiated; rather, it contains
-        // the highest version the VSP supports, which can be higher than the one we negotiated.
-        DEBUG((DEBUG_VPCI_INFO, "vpci VSP accepted requested version\n"));
-        DEBUG((DEBUG_VPCI_INFO, "vpci VSP latest version is %x\n", replyPacket.ProtocolVersion));
-    }
-    else
-    {
-        // Either a version mismatch or internal VSP error. Regardless, we can't continue.
-        if (ntStatus == STATUS_REVISION_MISMATCH)
-        {
-            DEBUG((DEBUG_ERROR, "vcpi VSP version negotiation returned version mismatch\n"));
-        }
-        else
-        {
-            DEBUG((DEBUG_ERROR, "vpci VSP version negotiation returned status %x\n", ntStatus));
-        }
-
-        status = EFI_DEVICE_ERROR;
-    }
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  if (replyPacketBytesRecv != replyPacketSize) {
+    // Reply packet size didn't match, give up.
+    return EFI_DEVICE_ERROR;
+  }
+
+  // Check the reply status
+  NTSTATUS  ntStatus = replyPacket.Header.Status;
+
+  if (NT_SUCCESS (ntStatus)) {
+    // Version accepted by VSP
+    // N.B. The reply doesn't contain the version we negotiated; rather, it contains
+    // the highest version the VSP supports, which can be higher than the one we negotiated.
+    DEBUG ((DEBUG_VPCI_INFO, "vpci VSP accepted requested version\n"));
+    DEBUG ((DEBUG_VPCI_INFO, "vpci VSP latest version is %x\n", replyPacket.ProtocolVersion));
+  } else {
+    // Either a version mismatch or internal VSP error. Regardless, we can't continue.
+    if (ntStatus == STATUS_REVISION_MISMATCH) {
+      DEBUG ((DEBUG_ERROR, "vcpi VSP version negotiation returned version mismatch\n"));
+    } else {
+      DEBUG ((DEBUG_ERROR, "vpci VSP version negotiation returned status %x\n", ntStatus));
+    }
+
+    status = EFI_DEVICE_ERROR;
+  }
+
+  return status;
 }
 
-#define VPCI_CONFIG_SPACE_PAGES 2
+#define VPCI_CONFIG_SPACE_PAGES  2
 
 /// \brief      Allocate mmio for config space, and tell the VSP where it is,
 ///             does what VpciD0Entry does in fdo.c. In response, the VSP will
@@ -541,56 +547,54 @@ VpciChannelNegotiateProtocol(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciChannelFdoD0Entry(
-    IN  PVPCIVSC_CONTEXT Context
-    )
+VpciChannelFdoD0Entry (
+  IN  PVPCIVSC_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    VPCI_FDO_D0_ENTRY fdoD0EntryPacket = {0};
-    VPCI_FDO_D0_ENTRY_REPLY packetResponse = {0};
-    UINT32 packetBytesRecv = 0;
+  EFI_STATUS               status           = EFI_DEVICE_ERROR;
+  VPCI_FDO_D0_ENTRY        fdoD0EntryPacket = { 0 };
+  VPCI_FDO_D0_ENTRY_REPLY  packetResponse   = { 0 };
+  UINT32                   packetBytesRecv  = 0;
 
-    // Config space is two pages in the current protocol version.
-    UINT64 mmioBaseAddress = (UINT64)AllocateMmioPages(VPCI_CONFIG_SPACE_PAGES);
+  // Config space is two pages in the current protocol version.
+  UINT64  mmioBaseAddress = (UINT64)AllocateMmioPages (VPCI_CONFIG_SPACE_PAGES);
 
-    DEBUG((DEBUG_VPCI_INFO, "got mmio pages starting at 0x%llx\n", mmioBaseAddress));
+  DEBUG ((DEBUG_VPCI_INFO, "got mmio pages starting at 0x%llx\n", mmioBaseAddress));
 
-    if (mmioBaseAddress == 0)
-    {
-        DEBUG((DEBUG_ERROR, "mmio alloc failed"));
-        return EFI_OUT_OF_RESOURCES;
-    }
+  if (mmioBaseAddress == 0) {
+    DEBUG ((DEBUG_ERROR, "mmio alloc failed"));
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-    // Send the packet with where we allocated config space at
-    fdoD0EntryPacket.Header.MessageType = VpciMsgFdoD0Entry;
-    fdoD0EntryPacket.MmioStart = mmioBaseAddress;
-    status = VpciChannelSendPacketSync(Context,
-        &fdoD0EntryPacket,
-        sizeof(fdoD0EntryPacket),
-        &packetResponse,
-        sizeof(packetResponse),
-        &packetBytesRecv);
+  // Send the packet with where we allocated config space at
+  fdoD0EntryPacket.Header.MessageType = VpciMsgFdoD0Entry;
+  fdoD0EntryPacket.MmioStart          = mmioBaseAddress;
+  status                              = VpciChannelSendPacketSync (
+                                          Context,
+                                          &fdoD0EntryPacket,
+                                          sizeof (fdoD0EntryPacket),
+                                          &packetResponse,
+                                          sizeof (packetResponse),
+                                          &packetBytesRecv
+                                          );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    if (packetBytesRecv != sizeof(packetResponse))
-    {
-        DEBUG((DEBUG_ERROR, "VSP response invalid packet size."));
-        return EFI_DEVICE_ERROR;
-    }
-
-    // Check reply, should be NT_SUCCESS.
-    if (!NT_SUCCESS(packetResponse.NtStatus))
-    {
-        // VSP failed for some reason.
-        DEBUG((DEBUG_ERROR, "vpci vsp returned some failure %x\n", packetResponse.NtStatus));
-        status = EFI_DEVICE_ERROR;
-    }
-    
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  if (packetBytesRecv != sizeof (packetResponse)) {
+    DEBUG ((DEBUG_ERROR, "VSP response invalid packet size."));
+    return EFI_DEVICE_ERROR;
+  }
+
+  // Check reply, should be NT_SUCCESS.
+  if (!NT_SUCCESS (packetResponse.NtStatus)) {
+    // VSP failed for some reason.
+    DEBUG ((DEBUG_ERROR, "vpci vsp returned some failure %x\n", packetResponse.NtStatus));
+    status = EFI_DEVICE_ERROR;
+  }
+
+  return status;
 }
 
 /// \brief      Send a PdoQueryResourceRequirements to the VSP, asking for the
@@ -602,47 +606,46 @@ VpciChannelFdoD0Entry(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciChannelPdoQueryResourceRequirements(
-    IN OUT  PVPCI_DEVICE_CONTEXT Context
-    )
+VpciChannelPdoQueryResourceRequirements (
+  IN OUT  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    VPCI_QUERY_RESOURCE_REQUIREMENTS queryResourcesPacket = {0};
-    VPCI_RESOURCE_REQUIREMENTS_REPLY packetResponse = {0};
-    UINT32 packetBytesRecv = 0;
+  EFI_STATUS                        status               = EFI_DEVICE_ERROR;
+  VPCI_QUERY_RESOURCE_REQUIREMENTS  queryResourcesPacket = { 0 };
+  VPCI_RESOURCE_REQUIREMENTS_REPLY  packetResponse       = { 0 };
+  UINT32                            packetBytesRecv      = 0;
 
-    // Send the packed asking the VSP what the bars are
-    queryResourcesPacket.Header.MessageType = VpciMsgCurrentResourceRequirements;
-    queryResourcesPacket.Slot = Context->Slot;
-    status = VpciChannelSendPacketSync(Context->VpcivscContext,
-        &queryResourcesPacket,
-        sizeof(queryResourcesPacket),
-        &packetResponse,
-        sizeof(packetResponse),
-        &packetBytesRecv);
+  // Send the packed asking the VSP what the bars are
+  queryResourcesPacket.Header.MessageType = VpciMsgCurrentResourceRequirements;
+  queryResourcesPacket.Slot               = Context->Slot;
+  status                                  = VpciChannelSendPacketSync (
+                                              Context->VpcivscContext,
+                                              &queryResourcesPacket,
+                                              sizeof (queryResourcesPacket),
+                                              &packetResponse,
+                                              sizeof (packetResponse),
+                                              &packetBytesRecv
+                                              );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    if (packetBytesRecv != sizeof(packetResponse))
-    {
-        DEBUG((DEBUG_ERROR, "VSP response invalid packet size."));
-        return EFI_DEVICE_ERROR;
-    }
-
-    // Check the status of the reply
-    if (!NT_SUCCESS(packetResponse.Header.Status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci vsp returned failure for VpciChannelPdoQueryResourceRequirements %x\n", packetResponse.Header.Status));
-        return EFI_DEVICE_ERROR;
-    }
-
-    // Stash the response in the device context
-    CopyMem(Context->RawBars, packetResponse.Bars, sizeof(packetResponse.Bars));
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  if (packetBytesRecv != sizeof (packetResponse)) {
+    DEBUG ((DEBUG_ERROR, "VSP response invalid packet size."));
+    return EFI_DEVICE_ERROR;
+  }
+
+  // Check the status of the reply
+  if (!NT_SUCCESS (packetResponse.Header.Status)) {
+    DEBUG ((DEBUG_ERROR, "vpci vsp returned failure for VpciChannelPdoQueryResourceRequirements %x\n", packetResponse.Header.Status));
+    return EFI_DEVICE_ERROR;
+  }
+
+  // Stash the response in the device context
+  CopyMem (Context->RawBars, packetResponse.Bars, sizeof (packetResponse.Bars));
+
+  return status;
 }
 
 /// \brief      Parse the raw bars returned by the VSP for this device and
@@ -655,74 +658,67 @@ VpciChannelPdoQueryResourceRequirements(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciParseAndAllocateBars(
-    IN OUT  PVPCI_DEVICE_CONTEXT Context
-    )
+VpciParseAndAllocateBars (
+  IN OUT  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    UINTN index = 0;
+  UINTN  index = 0;
 
-    while (index < PCI_MAX_BAR)
-    {
-        // If the whole bar is 0, skip it (aka unused).
-        if (Context->RawBars[index].AsUINT32 == 0)
-        {
-            index++;
-            continue;
-        }
-
-        // Read the BAR, it must be memory type.
-        if (Context->RawBars[index].Memory.MemorySpaceIndicator != 0)
-        {
-            DEBUG((DEBUG_ERROR, "Bar %x is an IO space bar, unsupported\n", index));
-            return EFI_DEVICE_ERROR;
-        }
-
-        // Check if it's a 64-bit bar
-        if (Context->RawBars[index].Memory.MemoryType != PCI_BAR_MEMORY_TYPE_64BIT)
-        {
-            ASSERT(FALSE);
-            DEBUG((DEBUG_ERROR, "Bar %x is a 32 bit bar, unsupported\n", index));
-            return EFI_DEVICE_ERROR;
-        }
-
-        // The last bar can't be a 64 bit bar.
-        if (index == (PCI_MAX_BAR - 1))
-        {
-            DEBUG((DEBUG_ERROR, "VCPI VSP reported last bar as 64bit, invalid!\n"));
-            return EFI_DEVICE_ERROR;
-        }
-
-        // 64 bit bars take two bars, the second 32 bit value being the upper bits of the size.
-        // Mask off the lower 4 bits as they're ignored for size calculation.
-        //
-        // Total BAR Size is calculated by taking all bits and inverting + 1
-        UINT64 barSize = ~(((UINT64)(Context->RawBars[index + 1].AsUINT32) << 32) | (Context->RawBars[index].Memory.Address << 4)) + 1;
-
-        DEBUG((DEBUG_VPCI_INFO, "Allocating bar %x with size 0x%llx\n", index, barSize));
-
-        // Align up bar size to nearest page because we only allocate mmio in terms of pages.
-        UINT64 barSizeInPages = ALIGN_VALUE(barSize, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
-
-        // Allocate the bar from the high mmio gap.
-        UINT64 barAddress = (UINT64) AllocateMmioPages(barSizeInPages);
-
-        if (barAddress == 0)
-        {
-            DEBUG((DEBUG_ERROR, "No mmio space available to allocate bar!\n"));
-            return EFI_OUT_OF_RESOURCES;
-        }
-
-        // Update the information in the device context.
-        Context->MappedBars[index].MappedAddress = barAddress;
-        Context->MappedBars[index].Size = barSize;
-        Context->MappedBars[index].Is64Bit = TRUE;
-
-        index += 2;
+  while (index < PCI_MAX_BAR) {
+    // If the whole bar is 0, skip it (aka unused).
+    if (Context->RawBars[index].AsUINT32 == 0) {
+      index++;
+      continue;
     }
 
-    return EFI_SUCCESS;
-}
+    // Read the BAR, it must be memory type.
+    if (Context->RawBars[index].Memory.MemorySpaceIndicator != 0) {
+      DEBUG ((DEBUG_ERROR, "Bar %x is an IO space bar, unsupported\n", index));
+      return EFI_DEVICE_ERROR;
+    }
 
+    // Check if it's a 64-bit bar
+    if (Context->RawBars[index].Memory.MemoryType != PCI_BAR_MEMORY_TYPE_64BIT) {
+      ASSERT (FALSE);
+      DEBUG ((DEBUG_ERROR, "Bar %x is a 32 bit bar, unsupported\n", index));
+      return EFI_DEVICE_ERROR;
+    }
+
+    // The last bar can't be a 64 bit bar.
+    if (index == (PCI_MAX_BAR - 1)) {
+      DEBUG ((DEBUG_ERROR, "VCPI VSP reported last bar as 64bit, invalid!\n"));
+      return EFI_DEVICE_ERROR;
+    }
+
+    // 64 bit bars take two bars, the second 32 bit value being the upper bits of the size.
+    // Mask off the lower 4 bits as they're ignored for size calculation.
+    //
+    // Total BAR Size is calculated by taking all bits and inverting + 1
+    UINT64  barSize = ~(((UINT64)(Context->RawBars[index + 1].AsUINT32) << 32) | (Context->RawBars[index].Memory.Address << 4)) + 1;
+
+    DEBUG ((DEBUG_VPCI_INFO, "Allocating bar %x with size 0x%llx\n", index, barSize));
+
+    // Align up bar size to nearest page because we only allocate mmio in terms of pages.
+    UINT64  barSizeInPages = ALIGN_VALUE (barSize, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+
+    // Allocate the bar from the high mmio gap.
+    UINT64  barAddress = (UINT64)AllocateMmioPages (barSizeInPages);
+
+    if (barAddress == 0) {
+      DEBUG ((DEBUG_ERROR, "No mmio space available to allocate bar!\n"));
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    // Update the information in the device context.
+    Context->MappedBars[index].MappedAddress = barAddress;
+    Context->MappedBars[index].Size          = barSize;
+    Context->MappedBars[index].Is64Bit       = TRUE;
+
+    index += 2;
+  }
+
+  return EFI_SUCCESS;
+}
 
 /// \brief      Encode a BAR mapped at MappedAddress and Size to a
 ///             CM_PARTIAL_RESOURCE_DESCRIPTOR.
@@ -732,41 +728,34 @@ VpciParseAndAllocateBars(
 /// \param[in]  Size           The size of the mapped BAR.
 ///
 VOID
-EncodeBar(
-    IN OUT  PCM_PARTIAL_RESOURCE_DESCRIPTOR Descriptor,
-    IN      UINT64 MappedAddress,
-    IN      UINT64 Size
-    )
+EncodeBar (
+  IN OUT  PCM_PARTIAL_RESOURCE_DESCRIPTOR  Descriptor,
+  IN      UINT64                           MappedAddress,
+  IN      UINT64                           Size
+  )
 {
-    Descriptor->Type = CmResourceTypeMemory;
-    Descriptor->u.Generic.Start = MappedAddress;
+  Descriptor->Type            = CmResourceTypeMemory;
+  Descriptor->u.Generic.Start = MappedAddress;
 
-    // See which bucket the size falls into
-    // FIXME: alignment? seems like for shifted ones we need to force alignment
-    //        on bigger boundaries. Not sure if we'd even see BARs that big for NVMe.
-    if (Size < UINT32_MAX)
-    {
-        // Fits in normal
-        Descriptor->u.Generic.Length = (UINT32) Size;
-    }
-    else if (Size < CM_RESOURCE_MEMORY_LARGE_40_MAXLEN)
-    {
-        // Shift by 8 to fit, set flag
-        Descriptor->Flags |= CM_RESOURCE_MEMORY_LARGE_40;
-        Descriptor->u.Generic.Start = (UINT32)(Size >> 8);
-    }
-    else if (Size < CM_RESOURCE_MEMORY_LARGE_48_MAXLEN)
-    {
-        // Shift by 16
-        Descriptor->Flags |= CM_RESOURCE_MEMORY_LARGE_48;
-        Descriptor->u.Generic.Start = (UINT32)(Size >> 16);
-    }
-    else
-    {
-        // Shift by 32
-        Descriptor->Flags |= CM_RESOURCE_MEMORY_LARGE_64;
-        Descriptor->u.Generic.Start = (UINT32)(Size >> 32);
-    }
+  // See which bucket the size falls into
+  // FIXME: alignment? seems like for shifted ones we need to force alignment
+  //        on bigger boundaries. Not sure if we'd even see BARs that big for NVMe.
+  if (Size < UINT32_MAX) {
+    // Fits in normal
+    Descriptor->u.Generic.Length = (UINT32)Size;
+  } else if (Size < CM_RESOURCE_MEMORY_LARGE_40_MAXLEN) {
+    // Shift by 8 to fit, set flag
+    Descriptor->Flags          |= CM_RESOURCE_MEMORY_LARGE_40;
+    Descriptor->u.Generic.Start = (UINT32)(Size >> 8);
+  } else if (Size < CM_RESOURCE_MEMORY_LARGE_48_MAXLEN) {
+    // Shift by 16
+    Descriptor->Flags          |= CM_RESOURCE_MEMORY_LARGE_48;
+    Descriptor->u.Generic.Start = (UINT32)(Size >> 16);
+  } else {
+    // Shift by 32
+    Descriptor->Flags          |= CM_RESOURCE_MEMORY_LARGE_64;
+    Descriptor->u.Generic.Start = (UINT32)(Size >> 32);
+  }
 }
 
 /// \brief      Tell the VSP where the VSC has mapped this device's BARs. See
@@ -777,95 +766,97 @@ EncodeBar(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciChannelPdoSendAssignedResourcesMessage(
-    IN  PVPCI_DEVICE_CONTEXT Context
-    )
+VpciChannelPdoSendAssignedResourcesMessage (
+  IN  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    VPCI_DEVICE_TRANSLATE_2 assignedResourcesPacket;
-    VPCI_DEVICE_TRANSLATE_2_REPLY assignedResourcesPacketPartialResponse;
-    UINT32 packetBytesRecv = 0;
-    ZeroMem(&assignedResourcesPacket, sizeof(assignedResourcesPacket));
-    ZeroMem(&assignedResourcesPacketPartialResponse, sizeof(assignedResourcesPacketPartialResponse));
+  EFI_STATUS                     status = EFI_DEVICE_ERROR;
+  VPCI_DEVICE_TRANSLATE_2        assignedResourcesPacket;
+  VPCI_DEVICE_TRANSLATE_2_REPLY  assignedResourcesPacketPartialResponse;
+  UINT32                         packetBytesRecv = 0;
 
-    assignedResourcesPacket.Header.MessageType = VpciMsgAssignedResources2;
-    assignedResourcesPacket.Slot = Context->Slot;
+  ZeroMem (&assignedResourcesPacket, sizeof (assignedResourcesPacket));
+  ZeroMem (&assignedResourcesPacketPartialResponse, sizeof (assignedResourcesPacketPartialResponse));
 
-    // Translate the BARs we mapped to CM_PARTIAL_RESOURCE_DESCRIPTOR
-    //
-    // NOTE: Each descriptor starts as CmResourceTypeNull due to being zeroed above.
-    //
-    // NOTE: 64 bit bars have the 2nd bar as CmResourceTypeNull.
-    //
-    // NOTE: UEFI doesn't support MSIs, so due to the struct being zero initialized
-    //       we respond that we assigned 0 interrupts.
-    for (UINTN i = 0; i < PCI_MAX_BAR; i++)
-    {
-        // Check and see if this bar is even mapped. If not, skip it.
-        if (Context->MappedBars[i].Size == 0)
-        {
-            continue;
-        }
+  assignedResourcesPacket.Header.MessageType = VpciMsgAssignedResources2;
+  assignedResourcesPacket.Slot               = Context->Slot;
 
-        UINT8 rawBarIndex = (UINT8) i;
-        
-        ASSERT(rawBarIndex < PCI_MAX_BAR);
-
-        PCM_PARTIAL_RESOURCE_DESCRIPTOR descriptor = &assignedResourcesPacket.MmioResources[rawBarIndex];
-
-        // The VSP doesn't seem to care about anything except the type, base, and the
-        // encoded length. So don't bother setting anything else.
-        EncodeBar(descriptor,
-            Context->MappedBars[i].MappedAddress,
-            Context->MappedBars[i].Size);
-
-        // For confidental VMs, MMIO is translated to a shared section of memory
-        // above the shared GPA boundary. This requires a translation which must be
-        // reflected in config space, but not sent to the VSP.
-        if (IsIsolated())
-        {
-            Context->MappedBars[i].MappedAddress += mSharedGpaBoundary;
-
-            // Canonicalize the address.
-            Context->MappedBars[i].MappedAddress |= mCanonicalizationMask;
-        }
-
-        // Since this is a 64 bit bar, set the next descriptor as null type.
-        rawBarIndex++;
-        ASSERT(rawBarIndex < PCI_MAX_BAR);
-        descriptor = &assignedResourcesPacket.MmioResources[rawBarIndex];
-        descriptor->Type = CmResourceTypeNull;
+  // Translate the BARs we mapped to CM_PARTIAL_RESOURCE_DESCRIPTOR
+  //
+  // NOTE: Each descriptor starts as CmResourceTypeNull due to being zeroed above.
+  //
+  // NOTE: 64 bit bars have the 2nd bar as CmResourceTypeNull.
+  //
+  // NOTE: UEFI doesn't support MSIs, so due to the struct being zero initialized
+  //       we respond that we assigned 0 interrupts.
+  for (UINTN i = 0; i < PCI_MAX_BAR; i++) {
+    // Check and see if this bar is even mapped. If not, skip it.
+    if (Context->MappedBars[i].Size == 0) {
+      continue;
     }
 
-    // Send the packet and confirm the VSP accepted it
-    status = VpciChannelSendPacketSync(Context->VpcivscContext,
-        &assignedResourcesPacket,
-        sizeof(assignedResourcesPacket),
-        &assignedResourcesPacketPartialResponse,
-        sizeof(assignedResourcesPacketPartialResponse),
-        &packetBytesRecv);
+    UINT8  rawBarIndex = (UINT8)i;
 
-    if (EFI_ERROR(status))
-    {
-        return status;
+    ASSERT (rawBarIndex < PCI_MAX_BAR);
+
+    PCM_PARTIAL_RESOURCE_DESCRIPTOR  descriptor = &assignedResourcesPacket.MmioResources[rawBarIndex];
+
+    // The VSP doesn't seem to care about anything except the type, base, and the
+    // encoded length. So don't bother setting anything else.
+    EncodeBar (
+      descriptor,
+      Context->MappedBars[i].MappedAddress,
+      Context->MappedBars[i].Size
+      );
+
+    // For confidental VMs, MMIO is translated to a shared section of memory
+    // above the shared GPA boundary. This requires a translation which must be
+    // reflected in config space, but not sent to the VSP.
+    if (IsIsolated ()) {
+      Context->MappedBars[i].MappedAddress += mSharedGpaBoundary;
+
+      // Canonicalize the address.
+      Context->MappedBars[i].MappedAddress |= mCanonicalizationMask;
     }
 
-    if (packetBytesRecv != sizeof(assignedResourcesPacketPartialResponse))
-    {
-        DEBUG((DEBUG_ERROR, "VSP response invalid packet size."));
-        return EFI_DEVICE_ERROR;
-    }
+    // Since this is a 64 bit bar, set the next descriptor as null type.
+    rawBarIndex++;
+    ASSERT (rawBarIndex < PCI_MAX_BAR);
+    descriptor       = &assignedResourcesPacket.MmioResources[rawBarIndex];
+    descriptor->Type = CmResourceTypeNull;
+  }
 
-    if (!NT_SUCCESS(assignedResourcesPacketPartialResponse.Header.Status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci vsp returned failure for PdoSendAssignedResourcesMessage %x\n",
-            assignedResourcesPacketPartialResponse.Header.Status));
-        return EFI_DEVICE_ERROR;
-    }
+  // Send the packet and confirm the VSP accepted it
+  status = VpciChannelSendPacketSync (
+             Context->VpcivscContext,
+             &assignedResourcesPacket,
+             sizeof (assignedResourcesPacket),
+             &assignedResourcesPacketPartialResponse,
+             sizeof (assignedResourcesPacketPartialResponse),
+             &packetBytesRecv
+             );
 
-    ASSERT(assignedResourcesPacketPartialResponse.Slot.u.AsULONG == Context->Slot.u.AsULONG);
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  if (packetBytesRecv != sizeof (assignedResourcesPacketPartialResponse)) {
+    DEBUG ((DEBUG_ERROR, "VSP response invalid packet size."));
+    return EFI_DEVICE_ERROR;
+  }
+
+  if (!NT_SUCCESS (assignedResourcesPacketPartialResponse.Header.Status)) {
+    DEBUG ((
+      DEBUG_ERROR,
+      "vpci vsp returned failure for PdoSendAssignedResourcesMessage %x\n",
+      assignedResourcesPacketPartialResponse.Header.Status
+      ));
+    return EFI_DEVICE_ERROR;
+  }
+
+  ASSERT (assignedResourcesPacketPartialResponse.Slot.u.AsULONG == Context->Slot.u.AsULONG);
+
+  return status;
 }
 
 /// \brief      Tell the VSP that this device is ready to start, via a
@@ -876,46 +867,46 @@ VpciChannelPdoSendAssignedResourcesMessage(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciChannelPdoD0Entry(
-    IN  PVPCI_DEVICE_CONTEXT Context
-    )
+VpciChannelPdoD0Entry (
+  IN  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    VPCI_DEVICE_POWER_CHANGE powerChangePacket;
-    VPCI_FDO_D0_ENTRY_REPLY responsePacket;
-    UINT32 packetBytesRecv = 0;
-    ZeroMem(&powerChangePacket, sizeof(powerChangePacket));
-    ZeroMem(&responsePacket, sizeof(responsePacket));
+  EFI_STATUS                status = EFI_DEVICE_ERROR;
+  VPCI_DEVICE_POWER_CHANGE  powerChangePacket;
+  VPCI_FDO_D0_ENTRY_REPLY   responsePacket;
+  UINT32                    packetBytesRecv = 0;
 
-    powerChangePacket.Header.MessageType = VpciMsgDevicePowerStateChange;
-    powerChangePacket.Slot = Context->Slot;
-    powerChangePacket.TargetState = PowerDeviceD0;
+  ZeroMem (&powerChangePacket, sizeof (powerChangePacket));
+  ZeroMem (&responsePacket, sizeof (responsePacket));
 
-    status = VpciChannelSendPacketSync(Context->VpcivscContext,
-        &powerChangePacket,
-        sizeof(powerChangePacket),
-        &responsePacket,
-        sizeof(responsePacket),
-        &packetBytesRecv);
+  powerChangePacket.Header.MessageType = VpciMsgDevicePowerStateChange;
+  powerChangePacket.Slot               = Context->Slot;
+  powerChangePacket.TargetState        = PowerDeviceD0;
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  status = VpciChannelSendPacketSync (
+             Context->VpcivscContext,
+             &powerChangePacket,
+             sizeof (powerChangePacket),
+             &responsePacket,
+             sizeof (responsePacket),
+             &packetBytesRecv
+             );
 
-    if (packetBytesRecv != sizeof(responsePacket))
-    {
-        DEBUG((DEBUG_ERROR, "VSP response invalid packet size."));
-        return EFI_DEVICE_ERROR;
-    }
-
-    if (!NT_SUCCESS(responsePacket.NtStatus))
-    {
-        DEBUG((DEBUG_ERROR, "vpci vsp returned failure for PdoD0Entry %x\n", responsePacket.NtStatus));
-        return EFI_DEVICE_ERROR;
-    }
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  if (packetBytesRecv != sizeof (responsePacket)) {
+    DEBUG ((DEBUG_ERROR, "VSP response invalid packet size."));
+    return EFI_DEVICE_ERROR;
+  }
+
+  if (!NT_SUCCESS (responsePacket.NtStatus)) {
+    DEBUG ((DEBUG_ERROR, "vpci vsp returned failure for PdoD0Entry %x\n", responsePacket.NtStatus));
+    return EFI_DEVICE_ERROR;
+  }
+
+  return status;
 }
 
 /// \brief      Initialize a device context using a VPCI_DEVICE_DESCRIPTION.
@@ -925,19 +916,19 @@ VpciChannelPdoD0Entry(
 /// \param[in]  DeviceContext      The device context to initialize
 ///
 VOID
-InitializeVpciDeviceContext(
-    IN      PVPCIVSC_CONTEXT VscContext,
-    IN      PVPCI_DEVICE_DESCRIPTION DeviceDescription,
-    IN OUT  PVPCI_DEVICE_CONTEXT DeviceContext
-    )
+InitializeVpciDeviceContext (
+  IN      PVPCIVSC_CONTEXT          VscContext,
+  IN      PVPCI_DEVICE_DESCRIPTION  DeviceDescription,
+  IN OUT  PVPCI_DEVICE_CONTEXT      DeviceContext
+  )
 {
-    // Copy the template that contains information for all devices
-    CopyMem(DeviceContext, &gVpciDeviceContextTemplate, sizeof(gVpciDeviceContextTemplate));
+  // Copy the template that contains information for all devices
+  CopyMem (DeviceContext, &gVpciDeviceContextTemplate, sizeof (gVpciDeviceContextTemplate));
 
-    // Initialize the slot information, setup the context pointer
-    DeviceContext->Slot.u.AsULONG = DeviceDescription->Slot;
-    DeviceContext->VpcivscContext = VscContext;
-    DeviceContext->DeviceDescription = DeviceDescription;
+  // Initialize the slot information, setup the context pointer
+  DeviceContext->Slot.u.AsULONG    = DeviceDescription->Slot;
+  DeviceContext->VpcivscContext    = VscContext;
+  DeviceContext->DeviceDescription = DeviceDescription;
 }
 
 /// \brief      Create an EFI handle with device path for the given device
@@ -948,58 +939,61 @@ InitializeVpciDeviceContext(
 /// \return     EFI_STATUS
 ///
 EFI_STATUS
-VpciCreateChildDevice(
-    IN  PVPCI_DEVICE_CONTEXT Context
-    )
+VpciCreateChildDevice (
+  IN  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    PCI_DEVICE_PATH PciNode;
-    EFI_EMCL_V2_PROTOCOL dummyProtocol;
+  EFI_STATUS            status = EFI_DEVICE_ERROR;
+  PCI_DEVICE_PATH       PciNode;
+  EFI_EMCL_V2_PROTOCOL  dummyProtocol;
 
-    ZeroMem(&PciNode, sizeof(PciNode));
+  ZeroMem (&PciNode, sizeof (PciNode));
 
-    PciNode.Header.Type = HARDWARE_DEVICE_PATH;
-    PciNode.Header.SubType = HW_PCI_DP;
-    SetDevicePathNodeLength(&PciNode.Header, sizeof(PciNode));
+  PciNode.Header.Type    = HARDWARE_DEVICE_PATH;
+  PciNode.Header.SubType = HW_PCI_DP;
+  SetDevicePathNodeLength (&PciNode.Header, sizeof (PciNode));
 
-    PciNode.Device = (UINT8)Context->Slot.u.bits.DeviceNumber;
-    PciNode.Function = (UINT8)Context->Slot.u.bits.FunctionNumber;
+  PciNode.Device   = (UINT8)Context->Slot.u.bits.DeviceNumber;
+  PciNode.Function = (UINT8)Context->Slot.u.bits.FunctionNumber;
 
-    // Build the device path using the parent vsc device path, and append the PCI node.
-    Context->DevicePath = AppendDevicePathNode(Context->VpcivscContext->DevicePath,
-        &PciNode.Header);
+  // Build the device path using the parent vsc device path, and append the PCI node.
+  Context->DevicePath = AppendDevicePathNode (
+                          Context->VpcivscContext->DevicePath,
+                          &PciNode.Header
+                          );
 
-    if (Context->DevicePath == NULL)
-    {
-        return EFI_OUT_OF_RESOURCES;
-    }
+  if (Context->DevicePath == NULL) {
+    return EFI_OUT_OF_RESOURCES;
+  }
 
-    status = gBS->InstallMultipleProtocolInterfaces(&Context->Handle,
-        &gEfiDevicePathProtocolGuid,
-        Context->DevicePath,
-        &gEfiPciIoProtocolGuid,
-        &Context->PciIo,
-        NULL);
+  status = gBS->InstallMultipleProtocolInterfaces (
+                  &Context->Handle,
+                  &gEfiDevicePathProtocolGuid,
+                  Context->DevicePath,
+                  &gEfiPciIoProtocolGuid,
+                  &Context->PciIo,
+                  NULL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
-    // Open child device by child controller for tracking to support DisconnectController
-    status = gBS->OpenProtocol(Context->VpcivscContext->Handle,
-        &gEfiEmclV2ProtocolGuid,
-        (VOID **) &dummyProtocol,
-        gImageHandle,
-        Context->Handle,
-        EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
-
+  if (EFI_ERROR (status)) {
     return status;
+  }
+
+  // Open child device by child controller for tracking to support DisconnectController
+  status = gBS->OpenProtocol (
+                  Context->VpcivscContext->Handle,
+                  &gEfiEmclV2ProtocolGuid,
+                  (VOID **)&dummyProtocol,
+                  gImageHandle,
+                  Context->Handle,
+                  EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER
+                  );
+
+  if (EFI_ERROR (status)) {
+    return status;
+  }
+
+  return status;
 }
 
 /// \brief      Free the memory associated with the device context, like a
@@ -1008,11 +1002,11 @@ VpciCreateChildDevice(
 /// \param[in]  Context  The device context
 ///
 VOID
-VpcivscDestroyDevice(
-    IN  PVPCI_DEVICE_CONTEXT Context
-    )
+VpcivscDestroyDevice (
+  IN  PVPCI_DEVICE_CONTEXT  Context
+  )
 {
-    FreePool(Context->DevicePath);
+  FreePool (Context->DevicePath);
 }
 
 /// \brief      Free the memory associated with the vsc context, like a
@@ -1021,26 +1015,23 @@ VpcivscDestroyDevice(
 /// \param[in]  Context  The vsc context
 ///
 VOID
-VpscivscDestroyContext(
-    IN  PVPCIVSC_CONTEXT Context
-    )
+VpscivscDestroyContext (
+  IN  PVPCIVSC_CONTEXT  Context
+  )
 {
-    if (Context->NvmeDevices != NULL)
-    {
-        FreePool(Context->NvmeDevices);
-    }
+  if (Context->NvmeDevices != NULL) {
+    FreePool (Context->NvmeDevices);
+  }
 
-    if (Context->AziHsmDevices != NULL)
-    {
-        FreePool(Context->AziHsmDevices);
-    }
+  if (Context->AziHsmDevices != NULL) {
+    FreePool (Context->AziHsmDevices);
+  }
 
-    if (Context->Devices != NULL)
-    {
-        FreePool(Context->Devices);
-    }
+  if (Context->Devices != NULL) {
+    FreePool (Context->Devices);
+  }
 
-    FreePool(Context);
+  FreePool (Context);
 }
 
 /// \brief      The driver entry point called by the image loader.
@@ -1053,34 +1044,34 @@ VpscivscDestroyContext(
 EFI_STATUS
 EFIAPI
 VpcivscDriverEntryPoint (
-    IN  EFI_HANDLE ImageHandle,
-    IN  EFI_SYSTEM_TABLE *SystemTable
-    )
+  IN  EFI_HANDLE        ImageHandle,
+  IN  EFI_SYSTEM_TABLE  *SystemTable
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
+  EFI_STATUS  status = EFI_DEVICE_ERROR;
 
-    // If vPCI boot isn't enabled, don't bother starting the driver.
-    if (!PcdGetBool(PcdVpciBootEnabled))
-    {
-        DEBUG((DEBUG_VPCI_INFO, "PcdVpciBootEnabled is false, VPCI VSC not being registered\n"));
-        return EFI_UNSUPPORTED;
-    }
+  // If vPCI boot isn't enabled, don't bother starting the driver.
+  if (!PcdGetBool (PcdVpciBootEnabled)) {
+    DEBUG ((DEBUG_VPCI_INFO, "PcdVpciBootEnabled is false, VPCI VSC not being registered\n"));
+    return EFI_UNSUPPORTED;
+  }
 
-    // Install the DriverBinding and component name protocols onto the driver image handle
-    status = EfiLibInstallDriverBindingComponentName2(ImageHandle,
-                                                      SystemTable,
-                                                      &gVpcivscDriverBinding,
-                                                      ImageHandle,
-                                                      &gVpcivscComponentName,
-                                                      &gVpcivscComponentName2);
-    ASSERT_EFI_ERROR(status);
+  // Install the DriverBinding and component name protocols onto the driver image handle
+  status = EfiLibInstallDriverBindingComponentName2 (
+             ImageHandle,
+             SystemTable,
+             &gVpcivscDriverBinding,
+             ImageHandle,
+             &gVpcivscComponentName,
+             &gVpcivscComponentName2
+             );
+  ASSERT_EFI_ERROR (status);
 
-    mSharedGpaBoundary = PcdGet64(PcdIsolationSharedGpaBoundary);
-    mCanonicalizationMask = PcdGet64(PcdIsolationSharedGpaCanonicalizationBitmask);
+  mSharedGpaBoundary    = PcdGet64 (PcdIsolationSharedGpaBoundary);
+  mCanonicalizationMask = PcdGet64 (PcdIsolationSharedGpaCanonicalizationBitmask);
 
-    return status;
+  return status;
 }
-
 
 /// \brief      Returns if this driver is supported on a given handle.
 ///
@@ -1093,36 +1084,37 @@ VpcivscDriverEntryPoint (
 EFI_STATUS
 EFIAPI
 VpcivscDriverBindingSupported (
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    EFI_VMBUS_PROTOCOL *vmbus = NULL;
-    EFI_GUID* instanceFilter = (EFI_GUID*) ((UINTN) PcdGet64(PcdVpciInstanceFilterGuidPtr));
+  EFI_STATUS          status          = EFI_DEVICE_ERROR;
+  EFI_VMBUS_PROTOCOL  *vmbus          = NULL;
+  EFI_GUID            *instanceFilter = (EFI_GUID *)((UINTN)PcdGet64 (PcdVpciInstanceFilterGuidPtr));
 
-    // Get the vmbus protocol
-    status = gBS->OpenProtocol(
-        ControllerHandle,
-        &gEfiVmbusProtocolGuid,
-        (void**)&vmbus,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_TEST_PROTOCOL);
+  // Get the vmbus protocol
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiVmbusProtocolGuid,
+                  (void **)&vmbus,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_TEST_PROTOCOL
+                  );
 
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    // Test and see if the channel offer is a VPCI one, and if it matches the
-    // specific instance guid if set.
-    return EmclChannelTypeAndInstanceSupported(
-        ControllerHandle,
-        &gSyntheticVpciClassGuid,
-        This->DriverBindingHandle,
-        instanceFilter);
+  // Test and see if the channel offer is a VPCI one, and if it matches the
+  // specific instance guid if set.
+  return EmclChannelTypeAndInstanceSupported (
+           ControllerHandle,
+           &gSyntheticVpciClassGuid,
+           This->DriverBindingHandle,
+           instanceFilter
+           );
 }
 
 /// \brief      The driver start routine, called by DxeCore when driver binding
@@ -1144,374 +1136,357 @@ VpcivscDriverBindingSupported (
 EFI_STATUS
 EFIAPI
 VpcivscDriverBindingStart (
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_DEVICE_PATH_PROTOCOL     *RemainingDevicePath OPTIONAL
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    PVPCIVSC_CONTEXT instance = NULL;
-    BOOLEAN driverStarted = FALSE;
-    BOOLEAN emclInstalled = FALSE;
-    BOOLEAN channelStarted = FALSE;
-    UINTN index = 0;
-    EFI_EVENT   timerEvent;
-    EFI_EVENT   waitList[2];
+  EFI_STATUS        status         = EFI_DEVICE_ERROR;
+  PVPCIVSC_CONTEXT  instance       = NULL;
+  BOOLEAN           driverStarted  = FALSE;
+  BOOLEAN           emclInstalled  = FALSE;
+  BOOLEAN           channelStarted = FALSE;
+  UINTN             index          = 0;
+  EFI_EVENT         timerEvent;
+  EFI_EVENT         waitList[2];
 
-    status = EmclInstallProtocol(ControllerHandle);
+  status = EmclInstallProtocol (ControllerHandle);
 
-    if (status == EFI_ALREADY_STARTED)
-    {
-        DEBUG((DEBUG_ERROR, "vpci emcl already installed\n"));
-        driverStarted = TRUE;
-        goto Cleanup;
-    }
-    else if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    emclInstalled = TRUE;
-
-    instance = AllocateCopyPool(sizeof(*instance), &gVpcivscContextTemplate);
-
-    if (instance == NULL)
-    {
-        status = EFI_OUT_OF_RESOURCES;
-        goto Cleanup;
-    }
-
-    status = gBS->OpenProtocol(ControllerHandle,
-        &gEfiEmclV2ProtocolGuid,
-        (VOID **) &instance->Emcl,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_BY_DRIVER);
-
-    if (EFI_ERROR(status))
-    {
-        goto Cleanup;
-    }
-
-    status = gBS->OpenProtocol(ControllerHandle,
-        &gEfiDevicePathProtocolGuid,
-        (VOID **) &instance->DevicePath,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_BY_DRIVER);
-
-    if (EFI_ERROR(status))
-    {
-        ASSERT(FALSE);
-        goto Cleanup;
-    }
-
-    // Setup the Event used to unblock driver start after a VpciMsgBusRelations is received.
-    // We do not trust the host to send this message so set a timeout as well.
-    status = gBS->CreateEvent(0,
-                              0,
-                              NULL,
-                              (VOID*) instance,
-                              &instance->WaitForBusRelationsMessage);
-
-    if (EFI_ERROR(status))
-    {
-        ASSERT_EFI_ERROR(status);
-        goto Cleanup;
-    }
-
-    status = gBS->CreateEvent(EVT_TIMER,
-                              0,
-                              NULL,
-                              NULL,
-                              &timerEvent);
-
-    if (EFI_ERROR(status))
-    {
-        ASSERT_EFI_ERROR(status);
-        goto Cleanup;
-    }
-
-    instance->Handle = ControllerHandle;
-
-    // Open channel, setup callback
-    status = VpciChannelOpen(instance);
-
-    if (EFI_ERROR(status))
-    {
-        ASSERT_EFI_ERROR(status);
-        goto Cleanup;
-    }
-
-    channelStarted = TRUE;
-
-    // Exchange version
-    status = VpciChannelNegotiateProtocol(instance);
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci negotiate protocol failed!\n"));
-        ASSERT_EFI_ERROR(status);
-        goto Cleanup;
-    }
-
-    // Map config space - Send VpciMsgFdoD0Entry.
-    // In response, the VSP sends a VirtualBusSendBusRelationsPacket packet which
-    // will contain the list of child devices.
-    status = VpciChannelFdoD0Entry(instance);
-
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci FdoD0Entry failed!\n"));
-        ASSERT_EFI_ERROR(status);
-        goto Cleanup;
-    }
-
-    // Wait synchronously via EFI_EVENT for a valid VpciMsgBusRelations packet before proceeding.
-    gBS->SetTimer (
-            timerEvent,
-            TimerRelative,
-            VPCIVSC_WAIT_FOR_HOST_TIMEOUT
-            );
-    waitList[0] = instance->WaitForBusRelationsMessage;
-    waitList[1] = timerEvent;
-    status = gBS->WaitForEvent(2, waitList, &index);
-    if (EFI_ERROR(status))
-    {
-        DEBUG((DEBUG_ERROR, "vpci WaitForEvent failed!\n"));
-        goto Cleanup;
-    }
-
-    // If the timer expired, fail fast.
-    if (index == 1)
-    {
-        DEBUG((DEBUG_ERROR, "Host did not send a bus relations packet!\n"));
-        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR();
-    }
-
-    status = gBS->CloseEvent(instance->WaitForBusRelationsMessage);
-    instance->WaitForBusRelationsMessage = NULL;
-    status = gBS->CloseEvent(timerEvent);
-
-
-    DEBUG((DEBUG_VPCI_INFO, "got %x child devices\n", instance->DeviceCount));
-
-    // Figure out how many NVMe devices we have and allocate appropriately
-    for (UINT32 i = 0; i < instance->DeviceCount; i++)
-    {
-        if (IsNvmeDevice(&instance->Devices[i]))
-        {
-            instance->NvmeDeviceCount++;
-        } 
-        else if (IsAziHsmDevice(&instance->Devices[i])) 
-        {
-            instance->AziHsmDeviceCount++;
-        }
-    }
-
-    DEBUG((DEBUG_VPCI_INFO, "channel has 0x%x nvme devices and 0x%x AziHsmDevices\n",
-        instance->NvmeDeviceCount,
-        instance->AziHsmDeviceCount));
-
-    // If no NVMe/AziHsm devices, we just leave the channel open so subsequent calls to
-    // DriverStart on this driver will stop early.
-    if ( (instance->NvmeDeviceCount == 0) && 
-         (instance->AziHsmDeviceCount == 0))
-    {
-        DEBUG((DEBUG_ERROR, "no NVME/AziHsm devices, driver leaving channel open and returning\n"));
-        status = EFI_SUCCESS;
-        driverStarted = TRUE;
-        goto Cleanup;
-    }
-
-    if (instance->NvmeDeviceCount) 
-    {
-        // Allocate the array of NVMe device contexts. Each device should copy from
-        // the template.
-        instance->NvmeDevices = AllocateZeroPool(sizeof(VPCI_DEVICE_CONTEXT) * instance->NvmeDeviceCount);
-
-        if (instance->NvmeDevices == NULL)
-        {
-            status = EFI_OUT_OF_RESOURCES;
-            goto Cleanup;
-        }
-    }
-
-    // Allocate the array of Azure Integrated HSM device contexts if needed
-    if (instance->AziHsmDeviceCount)
-    {
-        instance->AziHsmDevices = AllocateZeroPool(sizeof(VPCI_DEVICE_CONTEXT) * instance->AziHsmDeviceCount);
-
-        if (instance->AziHsmDevices == NULL)
-        {
-            status = EFI_OUT_OF_RESOURCES;
-            goto Cleanup;
-        }
-    }
-
-    // Look thru the child devices, and for each NVME device
-    UINT32 nvmeDeviceIndex = 0, aziHsmDeviceIndex = 0;
-    for (UINT32 i = 0; i < instance->DeviceCount; i++)
-    {
-        if ( (!IsNvmeDevice(&instance->Devices[i])) && 
-             (!IsAziHsmDevice(&instance->Devices[i])))
-        {
-            // Don't care about this device, skip.
-            continue;
-        }
-
-        if (instance->NvmeDeviceCount)
-            ASSERT(nvmeDeviceIndex <= instance->NvmeDeviceCount);
-
-        if (instance->AziHsmDeviceCount) 
-            ASSERT(aziHsmDeviceIndex <= instance->AziHsmDeviceCount);
-
-        // Avoid Accessing Invalid Memory     
-        if (nvmeDeviceIndex >= instance->NvmeDeviceCount && IsNvmeDevice(&instance->Devices[i])) 
-        {
-            DEBUG((DEBUG_ERROR, "NvmeDeviceIndex out of bounds!\n"));
-            status = EFI_DEVICE_ERROR;
-            goto Cleanup;
-        }
-
-        // Avoid Accessing Invalid Memory     
-        if (aziHsmDeviceIndex >= instance->AziHsmDeviceCount && IsAziHsmDevice(&instance->Devices[i])) 
-        {
-            DEBUG((DEBUG_ERROR, "AziHsmDeviceIndex out of bounds!\n"));
-            status = EFI_DEVICE_ERROR;
-            goto Cleanup;
-        }
-
-        PVPCI_DEVICE_CONTEXT deviceContext = 
-            IsNvmeDevice(&instance->Devices[i]) ?
-            &instance->NvmeDevices[nvmeDeviceIndex++] :
-            &instance->AziHsmDevices[aziHsmDeviceIndex++];
-
-        InitializeVpciDeviceContext(instance,
-            &instance->Devices[i],
-            deviceContext);
-
-        // Ask the VSP what resources we need for the device, aka WDF PdoQueryResourceRequirements
-        status = VpciChannelPdoQueryResourceRequirements(deviceContext);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "vpci pdo query resource requirements failed!\n"));
-            ASSERT(FALSE);
-            goto Cleanup;
-        }
-
-
-        // Allocate the BARs and stash where we allocated them for when the device access them later
-        //
-        // TODO:     No devices need 32 bit bars but we really should support it.
-        //           This means we need to allocate from the low mmio gap which is less straightforward than the high gap
-        //           since we have some devices on some platforms in that gap. The low mmio allocator
-        //           should probably start from the other end and exclude some number of reserved pages.
-        status = VpciParseAndAllocateBars(deviceContext);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "vpci failed to parse and map bars!\n"));
-            ASSERT(FALSE);
-            goto Cleanup;
-        }
-
-        // Notify the VSP that we assigned resources, withwhere they were assigned.
-        status = VpciChannelPdoSendAssignedResourcesMessage(deviceContext);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "vpci pdo send assigned resource message failed!\n"));
-            ASSERT(FALSE);
-            goto Cleanup;
-        }
-
-        // Next state in the VSC state machine is PdoD0Entry, send it.
-        // On success, the device is ready to use.
-        status = VpciChannelPdoD0Entry(deviceContext);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "vpci pdo d0 entry failed!\n"));
-            ASSERT(FALSE);
-            goto Cleanup;
-        }
-
-        status = VpciCreateChildDevice(deviceContext);
-
-        if (EFI_ERROR(status))
-        {
-            DEBUG((DEBUG_ERROR, "vpci create child device failed!\n"));
-            ASSERT(FALSE);
-            goto Cleanup;
-        }
-    }
-
-    ASSERT(nvmeDeviceIndex == instance->NvmeDeviceCount);
-    ASSERT(aziHsmDeviceIndex == instance->AziHsmDeviceCount);
-
+  if (status == EFI_ALREADY_STARTED) {
+    DEBUG ((DEBUG_ERROR, "vpci emcl already installed\n"));
     driverStarted = TRUE;
+    goto Cleanup;
+  } else if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
 
-    DEBUG((DEBUG_ERROR, "AziHsmDeviceCnt:%d NvmeDevCnt=%d\n",
-        instance->AziHsmDeviceCount, 
-        instance->NvmeDeviceCount));
+  emclInstalled = TRUE;
+
+  instance = AllocateCopyPool (sizeof (*instance), &gVpcivscContextTemplate);
+
+  if (instance == NULL) {
+    status = EFI_OUT_OF_RESOURCES;
+    goto Cleanup;
+  }
+
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiEmclV2ProtocolGuid,
+                  (VOID **)&instance->Emcl,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
+
+  if (EFI_ERROR (status)) {
+    goto Cleanup;
+  }
+
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiDevicePathProtocolGuid,
+                  (VOID **)&instance->DevicePath,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_BY_DRIVER
+                  );
+
+  if (EFI_ERROR (status)) {
+    ASSERT (FALSE);
+    goto Cleanup;
+  }
+
+  // Setup the Event used to unblock driver start after a VpciMsgBusRelations is received.
+  // We do not trust the host to send this message so set a timeout as well.
+  status = gBS->CreateEvent (
+                  0,
+                  0,
+                  NULL,
+                  (VOID *)instance,
+                  &instance->WaitForBusRelationsMessage
+                  );
+
+  if (EFI_ERROR (status)) {
+    ASSERT_EFI_ERROR (status);
+    goto Cleanup;
+  }
+
+  status = gBS->CreateEvent (
+                  EVT_TIMER,
+                  0,
+                  NULL,
+                  NULL,
+                  &timerEvent
+                  );
+
+  if (EFI_ERROR (status)) {
+    ASSERT_EFI_ERROR (status);
+    goto Cleanup;
+  }
+
+  instance->Handle = ControllerHandle;
+
+  // Open channel, setup callback
+  status = VpciChannelOpen (instance);
+
+  if (EFI_ERROR (status)) {
+    ASSERT_EFI_ERROR (status);
+    goto Cleanup;
+  }
+
+  channelStarted = TRUE;
+
+  // Exchange version
+  status = VpciChannelNegotiateProtocol (instance);
+
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "vpci negotiate protocol failed!\n"));
+    ASSERT_EFI_ERROR (status);
+    goto Cleanup;
+  }
+
+  // Map config space - Send VpciMsgFdoD0Entry.
+  // In response, the VSP sends a VirtualBusSendBusRelationsPacket packet which
+  // will contain the list of child devices.
+  status = VpciChannelFdoD0Entry (instance);
+
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "vpci FdoD0Entry failed!\n"));
+    ASSERT_EFI_ERROR (status);
+    goto Cleanup;
+  }
+
+  // Wait synchronously via EFI_EVENT for a valid VpciMsgBusRelations packet before proceeding.
+  gBS->SetTimer (
+         timerEvent,
+         TimerRelative,
+         VPCIVSC_WAIT_FOR_HOST_TIMEOUT
+         );
+  waitList[0] = instance->WaitForBusRelationsMessage;
+  waitList[1] = timerEvent;
+  status      = gBS->WaitForEvent (2, waitList, &index);
+  if (EFI_ERROR (status)) {
+    DEBUG ((DEBUG_ERROR, "vpci WaitForEvent failed!\n"));
+    goto Cleanup;
+  }
+
+  // If the timer expired, fail fast.
+  if (index == 1) {
+    DEBUG ((DEBUG_ERROR, "Host did not send a bus relations packet!\n"));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
+
+  status                               = gBS->CloseEvent (instance->WaitForBusRelationsMessage);
+  instance->WaitForBusRelationsMessage = NULL;
+  status                               = gBS->CloseEvent (timerEvent);
+
+  DEBUG ((DEBUG_VPCI_INFO, "got %x child devices\n", instance->DeviceCount));
+
+  // Figure out how many NVMe devices we have and allocate appropriately
+  for (UINT32 i = 0; i < instance->DeviceCount; i++) {
+    if (IsNvmeDevice (&instance->Devices[i])) {
+      instance->NvmeDeviceCount++;
+    } else if (IsAziHsmDevice (&instance->Devices[i])) {
+      instance->AziHsmDeviceCount++;
+    }
+  }
+
+  DEBUG ((
+    DEBUG_VPCI_INFO,
+    "channel has 0x%x nvme devices and 0x%x AziHsmDevices\n",
+    instance->NvmeDeviceCount,
+    instance->AziHsmDeviceCount
+    ));
+
+  // If no NVMe/AziHsm devices, we just leave the channel open so subsequent calls to
+  // DriverStart on this driver will stop early.
+  if ((instance->NvmeDeviceCount == 0) &&
+      (instance->AziHsmDeviceCount == 0))
+  {
+    DEBUG ((DEBUG_ERROR, "no NVME/AziHsm devices, driver leaving channel open and returning\n"));
+    status        = EFI_SUCCESS;
+    driverStarted = TRUE;
+    goto Cleanup;
+  }
+
+  if (instance->NvmeDeviceCount) {
+    // Allocate the array of NVMe device contexts. Each device should copy from
+    // the template.
+    instance->NvmeDevices = AllocateZeroPool (sizeof (VPCI_DEVICE_CONTEXT) * instance->NvmeDeviceCount);
+
+    if (instance->NvmeDevices == NULL) {
+      status = EFI_OUT_OF_RESOURCES;
+      goto Cleanup;
+    }
+  }
+
+  // Allocate the array of Azure Integrated HSM device contexts if needed
+  if (instance->AziHsmDeviceCount) {
+    instance->AziHsmDevices = AllocateZeroPool (sizeof (VPCI_DEVICE_CONTEXT) * instance->AziHsmDeviceCount);
+
+    if (instance->AziHsmDevices == NULL) {
+      status = EFI_OUT_OF_RESOURCES;
+      goto Cleanup;
+    }
+  }
+
+  // Look thru the child devices, and for each NVME device
+  UINT32  nvmeDeviceIndex = 0, aziHsmDeviceIndex = 0;
+
+  for (UINT32 i = 0; i < instance->DeviceCount; i++) {
+    if ((!IsNvmeDevice (&instance->Devices[i])) &&
+        (!IsAziHsmDevice (&instance->Devices[i])))
+    {
+      // Don't care about this device, skip.
+      continue;
+    }
+
+    if (instance->NvmeDeviceCount) {
+      ASSERT (nvmeDeviceIndex <= instance->NvmeDeviceCount);
+    }
+
+    if (instance->AziHsmDeviceCount) {
+      ASSERT (aziHsmDeviceIndex <= instance->AziHsmDeviceCount);
+    }
+
+    // Avoid Accessing Invalid Memory
+    if ((nvmeDeviceIndex >= instance->NvmeDeviceCount) && IsNvmeDevice (&instance->Devices[i])) {
+      DEBUG ((DEBUG_ERROR, "NvmeDeviceIndex out of bounds!\n"));
+      status = EFI_DEVICE_ERROR;
+      goto Cleanup;
+    }
+
+    // Avoid Accessing Invalid Memory
+    if ((aziHsmDeviceIndex >= instance->AziHsmDeviceCount) && IsAziHsmDevice (&instance->Devices[i])) {
+      DEBUG ((DEBUG_ERROR, "AziHsmDeviceIndex out of bounds!\n"));
+      status = EFI_DEVICE_ERROR;
+      goto Cleanup;
+    }
+
+    PVPCI_DEVICE_CONTEXT  deviceContext =
+      IsNvmeDevice (&instance->Devices[i]) ?
+      &instance->NvmeDevices[nvmeDeviceIndex++] :
+      &instance->AziHsmDevices[aziHsmDeviceIndex++];
+
+    InitializeVpciDeviceContext (
+      instance,
+      &instance->Devices[i],
+      deviceContext
+      );
+
+    // Ask the VSP what resources we need for the device, aka WDF PdoQueryResourceRequirements
+    status = VpciChannelPdoQueryResourceRequirements (deviceContext);
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "vpci pdo query resource requirements failed!\n"));
+      ASSERT (FALSE);
+      goto Cleanup;
+    }
+
+    // Allocate the BARs and stash where we allocated them for when the device access them later
+    //
+    // TODO:     No devices need 32 bit bars but we really should support it.
+    //           This means we need to allocate from the low mmio gap which is less straightforward than the high gap
+    //           since we have some devices on some platforms in that gap. The low mmio allocator
+    //           should probably start from the other end and exclude some number of reserved pages.
+    status = VpciParseAndAllocateBars (deviceContext);
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "vpci failed to parse and map bars!\n"));
+      ASSERT (FALSE);
+      goto Cleanup;
+    }
+
+    // Notify the VSP that we assigned resources, withwhere they were assigned.
+    status = VpciChannelPdoSendAssignedResourcesMessage (deviceContext);
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "vpci pdo send assigned resource message failed!\n"));
+      ASSERT (FALSE);
+      goto Cleanup;
+    }
+
+    // Next state in the VSC state machine is PdoD0Entry, send it.
+    // On success, the device is ready to use.
+    status = VpciChannelPdoD0Entry (deviceContext);
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "vpci pdo d0 entry failed!\n"));
+      ASSERT (FALSE);
+      goto Cleanup;
+    }
+
+    status = VpciCreateChildDevice (deviceContext);
+
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "vpci create child device failed!\n"));
+      ASSERT (FALSE);
+      goto Cleanup;
+    }
+  }
+
+  ASSERT (nvmeDeviceIndex == instance->NvmeDeviceCount);
+  ASSERT (aziHsmDeviceIndex == instance->AziHsmDeviceCount);
+
+  driverStarted = TRUE;
+
+  DEBUG ((
+    DEBUG_ERROR,
+    "AziHsmDeviceCnt:%d NvmeDevCnt=%d\n",
+    instance->AziHsmDeviceCount,
+    instance->NvmeDeviceCount
+    ));
 
 Cleanup:
-    if (!driverStarted)
-    {
-        if (instance != NULL)
-        {
-            if (channelStarted)
-            {
-                // TODO:     Technically we should also go through the state machine to teardown devices, but
-                //           the VSP needs to support the ExitBootServices flow where the only notification it gets is a
-                //           channel close notification. So this is fine.
-                VpciChannelClose(instance);
-            }
+  if (!driverStarted) {
+    if (instance != NULL) {
+      if (channelStarted) {
+        // TODO:     Technically we should also go through the state machine to teardown devices, but
+        //           the VSP needs to support the ExitBootServices flow where the only notification it gets is a
+        //           channel close notification. So this is fine.
+        VpciChannelClose (instance);
+      }
 
-            if (instance->WaitForBusRelationsMessage != NULL)
-            {
-                gBS->CloseEvent(instance->WaitForBusRelationsMessage);
-                instance->WaitForBusRelationsMessage = NULL;
-            }
+      if (instance->WaitForBusRelationsMessage != NULL) {
+        gBS->CloseEvent (instance->WaitForBusRelationsMessage);
+        instance->WaitForBusRelationsMessage = NULL;
+      }
 
-            if (instance->NvmeDevices != NULL)
-            {
-                for (UINTN i = 0; i < instance->NvmeDeviceCount; i++)
-                {
-                    VpcivscDestroyDevice(&instance->NvmeDevices[i]);
-                }
-            }
-
-            if (instance->AziHsmDevices != NULL)
-            {
-                for (UINTN i = 0; i < instance->AziHsmDeviceCount; i++)
-                {
-                    VpcivscDestroyDevice(&instance->AziHsmDevices[i]);
-                }
-            }
-
-            VpscivscDestroyContext(instance);
+      if (instance->NvmeDevices != NULL) {
+        for (UINTN i = 0; i < instance->NvmeDeviceCount; i++) {
+          VpcivscDestroyDevice (&instance->NvmeDevices[i]);
         }
+      }
 
-        gBS->CloseProtocol(ControllerHandle,
-            &gEfiEmclV2ProtocolGuid,
-            This->DriverBindingHandle,
-            ControllerHandle);
-
-        gBS->CloseProtocol(ControllerHandle,
-            &gEfiDevicePathProtocolGuid,
-            This->DriverBindingHandle,
-            ControllerHandle);
-
-        if (emclInstalled)
-        {
-            EmclUninstallProtocol(ControllerHandle);
+      if (instance->AziHsmDevices != NULL) {
+        for (UINTN i = 0; i < instance->AziHsmDeviceCount; i++) {
+          VpcivscDestroyDevice (&instance->AziHsmDevices[i]);
         }
+      }
+
+      VpscivscDestroyContext (instance);
     }
 
-    return status;
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiEmclV2ProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
+
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiDevicePathProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
+
+    if (emclInstalled) {
+      EmclUninstallProtocol (ControllerHandle);
+    }
+  }
+
+  return status;
 }
 
 /// \brief      Driver stop, called during disconnect controller.
@@ -1526,132 +1501,130 @@ Cleanup:
 EFI_STATUS
 EFIAPI
 VpcivscDriverBindingStop (
-    IN  EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  UINTN NumberOfChildren,
-    IN  EFI_HANDLE *ChildHandleBuffer
-    )
+  IN  EFI_DRIVER_BINDING_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  UINTN                        NumberOfChildren,
+  IN  EFI_HANDLE                   *ChildHandleBuffer
+  )
 {
-    EFI_STATUS status = EFI_DEVICE_ERROR;
-    PVPCIVSC_CONTEXT vscContext = NULL;
-    PVPCI_DEVICE_CONTEXT deviceContext = NULL;
-    EFI_PCI_IO_PROTOCOL  *PciIo = NULL;
-    EFI_EMCL_V2_PROTOCOL *Emcl = NULL;
+  EFI_STATUS            status        = EFI_DEVICE_ERROR;
+  PVPCIVSC_CONTEXT      vscContext    = NULL;
+  PVPCI_DEVICE_CONTEXT  deviceContext = NULL;
+  EFI_PCI_IO_PROTOCOL   *PciIo        = NULL;
+  EFI_EMCL_V2_PROTOCOL  *Emcl         = NULL;
 
-    status = gBS->OpenProtocol(ControllerHandle,
-        &gEfiEmclV2ProtocolGuid,
-        (VOID**) &Emcl,
-        This->DriverBindingHandle,
-        ControllerHandle,
-        EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+  status = gBS->OpenProtocol (
+                  ControllerHandle,
+                  &gEfiEmclV2ProtocolGuid,
+                  (VOID **)&Emcl,
+                  This->DriverBindingHandle,
+                  ControllerHandle,
+                  EFI_OPEN_PROTOCOL_GET_PROTOCOL
+                  );
 
-    ASSERT_EFI_ERROR(status);
+  ASSERT_EFI_ERROR (status);
 
-    if (EFI_ERROR(status))
-    {
+  if (EFI_ERROR (status)) {
+    goto Exit;
+  }
+
+  vscContext = VPCIVSC_CONTEXT_FROM_EMCL (Emcl);
+
+  if (NumberOfChildren > 0) {
+    // If child devices, tear down all children devices
+    //      For each child device, send d0 exit packet
+    //      Then send ReleaseResources
+    ASSERT (NumberOfChildren == (vscContext->NvmeDeviceCount + vscContext->AziHsmDeviceCount));
+
+    for (UINTN i = 0; i < NumberOfChildren; i++) {
+      status = gBS->OpenProtocol (
+                      ChildHandleBuffer[i],
+                      &gEfiPciIoProtocolGuid,
+                      (VOID **)PciIo,
+                      This->DriverBindingHandle,
+                      ControllerHandle,
+                      EFI_OPEN_PROTOCOL_GET_PROTOCOL
+                      );
+
+      ASSERT_EFI_ERROR (status);
+
+      if (EFI_ERROR (status)) {
         goto Exit;
+      }
+
+      deviceContext = VPCI_DEVICE_CONTEXT_FROM_PCI_IO (PciIo);
+
+      VpcivscDestroyDevice (deviceContext);
+
+      // TODO: do we need to uninstall the pci io protocol? or does the
+      // handle go away once we return?
     }
+  } else {
+    // All children are removed, close the channel, remove protocols.
+    VpciChannelClose (vscContext);
 
-    vscContext = VPCIVSC_CONTEXT_FROM_EMCL(Emcl);
+    VpscivscDestroyContext (vscContext);
 
-    if (NumberOfChildren > 0)
-    {
-        // If child devices, tear down all children devices
-        //      For each child device, send d0 exit packet
-        //      Then send ReleaseResources
-        ASSERT(NumberOfChildren == (vscContext->NvmeDeviceCount + vscContext->AziHsmDeviceCount));
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiEmclV2ProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
 
-        for (UINTN i = 0; i < NumberOfChildren; i++)
-        {
-            status = gBS->OpenProtocol(ChildHandleBuffer[i],
-                &gEfiPciIoProtocolGuid,
-                (VOID**) PciIo,
-                This->DriverBindingHandle,
-                ControllerHandle,
-                EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    gBS->CloseProtocol (
+           ControllerHandle,
+           &gEfiDevicePathProtocolGuid,
+           This->DriverBindingHandle,
+           ControllerHandle
+           );
 
-            ASSERT_EFI_ERROR(status);
+    EmclUninstallProtocol (ControllerHandle);
 
-            if (EFI_ERROR(status))
-            {
-                goto Exit;
-            }
-
-            deviceContext = VPCI_DEVICE_CONTEXT_FROM_PCI_IO(PciIo);
-
-            VpcivscDestroyDevice(deviceContext);
-
-            // TODO: do we need to uninstall the pci io protocol? or does the
-            // handle go away once we return?
-        }
-    }
-    else
-    {
-        // All children are removed, close the channel, remove protocols.
-        VpciChannelClose(vscContext);
-
-        VpscivscDestroyContext(vscContext);
-
-        gBS->CloseProtocol(ControllerHandle,
-            &gEfiEmclV2ProtocolGuid,
-            This->DriverBindingHandle,
-            ControllerHandle);
-
-        gBS->CloseProtocol(ControllerHandle,
-            &gEfiDevicePathProtocolGuid,
-            This->DriverBindingHandle,
-            ControllerHandle);
-
-        EmclUninstallProtocol(ControllerHandle);
-
-        return EFI_SUCCESS;
-    }
+    return EFI_SUCCESS;
+  }
 
 Exit:
-    return status;
+  return status;
 }
-
 
 //
 // Driver name table
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE gVpcivscDriverNameTable[] =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  gVpcivscDriverNameTable[] =
 {
-    { "eng;en", (CHAR16 *)L"Hyper-V VPCI VSC Driver"},
-    { NULL, NULL }
+  { "eng;en", (CHAR16 *)L"Hyper-V VPCI VSC Driver" },
+  { NULL,     NULL                                 }
 };
-
 
 //
 // Controller name table
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE gVpcivscControllerNameTable[] =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_UNICODE_STRING_TABLE  gVpcivscControllerNameTable[] =
 {
-    { "eng;en", (CHAR16 *)L"Hyper-V VPCI VSC Controller"},
-    { NULL, NULL }
+  { "eng;en", (CHAR16 *)L"Hyper-V VPCI VSC Controller" },
+  { NULL,     NULL                                     }
 };
-
 
 //
 // EFI Component Name Protocol
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME_PROTOCOL gVpcivscComponentName =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME_PROTOCOL  gVpcivscComponentName =
 {
-    VpcivscComponentNameGetDriverName,
-    VpcivscComponentNameGetControllerName,
-    "eng"
+  VpcivscComponentNameGetDriverName,
+  VpcivscComponentNameGetControllerName,
+  "eng"
 };
 
 //
 // EFI Component Name 2 Protocol
 //
-GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME2_PROTOCOL gVpcivscComponentName2 =
+GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME2_PROTOCOL  gVpcivscComponentName2 =
 {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME) VpcivscComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME) VpcivscComponentNameGetControllerName,
-    "en"
+  (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)VpcivscComponentNameGetDriverName,
+  (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)VpcivscComponentNameGetControllerName,
+  "en"
 };
-
 
 /// \brief      Retrieves a Unicode string that is the user readable name of the
 ///             EFI Driver.
@@ -1675,29 +1648,30 @@ GLOBAL_REMOVE_IF_UNREFERENCED EFI_COMPONENT_NAME2_PROTOCOL gVpcivscComponentName
 EFI_STATUS
 EFIAPI
 VpcivscComponentNameGetDriverName (
-    IN  EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **DriverName
-    )
+  IN  EFI_COMPONENT_NAME_PROTOCOL  *This,
+  IN  CHAR8                        *Language,
+  OUT CHAR16                       **DriverName
+  )
 {
-    return LookupUnicodeString2(
-        Language,
-        This->SupportedLanguages,
-        gVpcivscControllerNameTable,
-        DriverName,
-        (BOOLEAN)(This == &gVpcivscComponentName));
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           gVpcivscControllerNameTable,
+           DriverName,
+           (BOOLEAN)(This == &gVpcivscComponentName)
+           );
 }
-
 
 EFI_STATUS
 EFIAPI
-VpcivscComponentNameGetControllerName(
-    IN  EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN  EFI_HANDLE ControllerHandle,
-    IN  EFI_HANDLE ChildHandle OPTIONAL,
-    IN  CHAR8 *Language,
-    OUT CHAR16 **ControllerName
-    )
+VpcivscComponentNameGetControllerName (
+  IN  EFI_COMPONENT_NAME_PROTOCOL  *This,
+  IN  EFI_HANDLE                   ControllerHandle,
+  IN  EFI_HANDLE                   ChildHandle OPTIONAL,
+  IN  CHAR8                        *Language,
+  OUT CHAR16                       **ControllerName
+  )
+
 /*++
 
 Routine Description:
@@ -1745,33 +1719,32 @@ Return Value:
 
 --*/
 {
-    EFI_STATUS status;
+  EFI_STATUS  status;
 
-    //
-    // Make sure this driver is currently managing a ControllerHandle
-    //
-    status = EfiTestManagedDevice(
-        ControllerHandle,
-        gVpcivscDriverBinding.DriverBindingHandle,
-        &gEfiEmclV2ProtocolGuid
-        );
-    if (EFI_ERROR(status))
-    {
-        return status;
-    }
+  //
+  // Make sure this driver is currently managing a ControllerHandle
+  //
+  status = EfiTestManagedDevice (
+             ControllerHandle,
+             gVpcivscDriverBinding.DriverBindingHandle,
+             &gEfiEmclV2ProtocolGuid
+             );
+  if (EFI_ERROR (status)) {
+    return status;
+  }
 
-    //
-    // ChildHandle must be NULL for a Device Driver
-    //
-    if (ChildHandle != NULL)
-    {
-        return EFI_UNSUPPORTED;
-    }
+  //
+  // ChildHandle must be NULL for a Device Driver
+  //
+  if (ChildHandle != NULL) {
+    return EFI_UNSUPPORTED;
+  }
 
-    return LookupUnicodeString2(
-        Language,
-        This->SupportedLanguages,
-        gVpcivscControllerNameTable,
-        ControllerName,
-        (BOOLEAN)(This == &gVpcivscComponentName));
+  return LookupUnicodeString2 (
+           Language,
+           This->SupportedLanguages,
+           gVpcivscControllerNameTable,
+           ControllerName,
+           (BOOLEAN)(This == &gVpcivscComponentName)
+           );
 }

@@ -1661,7 +1661,8 @@ AzihsmDecodeGetSealedBks3Resp (
     if (DecodedSize != NULL) {
       *DecodedSize = 0;
     }
-    DEBUG((DEBUG_ERROR, "AziHsm: GetSealedResponse decode failed , invalid params\n"));
+
+    DEBUG ((DEBUG_ERROR, "AziHsm: GetSealedResponse decode failed , invalid params\n"));
     return EFI_INVALID_PARAMETER;
   }
 

@@ -15,28 +15,28 @@
 #include <Library/ConfigLib.h>
 
 EFI_STATUS
-Oem0InitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Table
-    );
+Oem0InitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Table
+  );
 
 EFI_STATUS
-DsdtInitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Dsdt
-    );
+DsdtInitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Dsdt
+  );
 
 EFI_STATUS
-SpcrInitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Spcr
-    );
+SpcrInitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Spcr
+  );
 
 EFI_STATUS
-FacpInitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Facp
-    );
+FacpInitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Facp
+  );
 
 EFI_STATUS
-WdatInitializeTable(
-    IN OUT  EFI_ACPI_DESCRIPTION_HEADER* Wdat
-    );
+WdatInitializeTable (
+  IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Wdat
+  );
 
-extern BOOLEAN mHardwareIsolatedNoParavisor;
+extern BOOLEAN  mHardwareIsolatedNoParavisor;

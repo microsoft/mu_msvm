@@ -9,18 +9,19 @@
 
 #include "Transportp.h"
 
-#define RING_BUFFER_POOL_TAG 'gnrV'
+#define RING_BUFFER_POOL_TAG  'gnrV'
 
 EFI_STATUS
-PkInitializeSingleMappedRingBuffer(
-    OUT PPACKET_LIB_CONTEXT Context,
-    IN  VOID* IncomingControl,
-    IN  VOID* IncomingDataPages,
-    IN  UINT32 IncomingDataPageCount,
-    IN  VOID* OutgoingControl,
-    IN  VOID* OutgoingDataPages,
-    IN  UINT32 OutgoingDataPageCount
-    )
+PkInitializeSingleMappedRingBuffer (
+  OUT PPACKET_LIB_CONTEXT  Context,
+  IN  VOID                 *IncomingControl,
+  IN  VOID                 *IncomingDataPages,
+  IN  UINT32               IncomingDataPageCount,
+  IN  VOID                 *OutgoingControl,
+  IN  VOID                 *OutgoingDataPages,
+  IN  UINT32               OutgoingDataPageCount
+  )
+
 /*++
 
 Routine Description:
@@ -52,13 +53,13 @@ Return Value:
 
 --*/
 {
-    ZeroMem(Context, sizeof(*Context));
-    Context->Incoming.Control = (PVMRCB)IncomingControl;
-    Context->Incoming.Data = IncomingDataPages;
-    Context->Incoming.DataBytesInRing = IncomingDataPageCount * EFI_PAGE_SIZE;
-    Context->Outgoing.Control = (PVMRCB)OutgoingControl;
-    Context->Outgoing.Data = OutgoingDataPages;
-    Context->Outgoing.DataBytesInRing = OutgoingDataPageCount * EFI_PAGE_SIZE;
-    Context->InterruptMaskSkips = &Context->StaticInterruptMaskSkips;
-    return PkpInitRingBufferControl(Context);
+  ZeroMem (Context, sizeof (*Context));
+  Context->Incoming.Control         = (PVMRCB)IncomingControl;
+  Context->Incoming.Data            = IncomingDataPages;
+  Context->Incoming.DataBytesInRing = IncomingDataPageCount * EFI_PAGE_SIZE;
+  Context->Outgoing.Control         = (PVMRCB)OutgoingControl;
+  Context->Outgoing.Data            = OutgoingDataPages;
+  Context->Outgoing.DataBytesInRing = OutgoingDataPageCount * EFI_PAGE_SIZE;
+  Context->InterruptMaskSkips       = &Context->StaticInterruptMaskSkips;
+  return PkpInitRingBufferControl (Context);
 }

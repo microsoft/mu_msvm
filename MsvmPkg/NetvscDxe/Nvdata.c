@@ -37,7 +37,6 @@ PxeNvDataRead (
   return EFI_UNSUPPORTED;
 }
 
-
 /**
   Performs read and write operations on the NVRAM device attached to a network
   interface.
@@ -91,7 +90,7 @@ PxeNvDataRead (
 **/
 EFI_STATUS
 EFIAPI
-SnpUndi32NvData(
+SnpUndi32NvData (
   IN EFI_SIMPLE_NETWORK_PROTOCOL  *This,
   IN BOOLEAN                      ReadWrite,
   IN UINTN                        Offset,
