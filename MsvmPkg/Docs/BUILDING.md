@@ -26,6 +26,54 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
 stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 ```
 
+## Running CI Checks Locally
+
+Run the source checks from the repository root before opening a pull request. Install the Python dependencies and download the
+tools used by the checks on a new checkout or whenever their configuration changes:
+
+```powershell
+python -m pip install -r pip_requirement_stable.txt
+stuart_update -c .\.pytool\CISettings.py
+```
+
+Run the same source checks enforced by GitHub Actions:
+
+```powershell
+stuart_ci_build `
+	-c .\.pytool\CISettings.py `
+	-p MsvmPkg `
+	-t NO-TARGET `
+	-a X64,AARCH64 `
+	--disable-all `
+	GuidCheck=run `
+	LineEndingCheck=run `
+	UncrustifyCheck=run
+```
+
+The `--disable-all` option disables the default plugin set; each `Check=run` argument enables a check used by this repository.
+To run one check while iterating, specify only that check. For example:
+
+```powershell
+stuart_ci_build -c .\.pytool\CISettings.py -p MsvmPkg -t NO-TARGET -a X64,AARCH64 --disable-all GuidCheck=run
+```
+
+### Fixing Uncrustify Failures
+
+Run Uncrustify in correction mode to update incorrectly formatted files in place:
+
+```powershell
+stuart_ci_build `
+	-c .\.pytool\CISettings.py `
+	-p MsvmPkg `
+	-t NO-TARGET `
+	-a X64,AARCH64 `
+	--disable-all `
+	UncrustifyCheck=run `
+	UNCRUSTIFY_IN_PLACE=TRUE
+```
+
+Review the resulting changes and rerun the full source-check command before committing them.
+
 ## Specialized Builds
 
 ### Debug-Enabled Build

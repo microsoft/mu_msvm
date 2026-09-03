@@ -5,10 +5,11 @@ MsvmPkg provides UEFI firmware for Microsoft's virtualization platforms, includi
 ## Getting Started
 
 1. **[Building](BUILDING.md)** - Build UEFI firmware images
-2. **[Firmware Deployment](FIRMWARE-DEPLOYMENT.md)** - Load custom firmware on different platforms
-3. **[Debugging](DEBUGGING.md)** - Interactive UEFI debugging with WinDbg
-4. **[Logging](LOGGING.md)** - Collect UEFI logs and diagnostics
-5. **[Advanced](ADVANCED.md)** - Graphics, UEFI Shell, and experimental features
+2. **[Running CI Locally](BUILDING.md#running-ci-checks-locally)** - Run source checks before opening a pull request
+3. **[Firmware Deployment](FIRMWARE-DEPLOYMENT.md)** - Load custom firmware on different platforms
+4. **[Debugging](DEBUGGING.md)** - Interactive UEFI debugging with WinDbg
+5. **[Logging](LOGGING.md)** - Collect UEFI logs and diagnostics
+6. **[Advanced](ADVANCED.md)** - Graphics, UEFI Shell, and experimental features
 
 ## Platform Support
 
