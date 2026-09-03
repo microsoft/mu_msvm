@@ -9,12 +9,13 @@ import logging
 from pathlib import Path
 
 from edk2toolext.invocables.edk2_ci_build import CiBuildSettingsManager
+from edk2toolext.invocables.edk2_setup import RequiredSubmodule, SetupSettingsManager
 from edk2toolext.invocables.edk2_update import UpdateSettingsManager
 
 WORKSPACE_ROOT = str(Path(__file__).parent.parent)
 
 
-class Settings(CiBuildSettingsManager, UpdateSettingsManager):
+class Settings(CiBuildSettingsManager, SetupSettingsManager, UpdateSettingsManager):
     def __init__(self):
         self.ActualPackages = []
         self.ActualTargets = []
@@ -55,6 +56,14 @@ class Settings(CiBuildSettingsManager, UpdateSettingsManager):
 
     def GetDependencies(self):
         return []
+
+    def GetRequiredSubmodules(self):
+        return (
+            RequiredSubmodule("MU_BASECORE"),
+            RequiredSubmodule("Common/MU"),
+            RequiredSubmodule("Feature/DEBUGGER"),
+            RequiredSubmodule("Common/PATINA_EDK2"),
+        )
 
     def GetPackagesPath(self):
         return (".", "MU_BASECORE", "Common/MU", "Feature/DEBUGGER")

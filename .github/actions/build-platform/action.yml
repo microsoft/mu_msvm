@@ -1,0 +1,48 @@
+name: Build MSVM Platform
+description: Build MSVM firmware with Stuart
+
+inputs:
+  architecture:
+    description: Target architecture
+    required: true
+  c-core:
+    description: Whether to use the legacy C core
+    required: true
+  platform-config:
+    description: Path to the Stuart platform configuration
+    required: false
+    default: MsvmPkg/PlatformBuild.py
+  target:
+    description: Build target
+    required: true
+  tool-chain:
+    description: EDK II tool chain tag
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Stuart setup
+      shell: pwsh
+      run: >-
+        stuart_setup
+        -c "${{ inputs.platform-config }}"
+        TOOL_CHAIN_TAG=${{ inputs.tool-chain }}
+
+    - name: Stuart update
+      shell: pwsh
+      run: >-
+        stuart_update
+        -c "${{ inputs.platform-config }}"
+        TOOL_CHAIN_TAG=${{ inputs.tool-chain }}
+
+    - name: Stuart build
+      shell: pwsh
+      run: >-
+        stuart_build
+        -c "${{ inputs.platform-config }}"
+        --verbose
+        TOOL_CHAIN_TAG=${{ inputs.tool-chain }}
+        TARGET=${{ inputs.target }}
+        BUILD_ARCH=${{ inputs.architecture }}
+        BLD_*_USE_LEGACY_C_CORE=${{ inputs.c-core }}
