@@ -132,7 +132,6 @@ jobs:
       actions: read
       contents: read
     uses: ./.github/workflows/openvmm-test.yml
-    secrets: inherit
 
   release:
     name: Release

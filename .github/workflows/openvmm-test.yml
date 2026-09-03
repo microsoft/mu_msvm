@@ -2,10 +2,6 @@ name: OpenVMM Firmware Test
 
 on:
   workflow_call:
-    secrets:
-      OPENVMM_ARTIFACT_TOKEN:
-        description: Token with Actions read access to microsoft/openvmm
-        required: true
   workflow_dispatch:
 
 jobs:
@@ -39,8 +35,6 @@ jobs:
       - name: Resolve latest successful OpenVMM main run
         id: openvmm
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.OPENVMM_ARTIFACT_TOKEN }}
         run: |
           response="$(gh api \
             "repos/microsoft/openvmm/actions/workflows/openvmm-ci.yaml/runs?branch=main&event=push&status=success&per_page=1")"
@@ -62,7 +56,6 @@ jobs:
         with:
           repository: microsoft/openvmm
           run-id: ${{ steps.openvmm.outputs.run-id }}
-          github-token: ${{ secrets.OPENVMM_ARTIFACT_TOKEN }}
           pattern: "{x64-linux-vmm-tests-archive,x64-linux-openvmm,x64-linux-musl-pipette}"
           merge-multiple: true
           path: ${{ runner.temp }}/openvmm-bundle
