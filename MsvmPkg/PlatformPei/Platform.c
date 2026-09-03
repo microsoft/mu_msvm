@@ -162,6 +162,7 @@ WriteBiosDevice (
   )
 {
   UINTN  biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+  BOOLEAN interruptState = SaveAndDisableInterrupts ();
 
  #if defined (MDE_CPU_AARCH64)
   MmioWrite32 (biosBaseAddress, AddressRegisterValue);
@@ -170,6 +171,8 @@ WriteBiosDevice (
   IoWrite32 (biosBaseAddress, AddressRegisterValue);
   IoWrite32 (biosBaseAddress + 4, DataRegisterValue);
  #endif
+
+  SetInterruptState (interruptState);
 }
 
 static
@@ -179,14 +182,18 @@ ReadBiosDevice (
   )
 {
   UINTN  biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+  BOOLEAN interruptState = SaveAndDisableInterrupts ();
 
  #if defined (MDE_CPU_AARCH64)
   MmioWrite32 (biosBaseAddress, AddressRegisterValue);
-  return MmioRead32 (biosBaseAddress + 4);
+  UINT32 result = MmioRead32 (biosBaseAddress + 4);
  #elif defined (MDE_CPU_X64)
   IoWrite32 (biosBaseAddress, AddressRegisterValue);
-  return IoRead32 (biosBaseAddress + 4);
+  UINT32 result = IoRead32 (biosBaseAddress + 4);
  #endif
+
+  SetInterruptState (interruptState);
+  return result;
 }
 
 #if defined (MDE_CPU_X64)
