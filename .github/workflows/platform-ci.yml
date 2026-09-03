@@ -14,7 +14,7 @@ jobs:
     name: Source Checks
     uses: microsoft/mu_devops/.github/workflows/PackageCi.yml@131433bb4f29d68250154cc66096f04c19fe3ee9 # v18.0.7
     with:
-      runner: windows-2022
+      runner: ubuntu-24.04
       python-version: "3.12"
       setup-cmd: setup
       package-config: |
