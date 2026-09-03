@@ -104,10 +104,19 @@ jobs:
             Build/SETUP*.txt
             Build/UPDATE*.txt
 
+  openvmm-test-x64:
+    name: OpenVMM Test X64
+    needs: build
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/openvmm-test.yml
+    secrets: inherit
+
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [source-checks, build]
+    needs: [source-checks, build, openvmm-test-x64]
     permissions:
       contents: write
     uses: ./.github/workflows/release.yml
