@@ -358,6 +358,8 @@
 # PERF MODULES END
 
 [PcdsFixedAtBuild.common]
+!include MsvmPkg/FirmwareVersionPcd.dsc.inc
+
   # Advanced Logger Config
   # PreMemPages comes from the SEC temp-RAM PEI heap. On X64, 6 is the
   # ceiling (7+ exhausts temp RAM) and 2 is the empirical minimum that

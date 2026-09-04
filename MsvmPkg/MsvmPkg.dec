@@ -28,6 +28,12 @@
   # Guid for FrontPage NV variable
   #
   gFrontPageNVVarGuid             = {0x7f98efe9, 0x50aa, 0x4598, { 0xb7, 0xc1, 0xcb, 0x72, 0xe1, 0xcc, 0x52, 0x24 }}
+  #
+  # Names the RAW firmware-version record embedded in the DXE FV so the host/VMM
+  # can locate it. See MsvmPkg/Include/MsvmFirmwareVersion.h.
+  # {B8F2D3A4-6C7E-4E1B-9A2F-1D3C5E7A9B0D}
+  #
+  gMsvmFirmwareVersionFileGuid    = {0xb8f2d3a4, 0x6c7e, 0x4e1b, {0x9a, 0x2f, 0x1d, 0x3c, 0x5e, 0x7a, 0x9b, 0x0d}}
 
   gMsvmVmbusClientGuid            = {0x18dd3964, 0x3e8a, 0x4e42, {0x86, 0xfa, 0xc8, 0xe6, 0xb1, 0x91, 0xee, 0x0e}}
   #
@@ -86,6 +92,17 @@
   gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize|0x0|UINT32|0x5
   gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|0x0|UINT64|0x6
   gMsvmPkgTokenSpaceGuid.PcdDxeFvSize|0x0|UINT32|0x7
+
+  # Firmware version record. These declare the PCD contract only; the values are
+  # injected at build time by MsvmPkg/BuildPlugins/FirmwareVersionBlob from the
+  # single source of truth (MsvmPkg/FirmwareVersion.toml + git), the same way
+  # PcdFdBaseAddress above gets its real value from the build. The defaults here
+  # are throwaway sentinels. See MsvmPkg/Include/MsvmFirmwareVersion.h.
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMajor|0|UINT16|0x7000
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMinor|0|UINT16|0x7001
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareBaseVersion|"unknown"|VOID*|0x7002
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareGitCommit|"unknown"|VOID*|0x7003
+  gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareFlags|0x0|UINT32|0x7004
 
   # Synthetic Timer Configuration
   gMsvmPkgTokenSpaceGuid.PcdSynicTimerSintIndex|0x1|UINT8|0x2000
