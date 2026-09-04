@@ -96,6 +96,9 @@ jobs:
 
       - name: Build platform
         uses: ./.github/actions/build-platform
+        env:
+          # Mark main-branch builds as official in the embedded firmware version record.
+          OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '' }}
         with:
           architecture: ${{ matrix.arch }}
           c-core: ${{ matrix.c-core }}
