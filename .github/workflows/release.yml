@@ -1,0 +1,49 @@
+name: Release Firmware
+
+on:
+  workflow_call:
+    inputs:
+      base-version:
+        description: Major and minor release version
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Release Firmware
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: firmware-*
+          path: artifacts
+
+      - name: Package release artifacts
+        shell: bash
+        run: |
+          mkdir -p release
+          for directory in artifacts/*/; do
+            name="$(basename "$directory")"
+            tar -czf "release/${name}.tar.gz" -C "$directory" .
+          done
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          BASE_VERSION: ${{ inputs.base-version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          patch=$(gh release list --repo "${{ github.repository }}" --limit 1000 --json tagName \
+            --jq '[.[] | .tagName | select(startswith("v'"${BASE_VERSION}"'.")) | ltrimstr("v'"${BASE_VERSION}"'.") | tonumber] | max // -1 | . + 1')
+          tag="v${BASE_VERSION}.${patch}"
+          gh release create "$tag" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --generate-notes \
+            release/*.tar.gz
