@@ -18,7 +18,8 @@ jobs:
         with:
           pattern: firmware-*-X64-*-legacy-*
           path: ${{ runner.temp }}/firmware
-
+        
+        # comment to trigger CI
       - name: Verify X64 firmware matrix
         shell: bash
         run: |
