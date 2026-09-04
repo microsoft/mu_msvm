@@ -123,9 +123,30 @@ jobs:
             /sys/kernel/mm/hugepages/hugepages-2048kB/nr_overcommit_hugepages
 
           bundle="${{ runner.temp }}/openvmm-bundle"
-          test -x "$bundle/openvmm" || chmod +x "$bundle/openvmm"
-          test -f "$bundle/pipette"
-          test -f "$bundle/vmm_tests.tar.zst"
+          echo "Downloaded OpenVMM bundle:"
+          find "$bundle" -maxdepth 4 -printf '%y %p\n' | sort
+
+          normalize_bundle_file() {
+            local name="$1"
+            local destination="$bundle/$name"
+            local matches=()
+
+            mapfile -d '' matches < <(find "$bundle" -type f -name "$name" -print0)
+            if [[ "${#matches[@]}" -ne 1 ]]; then
+              echo "::error::Expected exactly one $name in the OpenVMM bundle; found ${#matches[@]}"
+              printf 'Candidate: %s\n' "${matches[@]}"
+              return 1
+            fi
+
+            if [[ "${matches[0]}" != "$destination" ]]; then
+              cp "${matches[0]}" "$destination"
+            fi
+          }
+
+          normalize_bundle_file openvmm
+          normalize_bundle_file pipette
+          normalize_bundle_file vmm_tests.tar.zst
+          chmod +x "$bundle/openvmm" "$bundle/pipette"
 
       - name: Boot Ubuntu with every X64 firmware
         working-directory: openvmm-source
