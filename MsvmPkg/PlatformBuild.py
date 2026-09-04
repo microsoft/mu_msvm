@@ -88,18 +88,10 @@ class PlatformBuilder(UefiBuilder, UpdateSettingsManager, SetupSettingsManager, 
         logging.debug("PlatformBuilder SetPlatformEnvAfterTarget")
         return 0
 
-    def PlatformPostBuild(self):
+    def PlatformPreBuild(self):
         return 0
 
-
-    #------------------------------------------------------------------
-    #
-    # Method to do stuff pre build.
-    # This is part of the build flow.
-    # Currently do nothing.
-    #
-    #------------------------------------------------------------------
-    def PlatformPreBuild(self):
+    def PlatformPostBuild(self):
         return 0
 
     #

@@ -340,6 +340,16 @@ FILE FREEFORM = PCD(gMsvmPkgTokenSpaceGuid.PcdBootFailIndicatorFile) {
     SECTION RAW = MsvmPkg/FrontPage/Resources/NoBoot.bmp
 }
 
+#
+# Firmware version record (git commit + base release version). Generated at
+# build time by MsvmPkg/PlatformBuild.py. The host/VMM locates this record by
+# scanning the loaded image for the 'MVFW' signature or for this file GUID; see
+# MsvmPkg/Include/MsvmFirmwareVersion.h for the layout.
+#
+FILE FREEFORM = B8F2D3A4-6C7E-4E1B-9A2F-1D3C5E7A9B0D {
+    SECTION RAW = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/FwVersion/FwVersionBlob.bin
+}
+
 #FILE APPLICATION = c57ad6b7-0515-40a8-9d21-551652854e37 {
 #     SECTION PE32 = ShellBinPkg/UefiShell/X64/Shell.efi
 #  }

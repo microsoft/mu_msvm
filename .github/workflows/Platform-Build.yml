@@ -172,6 +172,11 @@ jobs:
 
       # Stuart Build: Perform the build using the specified architecture and target
       - name: Stuart Build
+        env:
+          # Mark builds of main (not pull requests) as official. The
+          # FirmwareVersionBlob plugin records this in the firmware version
+          # record and PcdMsvmFirmwareFlags.
+          OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '' }}
         run: stuart_build -c MsvmPkg/PlatformBuild.py --verbose TOOL_CHAIN_TAG=${{matrix.tools}} TARGET=${{matrix.target}} BUILD_ARCH=${{matrix.arch}} BLD_*_USE_LEGACY_C_CORE=${{matrix.c_core}}
 
       # Upload the MSVM.fd file, MAP/, and PDB/ directories directly as an artifact
