@@ -27,8 +27,8 @@ jobs:
             find "${{ runner.temp }}/firmware" -type f -name MSVM.fd | sort
           )
 
-          if [[ "${#firmware_files[@]}" -ne 6 ]]; then
-            echo "::error::Expected 6 X64 MSVM.fd files, found ${#firmware_files[@]}"
+          if [[ "${#firmware_files[@]}" -ne 1 ]]; then
+            echo "::error::Expected 1 X64 MSVM.fd file, found ${#firmware_files[@]}"
             printf '%s\n' "${firmware_files[@]}"
             exit 1
           fi

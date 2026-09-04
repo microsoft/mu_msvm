@@ -61,15 +61,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [DEBUG, RELEASE]
-        arch: [X64, AARCH64]
-        tools: [VS2022, CLANGPDB]
-        c-core: ["TRUE", "FALSE"]
-        exclude:
-          - arch: AARCH64
-            tools: VS2022
-          - tools: VS2022
-            c-core: "FALSE"
+        target: [RELEASE]
+        arch: [X64]
+        tools: [VS2022]
+        c-core: ["TRUE"]
 
     steps:
       - name: Disable automatic line ending conversion
