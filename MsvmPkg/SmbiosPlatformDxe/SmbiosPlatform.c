@@ -1958,21 +1958,21 @@ Return Value:
       // the least-significant bit of the base selects the address space
       // (1 = I/O, 0 = memory-mapped); modifier bits 7:6 encode spacing.
       //
-#if defined (MDE_CPU_X64)
+ #if defined (MDE_CPU_X64)
       //
       // I/O port 0xCA2 is encoded as 0xCA2 | 1. Modifier 0x00 selects
       // successive byte boundaries; no interrupt is described.
       //
       0x0000000000000CA3ULL,
       0x00,
-#elif defined (MDE_CPU_AARCH64)
+ #elif defined (MDE_CPU_AARCH64)
       //
       // Memory-mapped registers are at offsets 0 and 4. Modifier 0x40
       // selects 32-bit boundaries; no interrupt is described.
       //
       FixedPcdGet32 (PcdIpmiKcsMmioBase),
       0x40,
-#endif
+ #endif
       0x00          // Interrupt Number - none
     },
     {
@@ -2022,9 +2022,9 @@ Return Value:
   AddOEMStrings (Smbios);
   AddMemoryStructures (Smbios);
   AddSystemBootInformation (Smbios);
-#if defined (MDE_CPU_X64) || defined (MDE_CPU_AARCH64)
+ #if defined (MDE_CPU_X64) || defined (MDE_CPU_AARCH64)
   AddIpmiDeviceInformation (Smbios);
-#endif
+ #endif
 }
 
 EFI_STATUS
