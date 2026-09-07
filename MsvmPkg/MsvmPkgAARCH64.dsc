@@ -414,6 +414,9 @@
   gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase|0xEFFEB000
   gMsvmPkgTokenSpaceGuid.PcdCom2Vector|34                   # SPI
 
+  # Emulated IPMI BMC (KCS) MMIO interception page below ProcIdle.
+  gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase|0xEFFE7000
+
   # RTC (clock)
   gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase|0x70
   gMsvmPkgTokenSpaceGuid.PcdRtcVector|8
@@ -726,6 +729,7 @@
   gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled|TRUE
   gMsvmPkgTokenSpaceGuid.PcdHvEnabled|TRUE
   gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0

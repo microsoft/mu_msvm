@@ -157,6 +157,11 @@
   gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase|0xEFFEB000|UINT32|0x5006
   gMsvmPkgTokenSpaceGuid.PcdCom2Vector|34|UINT8|0x5008
 
+  # Emulated IPMI BMC (KCS) MMIO base. AArch64 reserves one 4KB interception
+  # page below ProcIdle; the guest-visible one-byte registers are at offsets 0
+  # and 4. x64 advertises KCS through I/O ports 0xCA2/0xCA3 instead.
+  gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase|0xEFFE7000|UINT32|0x5007
+
   # RTC (clock)
   gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase|0x70|UINT32|0x5009
   gMsvmPkgTokenSpaceGuid.PcdRtcVector|8|UINT8|0x500A

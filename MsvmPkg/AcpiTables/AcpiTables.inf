@@ -39,6 +39,7 @@
     gMsvmPkgTokenSpaceGuid.PcdCom1Vector                ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCom2Vector                ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase           ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdPmemRegisterBase          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcIdleBase              ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVmbusVector               ## CONSUMES
@@ -68,4 +69,3 @@
 [Packages.X64]
     PcAtChipsetPkg/PcAtChipsetPkg.dec
     UefiCpuPkg/UefiCpuPkg.dec
-
