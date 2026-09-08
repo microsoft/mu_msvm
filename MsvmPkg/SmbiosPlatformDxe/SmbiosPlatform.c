@@ -1899,7 +1899,7 @@ Return Value:
   }
 }
 
-#if defined (MDE_CPU_X64)
+#if defined (MDE_CPU_X64) || defined (MDE_CPU_AARCH64)
 
 VOID
 AddIpmiDeviceInformation (
@@ -1915,14 +1915,11 @@ Routine Description:
     (Linux ipmi_si / the Windows IPMI driver) can discover and bind to it.
 
     Only added when the host enables the emulated IPMI device (PcdIpmiEnabled),
-    which is driven by the platform diagnostic-logging setting. The emulated BMC
-    exposes the KCS data/status registers at I/O ports 0xCA2 (data) and 0xCA3
-    (status/command).
+    which is driven by the platform diagnostic-logging setting.
 
-    This is x64-only: the KCS registers are reachable exclusively through legacy
-    port-mapped I/O, and the Type 38 base address below is encoded as I/O space
-    (bit 0 = 1). AArch64 has no I/O port space, so the structure is not emitted
-    there.
+    The KCS transport differs by architecture: x64 uses legacy port-mapped I/O
+    (0xCA2 data / 0xCA3 status-command), while AArch64 uses memory-mapped I/O at
+    PcdIpmiKcsMmioBase with 4-byte register spacing.
 
 Arguments:
 
@@ -1957,20 +1954,25 @@ Return Value:
       0x20,                           // I2C Slave Address of the BMC (IPMB address; unused for KCS discovery)
       0xFF,                           // NV Storage Device Address - not a separate device
       //
-      // Base Address: I/O port 0xCA2. Per SMBIOS v3.1 section 7.39, the
-      // least-significant bit indicates the address space (1 = I/O), so the
-      // encoded value is 0xCA2 | 1 = 0xCA3. Consumers mask bit 0 to recover
-      // the port (0xCA2).
+      // Base Address + Base Address Modifier. Per SMBIOS v3.1 section 7.39,
+      // the least-significant bit of the base selects the address space
+      // (1 = I/O, 0 = memory-mapped); modifier bits 7:6 encode spacing.
+      //
+ #if defined (MDE_CPU_X64)
+      //
+      // I/O port 0xCA2 is encoded as 0xCA2 | 1. Modifier 0x00 selects
+      // successive byte boundaries; no interrupt is described.
       //
       0x0000000000000CA3ULL,
-      //
-      // Base Address Modifier / Interrupt Info:
-      //   bits 7:6 = 00b -> registers on successive byte boundaries
-      //              (0xCA2 = data, 0xCA3 = status/command)
-      //   bit 3    = 0b  -> interrupt info not specified
-      //   remaining bits 0 -> KCS is polled (no interrupt)
-      //
       0x00,
+ #elif defined (MDE_CPU_AARCH64)
+      //
+      // Memory-mapped registers are at offsets 0 and 4. Modifier 0x40
+      // selects 32-bit boundaries; no interrupt is described.
+      //
+      FixedPcdGet32 (PcdIpmiKcsMmioBase),
+      0x40,
+ #endif
       0x00          // Interrupt Number - none
     },
     {
@@ -2020,7 +2022,7 @@ Return Value:
   AddOEMStrings (Smbios);
   AddMemoryStructures (Smbios);
   AddSystemBootInformation (Smbios);
- #if defined (MDE_CPU_X64)
+ #if defined (MDE_CPU_X64) || defined (MDE_CPU_AARCH64)
   AddIpmiDeviceInformation (Smbios);
  #endif
 }

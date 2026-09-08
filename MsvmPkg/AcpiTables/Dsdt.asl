@@ -316,15 +316,14 @@ DefinitionBlock (
     }
 
     // IPMI KCS BMC ===========================================================
-    // Emulated IPMI BMC exposed over the KCS system interface at I/O ports
-    // 0x0CA2 (data) / 0x0CA3 (status/command). The device is only declared when
-    // the host enabled the emulated IPMI device (ICFG). Advertising the ACPI
-    // IPI0001 device lets the Windows IPMI driver (ipmidrv) discover and bind to
-    // the KCS interface; Linux discovers the same BMC via SMBIOS Type 38.
+    // Emulated IPMI BMC exposed over the KCS system interface. The device is only
+    // declared when the host enabled the emulated IPMI device (ICFG). Advertising
+    // the ACPI IPI0001 device lets the Windows IPMI driver (ipmidrv) discover and
+    // bind to the KCS interface; Linux discovers the same BMC via SMBIOS Type 38.
     //
-    // This is x64-only: the emulated BMC is reachable exclusively through legacy
-    // port-mapped I/O (0x0CA2/0x0CA3), and AArch64 has no I/O port space, so the
-    // IO() resource descriptor below is meaningful only on x86.
+    // The KCS transport differs by architecture: x64 reaches the registers through
+    // legacy port-mapped I/O (0x0CA2 data / 0x0CA3 status-command), while AArch64
+    // has no I/O port space and reaches them through memory-mapped I/O.
 
 #if defined(_DSDT_INTEL_)
 
@@ -341,6 +340,27 @@ DefinitionBlock (
             {
                 // KCS data register (0x0CA2) and status/command register (0x0CA3).
                 IO(Decode16, 0x0CA2, 0x0CA2, 0x01, 0x02)
+            })
+        }
+    }
+
+#elif defined(_DSDT_ARM_)
+
+    If(LGreater(ICFG, 0))
+    {
+        Device(\_SB.VMOD.IPMI)
+        {
+            Name(_HID, "IPI0001")           // ACPI IPMI device
+            Name(_STR, Unicode("IPMI KCS Device"))
+            Name(_UID, 0x0)
+            Name(_IFT, 0x1)                 // Interface type: 1 = KCS
+            Name(_SRV, 0x0200)              // IPMI specification revision 2.0
+            Name(_CRS, ResourceTemplate()
+            {
+                // KCS data and status/command registers are one byte each and
+                // sit at 4-byte spacing within the intercepted MMIO page.
+                Memory32Fixed(ReadWrite, FixedPcdGet32(PcdIpmiKcsMmioBase), 0x1)
+                Memory32Fixed(ReadWrite, FixedPcdGet32(PcdIpmiKcsMmioStatusBase), 0x1)
             })
         }
     }
@@ -11081,4 +11101,3 @@ DefinitionBlock (
         Device(R048) { Name(_HID, "ACPI0007") Name(_UID, 2048) Method(_STA, 0) { Return(0xF) } }
     }
 }
-

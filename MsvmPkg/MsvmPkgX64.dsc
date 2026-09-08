@@ -430,6 +430,10 @@
   gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase|0x2F8
   gMsvmPkgTokenSpaceGuid.PcdCom2Vector|3
 
+  # Consumed by shared modules but unused for x64 KCS advertisement.
+  gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase|0xEFFE7000
+  gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioStatusBase|0xEFFE7004
+
   # RTC (clock)
   gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase|0x70
   gMsvmPkgTokenSpaceGuid.PcdRtcVector|8
