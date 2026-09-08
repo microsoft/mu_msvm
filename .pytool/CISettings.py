@@ -66,7 +66,7 @@ class Settings(CiBuildSettingsManager, SetupSettingsManager, UpdateSettingsManag
         )
 
     def GetPackagesPath(self):
-        return (".", "MU_BASECORE", "Common/MU", "Feature/DEBUGGER")
+        return (".", "MU_BASECORE", "Common/MU", "Feature/DEBUGGER", "Common/PATINA_EDK2")
 
     def GetWorkspaceRoot(self):
         return WORKSPACE_ROOT
