@@ -131,17 +131,39 @@ jobs:
   openvmm-test-x64:
     name: OpenVMM Test X64
     needs: build
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       contents: read
-    uses: ./.github/workflows/openvmm-test.yml
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Test X64 firmware
+        uses: ./.github/actions/openvmm-test
+        with:
+          github-token: ${{ github.token }}
 
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [source-checks, build, openvmm-test-x64]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    uses: ./.github/workflows/release.yml
-    with:
-      base-version: "26.0"
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Release firmware
+        uses: ./.github/actions/release
+        with:
+          base-version: "26.0"
+          github-token: ${{ github.token }}
