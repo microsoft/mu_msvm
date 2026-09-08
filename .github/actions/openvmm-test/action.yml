@@ -40,8 +40,9 @@ runs:
         head_sha=""
         candidates="$(jq -r '.workflow_runs[] | [.id, .head_sha] | @tsv' <<< "$response")"
         while IFS=$'\t' read -r candidate_id candidate_sha; do
-          artifacts="$(gh api \
+          artifact_pages="$(gh api --paginate --slurp \
             "repos/microsoft/openvmm/actions/runs/$candidate_id/artifacts?per_page=100")"
+          artifacts="$(jq -c '[.[].artifacts[]]' <<< "$artifact_pages")"
 
           if jq -e '
             [
@@ -49,7 +50,7 @@ runs:
               "x64-linux-openvmm",
               "x64-linux-musl-pipette"
             ] as $required
-            | [.artifacts[] | select(.expired == false) | .name] as $available
+            | [.[] | select(.expired == false) | .name] as $available
             | all($required[]; . as $name | $available | index($name) != null)
           ' <<< "$artifacts" > /dev/null; then
             run_id="$candidate_id"
@@ -57,7 +58,22 @@ runs:
             break
           fi
 
-          echo "Skipping OpenVMM run $candidate_id: required artifacts are incomplete"
+          artifact_status="$(jq -r '
+            [
+              "x64-linux-vmm-tests-archive",
+              "x64-linux-openvmm",
+              "x64-linux-musl-pipette"
+            ] as $required
+            | [
+                $required[] as $name
+                | if any(.[]; .name == $name and .expired == false) then empty
+                  elif any(.[]; .name == $name) then "\($name) (expired)"
+                  else "\($name) (missing)"
+                  end
+              ]
+            | join(", ")
+          ' <<< "$artifacts")"
+          echo "Skipping OpenVMM run $candidate_id: $artifact_status"
         done <<< "$candidates"
 
         if [[ -z "$run_id" || -z "$head_sha" ]]; then
