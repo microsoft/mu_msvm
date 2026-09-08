@@ -416,6 +416,7 @@
 
   # Emulated IPMI BMC (KCS) MMIO interception page below ProcIdle.
   gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase|0xEFFE7000
+  gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioStatusBase|0xEFFE7004
 
   # RTC (clock)
   gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase|0x70

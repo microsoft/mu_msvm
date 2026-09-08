@@ -348,7 +348,7 @@ DefinitionBlock (
 
     If(LGreater(ICFG, 0))
     {
-        Device(\_SB.IPMI)
+        Device(\_SB.VMOD.IPMI)
         {
             Name(_HID, "IPI0001")           // ACPI IPMI device
             Name(_STR, Unicode("IPMI KCS Device"))
@@ -360,7 +360,7 @@ DefinitionBlock (
                 // KCS data and status/command registers are one byte each and
                 // sit at 4-byte spacing within the intercepted MMIO page.
                 Memory32Fixed(ReadWrite, FixedPcdGet32(PcdIpmiKcsMmioBase), 0x1)
-                Memory32Fixed(ReadWrite, FixedPcdGet32(PcdIpmiKcsMmioBase) + 4, 0x1)
+                Memory32Fixed(ReadWrite, FixedPcdGet32(PcdIpmiKcsMmioStatusBase), 0x1)
             })
         }
     }

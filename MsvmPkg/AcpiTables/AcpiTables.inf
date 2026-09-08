@@ -40,6 +40,7 @@
     gMsvmPkgTokenSpaceGuid.PcdCom2RegisterBase          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdCom2Vector                ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase           ## CONSUMES
+    gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioStatusBase     ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdPmemRegisterBase          ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcIdleBase              ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdVmbusVector               ## CONSUMES
