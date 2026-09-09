@@ -8,6 +8,10 @@ inputs:
   c-core:
     description: Whether to use the legacy C core
     required: true
+  official-build:
+    description: Set to 1 to mark the build as official in the firmware version record
+    required: false
+    default: ""
   platform-config:
     description: Path to the Stuart platform configuration
     required: false
@@ -38,6 +42,8 @@ runs:
 
     - name: Stuart build
       shell: pwsh
+      env:
+        OFFICIAL_BUILD: ${{ inputs.official-build }}
       run: >-
         stuart_build
         -c "${{ inputs.platform-config }}"
