@@ -393,14 +393,15 @@ AziHsmMborDecodeMap (
 /**
   Decodes a byte array from the buffer with MBOR bytes marker and length.
 
-  @param[in, out] Decoder   Pointer to the decoder structure.
-  @param[in, out] Buffer    Pointer to the buffer to store decoded bytes.
-  @param[in, out] Length    Pointer to store the number of bytes decoded.
+  @param[in, out] Decoder     Pointer to the decoder structure.
+  @param[in, out] Buffer      Pointer to the buffer to store decoded bytes.
+  @param[in]      BufferSize  Capacity of the destination Buffer in bytes.
+  @param[in, out] Length      Pointer to store the number of bytes decoded.
 
   @retval EFI_SUCCESS           Bytes decoded successfully.
   @retval EFI_INVALID_PARAMETER Decoder, Buffer, or Length is NULL.
   @retval EFI_COMPROMISED_DATA  Marker does not match expected type.
-  @retval EFI_BUFFER_TOO_SMALL  Not enough data in buffer.
+  @retval EFI_BUFFER_TOO_SMALL  Decoded length exceeds BufferSize or input buffer.
 
   Usage: Use to decode MBOR bytes type.
 **/
@@ -408,20 +409,22 @@ EFI_STATUS
 AziHsmMborDecodeBytes (
   IN OUT AZIHSM_MBOR_DECODER  *Decoder,
   IN OUT UINT8                *Buffer,
+  IN     UINT16               BufferSize,
   IN OUT UINT16               *Length
   );
 
 /**
   Decodes a padded byte array from the buffer with MBOR marker and length.
 
-  @param[in, out] Decoder   Pointer to the decoder structure.
-  @param[in, out] Buffer    Pointer to the buffer to store decoded bytes.
-  @param[in, out] Length    Pointer to store the number of bytes decoded.
+  @param[in, out] Decoder     Pointer to the decoder structure.
+  @param[in, out] Buffer      Pointer to the buffer to store decoded bytes.
+  @param[in]      BufferSize  Capacity of the destination Buffer in bytes.
+  @param[in, out] Length      Pointer to store the number of bytes decoded.
 
   @retval EFI_SUCCESS           Bytes decoded successfully.
   @retval EFI_INVALID_PARAMETER Decoder, Buffer, or Length is NULL.
   @retval EFI_COMPROMISED_DATA  Marker or padding is invalid.
-  @retval EFI_BUFFER_TOO_SMALL  Not enough data in buffer.
+  @retval EFI_BUFFER_TOO_SMALL  Decoded length exceeds BufferSize or input buffer.
 
   Usage: Use to decode MBOR padded bytes type. Padding bytes must be zero.
 **/
@@ -429,6 +432,7 @@ EFI_STATUS
 AziHsmMborDecodePaddedBytes (
   IN OUT AZIHSM_MBOR_DECODER  *Decoder,
   IN OUT UINT8                *Buffer,
+  IN     UINT16               BufferSize,
   IN OUT UINT16               *Length
   );
 

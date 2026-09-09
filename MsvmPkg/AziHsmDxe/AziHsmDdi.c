@@ -1313,7 +1313,7 @@ AzihsmDecodeInitBks3Resp (
   }
 
   // Decode the actual BKS3 response data
-  Status = AziHsmMborDecodePaddedBytes (Decoder, Response->Bks3.Data, &DataDecodedSize);
+  Status = AziHsmMborDecodePaddedBytes (Decoder, Response->Bks3.Data, Response->Bks3.Length, &DataDecodedSize);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to decode InitBks3 response data: %r\n", Status));
     goto ExitFunction;
@@ -1341,7 +1341,7 @@ AzihsmDecodeInitBks3Resp (
   }
 
   // get next byte array
-  Status = AziHsmMborDecodeBytes (Decoder, Response->Guid, &DataDecodedSize);
+  Status = AziHsmMborDecodeBytes (Decoder, Response->Guid, sizeof (Response->Guid), &DataDecodedSize);
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "AziHsmDdi: Failed to decode InitBks3 response GUID data: %r\n", Status));
@@ -1764,7 +1764,7 @@ AzihsmDecodeGetSealedBks3Resp (
   }
 
   // Decode the sealed BKS3 data
-  Status = AziHsmMborDecodePaddedBytes (Decoder, Response->SealedBks3.Data, &Response->SealedBks3.Length);
+  Status = AziHsmMborDecodePaddedBytes (Decoder, Response->SealedBks3.Data, Response->SealedBks3.Length, &Response->SealedBks3.Length);
   if (EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_ERROR,
