@@ -9,6 +9,11 @@ on:
       - "*"
   workflow_dispatch:
 
+# Bump this when releasing a new major/minor version. The patch number
+# auto-increments from the latest existing GitHub release with this prefix.
+env:
+  RELEASE_BASE_VERSION: "26.0"
+
 jobs:
   source-checks:
     name: Source Checks
@@ -165,7 +170,5 @@ jobs:
       - name: Release firmware
         uses: ./.github/actions/release
         with:
-          # Bump this when releasing a new major/minor version. The patch number
-          # auto-increments from the latest existing GitHub release with this prefix.
-          base-version: "26.0"
+          base-version: ${{ env.RELEASE_BASE_VERSION }}
           github-token: ${{ github.token }}
