@@ -40,6 +40,7 @@ runs:
         head_sha=""
         candidates="$(jq -r '.workflow_runs[] | [.id, .head_sha] | @tsv' <<< "$response")"
         while IFS=$'\t' read -r candidate_id candidate_sha; do
+          [[ -z "$candidate_id" ]] && continue
           artifact_pages="$(gh api --paginate --slurp \
             "repos/microsoft/openvmm/actions/runs/$candidate_id/artifacts?per_page=100")"
           artifacts="$(jq -c '[.[].artifacts[]]' <<< "$artifact_pages")"
