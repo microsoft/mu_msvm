@@ -19,6 +19,10 @@ jobs:
     name: Source Checks
     runs-on: windows-2022
     steps:
+      - name: Disable automatic line ending conversion
+        shell: pwsh
+        run: git config --global core.autocrlf false
+
       - name: Enable long paths
         shell: pwsh
         run: git config --system core.longpaths true
@@ -77,10 +81,6 @@ jobs:
             c-core: "FALSE"
 
     steps:
-      - name: Disable automatic line ending conversion
-        shell: pwsh
-        run: git config --global core.autocrlf false
-
       - name: Enable long paths
         shell: pwsh
         run: git config --system core.longpaths true
