@@ -32,7 +32,7 @@ Run the source checks from the repository root before opening a pull request. In
 tools used by the checks on a new checkout or whenever their configuration changes:
 
 ```powershell
-python -m pip install -r pip_requirement_stable.txt
+python -m pip install -r pip-requirements.txt
 stuart_update -c .\.pytool\CISettings.py
 ```
 
