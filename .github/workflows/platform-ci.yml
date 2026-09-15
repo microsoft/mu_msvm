@@ -65,7 +65,7 @@ jobs:
           path: ${{ steps.source-checks.outputs.log-path }}
 
   build:
-    name: ${{ matrix.target }} ${{ matrix.arch }} ${{ matrix.tools }} DXE=${{ matrix.dxe-core }}
+    name: ${{ matrix.target }} ${{ matrix.arch }} ${{ matrix.tools }}${{ matrix.dxe-core == 'patina' && ' DXE=patina' || '' }}
     runs-on: windows-2022
     strategy:
       fail-fast: false
