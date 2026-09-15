@@ -9,6 +9,43 @@ This repository is built on top of Project Mu.  Please see Project Mu for detail
 
 See the [developer guide](MsvmPkg/Docs/DEVGUIDE.md) and in particular the getting started section.
 
+## Firmware Artifacts
+
+Platform CI names firmware artifacts using this case-sensitive format:
+
+```text
+firmware-<TARGET>-<ARCH>-<TOOLCHAIN>-dxe-<CORE>
+```
+
+GitHub release assets use the same name with a `.tar.gz` suffix. Consumers such as
+OpenVMM should select an exact asset name from a specific release tag. For example:
+
+```text
+firmware-RELEASE-X64-CLANGPDB-dxe-legacy.tar.gz
+firmware-RELEASE-X64-CLANGPDB-dxe-patina.tar.gz
+```
+
+`CORE` is `legacy` for the C DXE core or `patina` for the Rust Patina DXE core.
+`TOOLCHAIN` identifies the EDK II toolchain; the Patina core is supplied as a
+prebuilt dependency. Both `DEBUG` and `RELEASE` targets are built for each of these
+combinations:
+
+| Architecture | Toolchain | DXE Core |
+| --- | --- | --- |
+| X64 | VS2022 | legacy |
+| X64 | CLANGPDB | legacy, patina |
+| AARCH64 | CLANGPDB | legacy, patina |
+
+Each firmware archive contains `FV/MSVM.fd` and the `MAP/` and `PDB/` symbol
+directories. CI build logs use the same variant suffix with a `logs-` prefix and
+are not included in releases. Releases are published after successful main-branch
+push validation, including OpenVMM boot tests of all X64 variants.
+
+This naming replaces the previous `-legacy-TRUE` and `-legacy-FALSE` suffixes with
+`-dxe-legacy` and `-dxe-patina`, respectively. Existing release assets retain their
+old names; downstream consumers must update asset selection when adopting a
+release with the new names. Archive contents are unchanged.
+
 ## Contributing
 
 This project welcomes [contributions](MsvmPkg/Docs/CONTRIBUTING.md) and suggestions.  Most contributions require you to agree to a

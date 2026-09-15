@@ -65,7 +65,7 @@ jobs:
           path: ${{ steps.source-checks.outputs.log-path }}
 
   build:
-    name: ${{ matrix.target }} ${{ matrix.arch }} ${{ matrix.tools }} legacy=${{ matrix.c-core }}
+    name: ${{ matrix.target }} ${{ matrix.arch }} ${{ matrix.tools }} DXE=${{ matrix.dxe-core }}
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -73,12 +73,12 @@ jobs:
         target: [DEBUG, RELEASE]
         arch: [X64, AARCH64]
         tools: [VS2022, CLANGPDB]
-        c-core: ["TRUE", "FALSE"]
+        dxe-core: [legacy, patina]
         exclude:
           - arch: AARCH64
             tools: VS2022
           - tools: VS2022
-            c-core: "FALSE"
+            dxe-core: patina
 
     steps:
       - name: Enable long paths
@@ -103,7 +103,7 @@ jobs:
         uses: ./.github/actions/build-platform
         with:
           architecture: ${{ matrix.arch }}
-          c-core: ${{ matrix.c-core }}
+          c-core: ${{ matrix.dxe-core == 'legacy' && 'TRUE' || 'FALSE' }}
           # Mark main-branch builds as official in the embedded firmware version record.
           official-build: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '' }}
           target: ${{ matrix.target }}
@@ -112,7 +112,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: firmware-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}-legacy-${{ matrix.c-core }}
+          name: firmware-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}-dxe-${{ matrix.dxe-core }}
           if-no-files-found: error
           path: |
             Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_${{ matrix.tools }}/FV/MSVM.fd
@@ -123,7 +123,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: logs-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}-legacy-${{ matrix.c-core }}
+          name: logs-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}-dxe-${{ matrix.dxe-core }}
           if-no-files-found: ignore
           path: |
             Build/**/BUILDLOG*.txt
