@@ -1169,6 +1169,7 @@ EFI_STATUS
 AziHsmMborDecodeBytes (
   IN OUT AZIHSM_MBOR_DECODER  *Decoder,
   IN OUT UINT8                *Buffer,
+  IN     UINT16               BufferSize,
   IN OUT UINT16               *Length
   )
 {
@@ -1199,6 +1200,12 @@ AziHsmMborDecodeBytes (
   }
 
   *Length = ConvertToLittleEndian16 (LengthBigEndian);
+
+  if (*Length > BufferSize) {
+    DEBUG ((DEBUG_ERROR, "AziHsmMborDecodeBytes: decoded length %u exceeds destination buffer size %u\n", *Length, BufferSize));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Exit;
+  }
 
   if (AZIHSM_MBOR_IS_POSITION_EXCEEDS_CAPACITY (Decoder, *Length)) {
     Status = EFI_BUFFER_TOO_SMALL;
@@ -1235,6 +1242,7 @@ EFI_STATUS
 AziHsmMborDecodePaddedBytes (
   IN OUT AZIHSM_MBOR_DECODER  *Decoder,
   IN OUT UINT8                *Buffer,
+  IN     UINT16               BufferSize,
   IN OUT UINT16               *Length
   )
 {
@@ -1271,6 +1279,13 @@ AziHsmMborDecodePaddedBytes (
   }
 
   *Length = ConvertToLittleEndian16 (LengthBigEndian);
+
+  if (*Length > BufferSize) {
+    DEBUG ((DEBUG_ERROR, "AziHsmMborDecodePaddedBytes: decoded length %u exceeds destination buffer size %u\n", *Length, BufferSize));
+    Status = EFI_BUFFER_TOO_SMALL;
+    goto Exit;
+  }
+
   if (AZIHSM_MBOR_IS_POSITION_EXCEEDS_CAPACITY (Decoder, (*Length + NumberOfPaddedBytes))) {
     Status = EFI_BUFFER_TOO_SMALL;
     goto Exit;
