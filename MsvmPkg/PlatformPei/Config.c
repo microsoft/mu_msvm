@@ -1094,14 +1094,14 @@ ConfigSetUefiConfigFlags (
     PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdTpm2HashMask, (PcdGet32 (PcdTpm2HashMask) & ~HASH_ALG_SHA384)));
   }
 
+ #endif
+
   //
   // When DisableSha1Pcr is TRUE, we remove SHA-1 from the PCR hash mask.
   //
   if (ConfigFlags->Flags.DisableSha1Pcr) {
     PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdTpm2HashMask, (PcdGet32 (PcdTpm2HashMask) & ~HASH_ALG_SHA1)));
   }
-
- #endif
 
   if (ConfigFlags->Flags.Dhcp6DuidTypeLlt) {
     // Set to Dhcp6DuidTypeLlt
