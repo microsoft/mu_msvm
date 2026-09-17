@@ -1,0 +1,65 @@
+# Matrix data + entry point for the Hyper-V UEFI CI build.
+#
+# Each row in Builds is one variant. Fields:
+#   Pool          'Windows' | 'Linux'
+#   Arch          'X64' | 'AARCH64'
+#   Target        'DEBUG' | 'RELEASE'
+#   ToolChainTag  'VS2022' | 'CLANGPDB' | 'GCC'
+#   ClangWindows  true => Windows-org-built Clang (CLANGPDB + Pool=Windows only)
+#   GnuArch       GNU triple for Linux GCC (e.g. 'x86-64', 'aarch64')
+#   Salt          non-empty for test variants; encodes Arch+Target+Toolchain+Host
+#                 (A/X, D/R, CV/CW/CL/G).
+#                 Production VS2022 rows have NO Salt.
+#   Env          extra env vars (typically CLANG_BIN). Trailing slash required.
+#   Extra         extra PlatformBuild.py args. Every row explicitly selects its core.
+#
+# Shipped: the two VS2022 rows. All other rows are .Test variants.
+# GCC is unshippable (no Codeview, 64K-aligned files); Clang/X64 not yet shippable.
+
+parameters:
+- name: pipeline
+  type: string
+  values: [Official, PR]
+- name: publishNuget
+  type: boolean
+  default: false
+
+- name: Builds
+  type: object
+  default:
+  # Production (shipped). No Salt.
+  - {Pool: Windows, Arch: X64,     Target: DEBUG,   ToolChainTag: VS2022,   Extra: "BLD_*_USE_LEGACY_C_CORE=TRUE BLD_*_LEGACY_DEBUGGER=1"}
+  - {Pool: Windows, Arch: X64,     Target: RELEASE, ToolChainTag: VS2022,   Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  # Windows + Clang from Visual Studio. Salt: *CV.
+  - {Pool: Windows, Arch: X64,     Target: DEBUG,   ToolChainTag: CLANGPDB, Salt: XDCV, Env: {CLANG_BIN: $(CLANGVS)/bin/}, Extra: "BLD_*_USE_LEGACY_C_CORE=TRUE BLD_*_LEGACY_DEBUGGER=1"}
+  - {Pool: Windows, Arch: X64,     Target: RELEASE, ToolChainTag: CLANGPDB, Salt: XRCV, Env: {CLANG_BIN: $(CLANGVS)/bin/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Windows, Arch: AARCH64, Target: DEBUG,   ToolChainTag: CLANGPDB, Salt: ADCV, Env: {CLANG_BIN: $(CLANGVS)/bin/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Windows, Arch: AARCH64, Target: RELEASE, ToolChainTag: CLANGPDB, Salt: ARCV, Env: {CLANG_BIN: $(CLANGVS)/bin/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  # Windows + Clang from Windows org. Salt: *CW.
+  - {Pool: Windows, Arch: X64,     Target: DEBUG,   ToolChainTag: CLANGPDB, ClangWindows: true, Salt: XDCW, Env: {CLANG_BIN: $(CLANGWIN_BIN)/}, Extra: "BLD_*_USE_LEGACY_C_CORE=TRUE BLD_*_LEGACY_DEBUGGER=1"}
+  - {Pool: Windows, Arch: X64,     Target: RELEASE, ToolChainTag: CLANGPDB, ClangWindows: true, Salt: XRCW, Env: {CLANG_BIN: $(CLANGWIN_BIN)/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Windows, Arch: AARCH64, Target: DEBUG,   ToolChainTag: CLANGPDB, ClangWindows: true, Salt: ADCW, Env: {CLANG_BIN: $(CLANGWIN_BIN)/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Windows, Arch: AARCH64, Target: RELEASE, ToolChainTag: CLANGPDB, ClangWindows: true, Env: {CLANG_BIN: $(CLANGWIN_BIN)/}, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  # Linux + Clang. Salt: *CL.
+  - {Pool: Linux,   Arch: X64,     Target: DEBUG,   ToolChainTag: CLANGPDB, Salt: XDCL, Extra: "BLD_*_USE_LEGACY_C_CORE=TRUE BLD_*_LEGACY_DEBUGGER=1"}
+  - {Pool: Linux,   Arch: X64,     Target: RELEASE, ToolChainTag: CLANGPDB, Salt: XRCL, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Linux,   Arch: AARCH64, Target: DEBUG,   ToolChainTag: CLANGPDB, Salt: ADCL, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  - {Pool: Linux,   Arch: AARCH64, Target: RELEASE, ToolChainTag: CLANGPDB, Salt: ARCL, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+  # Linux + GCC. Salt: *G. X64 DEBUG + AARCH64 disabled (mu_basecore PR #1710 / firmware size).
+  - {Pool: Linux,   Arch: X64,     Target: RELEASE, ToolChainTag: GCC,      GnuArch: x86-64, Salt: XRG, Extra: BLD_*_USE_LEGACY_C_CORE=TRUE}
+
+- name: Nugets
+  type: object
+  default:
+  - {definition: llvm.tools,    version: $(LlvmVersion), feed: $(LlvmFeed), downloadPath: $(PkgLlvm_Tools)}
+  - {definition: clang.headers, version: $(LlvmVersion), feed: $(LlvmFeed), downloadPath: $(PkgClang_Headers)}
+
+# Internal-repo auth URLs live in data/auth-urls.json so set_repo_auth.py owns both phases.
+
+jobs:
+- template: ../jobs.yml
+  parameters:
+    pipeline:     ${{parameters.pipeline}}
+    publishNuget: ${{parameters.publishNuget}}
+    Builds:       ${{parameters.Builds}}
+    Nugets:       ${{parameters.Nugets}}

@@ -1,0 +1,43 @@
+parameters:
+- name: base
+- name: pipeline
+  type: string
+  values:
+  - Official
+  - PR
+- name: publishNuget
+  type: boolean
+  default: False
+
+resources:
+  repositories:
+  - repository: templates_onebranch
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+
+extends:
+  template: ${{parameters.base}}@templates_onebranch # https://aka.ms/obpipelines/templates
+  parameters:
+    platform:
+      name: windows_undocked
+    globalSdl:
+      tsa:
+        enabled: False
+    featureFlags:
+      WindowsHostVersion: 1ESWindows2022
+    nugetPublishing:
+      feeds:
+      - name: OS/HyperVUefi
+        continueOnConflict: False
+        files_to_publish: '*.nupkg;!*.symbols.nupkg'
+    git:
+      submodules: False
+    stages:
+    - stage: Build
+      jobs:
+      - template: .azuredevops/pipelines/OneBranch/source-checks.yml@self
+      - template: .azuredevops/pipelines/OneBranch/data/matrix.yml@self
+        parameters:
+          pipeline: ${{parameters.pipeline}}
+          publishNuget: ${{parameters.publishNuget}}

@@ -1,0 +1,6 @@
+{
+    "_comment": "Internal ADO repos needing System.AccessToken auth. Shared by set_repo_auth.py Set/Unset so the phases cannot drift.",
+    "urls": [
+        "https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore"
+    ]
+}

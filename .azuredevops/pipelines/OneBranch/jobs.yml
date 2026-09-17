@@ -1,0 +1,195 @@
+# =============================================================================
+# jobs.yml -- Per-variant build orchestration for Hyper-V UEFI CI.
+# =============================================================================
+#
+# Pure orchestration. Data lives in matrix.yml. Step bodies live in
+# .azuredevops/pipelines/OneBranch/scripts/*.py (typed argparse scripts, runnable via
+# run_local_ci.py without ADO). Every step here is a one-line task call.
+#
+# Per-job step flow:
+#     auth        -> install_toolchain -> setup -> build
+#                 -> stage_artifacts   -> pack  -> unset_repo_auth
+#
+# =============================================================================
+
+parameters:
+- name: pipeline
+  type: string
+- name: publishNuget
+  type: boolean
+- name: Builds
+  type: object
+- name: Nugets
+  type: object
+
+jobs:
+- ${{each Build in parameters.Builds}}:
+  - job: ${{Build.Target}}_${{Build.Arch}}_${{Build.ToolChainTag}}${{iif(ne(Build.Salt, ''), format('_{0}', Build.Salt), '')}}
+    dependsOn: SourceChecks
+    displayName: ${{Build.Pool}} ${{Build.Arch}} ${{Build.Target}} ${{Build.ToolChainTag}}${{iif(eq(coalesce(Build.ClangWindows, false), true), ' (WinOrg)', '')}}
+    pool:
+      type: ${{Build.Pool}}
+
+    # -------------------------------------------------------------------------
+    # Per-job variables.
+    #
+    # ob_* are read by the OneBranch base template at expansion time and must
+    # stay declared here (they cannot move to ##vso[task.setvariable]).
+    # Vpack name composition is mirrored and unit-tested in
+    # scripts/tests/test_get_vpack_name.py.
+    # -------------------------------------------------------------------------
+    variables:
+      # --- Variant-specific env overrides (e.g. CLANG_BIN) ---
+      ${{each pair in Build.Env}}:
+        ${{pair.Key}}: ${{pair.Value}}
+
+      # --- Toolchain / container environment ---
+      GCC_${{Build.Arch}}_PREFIX:    /usr/bin/${{Build.GnuArch}}-linux-gnu-
+      GIT_TERMINAL_PROMPT:           '0'
+      LinuxContainerImage:           onebranch.azurecr.io/linux/ubuntu-2404:latest
+      WindowsContainerImage:         onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+
+      # --- Build paths ---
+      BuildDir:                      Build/Msvm${{Build.Arch}}/${{Build.Target}}_${{Build.ToolChainTag}}
+      PlatformPkg:                   MsvmPkg
+      ScriptsDir:                    .azuredevops/pipelines/OneBranch/scripts
+
+      # --- Vpack name composition ---
+      DotSalt:                       ${{iif(eq(Build.Salt, ''), '', format('.{0}', Build.Salt))}}
+      DotTest:                       ${{iif(or(ne(Build.Salt, ''), eq(parameters.pipeline, 'PR')), '.Test', '')}}
+
+      # --- OneBranch variables ---
+      ob_outputDirectory:            $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT
+      ob_nugetPublishing_enabled:    ${{parameters.publishNuget}}
+      ob_createvpack_packagename:    $(Build.Repository.Name).mscoreuefi.$(PRdot)${{Build.Arch}}.${{Build.Target}}$(DotSalt)$(DotTest)
+      ob_createvpack_description:    Hyper V UEFI Firmware
+      ob_createvpack_enabled:        true  # Ignored in PR pipeline (upstream policy).
+      ob_createvpack_versionAs:      parts
+      ob_createvpack_majorVer:       $(Parameters.vPack.majorVer)
+      ob_createvpack_minorVer:       $(Parameters.vPack.minorVer)
+      ob_createvpack_metadata:       $(Build.SourceVersion)
+      ob_createvpack_failOnStdErr:   true
+      ob_createvpack_verbose:        true
+      ob_createvpack_vpackdirectory: $(ob_outputDirectory)/$(BuildDir)/Bin
+
+    steps:
+
+    # =========================================================================
+    # Authentication
+    # -------------------------------------------------------------------------
+    # NuGet feed auth, pip feed auth, and git http.<url>.extraheader for the
+    # internal ADO submodule(s) listed in auth-urls.json.
+    # =========================================================================
+
+    - task: NuGetAuthenticate@1
+      displayName: Authenticate NuGet Feed
+      inputs: {nuGetServiceConnections: WindowsPartners_NugetFeedConnection}
+
+    - task: PipAuthenticate@1
+      displayName: Authenticate Pip Feed
+      inputs: {artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages}
+
+    - script: python $(ScriptsDir)/set_repo_auth.py set
+      displayName: Set ADO Repo Auth
+      env: {SYSTEM_ACCESSTOKEN: $(System.AccessToken)}
+
+    # =========================================================================
+    # Toolchain
+    # -------------------------------------------------------------------------
+    # Windows-org Clang requires NuGet payloads (auth-typed download stays in
+    # YAML). install_toolchain.py then dispatches by Pool/ToolChainTag.
+    # =========================================================================
+
+    - ${{if eq(coalesce(Build.ClangWindows, false), true)}}:
+      - ${{each Nuget in parameters.Nugets}}:
+        - task: DownloadPackage@1
+          displayName: Download ${{Nuget.definition}}
+          inputs: ${{Nuget}}
+
+    - script: >-
+        python $(ScriptsDir)/install_toolchain.py
+        --pool ${{Build.Pool}} --tool-chain-tag ${{Build.ToolChainTag}}
+        --clang-windows ${{coalesce(Build.ClangWindows, false)}}
+        --gnu-arch "${{coalesce(Build.GnuArch, '')}}"
+        --clang-win-root "$(CLANGWIN)" --clang-bin "$(CLANGWIN_BIN)" --clang-inc "$(CLANGWIN_INC)"
+        --llvm-tools-source "$(PkgLlvm_Tools)" --clang-headers-source "$(PkgClang_Headers)"
+      displayName: Install Toolchain
+
+    # =========================================================================
+    # Build
+    # -------------------------------------------------------------------------
+    # setup: pip install + Stuart --setup + Stuart --update.
+    # build: the single PlatformBuild.py invocation. Build logs are always
+    #        dumped from the script's finally block (no separate log step).
+    # =========================================================================
+
+    - script: python $(ScriptsDir)/setup.py --platform-pkg $(PlatformPkg)
+      displayName: Setup
+
+    - script: >-
+        python $(ScriptsDir)/build.py
+        --arch ${{Build.Arch}} --target ${{Build.Target}} --tool-chain-tag ${{Build.ToolChainTag}}
+        --extra "${{coalesce(Build.Extra, '')}}" --platform-pkg $(PlatformPkg)
+      displayName: Build
+
+    # =========================================================================
+    # Artifact staging
+    # -------------------------------------------------------------------------
+    # stage_artifacts:    flatten logs, copy fd/PDB/MAP, build vpack staging dir.
+    # copy_all_on_failure:dump the whole Build/ tree to ob_outputDirectory so we
+    #                     can debug a failed build offline.
+    # PublishSymbols:     symbol-server upload (skipped for GCC -- no Codeview).
+    # =========================================================================
+
+    - script: >-
+        python $(ScriptsDir)/stage_artifacts.py
+        --arch ${{Build.Arch}} --target ${{Build.Target}} --tool-chain-tag ${{Build.ToolChainTag}}
+        --build-dir "$(BuildDir)" --out-dir "$(ob_outputDirectory)" --job-name "$(Agent.JobName)"
+      displayName: Stage Artifacts
+      condition: succeededOrFailed()
+      continueOnError: true
+
+    - task: CopyFiles@2
+      displayName: Copy Full Build Tree (on Failure)
+      condition: failed()
+      continueOnError: true
+      inputs: {SourceFolder: Build, Contents: '**', TargetFolder: $(ob_outputDirectory)/all}
+
+    - ${{if ne(Build.ToolChainTag, 'GCC')}}:
+      - task: PublishSymbols@2
+        displayName: Publish Symbols
+        continueOnError: true
+        inputs:
+          SearchPattern: $(BuildDir)/PDB/*.pdb
+          IndexSources: true
+          SymbolServerType: TeamServices
+          SymbolsProduct: Hyper-V UEFI
+          enablesymbolspublishing: true
+
+    # =========================================================================
+    # NuGet pack
+    # -------------------------------------------------------------------------
+    # The OneBranch base template generates the vpack itself from
+    # ob_createvpack_vpackdirectory and increments the rightmost version digit.
+    # This step is the matching .nupkg for the NuGet feed.
+    # =========================================================================
+
+    - task: NuGetCommand@2
+      displayName: Pack NuGet
+      inputs:
+        command: pack
+        packagesToPack: $(PlatformPkg)/HyperVUefi.NuSpec
+        packDestination: $(ob_outputDirectory)/packages
+        packTimezone: utc
+        buildProperties: id=$(ob_createvpack_packagename);version=$(Parameters.vPack.majorVer).$(Parameters.vPack.minorVer)-$(Build.SourceBranchName).$(Build.SourceVersion)
+
+    # =========================================================================
+    # Cleanup
+    # -------------------------------------------------------------------------
+    # Always remove the extraheader auth so credentials are not left in
+    # git config on the agent. Mirrors set_repo_auth and shares its URL list.
+    # =========================================================================
+
+    - script: python $(ScriptsDir)/set_repo_auth.py unset
+      displayName: Unset ADO Repo Auth
+      condition: always()
