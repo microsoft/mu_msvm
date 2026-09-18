@@ -1,9 +1,0 @@
-steps:
-  - script: python -m pip install -r pip-requirements.txt
-    displayName: Install Python Dependencies
-
-  - script: stuart_setup -c .pytool/CISettings.py
-    displayName: Set Up Stuart Dependencies
-
-  - script: stuart_update -c .pytool/CISettings.py
-    displayName: Update Stuart Dependencies

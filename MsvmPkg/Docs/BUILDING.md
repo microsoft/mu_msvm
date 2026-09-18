@@ -28,28 +28,14 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 
 ## Running CI Checks Locally
 
-Run the source checks from the repository root before opening a pull request. Install the Python dependencies and download the
-tools used by the checks on a new checkout or whenever their configuration changes:
+Run the same source-check workflow used by platform CI from the repository root:
 
 ```powershell
-python -m pip install -r pip-requirements.txt
-stuart_setup -c .\.pytool\CISettings.py
-stuart_update -c .\.pytool\CISettings.py
+python .\ci\scripts\source_checks.py
 ```
 
-Run the same source checks enforced by platform CI:
-
-```powershell
-stuart_ci_build `
-	-c .\.pytool\CISettings.py `
-	--disable-all `
-	GuidCheck=run `
-	LineEndingCheck=run `
-	UncrustifyCheck=run
-```
-
-The `--disable-all` option disables the default plugin set; each `Check=run` argument enables a check used by this repository.
-To run one check while iterating, specify only that check. For example:
+The workflow installs the Python requirements, runs `stuart_setup` and `stuart_update`, and then runs the configured
+`stuart_ci_build` checks. To run one check while iterating, invoke Stuart directly. For example:
 
 ```powershell
 stuart_ci_build -c .\.pytool\CISettings.py --disable-all GuidCheck=run

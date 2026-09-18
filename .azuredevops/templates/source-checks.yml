@@ -14,16 +14,8 @@ jobs:
       ob_nugetPublishing_enabled: false
       ob_createvpack_enabled: false
     steps:
-      - template: /.azuredevops/templates/stuart-setup.yml@self
-
-      - script: >-
-          stuart_ci_build
-          -c .pytool/CISettings.py
-          --disable-all
-          GuidCheck=run
-          LineEndingCheck=run
-          UncrustifyCheck=run
-        displayName: Run Stuart CI
+      - script: python ci/scripts/source_checks.py
+        displayName: Run Source Checks
 
       - task: PublishTestResults@2
         displayName: Publish Stuart Results
