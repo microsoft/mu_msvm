@@ -26,6 +26,23 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
 stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 ```
 
+## Building One CI Flavor Locally
+
+Use your activated Python virtual environment with the selected compiler installed and configured.
+From the repository root, run:
+
+```powershell
+python .\ci\scripts\build.py --arch X64 --target DEBUG --tool-chain CLANGPDB --core legacy
+```
+
+The script installs Python requirements, then runs `stuart_setup`, `stuart_update`, and `stuart_build`
+with `MsvmPkg/PlatformBuild.py`. All three Stuart commands receive the selected flavor.
+Architecture, target, toolchain, and core are required; use `--core patina` to select the Rust DXE core.
+Stuart executables are resolved from the invoking Python environment, and execution stops on the first failure.
+
+Add `--dry-run` to print the commands without installing dependencies or starting a build.
+This command builds one flavor only; it does not select an open/closed repository matrix or publish artifacts.
+
 ## Running CI Checks Locally
 
 Run the same source-check workflow used by platform CI from the repository root:
