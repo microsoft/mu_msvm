@@ -155,6 +155,24 @@ stuart_ci_build `
 
 Review the resulting changes and rerun the full source-check command before committing them.
 
+## Developing CI Python
+
+Run these checks from the repository root in your activated virtual environment:
+
+```powershell
+python -m pip install -r ci/requirements-dev.txt
+python -m mypy --config-file ci/mypy.ini
+python -B -m unittest discover -s ci/tests -v
+```
+
+Strict type checking covers both CI scripts and tests. Keep parameter and return annotations complete;
+document input/output contracts, side effects, and failure behavior in public API docstrings.
+The matrix module validates JSON into typed flavor records before using it, keeping provider serialization
+separate from the input definition. Runtime validation is still required: type annotations alone cannot
+validate JSON or command-line input. Tests mock external commands and do not build or download anything.
+
+These are local development checks; they have not been added to the hosted workflow yet.
+
 ## Specialized Builds
 
 ### Debug-Enabled Build

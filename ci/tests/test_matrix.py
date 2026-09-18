@@ -1,49 +1,44 @@
-import importlib.util
+"""Test repository coverage, serialization, and invalid input boundaries."""
+
 import io
 import json
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from typing import cast
 from unittest.mock import patch
 
-SCRIPTS = Path(__file__).parents[1] / "scripts"
-
-
-def load_script(name):
-    spec = importlib.util.spec_from_file_location(name, SCRIPTS / f"{name}.py")
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-matrix = load_script("matrix")
-build = load_script("build")
+from ci.scripts import build, matrix
 
 
 class MatrixTests(unittest.TestCase):
-    def test_each_repository_row_is_accepted_by_build_runner(self):
+    """Preserve execution and package contracts for both CI providers."""
+
+    def test_each_repository_row_is_accepted_by_build_runner(self) -> None:
         for repository in matrix.REPOSITORIES:
             for row in matrix.select_builds(repository):
                 with self.subTest(repository=repository, row=row), redirect_stdout(io.StringIO()):
-                    args = ["--dry-run"]
-                    for field in (*matrix.FLAVOR_CHOICES, *matrix.EXECUTION_CHOICES):
-                        args.extend(["--" + field.replace("_", "-"), row[field]])
+                    args = [
+                        "--dry-run", "--arch", row["arch"], "--target", row["target"],
+                        "--tool-chain", row["tool_chain"], "--core", row["core"],
+                        "--host", row["host"], "--compiler-source", row["compiler_source"],
+                        "--legacy-debugger", row["legacy_debugger"],
+                    ]
                     if row["compiler_source"] == "windows_org":
                         args.extend(["--clang-bin", "internal-llvm/bin"])
-                    with patch.object(build.subprocess, "run") as run_mock:
+                    with patch("ci.scripts.build.subprocess.run") as run_mock:
                         self.assertEqual(build.main(args), 0)
                         run_mock.assert_not_called()
 
-    def test_profiles_are_filtered_explicitly(self):
-        row = json.loads(matrix.MATRIX_PATH.read_text())[0]
-        open_row = {**row, "target": "DEBUG", "repositories": ["open"]}
-        closed_row = {**row, "target": "RELEASE", "repositories": ["closed"], "shipping": False, "package_suffix": "XRCV"}
+    def test_profiles_are_filtered_explicitly(self) -> None:
+        row = matrix.parse_definition(json.loads(matrix.MATRIX_PATH.read_text())[0])
+        open_row: matrix.BuildDefinition = {**row, "target": "DEBUG", "repositories": ["open"]}
+        closed_row: matrix.BuildDefinition = {**row, "target": "RELEASE", "repositories": ["closed"], "shipping": False, "package_suffix": "XRCV"}
         with patch.object(Path, "read_text", return_value=json.dumps([open_row, closed_row])):
             self.assertEqual([item["id"] for item in matrix.select_builds("open")], [matrix.build_id(open_row)])
             self.assertEqual([item["id"] for item in matrix.select_builds("closed")], [matrix.build_id(closed_row)])
 
-    def test_coverage_and_derived_identifiers(self):
+    def test_coverage_and_derived_identifiers(self) -> None:
         rows = matrix.select_builds("open")
         expected = {
             (arch, target, tool_chain, core)
@@ -56,7 +51,7 @@ class MatrixTests(unittest.TestCase):
                 ("AARCH64", "CLANGPDB", "patina"),
             )
         }
-        self.assertEqual({tuple(row[field] for field in matrix.FLAVOR_CHOICES) for row in rows}, expected)
+        self.assertEqual({(row["arch"], row["target"], row["tool_chain"], row["core"]) for row in rows}, expected)
         self.assertEqual(len(rows), 10)
         for row in rows:
             self.assertEqual(row["id"], matrix.build_id(row))
@@ -78,7 +73,7 @@ class MatrixTests(unittest.TestCase):
         self.assertEqual({row["package_suffix"] for row in closed if row["shipping"] == "false"},
                          {"XDCV", "XRCV", "ADCV", "ARCV", "XDCW", "XRCW", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
 
-    def test_provider_formats_preserve_same_flavors(self):
+    def test_provider_formats_preserve_same_flavors(self) -> None:
         for repository in matrix.REPOSITORIES:
             rows = matrix.select_builds(repository)
             for format_name in ("json", "github", "ado"):
@@ -86,16 +81,17 @@ class MatrixTests(unittest.TestCase):
                     output = io.StringIO()
                     with redirect_stdout(output):
                         matrix.main(["--repo", repository, "--format", format_name])
-                    result = json.loads(output.getvalue())
+                    result: object = json.loads(output.getvalue())
+                    expected: object = rows
                     if format_name == "github":
-                        result = result["include"]
+                        expected = {"include": rows}
                     elif format_name == "ado":
-                        result = [{"id": identifier, **flavor} for identifier, flavor in result.items()]
-                    self.assertEqual(result, rows)
+                        expected = {row["id"]: {key: value for key, value in row.items() if key != "id"} for row in rows}
+                    self.assertEqual(result, expected)
 
-    def test_invalid_matrix_is_rejected(self):
-        row = json.loads(matrix.MATRIX_PATH.read_text())[0]
-        invalid_documents = [
+    def test_invalid_matrix_is_rejected(self) -> None:
+        row = matrix.parse_definition(json.loads(matrix.MATRIX_PATH.read_text())[0])
+        invalid_documents: list[object] = [
             {}, [], [row, row], [{**row, "id": "invalid-id"}],
             [{**row, "repositories": ["auto"]}], [{**row, "arch": "unknown"}],
             [{**row, "core": "unknown"}], [{**row, "unexpected": True}],
@@ -109,7 +105,34 @@ class MatrixTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     matrix.select_builds("open")
 
-    def test_repository_mode_is_required(self):
+    def test_wrong_json_types_are_rejected(self) -> None:
+        """Untrusted values must fail validation, not leak into typed records."""
+        row = matrix.parse_definition(json.loads(matrix.MATRIX_PATH.read_text())[0])
+        invalid_rows: list[object] = [None, [], "flavor", 1]
+        invalid_scalars: tuple[object, ...] = (None, True, 1, [], {})
+        invalid_repositories: tuple[object, ...] = (None, "open", [], [True], [[]])
+        for field in (*matrix.FLAVOR_CHOICES, *matrix.EXECUTION_CHOICES):
+            invalid_rows.extend({**row, field: value} for value in invalid_scalars)
+        invalid_rows.extend({**row, "repositories": value} for value in invalid_repositories)
+        for invalid in invalid_rows:
+            with self.subTest(row=invalid), self.assertRaises(ValueError):
+                matrix.parse_definition(invalid)
+        closed = {**row, "repositories": ["closed"], "shipping": False, "package_suffix": "XDCV"}
+        for field, value in (("shipping", "false"), ("shipping", 0), ("package_suffix", None)):
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                matrix.parse_definition({**closed, field: value})
+
+    def test_package_collisions_are_rejected(self) -> None:
+        """Different executions cannot silently publish the same closed package."""
+        raw: object = json.loads(matrix.MATRIX_PATH.read_text())
+        definitions = [matrix.parse_definition(value) for value in cast(list[object], raw)]
+        closed = next(row for row in definitions if "closed" in row["repositories"])
+        other = {**closed, "legacy_debugger": "0"}
+        with patch.object(Path, "read_text", return_value=json.dumps([closed, other])):
+            with self.assertRaisesRegex(ValueError, "Duplicate closed package"):
+                matrix.select_builds("closed")
+
+    def test_repository_mode_is_required(self) -> None:
         for args in ([], ["--repo", "auto"]):
             with self.subTest(args=args), redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:

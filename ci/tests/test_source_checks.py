@@ -1,19 +1,17 @@
-import importlib.util
+"""Verify the shared source-check sequence without invoking pip or Stuart."""
+
 import sys
 import unittest
-from pathlib import Path
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
-SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "source_checks.py"
-SPEC = importlib.util.spec_from_file_location("source_checks", SCRIPT_PATH)
-assert SPEC is not None and SPEC.loader is not None
-source_checks = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(source_checks)
+from ci.scripts import source_checks
 
 
 class SourceCheckTests(unittest.TestCase):
-    @patch.object(source_checks.subprocess, "run")
-    def test_source_checks_use_native_stuart_commands(self, run_mock):
+    """Ensure provider callers and local developers use the native lifecycle."""
+
+    @patch("ci.scripts.source_checks.subprocess.run")
+    def test_source_checks_use_native_stuart_commands(self, run_mock: MagicMock) -> None:
         source_checks.main([])
 
         expected_commands = [
