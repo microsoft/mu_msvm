@@ -14,11 +14,7 @@ jobs:
       ob_nugetPublishing_enabled: false
       ob_createvpack_enabled: false
     steps:
-      - script: python -m pip install -r pip-requirements.txt
-        displayName: Install Python Dependencies
-
-      - script: stuart_update -c .pytool/CISettings.py
-        displayName: Update Stuart Dependencies
+      - template: /.azuredevops/templates/stuart-setup.yml@self
 
       - script: >-
           stuart_ci_build

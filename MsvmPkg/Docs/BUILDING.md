@@ -33,6 +33,7 @@ tools used by the checks on a new checkout or whenever their configuration chang
 
 ```powershell
 python -m pip install -r pip-requirements.txt
+stuart_setup -c .\.pytool\CISettings.py
 stuart_update -c .\.pytool\CISettings.py
 ```
 
