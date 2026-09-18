@@ -14,12 +14,21 @@ inputs:
   core:
     description: DXE core (legacy or patina)
     required: true
+  host:
+    description: Build host
+    required: true
+  compiler-source:
+    description: Compiler distribution
+    required: true
+  legacy-debugger:
+    description: Enable the legacy debugger (0 or 1)
+    required: true
 
 runs:
   using: composite
   steps:
     - name: Locate Visual Studio Clang
-      if: inputs.tool-chain == 'CLANGPDB'
+      if: inputs.tool-chain == 'CLANGPDB' && inputs.compiler-source == 'visual_studio'
       shell: pwsh
       run: |
         $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
@@ -36,9 +45,15 @@ runs:
         BUILD_TARGET: ${{ inputs.target }}
         BUILD_TOOL_CHAIN: ${{ inputs.tool-chain }}
         BUILD_CORE: ${{ inputs.core }}
+        BUILD_HOST: ${{ inputs.host }}
+        BUILD_COMPILER_SOURCE: ${{ inputs.compiler-source }}
+        BUILD_LEGACY_DEBUGGER: ${{ inputs.legacy-debugger }}
       run: >-
         python ci/scripts/build.py
         --arch "$env:BUILD_ARCH"
         --target "$env:BUILD_TARGET"
         --tool-chain "$env:BUILD_TOOL_CHAIN"
         --core "$env:BUILD_CORE"
+        --host "$env:BUILD_HOST"
+        --compiler-source "$env:BUILD_COMPILER_SOURCE"
+        --legacy-debugger "$env:BUILD_LEGACY_DEBUGGER"

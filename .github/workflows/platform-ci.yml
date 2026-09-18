@@ -64,6 +64,9 @@ jobs:
           target: ${{ matrix.target }}
           tool-chain: ${{ matrix.tool_chain }}
           core: ${{ matrix.core }}
+          host: ${{ matrix.host }}
+          compiler-source: ${{ matrix.compiler_source }}
+          legacy-debugger: ${{ matrix.legacy_debugger }}
 
   source-checks:
     name: Source Checks

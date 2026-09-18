@@ -38,7 +38,7 @@ class BuildTests(unittest.TestCase):
                 "TOOL_CHAIN_TAG=CLANGPDB", "BLD_*_USE_LEGACY_C_CORE=TRUE",
             ])
         for invocation in calls:
-            self.assertEqual(invocation.kwargs, {"cwd": SCRIPT_PATH.resolve().parents[2], "check": True})
+            self.assertEqual(invocation.kwargs, {"cwd": SCRIPT_PATH.resolve().parents[2], "check": True, "env": dict(os.environ)})
         self.assertIn("BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY", calls[-1].args[0])
         self.assertIn("LaunchLogOnSuccess=FALSE", calls[-1].args[0])
         self.assertIn("LaunchLogOnError=FALSE", calls[-1].args[0])
@@ -64,6 +64,41 @@ class BuildTests(unittest.TestCase):
     def test_dry_run_has_no_side_effects(self, run_mock):
         self.assertEqual(build.main([*self.ARGS, "--dry-run"]), 0)
         run_mock.assert_not_called()
+
+    @patch.object(build.subprocess, "run")
+    def test_debugger_passed_to_all_stuart_phases(self, run_mock):
+        build.main([*self.ARGS, "--legacy-debugger", "1"])
+        for invocation in run_mock.call_args_list[1:]:
+            self.assertIn("BLD_*_LEGACY_DEBUGGER=1", invocation.args[0])
+
+    @patch.object(build.subprocess, "run")
+    def test_windows_org_cannot_fall_back_to_visual_studio(self, run_mock):
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            build.main([*self.ARGS, "--host", "windows", "--compiler-source", "windows_org", "--dry-run"])
+        self.assertEqual(error.exception.code, 2)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(build.main([
+                *self.ARGS, "--host", "windows", "--compiler-source", "windows_org",
+                "--clang-bin", "internal-llvm/bin", "--dry-run",
+            ]), 0)
+        self.assertIn("CLANG_BIN=", output.getvalue())
+        run_mock.assert_not_called()
+
+    @patch.object(build.subprocess, "run")
+    def test_arm64_msvc_is_rejected_before_setup(self, run_mock):
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            build.main(["--arch", "AARCH64", "--target", "RELEASE", "--tool-chain", "VS2022", "--core", "legacy"])
+        self.assertEqual(error.exception.code, 2)
+        run_mock.assert_not_called()
+
+    @patch.object(build.subprocess, "run")
+    def test_explicit_clang_bin_overrides_child_environment_only(self, run_mock):
+        with patch.dict(os.environ, {"CLANG_BIN": "visual-studio/bin/"}), patch.object(Path, "is_file", return_value=True):
+            build.main([*self.ARGS, "--clang-bin", "internal-llvm/bin"])
+            self.assertEqual(os.environ["CLANG_BIN"], "visual-studio/bin/")
+            for invocation in run_mock.call_args_list:
+                self.assertEqual(invocation.kwargs["env"]["CLANG_BIN"], Path("internal-llvm/bin").resolve().as_posix() + "/")
 
     @patch.object(build.subprocess, "run")
     def test_invalid_or_missing_flavor_is_rejected(self, run_mock):

@@ -27,8 +27,10 @@ class MatrixTests(unittest.TestCase):
             for row in matrix.select_builds(repository):
                 with self.subTest(repository=repository, row=row), redirect_stdout(io.StringIO()):
                     args = ["--dry-run"]
-                    for field in matrix.FLAVOR_CHOICES:
+                    for field in (*matrix.FLAVOR_CHOICES, *matrix.EXECUTION_CHOICES):
                         args.extend(["--" + field.replace("_", "-"), row[field]])
+                    if row["compiler_source"] == "windows_org":
+                        args.extend(["--clang-bin", "internal-llvm/bin"])
                     with patch.object(build.subprocess, "run") as run_mock:
                         self.assertEqual(build.main(args), 0)
                         run_mock.assert_not_called()
@@ -36,10 +38,10 @@ class MatrixTests(unittest.TestCase):
     def test_profiles_are_filtered_explicitly(self):
         row = json.loads(matrix.MATRIX_PATH.read_text())[0]
         open_row = {**row, "target": "DEBUG", "repositories": ["open"]}
-        closed_row = {**row, "target": "RELEASE", "repositories": ["closed"]}
+        closed_row = {**row, "target": "RELEASE", "repositories": ["closed"], "shipping": False, "package_suffix": "XRCV"}
         with patch.object(Path, "read_text", return_value=json.dumps([open_row, closed_row])):
-            self.assertEqual([item["id"] for item in matrix.select_builds("open")], ["X64_DEBUG_CLANGPDB_legacy"])
-            self.assertEqual([item["id"] for item in matrix.select_builds("closed")], ["X64_RELEASE_CLANGPDB_legacy"])
+            self.assertEqual([item["id"] for item in matrix.select_builds("open")], [matrix.build_id(open_row)])
+            self.assertEqual([item["id"] for item in matrix.select_builds("closed")], [matrix.build_id(closed_row)])
 
     def test_coverage_and_derived_identifiers(self):
         rows = matrix.select_builds("open")
@@ -57,8 +59,24 @@ class MatrixTests(unittest.TestCase):
         self.assertEqual({tuple(row[field] for field in matrix.FLAVOR_CHOICES) for row in rows}, expected)
         self.assertEqual(len(rows), 10)
         for row in rows:
-            self.assertEqual(row["id"], "_".join(row[field] for field in matrix.FLAVOR_CHOICES))
-        self.assertEqual([row["id"] for row in matrix.select_builds("closed")], ["X64_DEBUG_CLANGPDB_legacy"])
+            self.assertEqual(row["id"], matrix.build_id(row))
+        closed = matrix.select_builds("closed")
+        self.assertEqual(len(closed), 15)
+        self.assertEqual(len({row["id"] for row in closed}), 15)
+        self.assertEqual(len(matrix.select_builds("closed", host="windows")), 10)
+        self.assertEqual(len(matrix.select_builds("closed", host="linux")), 5)
+        shipping = {(row["arch"], row["target"], row["tool_chain"], row["compiler_source"], row["core"])
+                    for row in closed if row["shipping"] == "true"}
+        self.assertEqual(shipping, {
+            ("X64", "DEBUG", "VS2022", "visual_studio", "legacy"),
+            ("X64", "RELEASE", "VS2022", "visual_studio", "legacy"),
+            ("AARCH64", "RELEASE", "CLANGPDB", "windows_org", "legacy"),
+        })
+        for row in closed:
+            self.assertEqual(row["legacy_debugger"], "1" if row["arch"] == "X64" and row["target"] == "DEBUG" else "0")
+            self.assertEqual(row["shipping"] == "true", row["package_suffix"] == "")
+        self.assertEqual({row["package_suffix"] for row in closed if row["shipping"] == "false"},
+                         {"XDCV", "XRCV", "ADCV", "ARCV", "XDCW", "XRCW", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
 
     def test_provider_formats_preserve_same_flavors(self):
         for repository in matrix.REPOSITORIES:
@@ -82,6 +100,9 @@ class MatrixTests(unittest.TestCase):
             [{**row, "repositories": ["auto"]}], [{**row, "arch": "unknown"}],
             [{**row, "core": "unknown"}], [{**row, "unexpected": True}],
             [{**row, "repositories": ["closed"]}],
+            [{**row, "arch": "AARCH64", "tool_chain": "VS2022"}],
+            [{**row, "host": "linux"}],
+            [{**row, "shipping": True, "package_suffix": ""}],
         ]
         for document in invalid_documents:
             with self.subTest(document=document), patch.object(Path, "read_text", return_value=json.dumps(document)):

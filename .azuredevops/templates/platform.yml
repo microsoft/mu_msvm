@@ -22,3 +22,9 @@ extends:
       - stage: SourceChecks
         jobs:
           - template: /.azuredevops/templates/source-checks.yml@self
+      - stage: Build
+        dependsOn: []
+        jobs:
+          - template: /.azuredevops/templates/build.yml@self
+            parameters:
+              repositoryMode: closed
