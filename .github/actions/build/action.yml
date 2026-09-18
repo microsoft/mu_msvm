@@ -1,0 +1,44 @@
+name: Build Firmware
+description: Prepare and build one firmware flavor through Stuart
+
+inputs:
+  arch:
+    description: Target architecture
+    required: true
+  target:
+    description: Build target
+    required: true
+  tool-chain:
+    description: EDK II toolchain tag
+    required: true
+  core:
+    description: DXE core (legacy or patina)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Locate Visual Studio Clang
+      if: inputs.tool-chain == 'CLANGPDB'
+      shell: pwsh
+      run: |
+        $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+        $installation = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        if ($LASTEXITCODE -ne 0 -or -not $installation) { throw 'Visual Studio 2022 was not found' }
+        $clangBin = Join-Path $installation 'VC/Tools/Llvm/x64/bin'
+        if (-not (Test-Path (Join-Path $clangBin 'clang.exe'))) { throw 'Visual Studio Clang was not found' }
+        "CLANG_BIN=$clangBin/" >> $env:GITHUB_ENV
+
+    - name: Build firmware
+      shell: pwsh
+      env:
+        BUILD_ARCH: ${{ inputs.arch }}
+        BUILD_TARGET: ${{ inputs.target }}
+        BUILD_TOOL_CHAIN: ${{ inputs.tool-chain }}
+        BUILD_CORE: ${{ inputs.core }}
+      run: >-
+        python ci/scripts/build.py
+        --arch "$env:BUILD_ARCH"
+        --target "$env:BUILD_TARGET"
+        --tool-chain "$env:BUILD_TOOL_CHAIN"
+        --core "$env:BUILD_CORE"

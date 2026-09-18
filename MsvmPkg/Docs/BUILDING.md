@@ -43,6 +43,36 @@ Stuart executables are resolved from the invoking Python environment, and execut
 Add `--dry-run` to print the commands without installing dependencies or starting a build.
 This command builds one flavor only; it does not select an open/closed repository matrix or publish artifacts.
 
+### Selecting Repository Coverage
+
+`ci/build-matrix.json` is the shared build list. Each row explicitly lists the repository modes that use it:
+`open` for mu_msvm and `closed` for hyperv.uefi. Repository mode selects coverage, not source code,
+credentials, official-build status, or publishing permissions.
+
+```powershell
+python .\ci\scripts\matrix.py --repo open
+python .\ci\scripts\matrix.py --repo closed
+```
+
+The open profile contains ten Windows-hosted builds: DEBUG and RELEASE for X64 VS2022 with the legacy core,
+plus X64 and AARCH64 CLANGPDB with each of the legacy and Patina cores.
+The closed profile still contains only X64 DEBUG CLANGPDB with the legacy core; it is an experimental
+baseline, not a replacement for the full hyperv.uefi coverage policy.
+
+IDs are derived as `<arch>_<target>_<tool_chain>_<core>`; do not enter IDs in the JSON.
+Additional coverage can be added by editing the JSON, without duplicating flavor definitions in provider YAML.
+The selector rejects duplicate flavors and fails when a requested repository has no builds.
+
+`--format github` emits an `include` object; `--format ado` emits a job-leg name to variables mapping.
+These commands only print JSON. They do not execute builds, install tools, or publish anything.
+GitHub's platform workflow selects `open` coverage, feeds the result to its native `strategy.matrix`, and
+calls the build action for each flavor. That action invokes the same `ci/scripts/build.py` used locally.
+Builds depend only on matrix generation; source checks run independently. Build artifact publication is not
+part of this step yet.
+
+ADO build matrix integration remains unwired. Its JSON output format does not establish support for runtime
+matrix expansion in the governed OneBranch templates; that requires validation before enabling ADO builds.
+
 ## Running CI Checks Locally
 
 Run the same source-check workflow used by platform CI from the repository root:

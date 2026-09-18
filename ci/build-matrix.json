@@ -1,0 +1,18 @@
+[
+  {
+    "repositories": ["open", "closed"],
+    "arch": "X64",
+    "target": "DEBUG",
+    "tool_chain": "CLANGPDB",
+    "core": "legacy"
+  },
+  {"repositories": ["open"], "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "core": "legacy"},
+  {"repositories": ["open"], "arch": "X64", "target": "DEBUG", "tool_chain": "VS2022", "core": "legacy"},
+  {"repositories": ["open"], "arch": "X64", "target": "RELEASE", "tool_chain": "VS2022", "core": "legacy"},
+  {"repositories": ["open"], "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "core": "legacy"},
+  {"repositories": ["open"], "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "core": "legacy"},
+  {"repositories": ["open"], "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "core": "patina"},
+  {"repositories": ["open"], "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "core": "patina"},
+  {"repositories": ["open"], "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "core": "patina"},
+  {"repositories": ["open"], "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "core": "patina"}
+]
