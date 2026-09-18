@@ -1,0 +1,9 @@
+name: Run Stuart Source Checks
+description: Prepare the workspace and run the mu_msvm Stuart CI plugins
+
+runs:
+  using: composite
+  steps:
+    - name: Run source checks
+      shell: pwsh
+      run: python ci/scripts/source_checks.py
