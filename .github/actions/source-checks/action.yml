@@ -1,0 +1,19 @@
+name: Run Stuart Source Checks
+description: Run the mu_msvm Stuart CI plugins
+
+runs:
+  using: composite
+  steps:
+    - name: Update Stuart dependencies
+      shell: pwsh
+      run: stuart_update -c .pytool/CISettings.py
+
+    - name: Run Stuart CI
+      shell: pwsh
+      run: >-
+        stuart_ci_build
+        -c .pytool/CISettings.py
+        --disable-all
+        GuidCheck=run
+        LineEndingCheck=run
+        UncrustifyCheck=run

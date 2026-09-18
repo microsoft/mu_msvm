@@ -1,0 +1,24 @@
+parameters:
+  - name: oneBranchBase
+    type: string
+
+resources:
+  repositories:
+    - repository: templates_onebranch
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: ${{ parameters.oneBranchBase }}@templates_onebranch
+  parameters:
+    platform:
+      name: windows_undocked
+    featureFlags:
+      WindowsHostVersion: 1ESWindows2022
+    git:
+      submodules: true
+    stages:
+      - stage: SourceChecks
+        jobs:
+          - template: /.azuredevops/templates/source-checks.yml@self

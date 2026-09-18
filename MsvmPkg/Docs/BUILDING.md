@@ -36,14 +36,11 @@ python -m pip install -r pip-requirements.txt
 stuart_update -c .\.pytool\CISettings.py
 ```
 
-Run the same source checks enforced by GitHub Actions:
+Run the same source checks enforced by platform CI:
 
 ```powershell
 stuart_ci_build `
 	-c .\.pytool\CISettings.py `
-	-p MsvmPkg `
-	-t NO-TARGET `
-	-a X64,AARCH64 `
 	--disable-all `
 	GuidCheck=run `
 	LineEndingCheck=run `
@@ -54,7 +51,7 @@ The `--disable-all` option disables the default plugin set; each `Check=run` arg
 To run one check while iterating, specify only that check. For example:
 
 ```powershell
-stuart_ci_build -c .\.pytool\CISettings.py -p MsvmPkg -t NO-TARGET -a X64,AARCH64 --disable-all GuidCheck=run
+stuart_ci_build -c .\.pytool\CISettings.py --disable-all GuidCheck=run
 ```
 
 ### Fixing Uncrustify Failures
@@ -64,9 +61,6 @@ Run Uncrustify in correction mode to update incorrectly formatted files in place
 ```powershell
 stuart_ci_build `
 	-c .\.pytool\CISettings.py `
-	-p MsvmPkg `
-	-t NO-TARGET `
-	-a X64,AARCH64 `
 	--disable-all `
 	UncrustifyCheck=run `
 	UNCRUSTIFY_IN_PLACE=TRUE
@@ -113,7 +107,7 @@ Build artifacts follow this path structure:
 **Path Variables:**
 - `{root}` = Root directory of the UEFI project
 - `{architecture}` = X64, AARCH64, etc.
-- `{flavor}` = DEBUG or RELEASE  
+- `{flavor}` = DEBUG or RELEASE
 - `{toolchain}` = VS2022, GCC, etc.
 
 **Examples:**
