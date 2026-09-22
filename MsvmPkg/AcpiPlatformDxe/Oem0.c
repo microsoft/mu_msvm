@@ -8,6 +8,8 @@
 
 #include <PiDxe.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
+#include <IsolationTypes.h>
 #include "AcpiPlatform.h"
 
 //
@@ -31,18 +33,40 @@ Arguments:
 
 Return Value:
 
-    EFI_SUCCESS
+    EFI_SUCCESS       The entropy table was initialized, or no configured entropy was available.
 
 --*/
 {
+  EFI_STATUS             status;
   VM_ACPI_ENTROPY_TABLE  *table;
+  UINT64                 entropyAddress;
+  UINT32                 IsolationType;
+
+  table = (VM_ACPI_ENTROPY_TABLE *)Table;
+
+  // Confidential VMs should not depend on the VMM for entropy and instead should use hardware-generated entropy.
+  IsolationType = GetIsolationType ();
+  if ((IsolationType == UefiIsolationTypeTdx) || (IsolationType == UefiIsolationTypeSnp)) {
+    status = Oem0GetHardwareEntropy (table->Data, ConfigLibEntropyDataSize);
+    if (EFI_ERROR (status)) {
+      DEBUG ((DEBUG_ERROR, "Oem0InitializeTable: Failed to generate confidential guest entropy: %r\n", status));
+      ASSERT_EFI_ERROR (status);
+    }
+
+    return EFI_SUCCESS;
+  }
+
+  entropyAddress = PcdGet64 (PcdEntropyPtr);
+  if (entropyAddress == 0) {
+    DEBUG ((DEBUG_ERROR, "Oem0InitializeTable: PcdEntropyPtr is NULL. Entropy table will not be initialized.\n"));
+    ASSERT (entropyAddress != 0);
+    return EFI_SUCCESS;
+  }
 
   //
   // Copy the entropy data from the configuration.
   //
-  table = (VM_ACPI_ENTROPY_TABLE *)Table;
-
-  CopyMem (table->Data, (VOID *)(UINTN)PcdGet64 (PcdEntropyPtr), ConfigLibEntropyDataSize);
+  CopyMem (table->Data, (VOID *)(UINTN)entropyAddress, ConfigLibEntropyDataSize);
 
   return EFI_SUCCESS;
 }
