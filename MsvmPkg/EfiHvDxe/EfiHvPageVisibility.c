@@ -6,6 +6,66 @@
 **/
 #include "EfiHvInternal.h"
 
+#if defined (MDE_CPU_X64)
+  #include <Protocol/AliasedMemoryMapping.h>
+
+STATIC ALIASED_MEMORY_MAPPING_PROTOCOL  *mAliasedMemoryMappingProtocol;
+
+STATIC
+EFI_STATUS
+EfiMapSharedGpaRange (
+  UINT32              IsolationType,
+  HV_GPA_PAGE_NUMBER  StartingPageNumber,
+  UINT64              PageCount,
+  BOOLEAN             Visible
+  )
+{
+  EFI_STATUS  Status;
+  UINT64      Length;
+  UINT64      SharedPa;
+  UINT64      SharedVa;
+
+  if ((IsolationType != UefiIsolationTypeTdx) || (PageCount == 0)) {
+    return EFI_SUCCESS;
+  }
+
+  if (mAliasedMemoryMappingProtocol == NULL) {
+    Status = gBS->LocateProtocol (
+                    &gAliasedMemoryMappingProtocolGuid,
+                    NULL,
+                    (VOID **)&mAliasedMemoryMappingProtocol
+                    );
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_WARN, "%a: Failed to locate Aliased Memory Mapping Protocol. Status: %r\n", __func__, Status));
+      return Status;
+    }
+  }
+
+  SharedPa = (StartingPageNumber * EFI_PAGE_SIZE) + PcdGet64 (PcdIsolationSharedGpaBoundary);
+  SharedVa = SharedPa | PcdGet64 (PcdIsolationSharedGpaCanonicalizationBitmask);
+  Length   = PageCount * EFI_PAGE_SIZE;
+
+  if (Visible) {
+    Status = mAliasedMemoryMappingProtocol->CreateAliasedMapping (
+                                              mAliasedMemoryMappingProtocol,
+                                              SharedVa,
+                                              SharedPa,
+                                              Length,
+                                              EFI_MEMORY_WB | EFI_MEMORY_XP
+                                              );
+  } else {
+    Status = mAliasedMemoryMappingProtocol->UnmapAliasedMapping (
+                                              mAliasedMemoryMappingProtocol,
+                                              SharedVa,
+                                              Length
+                                              );
+  }
+
+  return Status;
+}
+
+#endif
+
 EFI_STATUS
 EFIAPI
 EfiHvpModifySparseGpaPageHostVisibility (
@@ -94,6 +154,21 @@ EfiHvpModifySparseGpaPageHostVisibility (
       }
 
       FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (pagesProcessed <= PageCount);
+
+      //
+      // [Un]map the shared alias of the pages that had visibility changes so
+      // that they can be accessed through EfiHvpSharedVa.
+      //
+      status = EfiMapSharedGpaRange (
+                 mIsolationType,
+                 GpaPageBase,
+                 pagesProcessed,
+                 MapFlags == 0 ? FALSE : TRUE
+                 );
+
+      if (EFI_ERROR (status)) {
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+      }
 
       if (PageCountProcessed != NULL) {
         *PageCountProcessed = (UINT32)pagesProcessed;
@@ -229,6 +304,18 @@ EfiHvpModifySparseGpaPageHostVisibility (
       if (EFI_ERROR (status)) {
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
       }
+    }
+
+    // [Un]map the shared alias of the pages that had visibility changes.
+    status = EfiMapSharedGpaRange (
+               mIsolationType,
+               GpaPageBase,
+               totalPageCountProcessed,
+               MapFlags == 0 ? FALSE : TRUE
+               );
+
+    if (EFI_ERROR (status)) {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
     }
   }
 
