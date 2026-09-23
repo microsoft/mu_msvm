@@ -1,0 +1,153 @@
+parameters:
+  - name: matrixFile
+    type: string
+  - name: officialBuild
+    type: boolean
+    default: false
+  - name: hosts
+    type: object
+    default:
+      - windows
+      - linux
+  - name: windowsClangVersion
+    type: string
+    default: '22.1.1-47'
+  - name: windowsClangMajorVersion
+    type: string
+    default: '22'
+
+jobs:
+  - job: BuildMatrix
+    displayName: Select Build Matrix
+    pool:
+      type: windows
+    variables:
+      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/BUILD_MATRIX
+      ob_nugetPublishing_enabled: false
+      ob_createvpack_enabled: false
+    steps:
+      - ${{ each host in parameters.hosts }}:
+          - pwsh: |
+              $matrix = python ci/scripts/matrix.py --matrix "$env:MATRIX_FILE" --host "$env:BUILD_HOST" --format ado
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              Write-Host "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
+            name: ${{ host }}
+            displayName: Select ${{ host }} Builds
+            env:
+              MATRIX_FILE: ${{ parameters.matrixFile }}
+              BUILD_HOST: ${{ host }}
+
+  - ${{ each host in parameters.hosts }}:
+      - job: BuildFirmware_${{ host }}
+        displayName: $(display_name)
+        dependsOn: BuildMatrix
+        pool:
+          type: ${{ host }}
+        strategy:
+          maxParallel: 4
+          matrix: $[ dependencies.BuildMatrix.outputs['${{ host }}.matrix'] ]
+        variables:
+          WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+          LinuxContainerImage: onebranch.azurecr.io/linux/ubuntu-2404:latest
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "false"
+          GIT_CONFIG_KEY_1: core.longpaths
+          GIT_CONFIG_VALUE_1: "true"
+          ob_outputDirectory: $(Build.ArtifactStagingDirectory)/BUILD/$(System.JobId)
+          ob_nugetPublishing_enabled: false
+          ob_createvpack_enabled: false
+          WindowsClangRoot: $(Agent.TempDirectory)/windows-clang-${{ parameters.windowsClangVersion }}
+        steps:
+          - ${{ if eq(host, 'windows') }}:
+              - pwsh: |
+                  $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+                  $installation = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                  if ($LASTEXITCODE -ne 0 -or -not $installation) { throw 'Visual Studio 2022 was not found' }
+                  $clangBin = Join-Path $installation 'VC/Tools/Llvm/x64/bin'
+                  if (-not (Test-Path (Join-Path $clangBin 'clang.exe'))) { throw 'Visual Studio Clang was not found' }
+                  Write-Host "##vso[task.setvariable variable=CLANG_BIN]$clangBin/"
+                displayName: Locate Visual Studio Clang
+                condition: and(succeeded(), eq(variables['tool_chain'], 'CLANGPDB'), eq(variables['compiler_source'], 'visual_studio'))
+
+              - task: NuGetAuthenticate@1
+                displayName: Authenticate Internal Compiler Feed
+                condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+                inputs:
+                  nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+              - task: DownloadPackage@1
+                displayName: Download Windows-org LLVM Tools
+                condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+                inputs:
+                  packageType: nuget
+                  feed: ES-LLVM
+                  definition: llvm.tools
+                  version: ${{ parameters.windowsClangVersion }}
+                  downloadPath: $(WindowsClangRoot)/bin
+
+              - task: DownloadPackage@1
+                displayName: Download Windows-org Clang Headers
+                condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+                inputs:
+                  packageType: nuget
+                  feed: ES-LLVM
+                  definition: clang.headers
+                  version: ${{ parameters.windowsClangVersion }}
+                  downloadPath: $(WindowsClangRoot)/lib/clang/${{ parameters.windowsClangMajorVersion }}
+
+              - pwsh: |
+                  $buildArgs = @('--arch', $env:BUILD_ARCH, '--target', $env:BUILD_TARGET,
+                      '--tool-chain', $env:BUILD_TOOL_CHAIN, '--core', $env:BUILD_CORE,
+                      '--host', 'windows', '--compiler-source', $env:BUILD_COMPILER_SOURCE,
+                      '--legacy-debugger', $env:BUILD_LEGACY_DEBUGGER, '--source-origin', 'closed')
+                  if ($env:BUILD_COMPILER_SOURCE -eq 'windows_org') {
+                      $buildArgs += @('--clang-bin', "$env:WINDOWS_CLANG_ROOT/bin")
+                  }
+                  python ci/scripts/build.py @buildArgs
+                  exit $LASTEXITCODE
+                displayName: Build Firmware
+                env:
+                  BUILD_ARCH: $(arch)
+                  BUILD_TARGET: $(target)
+                  BUILD_TOOL_CHAIN: $(tool_chain)
+                  BUILD_CORE: $(core)
+                  BUILD_COMPILER_SOURCE: $(compiler_source)
+                  BUILD_LEGACY_DEBUGGER: $(legacy_debugger)
+                  WINDOWS_CLANG_ROOT: $(WindowsClangRoot)
+                  OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
+
+          - ${{ if eq(host, 'linux') }}:
+              - bash: |
+                  set -euo pipefail
+                  apt-get update
+                  apt-get install -y python3-venv
+                  case "$BUILD_TOOL_CHAIN" in
+                    CLANGPDB) apt-get install -y clang lld llvm ;;
+                    GCC)
+                      case "$BUILD_ARCH" in
+                        X64) triple=x86_64; packages=x86-64 ;;
+                        AARCH64) triple=aarch64; packages=aarch64 ;;
+                        *) exit 2 ;;
+                      esac
+                      apt-get install -y "gcc-$packages-linux-gnu" "binutils-$packages-linux-gnu"
+                      export "GCC_${BUILD_ARCH}_PREFIX=/usr/bin/$triple-linux-gnu-"
+                      ;;
+                    *) exit 2 ;;
+                  esac
+                  python3 -m venv "$BUILD_VENV"
+                  source "$BUILD_VENV/bin/activate"
+                  python ci/scripts/build.py --arch "$BUILD_ARCH" --target "$BUILD_TARGET" \
+                    --tool-chain "$BUILD_TOOL_CHAIN" --core "$BUILD_CORE" --host linux \
+                    --compiler-source "$BUILD_COMPILER_SOURCE" --legacy-debugger "$BUILD_LEGACY_DEBUGGER" --source-origin closed
+                displayName: Prepare Linux Compiler and Build Firmware
+                env:
+                  BUILD_ARCH: $(arch)
+                  BUILD_TARGET: $(target)
+                  BUILD_TOOL_CHAIN: $(tool_chain)
+                  BUILD_CORE: $(core)
+                  BUILD_COMPILER_SOURCE: $(compiler_source)
+                  BUILD_LEGACY_DEBUGGER: $(legacy_debugger)
+                  BUILD_VENV: $(Agent.TempDirectory)/firmware-venv
+                  OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}

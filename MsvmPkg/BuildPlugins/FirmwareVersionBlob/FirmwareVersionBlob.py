@@ -25,12 +25,31 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 import logging
+import json
 import os
 import struct
-import tomllib
+from typing import Literal, TypedDict, cast
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 from edk2toolext.environment import repo_resolver
 from edk2toolext.environment.plugintypes.uefi_build_plugin import IUefiBuildPlugin
+
+
+class FirmwareVersionMetadata(TypedDict):
+    """Portable sidecar identity; independent of the host-facing binary ABI."""
+
+    schema_version: int
+    struct_version: int
+    interface_major: int
+    interface_minor: int
+    base_version: str
+    git_commit: str
+    flags: int
+    source_origin: Literal["unknown", "open", "closed"]
 
 
 class FirmwareVersionBlob(IUefiBuildPlugin):
@@ -53,6 +72,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
     # (BUILD_OUTPUT_BASE). The FDF references the same location via
     # $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG).
     FW_VERSION_BLOB_SUBPATH = os.path.join("FwVersion", "FwVersionBlob.bin")
+    FW_VERSION_METADATA_SUBPATH = os.path.join("FwVersion", "FirmwareVersion.json")
     # Single source of truth for the version numbers, relative to the workspace.
     FW_VERSION_TOML_SUBPATH = os.path.join("MsvmPkg", "FirmwareVersion.toml")
 
@@ -64,7 +84,7 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
         minor = int(data["interface"]["minor"])
         # The CI BASE_VERSION env override wins so the release workflow can own
         # the released value; the TOML provides the in-tree default.
-        release = env.GetValue("BASE_VERSION", "") or str(data["release"]["version"])
+        release = env.GetValue("BASE_VERSION", os.environ.get("BASE_VERSION", "")) or str(data["release"]["version"])
         return major, minor, release
 
     def _GetGitCommit(self, workspace):
@@ -79,18 +99,40 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
             logging.warning(f"Could not determine git state for firmware version blob: {e}")
             return "unknown", False
 
+    @staticmethod
+    def _EncodeRecordString(value: str, capacity: int, name: str) -> bytes:
+        """Encode an ASCII field while reserving its required NUL terminator.
+
+        Raise ValueError before macros or files are emitted if packing would
+        replace characters, truncate the value, or produce an ambiguous string.
+        """
+        try:
+            encoded = value.encode("ascii")
+        except UnicodeEncodeError as error:
+            raise ValueError(f"{name} must contain only ASCII characters") from error
+        if not encoded or b"\0" in encoded or len(encoded) >= capacity:
+            raise ValueError(f"{name} must be nonempty, NUL-free, and at most {capacity - 1} ASCII bytes")
+        return encoded
+
     def do_pre_build(self, thebuilder):
         workspace = thebuilder.GetWorkspaceRoot()
 
         major, minor, base_version = self._ReadVersionToml(workspace, thebuilder.env)
         commit, dirty = self._GetGitCommit(workspace)
+        if not (0 <= major <= 0xFFFF and 0 <= minor <= 0xFFFF):
+            raise ValueError("Firmware interface major/minor must fit unsigned 16-bit fields")
+        encoded_base = self._EncodeRecordString(base_version, self.FW_VERSION_BASE_VERSION_SIZE, "BASE_VERSION")
+        encoded_commit = self._EncodeRecordString(commit, self.FW_VERSION_GIT_COMMIT_SIZE, "GitCommit")
+        origin = thebuilder.env.GetValue("SOURCE_ORIGIN", os.environ.get("SOURCE_ORIGIN", "unknown")).strip().lower()
+        if origin not in ("unknown", "open", "closed"):
+            raise ValueError("SOURCE_ORIGIN must be unknown, open, or closed")
         flags = 0
         if dirty:
             flags |= self.FW_VERSION_FLAG_DIRTY
         # Official builds are marked by the CI pipeline (e.g. building main, not
         # a PR) via the OFFICIAL_BUILD environment variable. Any non-empty value
         # other than "0"/"false" counts as official.
-        if thebuilder.env.GetValue("OFFICIAL_BUILD", "").strip().lower() not in ("", "0", "false"):
+        if thebuilder.env.GetValue("OFFICIAL_BUILD", os.environ.get("OFFICIAL_BUILD", "")).strip().lower() not in ("", "0", "false"):
             flags |= self.FW_VERSION_FLAG_OFFICIAL
 
         # (1) Expose the values to the firmware as FixedAtBuild PCDs. Setting
@@ -111,8 +153,8 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
             flags,
             major,
             minor,
-            base_version.encode("ascii", "replace"),
-            commit.encode("ascii", "replace"),
+            encoded_base,
+            encoded_commit,
         )
 
         # Emit into the per-build output directory so the artifact stays out of
@@ -125,11 +167,27 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
         with open(out_path, "wb") as f:
             f.write(blob)
 
+        metadata: FirmwareVersionMetadata = {
+            "schema_version": 1,
+            "struct_version": self.FW_VERSION_STRUCT_VERSION,
+            "interface_major": major,
+            "interface_minor": minor,
+            "base_version": base_version,
+            "git_commit": commit,
+            "flags": flags,
+            "source_origin": cast(Literal["unknown", "open", "closed"], origin),
+        }
+        metadata_path = os.path.join(out_dir, self.FW_VERSION_METADATA_SUBPATH)
+        with open(metadata_path, "w", encoding="utf-8") as metadata_file:
+            json.dump(metadata, metadata_file, indent=2)
+            metadata_file.write("\n")
+
         logging.info(
             f"Firmware version blob written: base={base_version} commit={commit}"
             f"{' (dirty)' if dirty else ''}"
             f"{' (official)' if flags & self.FW_VERSION_FLAG_OFFICIAL else ''}"
             f" interface={major}.{minor}"
+            f" origin={origin}"
             f" -> {out_path}"
         )
         return 0
