@@ -61,13 +61,15 @@ This command builds one flavor only; it does not select an open/closed repositor
 
 ### Selecting Repository Coverage
 
-`ci/build-matrix.json` is the shared build list. Each row explicitly lists the repository modes that use it:
-`open` for mu_msvm and `closed` for hyperv.uefi. Repository mode selects coverage, not source code,
-credentials, official-build status, or publishing permissions.
+Coverage is maintained separately in `.github/build-matrix.json` (open-source mu_msvm) and
+`.azuredevops/build-matrix.json` (closed-source hyperv.uefi). Both use the shared validator and build script.
+Rows have no `repositories` field: the caller explicitly selects a file with `--matrix` instead of `--repo`.
+The path selects coverage, not source code, credentials, official-build status, or publishing permissions.
+Relative paths resolve from the current directory; either file can be selected locally.
 
 ```powershell
-python .\ci\scripts\matrix.py --repo open
-python .\ci\scripts\matrix.py --repo closed
+python .\ci\scripts\matrix.py --matrix .github/build-matrix.json
+python .\ci\scripts\matrix.py --matrix .azuredevops/build-matrix.json
 ```
 
 The open profile contains ten Windows-hosted builds: DEBUG and RELEASE for X64 VS2022 with the legacy core,
@@ -86,19 +88,18 @@ Closed X64 DEBUG builds enable the legacy debugger. Open builds retain their exi
 ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
 
 IDs are derived as `<host>_<arch>_<target>_<tool_chain>_<compiler_source>_<core>_<legacy_debugger>`;
-do not enter IDs in the JSON. Identical flavors may belong to different repository profiles, but may not
-occur twice within one profile.
-Additional coverage can be added by editing the JSON, without duplicating flavor definitions in provider YAML.
-The selector rejects duplicate flavors and fails when a requested repository has no builds.
+do not enter IDs in the JSON. Identical flavors may occur in both files, but may not occur twice within one file.
+Edit the respective JSON to change coverage independently, without editing shared Python or provider YAML.
+The selector rejects duplicate flavors and fails when the supplied file or requested host has no builds.
 
 `--format github` emits an `include` object; `--format ado` emits a job-leg name to variables mapping.
 These commands only print JSON. They do not execute builds, install tools, or publish anything.
-GitHub's platform workflow selects `open` coverage, feeds the result to its native `strategy.matrix`, and
+GitHub's platform workflow supplies `.github/build-matrix.json`, feeds the result to its native `strategy.matrix`, and
 calls the build action for each flavor. That action invokes the same `ci/scripts/build.py` used locally.
 Builds depend only on matrix generation; source checks run independently. Build artifact publication is not
 part of this step yet.
 
-ADO's shared platform template selects `closed` coverage through its build job template. A `BuildMatrix`
+ADO's shared platform template supplies `.azuredevops/build-matrix.json` through its build job template. A `BuildMatrix`
 job exports separate Windows and Linux matrices using `--host`. Dependent `BuildFirmware_windows` and
 `BuildFirmware_linux` jobs consume them through native `strategy.matrix`, with at most four parallel
 builds per host group. Host pools are selected at template expansion time, not by runtime matrix variables.

@@ -1,9 +1,6 @@
 parameters:
-  - name: repositoryMode
+  - name: matrixFile
     type: string
-    values:
-      - open
-      - closed
   - name: hosts
     type: object
     default:
@@ -29,13 +26,13 @@ jobs:
     steps:
       - ${{ each host in parameters.hosts }}:
           - pwsh: |
-              $matrix = python ci/scripts/matrix.py --repo "$env:REPOSITORY_MODE" --host "$env:BUILD_HOST" --format ado
+              $matrix = python ci/scripts/matrix.py --matrix "$env:MATRIX_FILE" --host "$env:BUILD_HOST" --format ado
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               Write-Host "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
             name: ${{ host }}
             displayName: Select ${{ host }} Builds
             env:
-              REPOSITORY_MODE: ${{ parameters.repositoryMode }}
+              MATRIX_FILE: ${{ parameters.matrixFile }}
               BUILD_HOST: ${{ host }}
 
   - ${{ each host in parameters.hosts }}:

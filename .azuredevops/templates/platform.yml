@@ -27,4 +27,4 @@ extends:
         jobs:
           - template: /.azuredevops/templates/build.yml@self
             parameters:
-              repositoryMode: closed
+              matrixFile: .azuredevops/build-matrix.json

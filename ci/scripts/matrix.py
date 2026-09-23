@@ -1,8 +1,8 @@
 """Validate repository coverage and emit provider-specific matrix JSON.
 
 This module selects data only: it never builds firmware or authorizes publication.
-All rows are validated before filtering, including rows outside the requested
-repository/host. Generated IDs identify executions; package suffixes are a
+All rows in the supplied file are validated before host filtering.
+Generated IDs identify executions; package suffixes are a
 separate consumer-facing contract.
 """
 
@@ -15,7 +15,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal, NotRequired, TypedDict, cast
 
-Repository = Literal["open", "closed"]
 Host = Literal["windows", "linux"]
 Architecture = Literal["X64", "AARCH64"]
 Target = Literal["DEBUG", "RELEASE"]
@@ -39,9 +38,8 @@ class BuildFlavor(TypedDict):
 
 
 class BuildDefinition(BuildFlavor):
-    """Validated JSON row; closed coverage requires both package fields."""
+    """Validated JSON row; optional package metadata must supply both fields."""
 
-    repositories: list[Repository]
     shipping: NotRequired[bool]
     package_suffix: NotRequired[str]
 
@@ -61,12 +59,10 @@ class SelectedBuild(BuildFlavor):
 class MatrixArguments(argparse.Namespace):
     """CLI values constrained by argparse choices before selection."""
 
-    repo: Repository
+    matrix: Path
     host: Host | None
     format: OutputFormat
 
-MATRIX_PATH = Path(__file__).resolve().parents[1] / "build-matrix.json"
-REPOSITORIES: tuple[Repository, ...] = ("open", "closed")
 FLAVOR_CHOICES: dict[str, tuple[str, ...]] = {
     "arch": ("X64", "AARCH64"),
     "target": ("DEBUG", "RELEASE"),
@@ -94,20 +90,14 @@ def parse_definition(value: object) -> BuildDefinition:
             unsupported compilers, or inconsistent package metadata.
     """
     if not isinstance(value, dict):
-        raise ValueError("Each build must specify repository coverage and a complete execution flavor")
+        raise ValueError("Each build must specify a complete execution flavor")
     row = cast(dict[str, object], value)
-    required = {"repositories", *FLAVOR_CHOICES, *EXECUTION_CHOICES}
+    required = {*FLAVOR_CHOICES, *EXECUTION_CHOICES}
     if not required <= row.keys() or row.keys() - required - {"shipping", "package_suffix"}:
-        raise ValueError("Each build must specify repository coverage and a complete execution flavor")
+        raise ValueError("Each build must specify a complete execution flavor")
     for field, choices in {**FLAVOR_CHOICES, **EXECUTION_CHOICES}.items():
         if not isinstance(row[field], str) or row[field] not in choices:
             raise ValueError(f"Invalid {field}: {row[field]!r}")
-    repositories = row["repositories"]
-    if not isinstance(repositories, list) or not repositories:
-        raise ValueError("Invalid repositories")
-    modes = cast(list[object], repositories)
-    if any(not isinstance(mode, str) or mode not in REPOSITORIES for mode in modes):
-        raise ValueError("Invalid repositories")
     valid_compilers = {
         ("windows", "VS2022", "visual_studio"),
         ("windows", "CLANGPDB", "visual_studio"),
@@ -119,73 +109,69 @@ def parse_definition(value: object) -> BuildDefinition:
         raise ValueError("Unsupported host/compiler combination")
     if row["arch"] == "AARCH64" and row["tool_chain"] == "VS2022":
         raise ValueError("ARM64 MSVC is not supported")
-    if "closed" in modes:
+    if "shipping" in row or "package_suffix" in row:
         suffix = row.get("package_suffix")
         if type(row.get("shipping")) is not bool or not isinstance(suffix, str):
-            raise ValueError("Closed builds require explicit shipping and package_suffix")
+            raise ValueError("Package metadata requires explicit shipping and package_suffix")
         if not re.fullmatch(r"[A-Za-z0-9]*", suffix) or row["shipping"] != (suffix == ""):
             raise ValueError("Invalid shipping/package suffix contract")
-    elif "shipping" in row or "package_suffix" in row:
-        raise ValueError("Closed package metadata must belong to closed repository coverage")
     return cast(BuildDefinition, row)
 
 
-def select_builds(repository: str, path: Path = MATRIX_PATH, host: str | None = None) -> list[SelectedBuild]:
-    """Load validated builds for a repository, optionally restricted by host.
+def select_builds(path: Path, host: str | None = None) -> list[SelectedBuild]:
+    """Load the explicitly supplied matrix file, optionally restricted by host.
 
     Preserves declaration order and rejects duplicate execution/package IDs.
+    Relative paths resolve against the caller's working directory. No repository
+    or CI backend is inferred from the path; either file can be used locally.
     Raises OSError for unreadable input and ValueError for invalid JSON, invalid
     definitions, unknown filters, or an empty selection. No commands are run.
     """
-    if repository not in REPOSITORIES:
-        raise ValueError(f"Unknown repository mode: {repository}")
     if host is not None and host not in EXECUTION_CHOICES["host"]:
         raise ValueError(f"Unknown host: {host}")
     document: object = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(document, list):
         raise ValueError("Build matrix must be a list")
     selected: list[SelectedBuild] = []
-    identifiers: set[tuple[Repository, str]] = set()
+    identifiers: set[str] = set()
     package_names: set[tuple[Architecture, Target, str]] = set()
     for value in cast(list[object], document):
         row = parse_definition(value)
         identifier = build_id(row)
-        repositories = row["repositories"]
-        for mode in repositories:
-            if (mode, identifier) in identifiers:
-                raise ValueError(f"Duplicate matrix identifier for {mode}: {identifier}")
-            identifiers.add((mode, identifier))
-        if "closed" in repositories:
+        if identifier in identifiers:
+            raise ValueError(f"Duplicate matrix identifier: {identifier}")
+        identifiers.add(identifier)
+        if "package_suffix" in row:
             suffix = row["package_suffix"]
             package_name = (row["arch"], row["target"], suffix)
             if package_name in package_names:
                 raise ValueError(f"Duplicate closed package identity: {package_name}")
             package_names.add(package_name)
-        if repository in repositories and (host is None or row["host"] == host):
+        if host is None or row["host"] == host:
             selected_row: SelectedBuild = {
                 "id": identifier,
                 "arch": row["arch"], "target": row["target"], "tool_chain": row["tool_chain"],
                 "core": row["core"], "host": row["host"], "compiler_source": row["compiler_source"],
                 "legacy_debugger": row["legacy_debugger"],
             }
-            if repository == "closed":
+            if "shipping" in row:
                 selected_row["shipping"] = str(row["shipping"]).lower()
                 selected_row["package_suffix"] = row["package_suffix"]
             selected.append(selected_row)
     if not selected:
-        raise ValueError(f"No builds configured for repository mode: {repository}")
+        raise ValueError(f"No builds selected from {path} for host: {host or 'all'}")
     return selected
 
 
 def main(argv: list[str] | None = None) -> None:
     """Print compact matrix JSON; argparse reports input failures with exit 2."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", required=True, choices=REPOSITORIES)
+    parser.add_argument("--matrix", required=True, type=Path, help="Path to the build coverage JSON file")
     parser.add_argument("--host", choices=EXECUTION_CHOICES["host"])
     parser.add_argument("--format", choices=("json", "github", "ado"), default="json")
     args = parser.parse_args(argv, namespace=MatrixArguments())
     try:
-        rows = select_builds(args.repo, host=args.host)
+        rows = select_builds(args.matrix, host=args.host)
     except (OSError, ValueError) as error:
         parser.error(str(error))
     result: object

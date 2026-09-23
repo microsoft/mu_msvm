@@ -28,7 +28,7 @@ jobs:
         id: select
         shell: bash
         run: |
-          matrix="$(python ci/scripts/matrix.py --repo open --format github)"
+          matrix="$(python ci/scripts/matrix.py --matrix .github/build-matrix.json --format github)"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   build:
