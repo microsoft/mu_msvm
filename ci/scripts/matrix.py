@@ -109,6 +109,10 @@ def parse_definition(value: object) -> BuildDefinition:
         raise ValueError("Unsupported host/compiler combination")
     if row["arch"] == "AARCH64" and row["tool_chain"] == "VS2022":
         raise ValueError("ARM64 MSVC is not supported")
+    if row["legacy_debugger"] == "1" and (
+        row["arch"] != "X64" or row["core"] != "legacy" or row["tool_chain"] not in ("VS2022", "CLANGPDB")
+    ):
+        raise ValueError("Legacy debugger requires X64 VS2022 or CLANGPDB with the legacy core")
     if "shipping" in row or "package_suffix" in row:
         suffix = row.get("package_suffix")
         if type(row.get("shipping")) is not bool or not isinstance(suffix, str):
@@ -172,6 +176,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv, namespace=MatrixArguments())
     try:
         rows = select_builds(args.matrix, host=args.host)
+        if args.format == "github" and any(row["legacy_debugger"] == "1" for row in rows):
+            raise ValueError("GitHub builds cannot enable the closed-source legacy debugger")
     except (OSError, ValueError) as error:
         parser.error(str(error))
     result: object

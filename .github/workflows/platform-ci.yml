@@ -59,6 +59,8 @@ jobs:
 
       - name: Build firmware
         uses: ./.github/actions/build
+        env:
+          OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
         with:
           arch: ${{ matrix.arch }}
           target: ${{ matrix.target }}

@@ -1,6 +1,9 @@
 parameters:
   - name: matrixFile
     type: string
+  - name: officialBuild
+    type: boolean
+    default: false
   - name: hosts
     type: object
     default:
@@ -98,7 +101,7 @@ jobs:
                   $buildArgs = @('--arch', $env:BUILD_ARCH, '--target', $env:BUILD_TARGET,
                       '--tool-chain', $env:BUILD_TOOL_CHAIN, '--core', $env:BUILD_CORE,
                       '--host', 'windows', '--compiler-source', $env:BUILD_COMPILER_SOURCE,
-                      '--legacy-debugger', $env:BUILD_LEGACY_DEBUGGER)
+                      '--legacy-debugger', $env:BUILD_LEGACY_DEBUGGER, '--source-origin', 'closed')
                   if ($env:BUILD_COMPILER_SOURCE -eq 'windows_org') {
                       $buildArgs += @('--clang-bin', "$env:WINDOWS_CLANG_ROOT/bin")
                   }
@@ -113,6 +116,7 @@ jobs:
                   BUILD_COMPILER_SOURCE: $(compiler_source)
                   BUILD_LEGACY_DEBUGGER: $(legacy_debugger)
                   WINDOWS_CLANG_ROOT: $(WindowsClangRoot)
+                  OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
           - ${{ if eq(host, 'linux') }}:
               - bash: |
@@ -136,7 +140,7 @@ jobs:
                   source "$BUILD_VENV/bin/activate"
                   python ci/scripts/build.py --arch "$BUILD_ARCH" --target "$BUILD_TARGET" \
                     --tool-chain "$BUILD_TOOL_CHAIN" --core "$BUILD_CORE" --host linux \
-                    --compiler-source "$BUILD_COMPILER_SOURCE" --legacy-debugger "$BUILD_LEGACY_DEBUGGER"
+                    --compiler-source "$BUILD_COMPILER_SOURCE" --legacy-debugger "$BUILD_LEGACY_DEBUGGER" --source-origin closed
                 displayName: Prepare Linux Compiler and Build Firmware
                 env:
                   BUILD_ARCH: $(arch)
@@ -146,3 +150,4 @@ jobs:
                   BUILD_COMPILER_SOURCE: $(compiler_source)
                   BUILD_LEGACY_DEBUGGER: $(legacy_debugger)
                   BUILD_VENV: $(Agent.TempDirectory)/firmware-venv
+                  OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}

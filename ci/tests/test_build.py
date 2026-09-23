@@ -39,7 +39,10 @@ class BuildTests(unittest.TestCase):
                 "TOOL_CHAIN_TAG=CLANGPDB", "BLD_*_USE_LEGACY_C_CORE=TRUE",
             ])
         for invocation in calls:
-            self.assertEqual(invocation.kwargs, {"cwd": SCRIPT_PATH.resolve().parents[2], "check": True, "env": dict(os.environ)})
+            self.assertEqual(invocation.kwargs, {"cwd": SCRIPT_PATH.resolve().parents[2], "check": True,
+                                               "env": {**os.environ, "SOURCE_ORIGIN": "unknown"}})
+            if invocation is not calls[0]:
+                self.assertIn("BLD_*_LEGACY_DEBUGGER=0", invocation.args[0])
         self.assertIn("BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY", calls[-1].args[0])
         self.assertIn("LaunchLogOnSuccess=FALSE", calls[-1].args[0])
         self.assertIn("LaunchLogOnError=FALSE", calls[-1].args[0])
@@ -68,9 +71,49 @@ class BuildTests(unittest.TestCase):
 
     @patch("ci.scripts.build.subprocess.run")
     def test_debugger_passed_to_all_stuart_phases(self, run_mock: MagicMock) -> None:
-        build.main([*self.ARGS, "--legacy-debugger", "1"])
+        build.main(["--arch", "X64", "--target", "DEBUG", "--tool-chain", "VS2022", "--core", "legacy",
+                    "--source-origin", "closed", "--legacy-debugger", "1"])
         for invocation in run_mock.call_args_list[1:]:
             self.assertIn("BLD_*_LEGACY_DEBUGGER=1", invocation.args[0])
+
+    @patch("ci.scripts.build.subprocess.run")
+    def test_debugger_rejected_for_open_unknown_gcc_and_patina(self, run_mock: MagicMock) -> None:
+        for origin, tool, core in (("open", "VS2022", "legacy"), ("unknown", "VS2022", "legacy"),
+                                   ("open", "CLANGPDB", "legacy"), ("unknown", "CLANGPDB", "legacy"),
+                                   ("closed", "GCC", "legacy"), ("closed", "VS2022", "patina")):
+            with self.subTest(origin=origin, tool=tool, core=core), redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    build.main(["--arch", "X64", "--target", "DEBUG", "--tool-chain", tool, "--core", core,
+                                "--host", "linux" if tool == "GCC" else "windows",
+                                "--source-origin", origin, "--legacy-debugger", "1", "--dry-run"])
+                self.assertEqual(error.exception.code, 2)
+        run_mock.assert_not_called()
+
+    @patch("ci.scripts.build.subprocess.run")
+    def test_closed_clang_debugger_variants_are_accepted(self, run_mock: MagicMock) -> None:
+        """Preserve all three Clang debugger combinations configured by ADO."""
+        for host, source in (("windows", "visual_studio"), ("windows", "windows_org"),
+                             ("linux", "distribution")):
+            with self.subTest(host=host, source=source):
+                args = [*self.ARGS, "--host", host, "--compiler-source", source,
+                        "--source-origin", "closed", "--legacy-debugger", "1", "--dry-run"]
+                if source == "windows_org":
+                    args.extend(["--clang-bin", "internal-llvm/bin"])
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(build.main(args), 0)
+                self.assertEqual(output.getvalue().count("BLD_*_LEGACY_DEBUGGER=1"), 3)
+        run_mock.assert_not_called()
+
+    @patch("ci.scripts.build.subprocess.run")
+    def test_source_origin_is_explicit_and_inherited_by_all_commands(self, run_mock: MagicMock) -> None:
+        for origin in ("open", "closed", "unknown"):
+            with self.subTest(origin=origin), patch.dict(os.environ, {"SOURCE_ORIGIN": "inherited"}):
+                run_mock.reset_mock()
+                self.assertEqual(build.main([*self.ARGS, "--source-origin", origin]), 0)
+                self.assertEqual(os.environ["SOURCE_ORIGIN"], "inherited")
+                for invocation in run_mock.call_args_list:
+                    self.assertEqual(invocation.kwargs["env"]["SOURCE_ORIGIN"], origin)
 
     @patch("ci.scripts.build.subprocess.run")
     def test_windows_org_cannot_fall_back_to_visual_studio(self, run_mock: MagicMock) -> None:

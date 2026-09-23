@@ -28,3 +28,4 @@ extends:
           - template: /.azuredevops/templates/build.yml@self
             parameters:
               matrixFile: .azuredevops/build-matrix.json
+              officialBuild: ${{ eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}

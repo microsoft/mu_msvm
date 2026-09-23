@@ -57,3 +57,4 @@ runs:
         --host "$env:BUILD_HOST"
         --compiler-source "$env:BUILD_COMPILER_SOURCE"
         --legacy-debugger "$env:BUILD_LEGACY_DEBUGGER"
+        --source-origin open

@@ -32,7 +32,7 @@ Use your activated Python virtual environment with the selected compiler install
 From the repository root, run:
 
 ```powershell
-python .\ci\scripts\build.py --arch X64 --target DEBUG --tool-chain CLANGPDB --core legacy
+python .\ci\scripts\build.py --arch X64 --target DEBUG --tool-chain CLANGPDB --core legacy --source-origin open
 ```
 
 The script installs Python requirements, then runs `stuart_setup`, `stuart_update`, and `stuart_build`
@@ -42,14 +42,16 @@ Stuart executables are resolved from the invoking Python environment, and execut
 
 `--host windows|linux` defaults to the current host. `--compiler-source` distinguishes `visual_studio`,
 `windows_org`, and `distribution`; it defaults to Visual Studio on Windows and distribution tools on Linux.
-Use `--legacy-debugger 1` for the legacy-debugger variants. ARM64 MSVC is rejected before preparation.
+`--legacy-debugger 1` requires closed-source X64 VS2022 or CLANGPDB with the legacy core.
+CLANGPDB includes Windows Visual Studio Clang, Windows-org Clang, and Linux distribution Clang.
+GitHub/open builds, GCC, and Patina builds must use `0`. ARM64 MSVC is rejected before preparation.
 Actual execution requires the selected host; `--dry-run` can preview either host's commands.
 
 Windows-org Clang requires an explicit `--clang-bin` directory; it never falls back to Visual Studio Clang.
 For example, with the internal compiler tools and matching resource headers already installed:
 
 ```powershell
-python .\ci\scripts\build.py --arch AARCH64 --target RELEASE --tool-chain CLANGPDB --core legacy --host windows --compiler-source windows_org --clang-bin C:/tools/windows-clang/bin
+python .\ci\scripts\build.py --arch AARCH64 --target RELEASE --tool-chain CLANGPDB --core legacy --host windows --compiler-source windows_org --clang-bin C:/tools/windows-clang/bin --source-origin closed
 ```
 
 The local runner does not download private compiler packages or install system compilers. ADO provisions
@@ -84,7 +86,9 @@ The closed profile restores 15 legacy-core builds from the preserved hyperv.uefi
 | Linux | Distribution Clang | X64 and AARCH64, DEBUG and RELEASE |
 | Linux | Distribution GCC | X64 RELEASE only |
 
-Closed X64 DEBUG builds enable the legacy debugger. Open builds retain their existing debugger selection.
+The four closed X64 DEBUG rows enable the legacy debugger: VS2022 and all three Clang compiler sources.
+This matches the fetched ADO configuration; successful compilation and runtime debugging still require validation.
+All open rows and all GCC rows disable the legacy debugger.
 ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
 
 IDs are derived as `<host>_<arch>_<target>_<tool_chain>_<compiler_source>_<core>_<legacy_debugger>`;
@@ -126,6 +130,61 @@ NuGet versions and OneBranch VPack version allocation remain separate contracts.
 No package creation or publication is enabled here. In particular, runtime build matrices do not establish
 that per-flavor OneBranch publishing policy can be expanded at runtime; validate or introduce a separate
 compile-time publishing stage before enabling it.
+
+## Firmware Versioning
+
+Think of three different labels:
+
+| Label | Example | What it answers |
+| --- | --- | --- |
+| Interface version | `1.0` | Can this firmware communicate correctly with this VMM? |
+| Embedded build identity | `26.0` + Git SHA + flags | Which source produced this firmware? |
+| Package version | GitHub release / NuGet / VPack version | Which published download is this? |
+
+The first two come from `MsvmPkg/FirmwareVersion.toml` and the checkout. The last is assigned during publishing.
+A package number assigned after compilation is not embedded in that firmware.
+
+Inside the firmware today:
+
+- **Interface version:** bump major for a breaking firmware/VMM contract change, minor for a compatible addition.
+- **Release prefix:** `26.0`, not the final package number.
+- **Git SHA:** the actual checkout built, including the merge commit for a PR merge checkout.
+- **Dirty flag:** the source had uncommitted changes.
+- **Official flag:** CI marked the build official. This does not mean signed or shipping.
+
+The plugin writes matching firmware PCDs and an 80-byte version-1 record in the DXE FV. That binary layout
+is unchanged. Future packaging must retain a mapping from package version to this build identity and flavor.
+
+### Open Versus Closed Source
+
+The build also writes `FwVersion/FirmwareVersion.json` under its build output directory. This sidecar
+contains the same identity values plus **`source_origin`**: `open`, `closed`, or `unknown`.
+GitHub explicitly selects `open`; ADO explicitly selects `closed`. Origin describes the source repository,
+not the compiler supplier, shipping eligibility, or official status.
+
+Locally, pass `--source-origin open` or `--source-origin closed` to `ci/scripts/build.py`.
+Omitting it records `unknown`, rather than guessing from remotes or inheriting a stale shell setting.
+For direct Stuart invocations, set `SOURCE_ORIGIN=open|closed|unknown` as a build or shell variable.
+An explicit Stuart value wins over the shell; an unrecognized value is rejected before output is written.
+
+Origin is currently **sidecar metadata, not embedded in MSVM.fd**. Keep the JSON with future build artifacts;
+artifact upload is not wired yet. Identifying origin from the firmware file alone needs a separately reviewed
+binary-record extension. Origin and the official flag are declarations, not security attestations.
+
+### Overrides and CI Policy
+
+`BASE_VERSION` uses an explicit Stuart value first, then the shell, then TOML. An empty Stuart value suppresses
+the shell override and uses TOML. It must fit 15 ASCII bytes plus a NUL terminator; interface fields must fit UINT16.
+
+`OFFICIAL_BUILD` uses Stuart-over-shell precedence too. Empty, `0`, and case-insensitive `false` mean unofficial;
+other nonempty values mean official. Local builds default to unofficial unless explicitly overridden.
+
+- GitHub sets `1` only for a push to `main`; PRs and manual dispatches get `0`.
+- ADO sets `1` for the Official entry point and `0` for NonOfficial PR builds, on both build hosts.
+
+An official pipeline can produce test-only flavors; a shipping flavor built locally is still unofficial.
+Dirty and official flags can both be set. Public/private mirrors have different SHAs: source origin tells
+you which repository to look in, not how to translate commits between them.
 
 ## Running CI Checks Locally
 

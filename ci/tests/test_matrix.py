@@ -24,6 +24,7 @@ class MatrixTests(unittest.TestCase):
             for row in matrix.select_builds(path):
                 with self.subTest(path=path, row=row), redirect_stdout(io.StringIO()):
                     args = [
+                        "--source-origin", "closed" if path == CLOSED_MATRIX else "open",
                         "--dry-run", "--arch", row["arch"], "--target", row["target"],
                         "--tool-chain", row["tool_chain"], "--core", row["core"],
                         "--host", row["host"], "--compiler-source", row["compiler_source"],
@@ -58,6 +59,7 @@ class MatrixTests(unittest.TestCase):
         }
         self.assertEqual({(row["arch"], row["target"], row["tool_chain"], row["core"]) for row in rows}, expected)
         self.assertEqual(len(rows), 10)
+        self.assertTrue(all(row["legacy_debugger"] == "0" for row in rows))
         for row in rows:
             self.assertEqual(row["id"], matrix.build_id(row))
         closed = matrix.select_builds(CLOSED_MATRIX)
@@ -82,6 +84,11 @@ class MatrixTests(unittest.TestCase):
         for path in MATRICES:
             rows = matrix.select_builds(path)
             for format_name in ("json", "github", "ado"):
+                if path == CLOSED_MATRIX and format_name == "github":
+                    with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+                        matrix.main(["--matrix", str(path), "--format", format_name])
+                    self.assertEqual(error.exception.code, 2)
+                    continue
                 with self.subTest(path=path, format=format_name):
                     output = io.StringIO()
                     with redirect_stdout(output):
@@ -103,6 +110,9 @@ class MatrixTests(unittest.TestCase):
             [{**row, "repositories": ["closed"]}],
             [{**row, "arch": "AARCH64", "tool_chain": "VS2022"}],
             [{**row, "host": "linux"}],
+            [{**row, "legacy_debugger": "1", "arch": "AARCH64"}],
+            [{**row, "legacy_debugger": "1", "core": "patina"}],
+            [{**row, "legacy_debugger": "1", "host": "linux", "tool_chain": "GCC", "compiler_source": "distribution"}],
             [{**row, "shipping": True}], [{**row, "package_suffix": ""}],
         ]
         for document in invalid_documents:

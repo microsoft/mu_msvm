@@ -35,6 +35,7 @@ class BuildArguments(argparse.Namespace):
     host: Literal["windows", "linux"]
     compiler_source: Literal["visual_studio", "windows_org", "distribution"] | None
     legacy_debugger: Literal["0", "1"]
+    source_origin: Literal["unknown", "open", "closed"]
     clang_bin: Path | None
     dry_run: bool
 
@@ -60,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", choices=("windows", "linux"), default="windows" if os.name == "nt" else "linux")
     parser.add_argument("--compiler-source", choices=("visual_studio", "windows_org", "distribution"))
     parser.add_argument("--legacy-debugger", choices=("0", "1"), default="0")
+    parser.add_argument("--source-origin", choices=("unknown", "open", "closed"), default="unknown",
+                        help="Source repository provenance for firmware metadata; never inferred from the host")
     parser.add_argument("--clang-bin", type=Path, help="Explicit compiler bin directory; required for Windows-org Clang")
     parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them")
     args = parser.parse_args(argv, namespace=BuildArguments())
@@ -67,6 +70,11 @@ def main(argv: list[str] | None = None) -> int:
     compiler_source = args.compiler_source or ("visual_studio" if args.host == "windows" else "distribution")
     if args.arch == "AARCH64" and args.tool_chain == "VS2022":
         parser.error("ARM64 MSVC is not supported")
+    if args.legacy_debugger == "1" and (
+        args.source_origin != "closed" or args.arch != "X64" or args.core != "legacy"
+        or args.tool_chain not in ("VS2022", "CLANGPDB")
+    ):
+        parser.error("Legacy debugger requires closed-source X64 VS2022 or CLANGPDB with the legacy core")
     if (args.host, args.tool_chain, compiler_source) not in {
         ("windows", "VS2022", "visual_studio"), ("windows", "CLANGPDB", "visual_studio"),
         ("windows", "CLANGPDB", "windows_org"), ("linux", "CLANGPDB", "distribution"),
@@ -87,9 +95,9 @@ def main(argv: list[str] | None = None) -> int:
         f"TOOL_CHAIN_TAG={args.tool_chain}",
         f"BLD_*_USE_LEGACY_C_CORE={'TRUE' if args.core == 'legacy' else 'FALSE'}",
     ]
-    if args.legacy_debugger == "1":
-        flavor.append("BLD_*_LEGACY_DEBUGGER=1")
+    flavor.append(f"BLD_*_LEGACY_DEBUGGER={args.legacy_debugger}")
     environment: dict[str, str] = os.environ.copy()
+    environment["SOURCE_ORIGIN"] = args.source_origin
     if args.clang_bin is not None:
         environment["CLANG_BIN"] = f"{args.clang_bin.resolve().as_posix()}/"
         print(f"CLANG_BIN={environment['CLANG_BIN']}", flush=True)
