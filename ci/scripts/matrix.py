@@ -52,6 +52,9 @@ class SelectedBuild(BuildFlavor):
     """
 
     id: str
+    display_name: NotRequired[str]
+    artifact_name: NotRequired[str]
+    logs_artifact_name: NotRequired[str]
     shipping: NotRequired[str]
     package_suffix: NotRequired[str]
 
@@ -80,6 +83,40 @@ def build_id(row: BuildFlavor) -> str:
     """Derive a stable execution ID, independent of package names or repo mode."""
     return "_".join((row["host"], row["arch"], row["target"], row["tool_chain"],
                      row["compiler_source"], row["core"], row["legacy_debugger"]))
+
+
+def label_builds(rows: list[SelectedBuild], backend: OutputFormat) -> list[SelectedBuild]:
+    """Add provider presentation fields without changing execution/package IDs.
+
+    GitHub artifact names preserve the pre-refactor consumer contract. Reject
+    collisions instead of silently renaming artifacts when new variants are
+    introduced. ADO artifact staging and package names are not derived from
+    these display labels. Plain JSON remains execution data only.
+    """
+    labeled: list[SelectedBuild] = []
+    artifact_names: set[str] = set()
+    for row in rows:
+        result: SelectedBuild = {**row}
+        if backend != "json":
+            core = "Legacy" if row["core"] == "legacy" else "Patina"
+            label = f"{row['target']} {row['arch']} {row['tool_chain']} ({core})"
+            if backend == "ado":
+                compiler = {"visual_studio": "VS", "windows_org": "WinOrg", "distribution": "Distro"}[row["compiler_source"]]
+                label += f" / {row['host'].title()} {compiler}"
+                if row["legacy_debugger"] == "1":
+                    label += " / Legacy debugger"
+            result["display_name"] = label
+        if backend == "github":
+            suffix = "-patina" if row["core"] == "patina" else ""
+            stem = f"{row['target']}-{row['arch']}-{row['tool_chain']}{suffix}"
+            artifact_name = f"firmware-{stem}"
+            if artifact_name in artifact_names:
+                raise ValueError(f"Artifact name collision: {artifact_name}; choose an explicit consumer migration before adding this variant")
+            artifact_names.add(artifact_name)
+            result["artifact_name"] = artifact_name
+            result["logs_artifact_name"] = f"logs-{stem}"
+        labeled.append(result)
+    return labeled
 
 
 def parse_definition(value: object) -> BuildDefinition:
@@ -178,6 +215,7 @@ def main(argv: list[str] | None = None) -> None:
         rows = select_builds(args.matrix, host=args.host)
         if args.format == "github" and any(row["legacy_debugger"] == "1" for row in rows):
             raise ValueError("GitHub builds cannot enable the closed-source legacy debugger")
+        rows = label_builds(rows, args.format)
     except (OSError, ValueError) as error:
         parser.error(str(error))
     result: object

@@ -32,7 +32,7 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Build ${{ matrix.id }}
+    name: ${{ matrix.display_name }}
     needs: build-matrix
     runs-on: windows-2022
     strategy:

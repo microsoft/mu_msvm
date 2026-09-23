@@ -40,7 +40,7 @@ jobs:
 
   - ${{ each host in parameters.hosts }}:
       - job: BuildFirmware_${{ host }}
-        displayName: Build Firmware (${{ host }})
+        displayName: $(display_name)
         dependsOn: BuildMatrix
         pool:
           type: ${{ host }}

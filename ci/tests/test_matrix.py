@@ -96,10 +96,45 @@ class MatrixTests(unittest.TestCase):
                     result: object = json.loads(output.getvalue())
                     expected: object = rows
                     if format_name == "github":
-                        expected = {"include": rows}
+                        expected = {"include": matrix.label_builds(rows, "github")}
                     elif format_name == "ado":
-                        expected = {row["id"]: {key: value for key, value in row.items() if key != "id"} for row in rows}
+                        expected = {row["id"]: {key: value for key, value in row.items() if key != "id"}
+                                    for row in matrix.label_builds(rows, "ado")}
                     self.assertEqual(result, expected)
+
+    def test_github_labels_preserve_historical_artifact_names(self) -> None:
+        rows = matrix.select_builds(OPEN_MATRIX)
+        labeled = matrix.label_builds(rows, "github")
+        for original, row in zip(rows, labeled):
+            suffix = "-patina" if row["core"] == "patina" else ""
+            stem = f"{row['target']}-{row['arch']}-{row['tool_chain']}{suffix}"
+            self.assertEqual(row["artifact_name"], f"firmware-{stem}")
+            self.assertEqual(row["logs_artifact_name"], f"logs-{stem}")
+            self.assertEqual(row["id"], original["id"])
+            self.assertNotIn("display_name", original)
+        self.assertEqual(labeled[0]["display_name"], "DEBUG X64 CLANGPDB (Legacy)")
+        self.assertEqual(labeled[0]["artifact_name"], "firmware-DEBUG-X64-CLANGPDB")
+        self.assertEqual(labeled[-1]["display_name"], "RELEASE AARCH64 CLANGPDB (Patina)")
+        self.assertEqual(labeled[-1]["artifact_name"], "firmware-RELEASE-AARCH64-CLANGPDB-patina")
+
+    def test_github_artifact_collisions_require_explicit_migration(self) -> None:
+        row = matrix.select_builds(OPEN_MATRIX)[0]
+        other: matrix.SelectedBuild = {**row, "compiler_source": "windows_org"}
+        other["id"] = matrix.build_id(other)
+        with self.assertRaisesRegex(ValueError, "Artifact name collision"):
+            matrix.label_builds([row, other], "github")
+
+    def test_ado_labels_distinguish_compilers_without_renaming_packages(self) -> None:
+        rows = matrix.select_builds(CLOSED_MATRIX)
+        labeled = matrix.label_builds(rows, "ado")
+        self.assertEqual(len({row["display_name"] for row in labeled}), 15)
+        for original, row in zip(rows, labeled):
+            self.assertEqual(row["id"], original["id"])
+            self.assertEqual(row["package_suffix"], original["package_suffix"])
+            self.assertEqual(row["shipping"], original["shipping"])
+            self.assertNotIn("artifact_name", row)
+        self.assertIn("/ Windows WinOrg", next(row["display_name"] for row in labeled
+                                               if row["compiler_source"] == "windows_org"))
 
     def test_invalid_matrix_is_rejected(self) -> None:
         row = matrix.parse_definition(json.loads(OPEN_MATRIX.read_text())[0])

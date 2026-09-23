@@ -115,6 +115,37 @@ The inspected OneBranch Windows job template forwards job strategies and depende
 checks our output binding and flavor arguments, but a hosted OneBranch run is still required to verify
 the full governed-template expansion, runner tools, internal feed credentials, and repository access.
 
+### Job Labels and Artifact Names
+
+Machine IDs remain stable and complete. They are not the human-facing job labels or package names.
+Provider matrix output adds a `display_name` derived from the same flavor:
+
+- GitHub: `DEBUG X64 CLANGPDB (Legacy)` or `RELEASE AARCH64 CLANGPDB (Patina)`.
+- ADO: the same label followed by host and compiler source, such as `/ Windows WinOrg` or `/ Linux Distro`.
+	Debugger-enabled rows also show `/ Legacy debugger`. ADO may additionally show its matrix leg key in the UI.
+
+GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the future upload steps.
+They preserve the pre-refactor consumer names exactly:
+
+| Flavor | Firmware artifact | Log artifact |
+| --- | --- | --- |
+| X64 DEBUG CLANGPDB legacy | `firmware-DEBUG-X64-CLANGPDB` | `logs-DEBUG-X64-CLANGPDB` |
+| AARCH64 RELEASE CLANGPDB Patina | `firmware-RELEASE-AARCH64-CLANGPDB-patina` | `logs-RELEASE-AARCH64-CLANGPDB-patina` |
+
+The pattern is `firmware-<TARGET>-<ARCH>-<TOOLCHAIN>[-patina]` (and `logs-` for logs).
+Legacy has no suffix. Keep the literal `AARCH64` and `CLANGPDB` in artifact names for existing consumers.
+If future host/compiler variants collide under this pattern, selection fails instead of silently renaming artifacts.
+Any expanded naming scheme must be coordinated with consumers first.
+
+ADO naming is a separate compatibility contract: historical staged folders were
+`Firmware Binary File <TARGET>_<ARCH>`, `Firmware Map Files <TARGET>_<ARCH>`,
+`Firmware PDB Files <TARGET>_<ARCH>`, and `Build Logs <job_name>` inside a per-job OneBranch artifact.
+Those folder names alone are not globally unique. Changing job identity or log-folder labels can affect consumers
+of the enclosing artifact and must be checked when staging/upload is restored. No ADO artifact names are inferred
+from the new display label. Package names and suffixes below remain unchanged.
+
+This change defines labels and names only; artifact upload and staging are not enabled yet.
+
 ### Closed Package Identity
 
 Closed rows have explicit `shipping` and `package_suffix` metadata. Shipping variants are X64 DEBUG/RELEASE
