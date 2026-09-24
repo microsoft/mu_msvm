@@ -106,6 +106,8 @@ WriteTpmPort (
   IN UINT32  DataRegisterValue
   )
 {
+  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+
  #if defined (MDE_CPU_AARCH64)
   UINT64  Port = FixedPcdGet64 (PcdTpmBaseAddress) + 0x80;
   MmioWrite32 (Port, AddressRegisterValue);
@@ -114,6 +116,8 @@ WriteTpmPort (
   IoWrite32 (TpmControlPort, AddressRegisterValue);
   IoWrite32 (TpmDataPort, DataRegisterValue);
  #endif
+
+  SetInterruptState (interruptState);
 }
 
 UINT32
@@ -121,14 +125,19 @@ ReadTpmPort (
   IN UINT32  AddressRegisterValue
   )
 {
+  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+
  #if defined (MDE_CPU_AARCH64)
   UINT64  Port = FixedPcdGet64 (PcdTpmBaseAddress) + 0x80;
-  MmioWrite32 (Port, AddressRegisterValue);
+  UINT32 result = MmioWrite32 (Port, AddressRegisterValue);
   return MmioRead32 (Port + 4);
  #elif defined (MDE_CPU_X64)
   IoWrite32 (TpmControlPort, AddressRegisterValue);
-  return IoRead32 (TpmDataPort);
+  UINT32 result = IoRead32 (TpmDataPort);
  #endif
+
+  SetInterruptState (interruptState);
+  return result;
 }
 
 EFI_STATUS
