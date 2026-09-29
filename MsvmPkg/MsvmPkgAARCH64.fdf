@@ -17,12 +17,8 @@
 #  FD.MSVM
 
 #  0x800000 +----------------------------+
-#           |                            |
 #           |  DXE modules               |
 #           |                            |
-#           |                            |
-#           |  DXE Volume                |
-#  0x200000 +----------------------------+
 #           |  PEI modules               |
 #           |  PEI_Core                  |
 #           |  SEC                       |
@@ -61,31 +57,19 @@ DATA = {
 }
 
 # MAIN volume (start|size)
-0x00001000|0x001FF000
+!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+0x00001000|0x0080F000
+!else
+0x00001000|0x007FF000
+!endif
 gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAIN
 
-# DXE volume that is not force rebased so that the section alignment and
-# file alignment do not need to match
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
-0x00200000|0x00610000
-!else
-0x00200000|0x00600000
-!endif
-gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
-FV = DXE
-
 ################################################################################
 #
-# This FV section describes the MAIN volume contents. It contains SEC and PEI
-# modules. This section gets forced rebased by the basetools, as it contains
-# some XIP modules. DxeMain is in this FV also so that DxeIpl can find and
-# load it. However, the DXE modules are in a separate FV so that they can
-# not be force rebased, as they are non-XIP and the DXE_RUNTIME_DRIVERs
-# do not meet the requirement for force rebasing (that they have section
-# alignment and file alignment equivalent). There is an added benefit here
-# that PeiCore does not have to spend time enumerating the DXE drivers to
-# determine if it needs to launch them or not.
+# This FV section describes the MAIN volume contents. It contains SEC, PEI,
+# and DXE modules. The volume is force rebased, but only modules whose rules
+# specify Xip=TRUE are rebased by BaseTools.
 #
 [FV.MAIN]
 BlockSize          = 0x1000
@@ -140,26 +124,6 @@ INF SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.inf
     SECTION UI = "DxeCore"
   }
 !endif
-
-[FV.DXE]
-BlockSize          = 0x1000
-FvAlignment        = 4K
-FvForceRebase      = FALSE
-ERASE_POLARITY     = 1
-MEMORY_MAPPED      = TRUE
-STICKY_WRITE       = TRUE
-LOCK_CAP           = TRUE
-LOCK_STATUS        = TRUE
-WRITE_DISABLED_CAP = TRUE
-WRITE_ENABLED_CAP  = TRUE
-WRITE_STATUS       = TRUE
-WRITE_LOCK_CAP     = TRUE
-WRITE_LOCK_STATUS  = TRUE
-READ_DISABLED_CAP  = TRUE
-READ_ENABLED_CAP   = TRUE
-READ_STATUS        = TRUE
-READ_LOCK_CAP      = TRUE
-READ_LOCK_STATUS   = TRUE
 
 !if $(USE_LEGACY_C_CORE) == TRUE
   INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
