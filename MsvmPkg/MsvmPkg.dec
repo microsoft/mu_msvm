@@ -90,8 +90,6 @@
   gMsvmPkgTokenSpaceGuid.PcdFvSize|0x0|UINT32|0x3
   gMsvmPkgTokenSpaceGuid.PcdSystemMemoryBaseAddress|0x0|UINT64|0x4
   gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize|0x0|UINT32|0x5
-  gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|0x0|UINT64|0x6
-  gMsvmPkgTokenSpaceGuid.PcdDxeFvSize|0x0|UINT32|0x7
 
   # Firmware version record. These declare the PCD contract only; the values are
   # injected at build time by MsvmPkg/BuildPlugins/FirmwareVersionBlob from the

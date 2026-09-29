@@ -20,25 +20,21 @@
 #
 #  This FD section describes the layout of the full BIOS image.
 #
-#  It consists of a main volume containing the PEI modules and an embedded volume
-#  containing the DXE modules.  The main volume is followed by the SEC volume that
-#  contains the SEC modules followed by the raw reset vector code at the top of
-#  the image.
+#  It consists of a main volume containing the PEI and DXE modules. The main
+#  volume is followed by the SEC volume that contains the SEC modules followed
+#  by the raw reset vector code at the top of the image.
 #
 #          +------------------------- high mem
 #          | Reset vector code (raw)
 #  SEC FV  | SEC modules
 #          +-------------------------
-#  MAIN FV | PEI modules
-#          +-------------------------
-#  DXE FV  | DXE modules
+#  MAIN FV | PEI and DXE modules
 #          +------------------------- low mem
 #
 #
 #  In order to make more room for more PEI and/or DXE modules you should:
 #  - increase the Size variable
 #  - lower the BaseAddress variable to accommodate the Size increase
-#  - increase the size of the MAIN volume
 #  - Update BlockSize or NumBlocks accordingly so their product matches
 #    the size of the MAIN volume.
 #  - use the size of the MAIN volume as the new offset for the start of
@@ -61,21 +57,11 @@ NumBlocks     = 0x800
 NumBlocks     = 0x600
 !endif
 
-# DXE volume that is not force rebased so that the section alignment and
-# file alignment do not need to match
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
-0x00000000|0x00500000
-!else
-0x00000000|0x00493000
-!endif
-gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
-FV = DXE
-
 # The MAIN volume (start|size)
 !if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
-0x00500000|0x100000
+0x00000000|0x00600000
 !else
-0x00493000|0x0014D000
+0x00000000|0x005E0000
 !endif
 gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAINFV
@@ -121,15 +107,9 @@ INF  RuleOverride=RESET_VECTOR UefiCpuPkg/ResetVector/Vtf0/Vtf0.inf
 
 ################################################################################
 #
-# This FV section describes the MAIN volume contents. It contains PEI
-# modules. This section gets forced rebased by the basetools, as it contains
-# some XIP modules. DxeMain is in this FV also so that DxeIpl can find and
-# load it. However, the DXE modules are in a separate FV because non-XIP
-# drivers do not have a requirement for the file alignment and section
-# alignment to match and to support smaller file sizes, the force rebasing
-# is removed from the DXE FV. There is an added benefit here
-# that PeiCore does not have to spend time enumerating the DXE drivers to
-# determine if it needs to launch them or not.
+# This FV section describes the MAIN volume contents. It contains PEI and DXE
+# modules. The volume is force rebased, but only modules whose rules specify
+# Xip=TRUE are rebased by BaseTools.
 #
 [FV.MAINFV]
 BlockSize          = 0x10000
@@ -184,26 +164,6 @@ INF DebuggerFeaturePkg/DebugConfigPei/DebugConfigPei.inf
     SECTION UI = "DxeCore"
   }
 !endif
-
-[FV.DXE]
-BlockSize          = 0x1000
-FvAlignment        = 16
-FvForceRebase      = FALSE
-ERASE_POLARITY     = 1
-MEMORY_MAPPED      = TRUE
-STICKY_WRITE       = TRUE
-LOCK_CAP           = TRUE
-LOCK_STATUS        = TRUE
-WRITE_DISABLED_CAP = TRUE
-WRITE_ENABLED_CAP  = TRUE
-WRITE_STATUS       = TRUE
-WRITE_LOCK_CAP     = TRUE
-WRITE_LOCK_STATUS  = TRUE
-READ_DISABLED_CAP  = TRUE
-READ_ENABLED_CAP   = TRUE
-READ_STATUS        = TRUE
-READ_LOCK_CAP      = TRUE
-READ_LOCK_STATUS   = TRUE
 
 !if $(FILE_LOGGER) == 1
   INF AdvLoggerPkg/AdvancedFileLogger/AdvancedFileLogger.inf

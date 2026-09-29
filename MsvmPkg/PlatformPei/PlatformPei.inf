@@ -88,10 +88,6 @@
     gEfiNetworkPkgTokenSpaceGuid.PcdDhcp6UidType
     gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdFdSize
-    gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress
-    gMsvmPkgTokenSpaceGuid.PcdFvSize
-    gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress
-    gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
     gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMajor
     gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareInterfaceVersionMinor
     gMsvmPkgTokenSpaceGuid.PcdMsvmFirmwareBaseVersion
@@ -178,6 +174,8 @@
     gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress
     gMsvmPkgTokenSpaceGuid.PcdNvdimmCount
     gMsvmPkgTokenSpaceGuid.PcdVpciInstanceFilterGuidPtr
+    gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress
+    gMsvmPkgTokenSpaceGuid.PcdFvSize
     gMsvmPkgTokenSpaceGuid.PcdIsolationArchitecture
     gMsvmPkgTokenSpaceGuid.PcdIsolationParavisorPresent
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary
