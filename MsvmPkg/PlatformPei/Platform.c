@@ -314,10 +314,11 @@ Return Value:
 
   //
   // Mark the firmware image as allocated, allowing it to be reclaimed by
-  // the guest OS later.
+  // the guest OS later. Address 0 is not allowed to be allocated because it is used as the null page,
+  // so we start the allocation at EFI_PAGE_SIZE.
   //
-  *AllocatedBase   = 0;
-  *AllocatedLength = PcdGet32 (PcdFdSize);
+  *AllocatedBase   = EFI_PAGE_SIZE;
+  *AllocatedLength = PcdGet32 (PcdFdSize) - EFI_PAGE_SIZE;
 }
 
 #endif
