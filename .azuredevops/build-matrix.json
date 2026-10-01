@@ -1,0 +1,21 @@
+[
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "VS2022", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "1", "shipping": true, "package_suffix": ""},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "VS2022", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0", "shipping": true, "package_suffix": ""},
+  {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "core": "legacy", "legacy_debugger": "0", "shipping": true, "package_suffix": ""},
+
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "1", "shipping": false, "package_suffix": "XDCV"},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "XRCV"},
+  {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "ADCV"},
+  {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "ARCV"},
+
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "core": "legacy", "legacy_debugger": "1", "shipping": false, "package_suffix": "XDCW"},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "XRCW"},
+  {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "ADCW"},
+
+  {"host": "linux", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "core": "legacy", "legacy_debugger": "1", "shipping": false, "package_suffix": "XDCL"},
+  {"host": "linux", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "XRCL"},
+  {"host": "linux", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "ADCL"},
+  {"host": "linux", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "ARCL"},
+
+  {"host": "linux", "arch": "X64", "target": "RELEASE", "tool_chain": "GCC", "compiler_source": "distribution", "core": "legacy", "legacy_debugger": "0", "shipping": false, "package_suffix": "XRG"}
+]

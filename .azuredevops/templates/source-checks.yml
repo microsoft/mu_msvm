@@ -1,0 +1,27 @@
+jobs:
+  - job: SourceChecks
+    displayName: Stuart CI
+    pool:
+      type: windows
+    variables:
+      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+      GIT_CONFIG_COUNT: "2"
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: "false"
+      GIT_CONFIG_KEY_1: core.longpaths
+      GIT_CONFIG_VALUE_1: "true"
+      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/SOURCE_CHECKS
+      ob_nugetPublishing_enabled: false
+      ob_createvpack_enabled: false
+    steps:
+      - script: python ci/scripts/source_checks.py
+        displayName: Run Source Checks
+
+      - task: PublishTestResults@2
+        displayName: Publish Stuart Results
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: Build/TestSuites.xml
+          testRunTitle: Stuart CI
+          failTaskOnFailedTests: true

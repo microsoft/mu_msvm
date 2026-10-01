@@ -1,0 +1,13 @@
+name: $(SourceBranchName)_$(Date:yyyyMMdd_HHmmss)$(Rev:.r)
+
+trigger:
+  batch: false
+  branches:
+    include:
+      - official/*
+pr: none
+
+extends:
+  template: /.azuredevops/templates/platform.yml
+  parameters:
+    oneBranchBase: v2/Microsoft.Official.yml
