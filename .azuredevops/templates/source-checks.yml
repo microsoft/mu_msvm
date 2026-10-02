@@ -14,8 +14,15 @@ jobs:
       ob_nugetPublishing_enabled: false
       ob_createvpack_enabled: false
     steps:
-      - script: python ci/scripts/source_checks.py
+      - template: /.azuredevops/templates/windows-python.yml@self
+
+      - script: python ci/scripts/source_checks.py --verbose
         displayName: Run Source Checks
+        env:
+          GIT_TRACE: '1'
+          GIT_TRACE_CURL: '1'
+          GIT_TRACE_CURL_NO_DATA: '1'
+          GIT_TRACE_REDACT: '1'
 
       - task: PublishTestResults@2
         displayName: Publish Stuart Results

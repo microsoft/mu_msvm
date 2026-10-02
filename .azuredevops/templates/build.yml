@@ -27,6 +27,8 @@ jobs:
       ob_nugetPublishing_enabled: false
       ob_createvpack_enabled: false
     steps:
+      - template: /.azuredevops/templates/windows-python.yml@self
+
       - ${{ each host in parameters.hosts }}:
           - pwsh: |
               $matrix = python ci/scripts/matrix.py --matrix "$env:MATRIX_FILE" --host "$env:BUILD_HOST" --format ado
@@ -61,6 +63,8 @@ jobs:
           WindowsClangRoot: $(Agent.TempDirectory)/windows-clang-${{ parameters.windowsClangVersion }}
         steps:
           - ${{ if eq(host, 'windows') }}:
+              - template: /.azuredevops/templates/windows-python.yml@self
+
               - pwsh: |
                   $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
                   $installation = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath

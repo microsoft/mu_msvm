@@ -111,6 +111,13 @@ Each job runs inside OneBranch. The build stage
 runs independently of source checks, and each flavor invokes the same `ci/scripts/build.py` as GitHub.
 NuGet and VPack publishing remain disabled for these jobs.
 
+All ADO Windows jobs resolve the image's Python 3.12 interpreter with
+`py -3.12 -c "import sys; print(sys.executable)"`. The shared template verifies
+the version and pip, then prepends the resolved interpreter and Scripts directories
+to PATH. It does not assume an installation directory, download Python, or fall
+back to the default Python on PATH. Linux builds retain their distribution Python
+and isolated virtual environment.
+
 The inspected OneBranch Windows job template forwards job strategies and dependencies. Local validation
 checks our output binding and flavor arguments, but a hosted OneBranch run is still required to verify
 the full governed-template expansion, runner tools, internal feed credentials, and repository access.
@@ -226,7 +233,12 @@ python .\ci\scripts\source_checks.py
 ```
 
 The workflow installs the Python requirements, runs `stuart_setup` and `stuart_update`, and then runs the configured
-`stuart_ci_build` checks. To run one check while iterating, invoke Stuart directly. For example:
+`stuart_ci_build` checks. Pass `--verbose` to enable detailed Stuart setup logging.
+ADO source checks enable this option and Git command/HTTP tracing, with credential
+redaction enabled and HTTP payload logging disabled, to diagnose submodule access
+failures. GitHub and local runs retain their default logging.
+
+To run one check while iterating, invoke Stuart directly. For example:
 
 ```powershell
 stuart_ci_build -c .\.pytool\CISettings.py --disable-all GuidCheck=run

@@ -28,11 +28,12 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=REPO_ROOT, check=True)
 
 
-def run_source_checks() -> None:
+def run_source_checks(verbose: bool = False) -> None:
     """Install requirements, prepare CI dependencies, and run the selected checks.
 
     Uses CISettings.py, not platform build settings. Commands run sequentially;
     the first failure propagates and prevents all subsequent commands.
+    Verbose mode enables Stuart setup diagnostics without logging pip credentials.
     """
     commands: tuple[list[str], ...] = (
         [sys.executable, "-m", "pip", "install", "-r", "pip-requirements.txt"],
@@ -48,19 +49,22 @@ def run_source_checks() -> None:
             "UncrustifyCheck=run",
         ],
     )
+    if verbose:
+        commands[1].append("--verbose")
     for command in commands:
         run(command)
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Parse the no-argument CLI (including --help), then run source checks.
+    """Parse CLI options, then run source checks.
 
     None reads sys.argv. Argparse exits for help or invalid arguments; execution
     failures propagate to the caller. This function does not create a venv.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args(argv)
-    run_source_checks()
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose Stuart setup logging")
+    args = parser.parse_args(argv)
+    run_source_checks(verbose=args.verbose)
 
 
 if __name__ == "__main__":

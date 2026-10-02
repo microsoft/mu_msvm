@@ -1,0 +1,18 @@
+steps:
+  - pwsh: |
+      $python = py -3.12 -c "import sys; print(sys.executable)"
+      if ($LASTEXITCODE -ne 0 -or -not $python) {
+          throw 'The image Python launcher must provide Python 3.12'
+      }
+      $python = $python.Trim()
+      if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+          throw "Image Python was not found at $python"
+      }
+      $pythonHome = Split-Path -Parent $python
+      & $python -c "import sys; print(sys.executable); print(sys.version); sys.exit(0 if sys.version_info[:2] == (3, 12) else 1)"
+      if ($LASTEXITCODE -ne 0) { throw 'The image must provide Python 3.12' }
+      & $python -m pip --version
+      if ($LASTEXITCODE -ne 0) { throw 'The image Python must provide pip' }
+      Write-Host "##vso[task.prependpath]$pythonHome\Scripts"
+      Write-Host "##vso[task.prependpath]$pythonHome"
+    displayName: Use Image Python 3.12
