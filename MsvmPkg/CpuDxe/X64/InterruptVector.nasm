@@ -142,25 +142,32 @@ CommonInterruptEntryMsvm:
 ; UINT64  Rip;
     push    qword [rbp + 24]
 
-; UINT64  Gdtr[2], Idtr[2];
-    xor     rax, rax
-    push    rax
-    push    rax
-    sidt    [rsp]
-    xchg    rax, [rsp + 2]
-    xchg    rax, [rsp]
-    xchg    rax, [rsp + 8]
+;; UINT64  Gdtr[2], Idtr[2];
+;;
+;; convert struct IA32_DESCRIPTOR {UINT16 Limit; UINT64 Base;}
+;; to      struct                 {UINT64 Base;  UINT16 Limit;}
+;;
+    xor     eax, eax             ; rax=0
+    push    rax                  ; push 16 bytes
+    push    rax                  ;
+    sidt    [rsp]                ; store 10 bytes
+    mov     cx,  [rsp]           ;  cx    = UINT16 Limit
+    mov     rax, [rsp + 2]       ; rax    = UINT64 Base
+    mov     [rsp], rax           ; rsp[0] = UINT64 Base
+    mov     [rsp + 8], cx        ; rsp[1] = UINT64 Limit
+; Upper 6bytes 48bits are zero because of push 0 and sidt did not write there.
 
-    xor     rax, rax
+    xor     eax, eax             ; Again, sgdt instead of sidt.
     push    rax
     push    rax
     sgdt    [rsp]
-    xchg    rax, [rsp + 2]
-    xchg    rax, [rsp]
-    xchg    rax, [rsp + 8]
+    mov     cx,  [rsp]
+    mov     rax, [rsp + 2]
+    mov     [rsp], rax
+    mov     [rsp + 8], cx
 
 ; UINT64  Ldtr, Tr;
-    xor     rax, rax
+    xor     eax, eax
     str     ax
     push    rax
     sldt    ax
@@ -180,7 +187,7 @@ CommonInterruptEntryMsvm:
     push    rax
     mov     rax, cr2
     push    rax
-    xor     rax, rax
+    xor     eax, eax
     push    rax
     mov     rax, cr0
     push    rax
