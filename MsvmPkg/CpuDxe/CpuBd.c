@@ -53,6 +53,117 @@ AsmIdtVector00 (
   VOID
   );
 
+STATIC
+VOID
+GetInterruptDescriptorToContext(
+  VOID (*Get)(IA32_DESCRIPTOR *InterruptDescriptor),
+  UINT64                       Words[2]
+  )
+/**
+  convert struct IA32_DESCRIPTOR {UINT16 Limit; UINT64 Base;}
+  to      struct                 {UINT64 Base;  UINT16 Limit;}
+**/
+{
+  IA32_DESCRIPTOR InterruptDescriptor;
+
+  Get(&InterruptDescriptor);
+  Words[0] = InterruptDescriptor.Base;
+  Words[1] = InterruptDescriptor.Limit;
+}
+
+typedef struct CommonInterruptEntryMsvmFrame
+{
+  /*  0 */ UINT64 Rbp;
+  /*  8 */ UINT64 VectorNumber;
+  /* 16 */ UINT64 ErrorCode;
+  //
+  // Above is pushed by AsmIdtVector.
+  // Below is architectural.
+  // ErrorCode is sometimes one, sometimes the other.
+  //
+  /* 24 */ UINT64 Rip;
+  /* 32 */ UINT16 Cs;
+  /* 40 */ UINT64 RFlags;
+  /* 48 */ UINT64 Rsp;
+  /* 56 */ UINT16 Ss;
+} CommonInterruptEntryMsvmFrame;
+
+VOID
+CommonInterruptEntryMsvmC (
+  CommonInterruptEntryMsvmFrame* Frame,
+  IN CONST  EFI_SYSTEM_CONTEXT  Context
+  )
+{
+  IA32_CR4 Cr4;
+  EFI_EXCEPTION_TYPE  InterruptType;
+  EFI_CPU_INTERRUPT_HANDLER InterruptHandler;
+
+  InterruptType = Frame->InterruptType;
+  InterruptHandler = ExternalVectorTable[InterruptType];
+
+  //
+  // Some registers are restored from Context by this function's caller,
+  // and some are not. Registers that are restored, must be set
+  // even if InterruptHandler is null (though they will not be changed
+  // and this could be optimized, unless a hardware debugger changes them).
+  //
+
+  Context->RFlags = Frame->RFlags;
+  Context->Rip = Frame->Rip;
+  Context->Ss = Frame->Ss;
+  Context->Cs = Frame->Cs;
+  Context->Ds = AsmReadDs ();
+  Context->Es = AsmReadEs ();
+  Context->Fs = AsmReadFs ();
+  Context->Gs = AsmReadGs ();
+
+  Context->Cr0 = AsmReadCr0 ();
+  Context->Cr1 = 0;
+  Context->Cr2 = AsmReadCr2 ();
+  Context->Cr3 = AsmReadCr3 ();
+  Cr4.UintN = AsmReadCr4 ();
+  Cr4.Bits.PAE = 1;
+  Cr4.Bits.DE = 1;
+  AsmWriteCr4(Cr4.UintN);
+  Context->Cr4 = Cr4.UintN;
+  Context->Cr8 = AsmReadCr8 ();
+
+  if (InterruptHandler) {
+    Context->ExceptionData = Frame->ErrorCode;
+    Context->Dr0 = AsmReadDr0 ();
+    Context->Dr1 = AsmReadDr1 ();
+    Context->Dr2 = AsmReadDr2 ();
+    Context->Dr3 = AsmReadDr3 ();
+
+    //
+    // There is no 4 or 5.
+    //
+    Context->Dr6 = AsmReadDr6 ();
+    Context->Dr7 = AsmReadDr7 ();
+    GetInterruptDescriptorToContext (AsmReadGdtr, Context->Gdtr);
+    GetInterruptDescriptorToContext (AsmReadIdtr, Context->Idtr);
+    Context->Ldtr = AsmReadLdtr ();
+    Context->Tr = AsmReadTr ();
+    InterruptHandler (InterruptType, Context);
+  }
+
+  AsmWriteCr0 (Context->Cr0);
+  //
+  // Skip Cr1.
+  //
+  AsmWriteCr2 (Context->Cr2);
+  AsmWriteCr3 (Context->Cr3);
+  AsmWriteCr4 (Context->Cr4);
+  AsmWriteCr8 (Context->Cr8);
+  Frame->Cs = Context->Cs;   // for iret
+  Frame->Ss = Context->Ss;   // for iret
+  Frame->Rsp = Context->Rsp; // for iret
+  Frame->Rip = Context->Rip; // for iret
+  Frame->RFlags = Context->RFlags; // for iret
+  AsmWriteDs (Context->Ds);
+  AsmWriteEs (Context->Es);
+}
+
 /**
   Restore original Interrupt Descriptor Table Handler Address.
 

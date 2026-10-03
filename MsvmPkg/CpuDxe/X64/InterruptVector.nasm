@@ -10,6 +10,8 @@
 extern ExternalVectorTable
 ErrorCodeBitmap equ 0x20227d00
 
+extern CommonInterruptEntryMsvmC
+
     default rel
     section .text
 
@@ -81,28 +83,28 @@ CommonInterruptEntryMsvm:
     ;
     ; Stack:
     ; +---------------------+ <-- 16-byte aligned ensured by processor
-    ; +    Old SS           +
+    ; +    Old SS           + 56 UINT16
     ; +---------------------+
-    ; +    Old RSP          +
+    ; +    Old RSP          + 48
     ; +---------------------+
-    ; +    RFlags           +
+    ; +    RFlags           + 40
     ; +---------------------+
-    ; +    CS               +
+    ; +    CS               + 32 UINT16
     ; +---------------------+
-    ; +    RIP              +
+    ; +    RIP              + 24
     ; +---------------------+
-    ; +    Error Code       +
+    ; +    Error Code       + 16
     ; +---------------------+
-    ; +    Vector Number    +
+    ; +    Vector Number    + 8 UINT8
     ; +---------------------+
-    ; +    RBP              +
+    ; +    RBP              + 0
     ; +---------------------+ <-- RBP, 16-byte aligned
     ;
 
 
     ;
     ; Since here the stack pointer is 16-byte aligned, so
-    ; EFI_FX_SAVE_STATE_X64 of EFI_SYSTEM_CONTEXT_x64
+    ; EFI_FX_SAVE_STATE_X64 of EFI_SYSTEM_CONTEXT_X64
     ; is 16-byte aligned
     ;
 
@@ -126,166 +128,67 @@ CommonInterruptEntryMsvm:
     push rdi
 
 ; UINT64  Gs, Fs, Es, Ds, Cs, Ss;  insure high 16 bits of each is zero
-    movzx   rax, word [rbp + 56]
-    push    rax                      ; for ss
-    movzx   rax, word [rbp + 32]
-    push    rax                      ; for cs
-    mov     rax, ds
-    push    rax
-    mov     rax, es
-    push    rax
-    mov     rax, fs
-    push    rax
-    mov     rax, gs
-    push    rax
-
 ; UINT64  Rip;
-    push    qword [rbp + 24]
-
 ; UINT64  Gdtr[2], Idtr[2];
-    xor     rax, rax
-    push    rax
-    push    rax
-    sidt    [rsp]
-    xchg    rax, [rsp + 2]
-    xchg    rax, [rsp]
-    xchg    rax, [rsp + 8]
-
-    xor     rax, rax
-    push    rax
-    push    rax
-    sgdt    [rsp]
-    xchg    rax, [rsp + 2]
-    xchg    rax, [rsp]
-    xchg    rax, [rsp + 8]
-
 ; UINT64  Ldtr, Tr;
-    xor     rax, rax
-    str     ax
-    push    rax
-    sldt    ax
-    push    rax
-
 ; UINT64  RFlags;
-    push    qword [rbp + 40]
-
 ; UINT64  Cr0, Cr1, Cr2, Cr3, Cr4, Cr8;
-    mov     rax, cr8
-    push    rax
-    mov     rax, cr4
-    or      rax, 208h
-    mov     cr4, rax
-    push    rax
-    mov     rax, cr3
-    push    rax
-    mov     rax, cr2
-    push    rax
-    xor     rax, rax
-    push    rax
-    mov     rax, cr0
-    push    rax
-
 ; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7;
-    mov     rax, dr7
-    push    rax
-    mov     rax, dr6
-    push    rax
-    mov     rax, dr3
-    push    rax
-    mov     rax, dr2
-    push    rax
-    mov     rax, dr1
-    push    rax
-    mov     rax, dr0
-    push    rax
+; FX_SAVE_STATE_X64 FxSaveState;
+; UINT32  ExceptionData;
+;;
+;; CommonInterruptEntryMsvmC handles these
+;;
+    sub rsp, 8*27 + 512 ; 512 for FX_SAVE_STATE_X64
 
 ; FX_SAVE_STATE_X64 FxSaveState;
-    sub rsp, 512
     mov rcx, rsp
-    fxsave [rcx]
+    fxsave [rcx + 8]
 
 ; Calling convention requires that Direction flag is clear
     cld
 
-; UINT32  ExceptionData;
-    push    qword [rbp + 16]
-
-; call into exception handler
-    movzx   rcx, byte [rbp + 8]
-    lea     rax, ExternalVectorTable
-    mov     rax, [rax + rcx * 8]
-    test    rax, rax                        ; NULL?
-    jz      nonNullValue;
-
 ; Prepare parameter and call
-    mov     rdx, rsp
+    mov     rcx, rbp            ; rcx = Frame
+    mov     rdx, rsp            ; rdx = Context
     ;
     ; Per calling convention, allocate maximum parameter stack space
     ; and make sure RSP is 16-byte aligned
     ;
     sub     rsp, 4 * 8 + 8
-    call    rax
+    call    CommonInterruptEntryMsvmC
     add     rsp, 4 * 8 + 8
 
-nonNullValue:
     cli ; BUGBUG: This should not be necessary, but it's currently true that interrupt handlers enable interrupts
+
 ; UINT64  ExceptionData;
-    add     rsp, 8
 
 ; FX_SAVE_STATE_X64 FxSaveState;
 
     mov rcx, rsp
-    fxrstor [rcx]
-    add rsp, 512
+    fxrstor [rcx + 8]
 
 ; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7;
 ; Skip restoration of DRx registers to support in-circuit emulators
 ; or debuggers set breakpoint in interrupt/exception context
-    add     rsp, 8 * 6
-
 ; UINT64  Cr0, Cr1, Cr2, Cr3, Cr4, Cr8;
-    pop     rax
-    mov     cr0, rax
-    add     rsp, 8   ; not for Cr1
-    pop     rax
-    mov     cr2, rax
-    pop     rax
-    mov     cr3, rax
-    pop     rax
-    mov     cr4, rax
-    pop     rax
-    mov     cr8, rax
-
-; UINT64  RFlags;
-    pop     qword [rbp + 40]
-
-; UINT64  Ldtr, Tr;
-; UINT64  Gdtr[2], Idtr[2];
-; Do not let these registers change.
-    add     rsp, 48
-
-; UINT64  Rip;
-    pop     qword [rbp + 24]
-
-; UINT64  Gs, Fs, Es, Ds, Cs, Ss;
-    pop     rax
-    ; mov     gs, rax ; not for gs
-    pop     rax
-    ; mov     fs, rax ; not for fs
-    ; (FS and GS are not used, so not restored.)
-    pop     rax
-    mov     es, rax
-    pop     rax
-    mov     ds, rax
-    pop     qword [rbp + 32]  ; cs for iretq
-    pop     qword [rbp + 56]  ; ss for iretq
+; UINT64  RFlags; // handled by CommonInterruptEntryMsvmC
+; UINT64  Ldtr, Tr; ; Do not let these registers change
+; UINT64  Gdtr[2], Idtr[2] ; Do not let these registers change.
+; UINT64  Rip; // handled by CommonInterruptEntryMsvmC
+; UINT64  Gs;  // skip
+; UINT64  Fs;  // skip
+; UINT64  Es;  // handled by CommonInterruptEntryMsvmC
+; UINT64  Ds;  // handled by CommonInterruptEntryMsvmC
+; UINT64  Cs;  // skip
+; UINT64  Ss;  // skip
+    add rsp, 27*8 + 512
 
 ; UINT64  Rdi, Rsi, Rbp, Rsp, Rbx, Rdx, Rcx, Rax;
 ; UINT64  R8, R9, R10, R11, R12, R13, R14, R15;
     pop     rdi
     pop     rsi
-    add     rsp, 8           ; not for rbp
-    pop     qword [rbp + 48] ; rsp for iretq
+    add     rsp, 16 ; skip rbp and rsp, handled by CommonInterruptEntryMsvmC and below
     pop     rbx
     pop     rdx
     pop     rcx
@@ -301,5 +204,5 @@ nonNullValue:
 
     mov     rsp, rbp
     mov     rbp, qword [rbp]
-    add     rsp, 24
+    add     rsp, 24 ; pop Rbp, VectorNumber, ErrorCode
     iretq
