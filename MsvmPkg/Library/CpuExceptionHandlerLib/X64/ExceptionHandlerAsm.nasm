@@ -226,16 +226,21 @@ HasErrorCode:
     push    qword [rbp + 24]
 
 ;; UINT64  Gdtr[2], Idtr[2];
-    xor     rax, rax
-    push    rax
-    push    rax
-    sidt    [rsp]
-    mov     bx, word [rsp]
-    mov     rax, qword [rsp + 2]
-    mov     qword [rsp], rax
-    mov     word [rsp + 8], bx
+;;
+;; convert struct IA32_DESCRIPTOR {USHORT Limit; UINTN Base;}
+;; to      struct                 {UINT64 Base; UINT64 Limit;}
+;;
+    xor     eax, eax             ; rax=0
+    push    rax                  ; push 16 bytes
+    push    rax                  ;
+    sidt    [rsp]                ; store 10 bytes
+    mov     bx, word [rsp]       ;  bx    = USHORT Limit
+    mov     rax, qword [rsp + 2] ; rax    = UINT64 Base
+    mov     qword [rsp], rax     ; rsp[0] = UINT64 Base
+    mov     word [rsp + 8], bx   ; rsp[1] = UINT64 Limit
+; Upper 48bits are zero because of push 0, and sidt did not write there.
 
-    xor     rax, rax
+    xor     eax, eax			 ; Now the same thing, but sgdt instead of sidt.
     push    rax
     push    rax
     sgdt    [rsp]
@@ -245,7 +250,7 @@ HasErrorCode:
     mov     word [rsp + 8], bx
 
 ;; UINT64  Ldtr, Tr;
-    xor     rax, rax
+    xor     eax, eax
     str     ax
     push    rax
     sldt    ax
@@ -265,7 +270,7 @@ HasErrorCode:
     push    rax
     mov     rax, cr2
     push    rax
-    xor     rax, rax
+    xor     eax, eax
     push    rax
     mov     rax, cr0
     push    rax
@@ -290,7 +295,7 @@ HasErrorCode:
 
 VcDebugRegs:
 ;; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7 are skipped for #VC to avoid exception recursion
-    xor     rax, rax
+    xor     eax, eax
     push    rax
     push    rax
     push    rax
