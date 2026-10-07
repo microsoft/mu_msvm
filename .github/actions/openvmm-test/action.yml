@@ -178,7 +178,8 @@ runs:
 
         normalize_bundle_file() {
           local name="$1"
-          local destination="$bundle/$name"
+          local relative_destination="$2"
+          local destination="$bundle/$relative_destination"
           local matches=()
 
           mapfile -d '' matches < <(find "$bundle" -type f -name "$name" -print0)
@@ -189,14 +190,17 @@ runs:
           fi
 
           if [[ "${matches[0]}" != "$destination" ]]; then
+            mkdir -p "$(dirname "$destination")"
             cp "${matches[0]}" "$destination"
           fi
         }
 
-        normalize_bundle_file openvmm
-        normalize_bundle_file pipette
-        normalize_bundle_file vmm_tests.tar.zst
-        chmod +x "$bundle/openvmm" "$bundle/pipette"
+        normalize_bundle_file openvmm x86_64-unknown-linux-gnu/openvmm
+        normalize_bundle_file pipette x86_64-unknown-linux-musl/pipette
+        normalize_bundle_file vmm_tests.tar.zst vmm_tests.tar.zst
+        chmod +x \
+          "$bundle/x86_64-unknown-linux-gnu/openvmm" \
+          "$bundle/x86_64-unknown-linux-musl/pipette"
 
     - name: Boot Ubuntu with every X64 firmware
       working-directory: openvmm-source
@@ -213,7 +217,7 @@ runs:
           find "$FIRMWARE_ROOT" -type f -name MSVM.fd | sort
         )
 
-        destination="$BUNDLE/hyperv.uefi.mscoreuefi.x64.RELEASE/MsvmX64/RELEASE_VS2022/FV"
+        destination="$BUNDLE/x86_64"
         mkdir -p "$destination" "$RESULTS_ROOT"
         overall_result=0
 
