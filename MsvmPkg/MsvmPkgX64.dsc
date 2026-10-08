@@ -104,6 +104,7 @@
   EfiDiagnosticsLib|MsvmPkg/Library/EfiDiagnosticsLib/EfiDiagnosticsLib.inf
   FltUsedLib|MsCorePkg/Library/FltUsedLib/FltUsedLib.inf
   FrameBufferBltLib|MdeModulePkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
+  GptLib|MdeModulePkg/Library/GptLib/GptLib.inf
   Hash2CryptoLib|SecurityPkg/Library/DxeHash2CryptoLib/DxeHash2CryptoLib.inf
   HostVisibilityLib|MsvmPkg/Library/HostVisibilityLib/HostVisibilityLib.inf
   HwResetSystemLib|MsvmPkg/Library/ResetSystemLib/ResetSystemLib.inf
