@@ -38,7 +38,7 @@ WriteBiosDevice (
   IN UINT32  DataRegisterValue
   )
 {
-  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+  BOOLEAN  interruptState = SaveAndDisableInterrupts ();
 
  #if _USING_BIOS_MMIO_
   MmioWrite32 (mBiosBaseAddress, AddressRegisterValue);
@@ -56,14 +56,14 @@ ReadBiosDevice (
   IN UINT32  AddressRegisterValue
   )
 {
-  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+  BOOLEAN  interruptState = SaveAndDisableInterrupts ();
 
  #if _USING_BIOS_MMIO_
   MmioWrite32 (mBiosBaseAddress, AddressRegisterValue);
-  UINT32 result = MmioRead32 (mBiosBaseAddress + 4);
+  UINT32  result = MmioRead32 (mBiosBaseAddress + 4);
  #else
   IoWrite32 (mBiosBaseAddress, AddressRegisterValue);
-  UINT32 result = IoRead32 (mBiosBaseAddress + 4);
+  UINT32  result = IoRead32 (mBiosBaseAddress + 4);
  #endif
 
   SetInterruptState (interruptState);

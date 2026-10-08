@@ -39,8 +39,8 @@ WriteBiosDevice (
   IN UINT32  DataRegisterValue
   )
 {
-  UINTN   biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
-  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+  UINTN    biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+  BOOLEAN  interruptState  = SaveAndDisableInterrupts ();
 
  #if defined (MDE_CPU_AARCH64)
   MmioWrite32 (biosBaseAddress, AddressRegisterValue);
@@ -59,15 +59,15 @@ ReadBiosDevice (
   IN UINT32  AddressRegisterValue
   )
 {
-  UINTN   biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
-  BOOLEAN interruptState = SaveAndDisableInterrupts ();
+  UINTN    biosBaseAddress = PcdGet32 (PcdBiosBaseAddress);
+  BOOLEAN  interruptState  = SaveAndDisableInterrupts ();
 
  #if defined (MDE_CPU_AARCH64)
   MmioWrite32 (biosBaseAddress, AddressRegisterValue);
-  UINT32 result = MmioRead32 (biosBaseAddress + 4);
+  UINT32  result = MmioRead32 (biosBaseAddress + 4);
  #elif defined (MDE_CPU_X64)
   IoWrite32 (biosBaseAddress, AddressRegisterValue);
-  UINT32 result = IoRead32 (biosBaseAddress + 4);
+  UINT32  result = IoRead32 (biosBaseAddress + 4);
  #endif
 
   SetInterruptState (interruptState);
