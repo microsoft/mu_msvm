@@ -157,9 +157,9 @@ INF DebuggerFeaturePkg/DebugConfigPei/DebugConfigPei.inf
 !else
   FILE DXE_CORE = 23C9322F-2AF2-476A-BC4C-26BC88266C71 {
     !if $(TARGET) == RELEASE
-      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\release\msvm_x64_dxe_core.efi
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)/release/msvm_x64_dxe_core.efi
     !else
-      SECTION PE32 = $(PATINA_DXE_CORE_PATH)\debug\msvm_x64_dxe_core.efi
+      SECTION PE32 = $(PATINA_DXE_CORE_PATH)/debug/msvm_x64_dxe_core.efi
     !endif
     SECTION UI = "DxeCore"
   }
