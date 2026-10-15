@@ -12,7 +12,8 @@
 #     minor to 0 on a major bump.
 #   - Bump minor for a backward-compatible addition the VMM can degrade without.
 [interface]
-major = 1
+# Interface 2.0 uses a combined PEI/DXE firmware volume on X64 and AARCH64.
+major = 2
 minor = 0
 
 # Release version prefix ("major.minor"). The GitHub release workflow may
