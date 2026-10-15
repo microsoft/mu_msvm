@@ -101,6 +101,10 @@ jobs:
                   version: ${{ parameters.windowsClangVersion }}
                   downloadPath: $(WindowsClangRoot)/lib/clang/${{ parameters.windowsClangMajorVersion }}
 
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: set
+
               - pwsh: |
                   $buildArgs = @('--arch', $env:BUILD_ARCH, '--target', $env:BUILD_TARGET,
                       '--tool-chain', $env:BUILD_TOOL_CHAIN, '--core', $env:BUILD_CORE,
@@ -122,7 +126,16 @@ jobs:
                   WINDOWS_CLANG_ROOT: $(WindowsClangRoot)
                   OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: unset
+
           - ${{ if eq(host, 'linux') }}:
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: set
+                  python: python3
+
               - bash: |
                   set -euo pipefail
                   apt-get update
@@ -155,3 +168,8 @@ jobs:
                   BUILD_LEGACY_DEBUGGER: $(legacy_debugger)
                   BUILD_VENV: $(Agent.TempDirectory)/firmware-venv
                   OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
+
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: unset
+                  python: python3

@@ -111,6 +111,16 @@ Each job runs inside OneBranch. The build stage
 runs independently of source checks, and each flavor invokes the same `ci/scripts/build.py` as GitHub.
 NuGet and VPack publishing remain disabled for these jobs.
 
+ADO source checks and both firmware build hosts use `repo-auth.yml` to call the
+shared `ci/scripts/repo_auth.py` before Stuart. The adapter supplies the job's
+`System.AccessToken` and private repository URL; the helper writes a URL-scoped
+authorization header to the dedicated container's global Git configuration.
+An `always()` cleanup step removes it even after failures. This follows the
+working closed pipeline's authentication mechanism without changing shared build
+or source-check runners. GitHub does not invoke this adapter. The helper disables
+Git tracing while handling credentials and must not be used against a developer's
+global Git configuration.
+
 All ADO Windows jobs resolve the image's Python 3.12 interpreter with
 `py -3.12 -c "import sys; print(sys.executable)"`. The shared template verifies
 the version and pip, then prepends the resolved interpreter and Scripts directories

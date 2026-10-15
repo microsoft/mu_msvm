@@ -16,6 +16,10 @@ jobs:
     steps:
       - template: /.azuredevops/templates/windows-python.yml@self
 
+      - template: /.azuredevops/templates/repo-auth.yml@self
+        parameters:
+          mode: set
+
       - script: python ci/scripts/source_checks.py --verbose
         displayName: Run Source Checks
         env:
@@ -32,3 +36,7 @@ jobs:
           testResultsFiles: Build/TestSuites.xml
           testRunTitle: Stuart CI
           failTaskOnFailedTests: true
+
+      - template: /.azuredevops/templates/repo-auth.yml@self
+        parameters:
+          mode: unset

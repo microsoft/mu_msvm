@@ -38,7 +38,7 @@ class AdoPocTests(unittest.TestCase):
                      if "${{ if eq(host, 'linux') }}" in branch)
         self.assertEqual(windows[0], reference)
         self.assertNotIn(reference, linux)
-        self.assertIn('python3 -m venv "$BUILD_VENV"', linux[0]["bash"])
+        self.assertIn('python3 -m venv "$BUILD_VENV"', next(step["bash"] for step in linux if "bash" in step))
         script = load_yaml(".azuredevops/templates/windows-python.yml")["steps"][0]["pwsh"]
         self.assertIn('py -3.12 -c "import sys; print(sys.executable)"', script)
         self.assertIn("if ($LASTEXITCODE -ne 0 -or -not $python)", script)
@@ -53,6 +53,33 @@ class AdoPocTests(unittest.TestCase):
         self.assertNotIn("install", script)
         for path in (ROOT / ".azuredevops/templates").glob("*.yml"):
             self.assertNotIn("UsePythonVersion@", path.read_text(), str(path))
+
+    def test_repository_auth_wraps_source_checks_and_both_build_hosts(self) -> None:
+        reference = "/.azuredevops/templates/repo-auth.yml@self"
+        auth = load_yaml(".azuredevops/templates/repo-auth.yml")["steps"][0]
+        self.assertEqual(auth["${{ if eq(parameters.mode, 'unset') }}"]["condition"], "always()")
+        self.assertEqual(auth["${{ if eq(parameters.mode, 'set') }}"]["env"],
+                         {"SYSTEM_ACCESSTOKEN": "$(System.AccessToken)"})
+        self.assertIn("ci/scripts/repo_auth.py", auth["script"])
+        source = load_yaml(".azuredevops/templates/source-checks.yml")["jobs"][0]["steps"]
+        job = load_yaml(".azuredevops/templates/build.yml")["jobs"][1]["${{ each host in parameters.hosts }}"][0]
+        groups = [(source, "ci/scripts/source_checks.py")]
+        for host in ("windows", "linux"):
+            key = "${{ if eq(host, '" + host + "') }}"
+            steps = next(branch[key] for branch in job["steps"] if key in branch)
+            groups.append((steps, "ci/scripts/build.py"))
+        for steps, runner in groups:
+            setup = next(i for i, step in enumerate(steps)
+                         if step.get("template") == reference and step["parameters"]["mode"] == "set")
+            cleanup = next(i for i, step in enumerate(steps)
+                           if step.get("template") == reference and step["parameters"]["mode"] == "unset")
+            invocation = next(i for i, step in enumerate(steps)
+                              if runner in step.get("script", step.get("pwsh", step.get("bash", ""))))
+            self.assertLess(setup, invocation)
+            self.assertLess(invocation, cleanup)
+            self.assertNotIn("GIT_CONFIG_VALUE_2", steps[invocation].get("env", {}))
+            self.assertEqual(steps[setup]["parameters"].get("python", "python"),
+                             steps[cleanup]["parameters"].get("python", "python"))
 
 
 if __name__ == "__main__":
