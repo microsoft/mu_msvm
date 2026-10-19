@@ -16,6 +16,14 @@ jobs:
     steps:
       - template: /.azuredevops/templates/windows-python.yml@self
 
+      - task: NuGetAuthenticate@1
+        inputs:
+          nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+      - task: PipAuthenticate@1
+        inputs:
+          artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
+
       - template: /.azuredevops/templates/repo-auth.yml@self
         parameters:
           mode: set

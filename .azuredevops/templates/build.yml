@@ -42,7 +42,7 @@ jobs:
 
   - ${{ each host in parameters.hosts }}:
       - job: BuildFirmware_${{ host }}
-        displayName: $(display_name)
+        displayName: Firmware (${{ host }})
         dependsOn: BuildMatrix
         pool:
           type: ${{ host }}
@@ -62,6 +62,14 @@ jobs:
           ob_createvpack_enabled: false
           WindowsClangRoot: $(Agent.TempDirectory)/windows-clang-${{ parameters.windowsClangVersion }}
         steps:
+          - task: NuGetAuthenticate@1
+            inputs:
+              nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+          - task: PipAuthenticate@1
+            inputs:
+              artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
+
           - ${{ if eq(host, 'windows') }}:
               - template: /.azuredevops/templates/windows-python.yml@self
 
@@ -74,12 +82,6 @@ jobs:
                   Write-Host "##vso[task.setvariable variable=CLANG_BIN]$clangBin/"
                 displayName: Locate Visual Studio Clang
                 condition: and(succeeded(), eq(variables['tool_chain'], 'CLANGPDB'), eq(variables['compiler_source'], 'visual_studio'))
-
-              - task: NuGetAuthenticate@1
-                displayName: Authenticate Internal Compiler Feed
-                condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
-                inputs:
-                  nuGetServiceConnections: WindowsPartners_NugetFeedConnection
 
               - task: DownloadPackage@1
                 displayName: Download Windows-org LLVM Tools

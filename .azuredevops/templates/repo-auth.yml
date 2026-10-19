@@ -1,0 +1,18 @@
+parameters:
+  - name: mode
+    type: string
+    values:
+      - set
+      - unset
+  - name: python
+    type: string
+    default: python
+
+steps:
+  - script: ${{ parameters.python }} ci/scripts/repo_auth.py ${{ parameters.mode }} --url https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore
+    displayName: ${{ parameters.mode }} ADO Repository Authentication
+    ${{ if eq(parameters.mode, 'unset') }}:
+      condition: always()
+    ${{ if eq(parameters.mode, 'set') }}:
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)

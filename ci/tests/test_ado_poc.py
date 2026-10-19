@@ -17,6 +17,13 @@ def load_yaml(path: str) -> dict[str, Any]:
 class AdoPocTests(unittest.TestCase):
     """Preserve provider-specific environment preparation."""
 
+    def test_build_job_labels_are_resolved_at_template_expansion(self) -> None:
+        job = load_yaml(".azuredevops/templates/build.yml")["jobs"][1]["${{ each host in parameters.hosts }}"][0]
+        self.assertEqual(job["displayName"], "Firmware (${{ host }})")
+        self.assertNotIn("$(", job["displayName"])
+        self.assertEqual(job["strategy"]["matrix"],
+                         "$[ dependencies.BuildMatrix.outputs['${{ host }}.matrix'] ]")
+
     def test_source_check_diagnostics_redact_git_credentials(self) -> None:
         source = load_yaml(".azuredevops/templates/source-checks.yml")["jobs"][0]
         step = next(step for step in source["steps"] if step.get("displayName") == "Run Source Checks")

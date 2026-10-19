@@ -14,10 +14,13 @@ extends:
   parameters:
     platform:
       name: windows_undocked
+    globalSdl:
+      tsa:
+        enabled: false
     featureFlags:
       WindowsHostVersion: 1ESWindows2022
     git:
-      submodules: true
+      submodules: false
     stages:
       - stage: SourceChecks
         jobs:

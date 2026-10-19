@@ -144,6 +144,8 @@ class FirmwareVersionTests(unittest.TestCase):
         self.assertIs(parameter["default"], False)
         job = template["jobs"][1]["${{ each host in parameters.hosts }}"][0]
         for branch in job["steps"]:
+            if "task" in branch:
+                continue
             steps = next(iter(branch.values()))
             build_step = next(step for step in steps if "ci/scripts/build.py" in step.get("pwsh", step.get("bash", "")))
             self.assertEqual(build_step["env"]["OFFICIAL_BUILD"], "${{ iif(parameters.officialBuild, '1', '0') }}")

@@ -87,7 +87,8 @@ The closed profile restores 15 legacy-core builds from the preserved hyperv.uefi
 | Linux | Distribution GCC | X64 RELEASE only |
 
 The four closed X64 DEBUG rows enable the legacy debugger: VS2022 and all three Clang compiler sources.
-This matches the fetched ADO configuration; successful compilation and runtime debugging still require validation.
+This matches the fetched ADO configuration. All 15 closed flavors compiled in PR
+build 160110571; runtime debugging still requires validation.
 All open rows and all GCC rows disable the legacy debugger.
 ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
 
@@ -128,9 +129,9 @@ to PATH. It does not assume an installation directory, download Python, or fall
 back to the default Python on PATH. Linux builds retain their distribution Python
 and isolated virtual environment.
 
-The inspected OneBranch Windows job template forwards job strategies and dependencies. Local validation
-checks our output binding and flavor arguments, but a hosted OneBranch run is still required to verify
-the full governed-template expansion, runner tools, internal feed credentials, and repository access.
+OneBranch PR build 160110571 passed source checks and all 15 firmware builds,
+validating the native matrices, runner tools, internal feeds, and repository
+authentication. Official builds and later pipeline changes still need hosted validation.
 
 ### Job Labels and Artifact Names
 
@@ -139,7 +140,13 @@ Provider matrix output adds a `display_name` derived from the same flavor:
 
 - GitHub: `DEBUG X64 CLANGPDB (Legacy)` or `RELEASE AARCH64 CLANGPDB (Patina)`.
 - ADO: the same label followed by host and compiler source, such as `/ Windows WinOrg` or `/ Linux Distro`.
-	Debugger-enabled rows also show `/ Legacy debugger`. ADO may additionally show its matrix leg key in the UI.
+	Debugger-enabled rows also include `/ Legacy debugger` in the generated metadata.
+
+ADO job names cannot use the runtime matrix's `$(display_name)` in this OneBranch
+pipeline: it appeared literally in the hosted run. Instead, job display names use
+the compile-time `Firmware (windows)` or `Firmware (linux)` prefix; ADO appends
+the unchanged matrix leg ID to distinguish each flavor. The generated
+`display_name` remains available as metadata, not as the job's UI name.
 
 GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the future upload steps.
 They preserve the pre-refactor consumer names exactly:
