@@ -639,6 +639,10 @@ SecProcessVirtualCpuid (
       cpuidResult.HvInterface.Interface = HvMicrosoftHypervisorInterface;
       break;
 
+    case HvCpuIdFunctionMsHvEnlightenmentInformation:
+      // No optional enlightenment features are surfaced through the SEC TDX CPUID emulator.
+      break;
+
     case HvCpuIdFunctionMsHvFeatures:
       cpuidResult.MsHvFeatures.PartitionPrivileges.Isolation                       = 1;
       cpuidResult.MsHvFeatures.PartitionPrivileges.AccessPartitionReferenceCounter = 1;

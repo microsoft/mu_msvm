@@ -1,5 +1,5 @@
 ## @file
-# Library to inform Tcg2Pei not to measure FvMain and DxeFV.
+# Library to inform Tcg2Pei not to measure the firmware volume.
 # Some legacy Hyper-V versions require this
 #
 #  Copyright (c) Microsoft Corporation.
@@ -32,8 +32,6 @@ CONSTRUCTOR                    = ExcludeFvsFromMeasurementLibConstructor
 [FixedPcd]
   gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress
   gMsvmPkgTokenSpaceGuid.PcdFvSize
-  gMsvmPkgTokenSpaceGuid.PcdDxeFvBaseAddress
-  gMsvmPkgTokenSpaceGuid.PcdDxeFvSize
 
 [Pcd]
   gMsvmPkgTokenSpaceGuid.PcdExcludeFvsFromMeasurements    ## CONSUMES

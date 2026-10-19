@@ -23,6 +23,13 @@
     spcr.c
     wdat.c
 
+[Sources.AARCH64]
+    Oem0AArch64.c
+
+[Sources.X64]
+    Oem0X64.c
+    Oem0RdSeed.nasm
+
 [Packages]
     MdePkg/MdePkg.dec
     MdeModulePkg/MdeModulePkg.dec

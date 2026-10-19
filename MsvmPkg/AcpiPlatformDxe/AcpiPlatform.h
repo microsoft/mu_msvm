@@ -20,6 +20,12 @@ Oem0InitializeTable (
   );
 
 EFI_STATUS
+Oem0GetHardwareEntropy (
+  OUT UINT8  *Buffer,
+  IN  UINTN  BufferSize
+  );
+
+EFI_STATUS
 DsdtInitializeTable (
   IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Dsdt
   );

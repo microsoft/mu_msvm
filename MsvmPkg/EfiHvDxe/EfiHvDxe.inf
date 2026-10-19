@@ -32,6 +32,7 @@
     MsvmPkg/MsvmPkg.dec
 
 [Packages.X64]
+    PatinaPkg/PatinaPkg.dec
     UefiCpuPkg/UefiCpuPkg.dec
 
 [Packages.AARCH64]
@@ -61,6 +62,7 @@
     gEfiHvIvmProtocolGuid                                                       ## PRODUCES
 
 [Protocols.X64]
+    gAliasedMemoryMappingProtocolGuid                                           ## SOMETIMES_CONSUMES
     gEfiCpuArchProtocolGuid                                                     ## CONSUMES
 
 [Protocols.AARCH64]

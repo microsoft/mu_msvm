@@ -1,5 +1,5 @@
 /** @file
-  Library to inform Tcg2Pei not to measure MainFv and DxeFV.
+  Library to inform Tcg2Pei not to measure the firmware volume.
   Some legacy Hyper-V versions require this
 
   Copyright (c) Microsoft Corporation.
@@ -12,26 +12,13 @@
 #include <Library/DebugLib.h>
 #include <Ppi/FirmwareVolumeInfoMeasurementExcluded.h>
 
-//
-// Local struct to hold 2 FV exclusion entries, since the PPI definition
-// only declares a flexible array of 1.
-//
-typedef struct {
-  UINT32                                                  Count;
-  EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_FV    Fv[2];
-} EXCLUDE_FV_PPI;
-
 STATIC
-EXCLUDE_FV_PPI  mExcludedFvs = {
-  2, // Count
+EFI_PEI_FIRMWARE_VOLUME_INFO_MEASUREMENT_EXCLUDED_PPI  mExcludedFvs = {
+  1, // Count
   {
     {
       (EFI_PHYSICAL_ADDRESS)FixedPcdGet64 (PcdFvBaseAddress),
       (UINT64)FixedPcdGet32 (PcdFvSize)
-    },
-    {
-      (EFI_PHYSICAL_ADDRESS)FixedPcdGet64 (PcdDxeFvBaseAddress),
-      (UINT64)FixedPcdGet32 (PcdDxeFvSize)
     }
   }
 };
@@ -53,8 +40,8 @@ ExcludeFvsFromMeasurementLibConstructor (
   EFI_STATUS  Status = EFI_SUCCESS;
 
   // If this PCD is enabled, we install the PPI, which will
-  // inform Tcg2Pei to exclude the MainFv and DxeFv from measurements.
-  // This means that these FVs will not be measured into PCR0,
+  // inform Tcg2Pei to exclude the firmware volume from measurements.
+  // This means that the FV will not be measured into PCR0,
   // which is required for some legacy Hyper-V versions to boot.
   if (PcdGetBool (PcdExcludeFvsFromMeasurements)) {
     Status = PeiServicesInstallPpi (&PpiList);

@@ -314,10 +314,11 @@ Return Value:
 
   //
   // Mark the firmware image as allocated, allowing it to be reclaimed by
-  // the guest OS later.
+  // the guest OS later. Address 0 is not allowed to be allocated because it is used as the null page,
+  // so we start the allocation at EFI_PAGE_SIZE.
   //
-  *AllocatedBase   = 0;
-  *AllocatedLength = PcdGet32 (PcdFdSize);
+  *AllocatedBase   = EFI_PAGE_SIZE;
+  *AllocatedLength = PcdGet32 (PcdFdSize) - EFI_PAGE_SIZE;
 }
 
 #endif
@@ -1060,22 +1061,6 @@ Return Value:
     PcdGet32 (PcdFvSize)
     ));
   HobAddFvMemoryRange (PcdGet64 (PcdFvBaseAddress), PcdGet32 (PcdFvSize));
-
-  HobAddFvMemoryRange (PcdGet64 (PcdDxeFvBaseAddress), PcdGet32 (PcdDxeFvSize));
-
-  //
-  // Install an FvInfo PPI for the DXE FV so that Tcg2Pei discovers it and
-  // measures the entire volume into PCR0. Without this, Tcg2Pei only sees
-  // the BFV (MAINFV) and the DXE FV would go unmeasured in PEI, causing
-  // individual DXE drivers to be measured into PCR2 instead.
-  //
-  PeiServicesInstallFvInfoPpi (
-    &((EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)PcdGet64 (PcdDxeFvBaseAddress))->FileSystemGuid,
-    (VOID *)(UINTN)PcdGet64 (PcdDxeFvBaseAddress),
-    PcdGet32 (PcdDxeFvSize),
-    NULL,
-    NULL
-    );
 
   if (!IsHardwareIsolatedNoParavisor ()) {
     //
