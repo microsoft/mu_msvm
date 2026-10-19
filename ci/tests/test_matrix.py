@@ -132,9 +132,26 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(row["id"], original["id"])
             self.assertEqual(row["package_suffix"], original["package_suffix"])
             self.assertEqual(row["shipping"], original["shipping"])
-            self.assertNotIn("artifact_name", row)
+            suffix = f"_{original['package_suffix']}" if original["package_suffix"] else ""
+            self.assertEqual(row["artifact_name"],
+                             f"drop_Build_{original['target']}_{original['arch']}_{original['tool_chain']}{suffix}")
+            self.assertEqual(row["build_artifact_name"],
+                             f"input-{original['id']}" if original["shipping"] == "true" else row["artifact_name"])
+            self.assertEqual(row["build_id"], original["id"])
         self.assertIn("/ Windows WinOrg", next(row["display_name"] for row in labeled
                                                if row["compiler_source"] == "windows_org"))
+        self.assertEqual(len({row["artifact_name"] for row in labeled}), 15)
+        self.assertEqual(len({row["build_artifact_name"] for row in labeled}), 15)
+
+    def test_shipping_matrix_selects_only_three_windows_flavors(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            matrix.main(["--matrix", str(CLOSED_MATRIX), "--shipping-only", "--format", "ado"])
+        rows = json.loads(output.getvalue())
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(row["shipping"] == "true" and row["host"] == "windows" for row in rows.values()))
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            matrix.main(["--matrix", str(OPEN_MATRIX), "--shipping-only"])
 
     def test_invalid_matrix_is_rejected(self) -> None:
         row = matrix.parse_definition(json.loads(OPEN_MATRIX.read_text())[0])

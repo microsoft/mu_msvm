@@ -55,6 +55,8 @@ class SelectedBuild(BuildFlavor):
     display_name: NotRequired[str]
     artifact_name: NotRequired[str]
     logs_artifact_name: NotRequired[str]
+    build_id: NotRequired[str]
+    build_artifact_name: NotRequired[str]
     shipping: NotRequired[str]
     package_suffix: NotRequired[str]
 
@@ -65,6 +67,7 @@ class MatrixArguments(argparse.Namespace):
     matrix: Path
     host: Host | None
     format: OutputFormat
+    shipping_only: bool
 
 FLAVOR_CHOICES: dict[str, tuple[str, ...]] = {
     "arch": ("X64", "AARCH64"),
@@ -101,6 +104,15 @@ def label_builds(rows: list[SelectedBuild], backend: OutputFormat) -> list[Selec
             core = "Legacy" if row["core"] == "legacy" else "Patina"
             label = f"{row['target']} {row['arch']} {row['tool_chain']} ({core})"
             if backend == "ado":
+                result["build_id"] = row["id"]
+                if "package_suffix" in row:
+                    suffix = f"_{row['package_suffix']}" if row["package_suffix"] else ""
+                    result["artifact_name"] = f"drop_Build_{row['target']}_{row['arch']}_{row['tool_chain']}{suffix}"
+                else:
+                    result["artifact_name"] = f"firmware-{row['id']}"
+                result["build_artifact_name"] = (
+                    f"input-{row['id']}" if row.get("shipping") == "true" else result["artifact_name"]
+                )
                 compiler = {"visual_studio": "VS", "windows_org": "WinOrg", "distribution": "Distro"}[row["compiler_source"]]
                 label += f" / {row['host'].title()} {compiler}"
                 if row["legacy_debugger"] == "1":
@@ -210,9 +222,14 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--matrix", required=True, type=Path, help="Path to the build coverage JSON file")
     parser.add_argument("--host", choices=EXECUTION_CHOICES["host"])
     parser.add_argument("--format", choices=("json", "github", "ado"), default="json")
+    parser.add_argument("--shipping-only", action="store_true", help="Select only explicitly shipping package flavors")
     args = parser.parse_args(argv, namespace=MatrixArguments())
     try:
         rows = select_builds(args.matrix, host=args.host)
+        if args.shipping_only:
+            rows = [row for row in rows if row.get("shipping") == "true"]
+            if not rows:
+                raise ValueError("No shipping builds selected")
         if args.format == "github" and any(row["legacy_debugger"] == "1" for row in rows):
             raise ValueError("GitHub builds cannot enable the closed-source legacy debugger")
         rows = label_builds(rows, args.format)

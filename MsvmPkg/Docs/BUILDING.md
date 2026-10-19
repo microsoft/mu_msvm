@@ -101,8 +101,8 @@ The selector rejects duplicate flavors and fails when the supplied file or reque
 These commands only print JSON. They do not execute builds, install tools, or publish anything.
 GitHub's platform workflow supplies `.github/build-matrix.json`, feeds the result to its native `strategy.matrix`, and
 calls the build action for each flavor. That action invokes the same `ci/scripts/build.py` used locally.
-Builds depend only on matrix generation; source checks run independently. Build artifact publication is not
-part of this step yet.
+Builds depend only on matrix generation; source checks run independently. Each build stages firmware and
+diagnostics through `python -m ci.scripts.stage_artifacts`; the provider adapter uploads them.
 
 ADO's shared platform template supplies `.azuredevops/build-matrix.json` through its build job template. A `BuildMatrix`
 job exports separate Windows and Linux matrices using `--host`. Dependent `BuildFirmware_windows` and
@@ -110,7 +110,8 @@ job exports separate Windows and Linux matrices using `--host`. Dependent `Build
 builds per host group. Host pools are selected at template expansion time, not by runtime matrix variables.
 Each job runs inside OneBranch. The build stage
 runs independently of source checks, and each flavor invokes the same `ci/scripts/build.py` as GitHub.
-NuGet and VPack publishing remain disabled for these jobs.
+NuGet and VPack publishing remain disabled in build jobs. A separate Windows packaging stage depends on
+both source checks and the entire build stage; only the three shipping flavors are selected.
 
 ADO source checks and both firmware build hosts use `repo-auth.yml` to call the
 shared `ci/scripts/repo_auth.py` before Stuart. The adapter supplies the job's
@@ -148,7 +149,7 @@ the compile-time `Firmware (windows)` or `Firmware (linux)` prefix; ADO appends
 the unchanged matrix leg ID to distinguish each flavor. The generated
 `display_name` remains available as metadata, not as the job's UI name.
 
-GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the future upload steps.
+GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the upload steps.
 They preserve the pre-refactor consumer names exactly:
 
 | Flavor | Firmware artifact | Log artifact |
@@ -161,14 +162,54 @@ Legacy has no suffix. Keep the literal `AARCH64` and `CLANGPDB` in artifact name
 If future host/compiler variants collide under this pattern, selection fails instead of silently renaming artifacts.
 Any expanded naming scheme must be coordinated with consumers first.
 
-ADO naming is a separate compatibility contract: historical staged folders were
-`Firmware Binary File <TARGET>_<ARCH>`, `Firmware Map Files <TARGET>_<ARCH>`,
-`Firmware PDB Files <TARGET>_<ARCH>`, and `Build Logs <job_name>` inside a per-job OneBranch artifact.
-Those folder names alone are not globally unique. Changing job identity or log-folder labels can affect consumers
-of the enclosing artifact and must be checked when staging/upload is restored. No ADO artifact names are inferred
-from the new display label. Package names and suffixes below remain unchanged.
+ADO retains `drop_Build_<TARGET>_<ARCH>_<TOOLCHAIN>[_<suffix>]`, independent of the new display names.
+Non-shipping builds upload these drops directly. Shipping builds first upload `input-<build-id>` for
+the packaging stage, which publishes the historical drop with the NuGet under `packages/`.
+Historical `Firmware Binary File ...`, `Firmware Map Files ...`, `Firmware PDB Files ...`,
+`Build Logs <old job label>`, and `Build/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/Bin/` paths are retained
+alongside the shared staging layout. Source-check output retains `drop_Build_SourceChecks` and its
+root-level logs, test results, and `MsvmPkg/` diagnostics. No consumer migration is required.
 
-This change defines labels and names only; artifact upload and staging are not enabled yet.
+### Artifact Staging and Publication
+
+The shared staging module runs after Stuart, rather than as a post-build plugin, so setup/update failures
+also retain diagnostics. Existing Stuart plugins still own firmware version generation and PDB/MAP collection.
+Successful staging requires nonempty firmware, version JSON/blob, MAP files, and (except GCC) PDB files.
+Shipping flavors additionally require DSDT AML and `BiosInterface.h`. Missing required outputs fail staging;
+they are not silently omitted from a successful artifact.
+
+The shared layout is:
+
+- `firmware/FV/MSVM.fd`, `firmware/MAP/`, `firmware/PDB/`, `firmware/FwVersion/`, and
+  `firmware/BuildInfo.json` (the selected matrix flavor).
+- `logs/`, preserving paths relative to `Build/` to prevent same-name logs overwriting each other.
+  Failed builds additionally retain the selected flavor's full build tree under `logs/failed-build/`.
+- ADO builds: `package/Bin/` with `MSVM.fd`, `Dsdt.aml`, `BiosInterface.h`, PDBs (except GCC),
+  version JSON/blob, and the flavor manifest. This is staged data, not permission to publish a package.
+
+GitHub uploads the contents of `firmware/`, preserving the existing `FV/MSVM.fd`, `PDB/`, and `MAP/`
+paths. Logs upload even when building or staging fails. Source-check logs have their own artifact.
+ADO includes the tree and compatibility folders at the drop root. Failed ADO builds also retain the
+historical `all/` copy of the full `Build/` tree. Shipping build failures retain the `input-...` drop;
+the final historical shipping drop is only produced after its packaging prerequisites pass.
+The legacy flattened log view is retained, with warnings on basename collisions; the shared `logs/`
+tree always retains every original path.
+OneBranch owns uploads; the shared Python does not handle credentials or network publication.
+
+GitHub releases run only for pushes to `main`, after all builds and source checks succeed. They download
+exactly the expected ten firmware artifacts, validate flavor, commit, source origin, version and clean/official
+flags, then create the historical `firmware-*.tar.gz` assets. Release tags remain `v<major>.<minor>.<patch>`;
+the prefix comes from `FirmwareVersion.toml`, and the serialized release job allocates the next patch.
+**OpenVMM is temporarily omitted from the release gate**, as agreed while restoring CI. Restore it before
+claiming runtime validation of releases. PRs and manual GitHub runs do not create releases.
+
+ADO indexes shipping PDBs in the build workspace while sources and submodules are present. The downstream
+Windows packaging jobs download the staged outputs, validate their provenance, and pack NuGet artifacts.
+PRs exercise packaging with `.PR.` / `.Test` IDs but cannot publish to feeds, VPack, or the symbol server.
+Official publication additionally requires `refs/heads/official/*` and a non-PR run. OneBranch publishing
+enable flags are compile-time booleans, never runtime matrix shipping variables. NuGet goes to the existing
+`OS/HyperVUefi` feed; OneBranch retains VPack version allocation; symbols are uploaded without reindexing.
+This change does not claim hosted Official validation.
 
 ### Closed Package Identity
 
@@ -177,14 +218,18 @@ VS2022 legacy and AARCH64 RELEASE Windows-org CLANGPDB legacy. These three keep 
 all other closed variants retain their historical test suffixes. Metadata describes eligibility, not permission
 to publish, and does not mark a local or PR build official.
 
-Build IDs are not package names. Future packaging must preserve the shared VPack/NuGet ID convention:
+Build IDs are not package names. The shared VPack/NuGet ID convention is:
 `<repo>.mscoreuefi.<PR. if PR><arch>.<target><.suffix if present><.Test if PR or non-shipping>`.
 For example, the official ARM64 shipping ID remains `hyperv.uefi.mscoreuefi.AARCH64.RELEASE`, while its PR
 ID is `hyperv.uefi.mscoreuefi.PR.AARCH64.RELEASE.Test`.
 NuGet versions and OneBranch VPack version allocation remain separate contracts.
-No package creation or publication is enabled here. In particular, runtime build matrices do not establish
-that per-flavor OneBranch publishing policy can be expanded at runtime; validate or introduce a separate
-compile-time publishing stage before enabling it.
+Only shipping flavors are packaged now. Non-shipping Windows/Linux builds retain their historical suffix
+metadata but produce CI artifacts/logs only, not `.Test` packages or symbol-server uploads.
+`matrix.py --shipping-only` selects the three shipping rows; it does not authorize publishing.
+NuGet versions retain `<major>.<minor>-<branch-name>.<commit>`, while VPack uses the same TOML prefix and
+OneBranch's allocated version. Neither changes the already-compiled firmware's embedded build identity.
+NuGet preserves the old recursive paths: `Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/FV/MSVM.fd`,
+`symbols/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/PDB/`, and `map/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/MAP/`.
 
 ## Firmware Versioning
 
@@ -222,8 +267,8 @@ Omitting it records `unknown`, rather than guessing from remotes or inheriting a
 For direct Stuart invocations, set `SOURCE_ORIGIN=open|closed|unknown` as a build or shell variable.
 An explicit Stuart value wins over the shell; an unrecognized value is rejected before output is written.
 
-Origin is currently **sidecar metadata, not embedded in MSVM.fd**. Keep the JSON with future build artifacts;
-artifact upload is not wired yet. Identifying origin from the firmware file alone needs a separately reviewed
+Origin is currently **sidecar metadata, not embedded in MSVM.fd**. Staging and packaging retain the JSON.
+Identifying origin from the firmware file alone needs a separately reviewed
 binary-record extension. Origin and the official flag are declarations, not security attestations.
 
 ### Overrides and CI Policy

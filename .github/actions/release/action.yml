@@ -1,0 +1,46 @@
+name: Release Firmware
+description: Validate and archive the shared staged outputs, then publish a GitHub release
+
+inputs:
+  github-token:
+    description: GitHub token used to create the release
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download firmware artifacts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        pattern: firmware-*
+        path: ${{ runner.temp }}/firmware-artifacts
+
+    - name: Package release artifacts
+      shell: bash
+      env:
+        RELEASE_COMMIT: ${{ github.sha }}
+        ARTIFACT_INPUT: ${{ runner.temp }}/firmware-artifacts
+        RELEASE_OUTPUT: ${{ runner.temp }}/firmware-release
+      run: >-
+        python -m ci.scripts.package_artifacts github
+        --matrix .github/build-matrix.json
+        --source "$ARTIFACT_INPUT"
+        --output "$RELEASE_OUTPUT"
+        --commit "$RELEASE_COMMIT"
+
+    - name: Create GitHub release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        RELEASE_REPOSITORY: ${{ github.repository }}
+        RELEASE_COMMIT: ${{ github.sha }}
+        RELEASE_OUTPUT: ${{ runner.temp }}/firmware-release
+      run: |
+        set -euo pipefail
+        base_version="$(python -m ci.scripts.package_artifacts version)"
+        tags="$(gh api --paginate "repos/$RELEASE_REPOSITORY/releases?per_page=100" --jq '.[].tag_name')"
+        patch="$(printf '%s\n' "$tags" | jq -Rs --arg prefix "v$base_version." \
+          'split("\n") | map(select(startswith($prefix)) | ltrimstr($prefix) | select(test("^[0-9]+$")) | tonumber) | (max // -1) + 1')"
+        gh release create "v$base_version.$patch" \
+          --repo "$RELEASE_REPOSITORY" --target "$RELEASE_COMMIT" \
+          --generate-notes "$RELEASE_OUTPUT"/*.tar.gz

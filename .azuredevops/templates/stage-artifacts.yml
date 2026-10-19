@@ -1,0 +1,19 @@
+parameters:
+  - name: python
+    type: string
+    default: python
+
+steps:
+  - script: >-
+      ${{ parameters.python }} -m ci.scripts.stage_artifacts
+      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
+      --output "$(ob_outputDirectory)" --ado-layout --build-succeeded
+    displayName: Stage Firmware Artifacts
+    condition: succeeded()
+
+  - script: >-
+      ${{ parameters.python }} -m ci.scripts.stage_artifacts
+      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
+      --output "$(ob_outputDirectory)" --ado-layout
+    displayName: Stage Failure Diagnostics
+    condition: not(succeeded())

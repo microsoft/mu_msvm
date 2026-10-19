@@ -58,6 +58,9 @@ jobs:
           GIT_CONFIG_KEY_1: core.longpaths
           GIT_CONFIG_VALUE_1: "true"
           ob_outputDirectory: $(Build.ArtifactStagingDirectory)/BUILD/$(System.JobId)
+          ob_artifactBaseName: $(build_artifact_name)
+          ob_pipelineartifacts_enabled: true
+          ob_artifacts_main_condition: succeededOrFailed()
           ob_nugetPublishing_enabled: false
           ob_createvpack_enabled: false
           WindowsClangRoot: $(Agent.TempDirectory)/windows-clang-${{ parameters.windowsClangVersion }}
@@ -128,9 +131,19 @@ jobs:
                   WINDOWS_CLANG_ROOT: $(WindowsClangRoot)
                   OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
+              - task: PublishSymbols@2
+                displayName: Index Shipping Symbols
+                condition: and(succeeded(), eq(variables['shipping'], 'true'))
+                inputs:
+                  SearchPattern: Build/Msvm$(arch)/$(target)_$(tool_chain)/PDB/*.pdb
+                  IndexSources: true
+                  PublishSymbols: false
+
               - template: /.azuredevops/templates/repo-auth.yml@self
                 parameters:
                   mode: unset
+
+              - template: /.azuredevops/templates/stage-artifacts.yml@self
 
           - ${{ if eq(host, 'linux') }}:
               - template: /.azuredevops/templates/repo-auth.yml@self
@@ -174,4 +187,8 @@ jobs:
               - template: /.azuredevops/templates/repo-auth.yml@self
                 parameters:
                   mode: unset
+                  python: python3
+
+              - template: /.azuredevops/templates/stage-artifacts.yml@self
+                parameters:
                   python: python3

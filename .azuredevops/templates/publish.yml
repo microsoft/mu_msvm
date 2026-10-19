@@ -1,0 +1,106 @@
+parameters:
+  - name: officialBuild
+    type: boolean
+    default: false
+
+jobs:
+  - job: PackageMatrix
+    displayName: Select Shipping Packages
+    pool:
+      type: windows
+    variables:
+      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/PACKAGE_MATRIX
+      ob_nugetPublishing_enabled: false
+      ob_createvpack_enabled: false
+    steps:
+      - template: /.azuredevops/templates/windows-python.yml@self
+
+      - pwsh: |
+          $matrix = python -m ci.scripts.matrix --matrix .azuredevops/build-matrix.json --shipping-only --format ado
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $version = python -m ci.scripts.package_artifacts version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $major, $minor = $version.Split('.')
+          Write-Host "##vso[task.setvariable variable=matrix;isOutput=true]$matrix"
+          Write-Host "##vso[task.setvariable variable=major;isOutput=true]$major"
+          Write-Host "##vso[task.setvariable variable=minor;isOutput=true]$minor"
+        name: shipping
+        displayName: Select Shipping Flavors and Release Version
+
+  - job: PackageFirmware
+    displayName: Package Firmware
+    dependsOn: PackageMatrix
+    pool:
+      type: windows
+    strategy:
+      maxParallel: 3
+      matrix: $[ dependencies.PackageMatrix.outputs['shipping.matrix'] ]
+    variables:
+      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+      ReleaseMajor: $[ dependencies.PackageMatrix.outputs['shipping.major'] ]
+      ReleaseMinor: $[ dependencies.PackageMatrix.outputs['shipping.minor'] ]
+      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/PACKAGES
+      ob_artifactBaseName: $(artifact_name)
+      ob_nugetPublishing_enabled: ${{ parameters.officialBuild }}
+      ob_createvpack_enabled: ${{ parameters.officialBuild }}
+      ${{ if eq(parameters.officialBuild, true) }}:
+        ob_createvpack_packagename: $(Build.Repository.Name).mscoreuefi.$(arch).$(target)
+      ${{ else }}:
+        ob_createvpack_packagename: $(Build.Repository.Name).mscoreuefi.PR.$(arch).$(target).Test
+      ob_createvpack_description: Hyper V UEFI Firmware
+      ob_createvpack_versionAs: parts
+      ob_createvpack_majorVer: $(ReleaseMajor)
+      ob_createvpack_minorVer: $(ReleaseMinor)
+      ob_createvpack_metadata: $(Build.SourceVersion)
+      ob_createvpack_failOnStdErr: true
+      ob_createvpack_verbose: true
+      ob_createvpack_vpackdirectory: $(ob_outputDirectory)/Build/Msvm$(arch)/$(target)_$(tool_chain)/Bin
+    steps:
+      - template: /.azuredevops/templates/windows-python.yml@self
+
+      - task: DownloadPipelineArtifact@2
+        displayName: Download Shipping Firmware
+        inputs:
+          buildType: current
+          artifactName: $(build_artifact_name)
+          targetPath: $(Agent.TempDirectory)/firmware-input
+
+      - pwsh: |
+          $packageArgs = @('nuget', '--matrix', '.azuredevops/build-matrix.json',
+              '--build-id', $env:BUILD_ID, '--source', $env:ARTIFACT_INPUT,
+              '--output', $env:PACKAGE_MANIFEST, '--staging-output', $env:ARTIFACT_OUTPUT,
+              '--commit', $env:SOURCE_COMMIT,
+              '--repository', $env:SOURCE_REPOSITORY, '--branch', $env:SOURCE_BRANCH)
+          if ($env:OFFICIAL_BUILD -eq '1') { $packageArgs += '--official' }
+          python -m ci.scripts.package_artifacts @packageArgs
+          exit $LASTEXITCODE
+        displayName: Validate Firmware and Prepare NuGet Manifest
+        env:
+          BUILD_ID: $(build_id)
+          ARTIFACT_INPUT: $(Agent.TempDirectory)/firmware-input
+          ARTIFACT_OUTPUT: $(ob_outputDirectory)
+          PACKAGE_MANIFEST: $(Agent.TempDirectory)/firmware.nuspec
+          SOURCE_COMMIT: $(Build.SourceVersion)
+          SOURCE_REPOSITORY: $(Build.Repository.Name)
+          SOURCE_BRANCH: $(Build.SourceBranchName)
+          OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
+
+      - task: NuGetCommand@2
+        displayName: Pack NuGet
+        inputs:
+          command: pack
+          packagesToPack: $(Agent.TempDirectory)/firmware.nuspec
+          packDestination: $(ob_outputDirectory)/packages
+          packTimezone: utc
+
+      - ${{ if eq(parameters.officialBuild, true) }}:
+          - task: PublishSymbols@2
+            displayName: Publish Shipping Symbols
+            inputs:
+              SymbolsFolder: $(ob_outputDirectory)/firmware/PDB
+              SearchPattern: '*.pdb'
+              IndexSources: false
+              PublishSymbols: true
+              SymbolServerType: TeamServices
+              SymbolsProduct: Hyper-V UEFI

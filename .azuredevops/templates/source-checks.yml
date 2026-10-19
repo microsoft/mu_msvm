@@ -11,6 +11,9 @@ jobs:
       GIT_CONFIG_KEY_1: core.longpaths
       GIT_CONFIG_VALUE_1: "true"
       ob_outputDirectory: $(Build.ArtifactStagingDirectory)/SOURCE_CHECKS
+      ob_artifactBaseName: drop_Build_SourceChecks
+      ob_pipelineartifacts_enabled: true
+      ob_artifacts_main_condition: succeededOrFailed()
       ob_nugetPublishing_enabled: false
       ob_createvpack_enabled: false
     steps:
@@ -48,3 +51,7 @@ jobs:
       - template: /.azuredevops/templates/repo-auth.yml@self
         parameters:
           mode: unset
+
+      - script: python -m ci.scripts.stage_artifacts --logs-only --ado-layout --output "$(ob_outputDirectory)"
+        displayName: Stage Source Check Logs
+        condition: always()
