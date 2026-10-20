@@ -37,6 +37,7 @@ except ModuleNotFoundError:
 
 from edk2toolext.environment import repo_resolver
 from edk2toolext.environment.plugintypes.uefi_build_plugin import IUefiBuildPlugin
+from git import Repo
 
 
 class FirmwareVersionMetadata(TypedDict):
@@ -94,10 +95,14 @@ class FirmwareVersionBlob(IUefiBuildPlugin):
         # untracked files; gitignored build outputs do not count).
         try:
             details = repo_resolver.repo_details(workspace)
-            return details["Head"]["HexSha"], bool(details["Dirty"])
         except Exception as e:
             logging.warning(f"Could not determine git state for firmware version blob: {e}")
             return "unknown", False
+        if details["Dirty"]:
+            with Repo(workspace) as repo:
+                status = repo.git.status("--short", "--untracked-files=all", "--ignore-submodules=none")
+            logging.warning("Firmware version dirty-worktree flag is set. Git status (paths only):\n%s", status)
+        return details["Head"]["HexSha"], bool(details["Dirty"])
 
     @staticmethod
     def _EncodeRecordString(value: str, capacity: int, name: str) -> bytes:

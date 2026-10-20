@@ -88,6 +88,20 @@ def build_id(row: BuildFlavor) -> str:
                      row["compiler_source"], row["core"], row["legacy_debugger"]))
 
 
+def ado_job_name(row: BuildFlavor) -> str:
+    """Use a short matrix leg label without changing the persistent build ID."""
+    compiler: str = row["tool_chain"]
+    if compiler == "CLANGPDB":
+        compiler = {"visual_studio": "ClangVS", "windows_org": "ClangWin",
+                    "distribution": "ClangLinux"}[row["compiler_source"]]
+    name = f"{row['target']}_{row['arch']}_{compiler}"
+    if row["core"] == "patina":
+        name += "_Patina"
+    if row["legacy_debugger"] == "1":
+        name += "_Debugger"
+    return name
+
+
 def label_builds(rows: list[SelectedBuild], backend: OutputFormat) -> list[SelectedBuild]:
     """Add provider presentation fields without changing execution/package IDs.
 
@@ -233,13 +247,15 @@ def main(argv: list[str] | None = None) -> None:
         if args.format == "github" and any(row["legacy_debugger"] == "1" for row in rows):
             raise ValueError("GitHub builds cannot enable the closed-source legacy debugger")
         rows = label_builds(rows, args.format)
+        if args.format == "ado" and len({ado_job_name(row) for row in rows}) != len(rows):
+            raise ValueError("ADO job label collision; distinguish the new flavors before adding them")
     except (OSError, ValueError) as error:
         parser.error(str(error))
     result: object
     if args.format == "github":
         result = {"include": rows}
     elif args.format == "ado":
-        result = {row["id"]: {key: value for key, value in cast(Mapping[str, str], row).items() if key != "id"}
+        result = {ado_job_name(row): {key: value for key, value in cast(Mapping[str, str], row).items() if key != "id"}
               for row in rows}
     else:
         result = rows

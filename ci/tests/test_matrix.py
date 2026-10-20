@@ -98,7 +98,7 @@ class MatrixTests(unittest.TestCase):
                     if format_name == "github":
                         expected = {"include": matrix.label_builds(rows, "github")}
                     elif format_name == "ado":
-                        expected = {row["id"]: {key: value for key, value in row.items() if key != "id"}
+                        expected = {matrix.ado_job_name(row): {key: value for key, value in row.items() if key != "id"}
                                     for row in matrix.label_builds(rows, "ado")}
                     self.assertEqual(result, expected)
 
@@ -116,6 +116,24 @@ class MatrixTests(unittest.TestCase):
         self.assertEqual(labeled[0]["artifact_name"], "firmware-DEBUG-X64-CLANGPDB")
         self.assertEqual(labeled[-1]["display_name"], "RELEASE AARCH64 CLANGPDB (Patina)")
         self.assertEqual(labeled[-1]["artifact_name"], "firmware-RELEASE-AARCH64-CLANGPDB-patina")
+
+    def test_ado_job_names_are_short_and_separate_from_artifact_identity(self) -> None:
+        rows = matrix.select_builds(CLOSED_MATRIX)
+        names = [matrix.ado_job_name(row) for row in rows]
+        self.assertEqual(len(set(names)), 15)
+        self.assertTrue(all(len(name) <= 35 and not name.endswith(("_0", "_1")) for name in names))
+        self.assertEqual(names[0], "DEBUG_X64_VS2022_Debugger")
+        self.assertEqual(names[2], "RELEASE_AARCH64_ClangWin")
+        self.assertEqual(names[-1], "RELEASE_X64_GCC")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            matrix.main(["--matrix", str(CLOSED_MATRIX), "--format", "ado"])
+        emitted = json.loads(output.getvalue())
+        for row in rows:
+            leg = emitted[matrix.ado_job_name(row)]
+            self.assertEqual(leg["build_id"], row["id"])
+            self.assertEqual(leg["artifact_name"],
+                             next(item["artifact_name"] for item in matrix.label_builds(rows, "ado") if item["id"] == row["id"]))
 
     def test_github_artifact_collisions_require_explicit_migration(self) -> None:
         row = matrix.select_builds(OPEN_MATRIX)[0]

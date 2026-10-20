@@ -30,11 +30,20 @@ def validate_firmware(firmware: Path, flavor: SelectedBuild, commit: str, origin
     if info != flavor:
         raise ValueError(f"Artifact flavor does not match the selected matrix row: {firmware}")
     metadata = json.loads((firmware / "FwVersion/FirmwareVersion.json").read_text(encoding="utf-8"))
-    if (metadata.get("git_commit") != commit or metadata.get("source_origin") != origin
-            or metadata.get("base_version") != base_version()
-            or type(metadata.get("flags")) is not int
-            or bool(metadata["flags"] & 2) != official or metadata["flags"] & 1):
-        raise ValueError(f"Artifact provenance/version does not match this build: {firmware}")
+    mismatches = []
+    for field, expected in (("git_commit", commit), ("source_origin", origin), ("base_version", base_version())):
+        if metadata.get(field) != expected:
+            mismatches.append(f"{field}: expected {expected!r}, got {metadata.get(field)!r}")
+    flags = metadata.get("flags")
+    if type(flags) is not int:
+        mismatches.append(f"flags must be an integer, got {flags!r}")
+    else:
+        if bool(flags & 2) != official:
+            mismatches.append(f"official flag: expected {official}, got {bool(flags & 2)}")
+        if flags & 1:
+            mismatches.append("dirty-worktree flag is set; inspect the firmware build's Git status diagnostics")
+    if mismatches:
+        raise ValueError(f"Artifact provenance/version does not match this build: {firmware}: {'; '.join(mismatches)}")
     required = [firmware / "FV/MSVM.fd", firmware / "FwVersion/FwVersionBlob.bin"]
     for file in required:
         if not file.is_file() or file.stat().st_size == 0:

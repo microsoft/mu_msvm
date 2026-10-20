@@ -92,12 +92,14 @@ build 160110571; runtime debugging still requires validation.
 All open rows and all GCC rows disable the legacy debugger.
 ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
 
-IDs are derived as `<host>_<arch>_<target>_<tool_chain>_<compiler_source>_<core>_<legacy_debugger>`;
+Persistent IDs are derived as `<host>_<arch>_<target>_<tool_chain>_<compiler_source>_<core>_<legacy_debugger>`;
 do not enter IDs in the JSON. Identical flavors may occur in both files, but may not occur twice within one file.
 Edit the respective JSON to change coverage independently, without editing shared Python or provider YAML.
 The selector rejects duplicate flavors and fails when the supplied file or requested host has no builds.
 
-`--format github` emits an `include` object; `--format ado` emits a job-leg name to variables mapping.
+`--format github` emits an `include` object; `--format ado` emits a short job-leg name to variables mapping.
+ADO labels such as `DEBUG_X64_VS2022_Debugger` or `RELEASE_AARCH64_ClangWin` are independent
+of the full `build_id` carried in the variables. Artifact names and package identities do not change.
 These commands only print JSON. They do not execute builds, install tools, or publish anything.
 GitHub's platform workflow supplies `.github/build-matrix.json`, feeds the result to its native `strategy.matrix`, and
 calls the build action for each flavor. That action invokes the same `ci/scripts/build.py` used locally.
@@ -146,7 +148,7 @@ Provider matrix output adds a `display_name` derived from the same flavor:
 ADO job names cannot use the runtime matrix's `$(display_name)` in this OneBranch
 pipeline: it appeared literally in the hosted run. Instead, job display names use
 the compile-time `Firmware (windows)` or `Firmware (linux)` prefix; ADO appends
-the unchanged matrix leg ID to distinguish each flavor. The generated
+short matrix labels to distinguish each flavor while retaining the full `build_id` in the variables. The generated
 `display_name` remains available as metadata, not as the job's UI name.
 
 GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the upload steps.
@@ -210,6 +212,15 @@ Official publication additionally requires `refs/heads/official/*` and a non-PR 
 enable flags are compile-time booleans, never runtime matrix shipping variables. NuGet goes to the existing
 `OS/HyperVUefi` feed; OneBranch retains VPack version allocation; symbols are uploaded without reindexing.
 This change does not claim hosted Official validation.
+The governed VPack task supports `push`, `pull`, and `list`, not a local pack-only operation.
+PRs validate/stage the VPack payload and pack NuGet without external publication; VPack creation/push
+is Official-only. Historical pipelines packed non-shipping `.Test` flavors as well; the current three-flavor
+package scope is an intentional change, separate from retaining CI artifacts for all 15 builds.
+
+PR run 160943879 passed all firmware builds but package validation rejected the dirty-worktree flag.
+Validation reports the exact mismatched fields, and the version plugin logs dirty paths when computing
+the flag. The hosted cause still requires another run; the dirty guard remains enforced for both PR
+and Official packaging rather than silently clearing or ignoring provenance.
 
 ### Closed Package Identity
 

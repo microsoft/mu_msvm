@@ -223,7 +223,8 @@ class ArtifactTests(unittest.TestCase):
                            {"flags": 0}, {"flags": 3}):
                 with self.subTest(change=change):
                     metadata_path.write_text(json.dumps({**metadata, **change}))
-                    with self.assertRaisesRegex(ValueError, "provenance"):
+                    expected = "dirty-worktree flag" if change == {"flags": 3} else "provenance"
+                    with self.assertRaisesRegex(ValueError, expected):
                         package_artifacts.validate_firmware(firmware, row, COMMIT, "closed", True)
             metadata_path.write_text(json.dumps(metadata))
             for other in matrix.select_builds(CLOSED)[3:]:

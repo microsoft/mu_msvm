@@ -34,6 +34,29 @@ def load_plugin() -> ModuleType:
 class FirmwareVersionTests(unittest.TestCase):
     """Build vars win over shell vars, including explicit empty/false values."""
 
+    def test_dirty_version_reports_paths_without_changing_identity(self) -> None:
+        module = load_plugin()
+        with TemporaryDirectory() as temporary:
+            repo = importlib.import_module("git").Repo.init(temporary)
+            try:
+                path = Path(temporary) / "tracked.txt"
+                path.write_text("original")
+                repo.index.add(["tracked.txt"])
+                actor = importlib.import_module("git").Actor("CI test", "ci@example.invalid")
+                commit = repo.index.commit("Test baseline", author=actor, committer=actor).hexsha
+                plugin = module.FirmwareVersionBlob()
+                self.assertEqual(plugin._GetGitCommit(temporary), (commit, False))
+                path.write_text("modified")
+                (Path(temporary) / "generated.txt").write_text("not logged contents")
+                with self.assertLogs(level="WARNING") as logs:
+                    self.assertEqual(plugin._GetGitCommit(temporary), (commit, True))
+                message = "\n".join(logs.output)
+                self.assertIn("tracked.txt", message)
+                self.assertIn("generated.txt", message)
+                self.assertNotIn("not logged contents", message)
+            finally:
+                repo.close()
+
     def test_source_origin_is_explicit_sidecar_metadata(self) -> None:
         """Origins honor Stuart precedence and leave the v1 binary ABI unchanged."""
         module = load_plugin()
