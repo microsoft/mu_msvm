@@ -1,0 +1,47 @@
+parameters:
+  - name: oneBranchBase
+    type: string
+
+resources:
+  repositories:
+    - repository: templates_onebranch
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: ${{ parameters.oneBranchBase }}@templates_onebranch
+  parameters:
+    platform:
+      name: windows_undocked
+    globalSdl:
+      tsa:
+        enabled: false
+    featureFlags:
+      WindowsHostVersion: 1ESWindows2022
+    nugetPublishing:
+      feeds:
+        - name: OS/HyperVUefi
+          continueOnConflict: false
+          files_to_publish: '*.nupkg;!*.symbols.nupkg'
+    git:
+      submodules: false
+    stages:
+      - stage: SourceChecks
+        jobs:
+          - template: /.azuredevops/templates/source-checks.yml@self
+      - stage: Build
+        dependsOn: []
+        jobs:
+          - template: /.azuredevops/templates/build.yml@self
+            parameters:
+              matrixFile: .azuredevops/build-matrix.json
+              officialBuild: ${{ eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}
+      - stage: Packages
+        dependsOn: [SourceChecks, Build]
+        ${{ if eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}:
+          condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/official/'), ne(variables['Build.Reason'], 'PullRequest'))
+        jobs:
+          - template: /.azuredevops/templates/publish.yml@self
+            parameters:
+              officialBuild: ${{ eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}

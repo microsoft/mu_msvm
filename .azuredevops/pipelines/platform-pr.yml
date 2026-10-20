@@ -1,0 +1,6 @@
+trigger: none
+
+extends:
+  template: /.azuredevops/templates/platform.yml
+  parameters:
+    oneBranchBase: v2/Microsoft.NonOfficial.yml

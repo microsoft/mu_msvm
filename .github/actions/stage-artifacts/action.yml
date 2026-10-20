@@ -1,0 +1,48 @@
+name: Stage Firmware Artifacts
+description: Stage shared firmware outputs and diagnostics, then upload GitHub artifacts
+
+inputs:
+  build-id:
+    description: Selected matrix build ID
+    required: true
+  artifact-name:
+    description: Firmware artifact name
+    required: true
+  logs-artifact-name:
+    description: Diagnostic artifact name
+    required: true
+  build-succeeded:
+    description: Whether the firmware build succeeded
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Stage artifacts
+      if: always()
+      shell: pwsh
+      env:
+        BUILD_ID: ${{ inputs.build-id }}
+        BUILD_SUCCEEDED: ${{ inputs.build-succeeded }}
+        ARTIFACT_OUTPUT: ${{ runner.temp }}/ci-artifacts
+      run: |
+        $stageArgs = @('--matrix', '.github/build-matrix.json', '--build-id', $env:BUILD_ID, '--output', $env:ARTIFACT_OUTPUT)
+        if ($env:BUILD_SUCCEEDED -eq 'true') { $stageArgs += '--build-succeeded' }
+        python -m ci.scripts.stage_artifacts @stageArgs
+        exit $LASTEXITCODE
+
+    - name: Upload firmware
+      if: success() && inputs.build-succeeded == 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ runner.temp }}/ci-artifacts/firmware/
+        if-no-files-found: error
+
+    - name: Upload diagnostics
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.logs-artifact-name }}
+        path: ${{ runner.temp }}/ci-artifacts/logs/
+        if-no-files-found: warn
