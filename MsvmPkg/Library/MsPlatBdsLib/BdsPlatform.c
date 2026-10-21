@@ -8,6 +8,7 @@
 
 #include <Guid/EventGroup.h>
 #include <Library/DebugLib.h>
+#include <Library/EfiDiagnosticsLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/BaseLib.h>
@@ -43,9 +44,9 @@ Returns:
   // Complete the currently pending boot event and flush the event log
   //
   BootDeviceEventUpdate (BootDeviceOsLoaded, EFI_SUCCESS);
-  DEBUG ((DEBUG_INFO, "[HVBE] Updating boot event: BootDeviceOsLoaded, EFI_SUCCESS\n"));
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "[HVBE] Updating boot event: BootDeviceOsLoaded, EFI_SUCCESS\n"));
   BootDeviceEventFlushLog ();
-  DEBUG ((DEBUG_INFO, "[HVBE] Flushing boot event log\n"));
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "[HVBE] Flushing boot event log\n"));
 }
 
 STATIC

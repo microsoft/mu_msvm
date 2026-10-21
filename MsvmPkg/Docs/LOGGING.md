@@ -8,6 +8,16 @@ MsvmPkg uses the Advanced Logger to output all `DEBUG()` macro statements. Full 
 
 **Note:** For ARM64 platforms, SEC phase output is not available through Advanced Logger.
 
+### Important informational messages
+
+For informational messages that are intended to bypass the platform's default
+filtering behavior, include `<Library/EfiDiagnosticsLib.h>` and use
+`DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "..."));`.
+This mask is `DEBUG_WARN | DEBUG_INFO` (`0x42`), not a new debug-level bit.
+It signals the intent for the platform to treat these messages differently from
+ordinary informational messages. The platform determines how they are filtered
+and emitted; UEFI does not guarantee their delivery or emitted severity.
+
 ## Platform Compatibility
 
 Each platform provides different logging mechanisms due to their underlying architecture differences:

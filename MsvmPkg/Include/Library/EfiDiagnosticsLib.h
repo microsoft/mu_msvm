@@ -7,6 +7,14 @@
 
 #pragma once
 
+#include <Library/DebugLib.h>
+
+//
+// Informational messages that are intended to bypass the platform's
+// default filtering behavior.
+//
+#define EFI_DIAGNOSTICS_IMPORTANT_INFO  (DEBUG_WARN | DEBUG_INFO)
+
 VOID
 NotifyHostToProcessEfiDiagnostics (
   VOID
