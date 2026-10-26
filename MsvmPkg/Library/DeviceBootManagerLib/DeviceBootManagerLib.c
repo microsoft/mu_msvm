@@ -16,6 +16,7 @@
 #include <Library/DeviceBootManagerLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/DxeServicesTableLib.h>
+#include <Library/EfiDiagnosticsLib.h>
 #include <Library/EmclLib.h>
 #include <Library/PcdLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -712,17 +713,17 @@ DeviceBootManagerUnableToBoot (
 
   // Log the boot order if there is any
   if (BootOrderSize == 0) {
-    DEBUG ((DEBUG_WARN, "Boot order is empty\n"));
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Boot order is empty\n"));
   } else {
     BootOptions = EfiBootManagerGetLoadOptions (&BootOptionCount, LoadOptionTypeBoot);
-    DEBUG ((DEBUG_WARN, "Boot order : \n"));
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Boot order : \n"));
     for (Index = 0; Index < BootOrderSize / sizeof (UINT16); Index++) {
       DevicePathString = ConvertDevicePathToText (
                            BootOptions[Index].FilePath,
                            FALSE,
                            FALSE
                            );
-      DEBUG ((DEBUG_WARN, "Boot%04x Description: %s. Filepath: %s \n", BootOptions[Index].OptionNumber, BootOptions[Index].Description, DevicePathString));
+      DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Boot%04x Description: %s. Filepath: %s \n", BootOptions[Index].OptionNumber, BootOptions[Index].Description, DevicePathString));
       if (DevicePathString != NULL) {
         FreePool (DevicePathString);
       }
@@ -735,10 +736,10 @@ DeviceBootManagerUnableToBoot (
     // Attempt HDD
     if (PcdGetBool (PcdIsVmbfsBoot)) {
       Status = SelectAndBootDevice (&gEfiSimpleFileSystemProtocolGuid, FilterNoUSB);
-      DEBUG ((DEBUG_WARN, "Attempted to boot from HDD with FilterNoUSB, SelectAndBootDevice returned %r\n", Status));
+      DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Attempted to boot from HDD with FilterNoUSB, SelectAndBootDevice returned %r\n", Status));
     } else {
       Status = SelectAndBootDevice (&gEfiSimpleFileSystemProtocolGuid, FilterOnlyMedia);
-      DEBUG ((DEBUG_WARN, "Attempted to boot from HDD with FilterOnlyMedia, SelectAndBootDevice returned %r\n", Status));
+      DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Attempted to boot from HDD with FilterOnlyMedia, SelectAndBootDevice returned %r\n", Status));
     }
 
     if (PcdGetBool (PcdDefaultBootAttemptPxe)) {
@@ -754,11 +755,11 @@ DeviceBootManagerUnableToBoot (
       if (PcdGetBool (PcdPxeIpV6)) {
         // IPv6
         Status = SelectAndBootDevice (&gEfiLoadFileProtocolGuid, FilterOnlyIPv6);
-        DEBUG ((DEBUG_WARN, "Attempted to PXE boot from IPv6, SelectAndBootDevice returned %r\n", Status));
+        DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Attempted to PXE boot from IPv6, SelectAndBootDevice returned %r\n", Status));
       } else {
         // IPv4
         Status = SelectAndBootDevice (&gEfiLoadFileProtocolGuid, FilterOnlyIPv4);
-        DEBUG ((DEBUG_WARN, "Attempted to PXE boot from IPv4, SelectAndBootDevice returned %r\n", Status));
+        DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "Attempted to PXE boot from IPv4, SelectAndBootDevice returned %r\n", Status));
       }
 
       // Reset to native resolution
