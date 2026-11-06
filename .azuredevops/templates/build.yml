@@ -29,6 +29,15 @@ jobs:
     steps:
       - template: /.azuredevops/templates/windows-python.yml@self
 
+      - pwsh: |
+          $version = python -m ci.scripts.package_artifacts version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $major, $minor = $version.Split('.')
+          Write-Host "##vso[task.setvariable variable=major;isOutput=true]$major"
+          Write-Host "##vso[task.setvariable variable=minor;isOutput=true]$minor"
+        name: version
+        displayName: Select Release Version
+
       - ${{ each host in parameters.hosts }}:
           - pwsh: |
               $matrix = python ci/scripts/matrix.py --matrix "$env:MATRIX_FILE" --host "$env:BUILD_HOST" --format ado
@@ -58,11 +67,25 @@ jobs:
           GIT_CONFIG_KEY_1: core.longpaths
           GIT_CONFIG_VALUE_1: "true"
           ob_outputDirectory: $(Build.ArtifactStagingDirectory)/BUILD/$(System.JobId)
-          ob_artifactBaseName: $(build_artifact_name)
+          ob_artifactBaseName: $(artifact_name)
           ob_pipelineartifacts_enabled: true
           ob_artifacts_main_condition: succeededOrFailed()
-          ob_nugetPublishing_enabled: false
-          ob_createvpack_enabled: false
+          ob_nugetPublishing_enabled: ${{ parameters.officialBuild }}
+          ob_createvpack_enabled: ${{ and(parameters.officialBuild, eq(host, 'windows')) }}
+          ReleaseMajor: $[ dependencies.BuildMatrix.outputs['version.major'] ]
+          ReleaseMinor: $[ dependencies.BuildMatrix.outputs['version.minor'] ]
+          ${{ if eq(parameters.officialBuild, true) }}:
+            ob_createvpack_packagename: $(official_package_name)
+          ${{ else }}:
+            ob_createvpack_packagename: $(pr_package_name)
+          ob_createvpack_description: Hyper V UEFI Firmware
+          ob_createvpack_versionAs: parts
+          ob_createvpack_majorVer: $(ReleaseMajor)
+          ob_createvpack_minorVer: $(ReleaseMinor)
+          ob_createvpack_metadata: $(Build.SourceVersion)
+          ob_createvpack_failOnStdErr: true
+          ob_createvpack_verbose: true
+          ob_createvpack_vpackdirectory: $(ob_outputDirectory)/Build/Msvm$(arch)/$(target)_$(tool_chain)/Bin
           WindowsClangRoot: $(Agent.TempDirectory)/windows-clang-${{ parameters.windowsClangVersion }}
         steps:
           - task: NuGetAuthenticate@1
@@ -132,8 +155,7 @@ jobs:
                   OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
               - task: PublishSymbols@2
-                displayName: Index Shipping Symbols
-                condition: and(succeeded(), eq(variables['shipping'], 'true'))
+                displayName: Index Symbols
                 inputs:
                   SearchPattern: Build/Msvm$(arch)/$(target)_$(tool_chain)/PDB/*.pdb
                   IndexSources: true
@@ -145,6 +167,21 @@ jobs:
 
               - template: /.azuredevops/templates/stage-artifacts.yml@self
 
+              - template: /.azuredevops/templates/pack.yml@self
+                parameters:
+                  officialBuild: ${{ parameters.officialBuild }}
+
+              - ${{ if eq(parameters.officialBuild, true) }}:
+                  - task: PublishSymbols@2
+                    displayName: Publish Symbols
+                    inputs:
+                      SymbolsFolder: $(ob_outputDirectory)/firmware/PDB
+                      SearchPattern: '*.pdb'
+                      IndexSources: false
+                      PublishSymbols: true
+                      SymbolServerType: TeamServices
+                      SymbolsProduct: Hyper-V UEFI
+
           - ${{ if eq(host, 'linux') }}:
               - template: /.azuredevops/templates/repo-auth.yml@self
                 parameters:
@@ -154,7 +191,7 @@ jobs:
               - bash: |
                   set -euo pipefail
                   apt-get update
-                  apt-get install -y python3-venv
+                  apt-get install -y python3-venv mono-devel
                   case "$BUILD_TOOL_CHAIN" in
                     CLANGPDB) apt-get install -y clang lld llvm ;;
                     GCC)
@@ -191,4 +228,9 @@ jobs:
 
               - template: /.azuredevops/templates/stage-artifacts.yml@self
                 parameters:
+                  python: python3
+
+              - template: /.azuredevops/templates/pack.yml@self
+                parameters:
+                  officialBuild: ${{ parameters.officialBuild }}
                   python: python3

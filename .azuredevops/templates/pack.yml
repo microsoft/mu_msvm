@@ -1,0 +1,24 @@
+parameters:
+  - name: officialBuild
+    type: boolean
+    default: false
+  - name: python
+    type: string
+    default: python
+
+steps:
+  - script: >-
+      ${{ parameters.python }} -m ci.scripts.package_artifacts nuget
+      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
+      --source "$(ob_outputDirectory)" --output "$(Agent.TempDirectory)/firmware.nuspec"
+      --commit "$(Build.SourceVersion)" --repository "$(Build.Repository.Name)"
+      --branch "$(Build.SourceBranchName)" ${{ iif(parameters.officialBuild, '--official', '') }}
+    displayName: Validate Firmware and Prepare NuGet Manifest
+
+  - task: NuGetCommand@2
+    displayName: Pack NuGet
+    inputs:
+      command: pack
+      packagesToPack: $(Agent.TempDirectory)/firmware.nuspec
+      packDestination: $(ob_outputDirectory)/packages
+      packTimezone: utc

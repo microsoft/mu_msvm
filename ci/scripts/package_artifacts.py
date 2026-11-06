@@ -5,14 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import tarfile
 import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from ci.scripts.matrix import SelectedBuild, label_builds, select_builds
-from ci.scripts.stage_artifacts import ado_layout, select_flavor
+from ci.scripts.matrix import SelectedBuild, label_builds, package_name, select_builds
+from ci.scripts.stage_artifacts import select_flavor
 
 
 def base_version() -> str:
@@ -23,7 +22,12 @@ def base_version() -> str:
     return version
 
 
-def validate_firmware(firmware: Path, flavor: SelectedBuild, commit: str, origin: str, official: bool) -> None:
+def validate_firmware(
+    firmware: Path, flavor: SelectedBuild, commit: str, origin: str, official: bool,
+    allow_dirty: bool = False,
+) -> None:
+    if official and allow_dirty:
+        raise ValueError("Official firmware cannot allow dirty-worktree provenance")
     if not re.fullmatch(r"[0-9a-fA-F]{40}", commit):
         raise ValueError("Expected a full Git commit SHA")
     info = json.loads((firmware / "BuildInfo.json").read_text(encoding="utf-8"))
@@ -41,7 +45,11 @@ def validate_firmware(firmware: Path, flavor: SelectedBuild, commit: str, origin
         if bool(flags & 2) != official:
             mismatches.append(f"official flag: expected {official}, got {bool(flags & 2)}")
         if flags & 1:
-            mismatches.append("dirty-worktree flag is set; inspect the firmware build's Git status diagnostics")
+            message = "dirty-worktree flag is set; inspect the firmware build's Git status diagnostics"
+            if allow_dirty:
+                print(f"WARNING: PR test package: {message}; provenance remains unchanged", flush=True)
+            else:
+                mismatches.append(message)
     if mismatches:
         raise ValueError(f"Artifact provenance/version does not match this build: {firmware}: {'; '.join(mismatches)}")
     required = [firmware / "FV/MSVM.fd", firmware / "FwVersion/FwVersionBlob.bin"]
@@ -73,17 +81,15 @@ def release_archives(matrix: Path, source: Path, output: Path, commit: str) -> N
 def nuget_manifest(
     matrix: Path, identifier: str, source: Path, output: Path,
     commit: str, repository: str, branch: str, official: bool,
-    staging_output: Path | None = None,
 ) -> None:
     flavor = select_flavor(matrix, identifier)
-    if flavor.get("shipping") != "true" or flavor["host"] != "windows":
-        raise ValueError("Only shipping Windows flavors may be packaged")
+    identity = package_name(flavor, repository, official)
     if not re.fullmatch(r"[A-Za-z0-9_.-]+", repository):
         raise ValueError("Invalid package repository name")
     if not re.fullmatch(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*", branch):
         raise ValueError("Branch name is not a valid NuGet prerelease identifier")
     firmware = source / "firmware"
-    validate_firmware(firmware, flavor, commit, "closed", official)
+    validate_firmware(firmware, flavor, commit, "closed", official, allow_dirty=not official)
     package = source / "package/Bin"
     for name in ("MSVM.fd", "Dsdt.aml", "BiosInterface.h", "FirmwareVersion.json", "FwVersionBlob.bin", "BuildInfo.json"):
         if not (package / name).is_file() or (package / name).stat().st_size == 0:
@@ -96,16 +102,6 @@ def nuget_manifest(
     ):
         if source_file.read_bytes() != package_file.read_bytes():
             raise ValueError(f"Package payload differs from firmware artifact: {package_file}")
-    if staging_output is not None:
-        if staging_output.resolve().is_relative_to(source.resolve()) or source.resolve().is_relative_to(staging_output.resolve()):
-            raise ValueError("Publication staging must not overlap downloaded artifacts")
-        for directory in ("firmware", "logs", "package"):
-            shutil.copytree(source / directory, staging_output / directory)
-        ado_layout(staging_output, flavor)
-        firmware = staging_output / "firmware"
-    prefix = "" if official else "PR."
-    suffix = "" if official else ".Test"
-    identity = f"{repository}.mscoreuefi.{prefix}{flavor['arch']}.{flavor['target']}{suffix}"
     root = ET.Element("package")
     metadata = ET.SubElement(root, "metadata")
     for key, value in {
@@ -119,11 +115,11 @@ def nuget_manifest(
         ET.SubElement(metadata, key).text = value
     files = ET.SubElement(root, "files")
     legacy_path = f"Msvm{flavor['arch']}/{flavor['target']}_{flavor['tool_chain']}"
-    for path, target in (
-        ("FV/MSVM.fd", f"{legacy_path}/FV"), ("PDB/*.pdb", f"symbols/{legacy_path}/PDB"),
-        ("MAP/*.map", f"map/{legacy_path}/MAP"),
-        ("FwVersion/*", "FwVersion"), ("BuildInfo.json", ""),
-    ):
+    payload = [("FV/MSVM.fd", f"{legacy_path}/FV"), ("MAP/*.map", f"map/{legacy_path}/MAP"),
+               ("FwVersion/*", "FwVersion"), ("BuildInfo.json", "")]
+    if flavor["tool_chain"] != "GCC":
+        payload.append(("PDB/*.pdb", f"symbols/{legacy_path}/PDB"))
+    for path, target in payload:
         ET.SubElement(files, "file", src=str(firmware.resolve() / path), target=target)
     output.parent.mkdir(parents=True, exist_ok=True)
     ET.indent(root)
@@ -140,7 +136,6 @@ class Arguments(argparse.Namespace):
     repository: str
     branch: str
     official: bool
-    staging_output: Path | None
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -158,7 +153,6 @@ def main(argv: list[str] | None = None) -> None:
             child.add_argument("--repository", required=True)
             child.add_argument("--branch", required=True)
             child.add_argument("--official", action="store_true")
-            child.add_argument("--staging-output", type=Path, help="Stage a compatible OneBranch publication drop")
     args = parser.parse_args(argv, namespace=Arguments())
     try:
         if args.command == "version":
@@ -167,7 +161,7 @@ def main(argv: list[str] | None = None) -> None:
             release_archives(args.matrix, args.source, args.output, args.commit)
         else:
             nuget_manifest(args.matrix, args.build_id, args.source, args.output,
-                           args.commit, args.repository, args.branch, args.official, args.staging_output)
+                           args.commit, args.repository, args.branch, args.official)
     except (OSError, ValueError, KeyError) as error:
         parser.error(str(error))
 

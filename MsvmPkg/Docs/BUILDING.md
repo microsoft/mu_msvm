@@ -110,10 +110,13 @@ ADO's shared platform template supplies `.azuredevops/build-matrix.json` through
 job exports separate Windows and Linux matrices using `--host`. Dependent `BuildFirmware_windows` and
 `BuildFirmware_linux` jobs consume them through native `strategy.matrix`, with at most four parallel
 builds per host group. Host pools are selected at template expansion time, not by runtime matrix variables.
-Each job runs inside OneBranch. The build stage
-runs independently of source checks, and each flavor invokes the same `ci/scripts/build.py` as GitHub.
-NuGet and VPack publishing remain disabled in build jobs. A separate Windows packaging stage depends on
-both source checks and the entire build stage; only the three shipping flavors are selected.
+Each job runs inside OneBranch and invokes the same `ci/scripts/build.py` as GitHub.
+Every ADO flavor stages its firmware/logs and packs its NuGet in that same build job. There is no
+intermediate artifact download or separate packaging stage. PR builds run independently of source checks;
+Official builds wait for source checks before starting, since publication belongs to the build jobs.
+OneBranch's Official template publishes the NuGets and creates/pushes Windows VPack outputs;
+NonOfficial/PR runs only pack local NuGet files and upload CI artifacts. Shipping metadata controls
+package naming, not whether a build produces an artifact or a NuGet.
 
 ADO source checks and both firmware build hosts use `repo-auth.yml` to call the
 shared `ci/scripts/repo_auth.py` before Stuart. The adapter supplies the job's
@@ -165,8 +168,8 @@ If future host/compiler variants collide under this pattern, selection fails ins
 Any expanded naming scheme must be coordinated with consumers first.
 
 ADO retains `drop_Build_<TARGET>_<ARCH>_<TOOLCHAIN>[_<suffix>]`, independent of the new display names.
-Non-shipping builds upload these drops directly. Shipping builds first upload `input-<build-id>` for
-the packaging stage, which publishes the historical drop with the NuGet under `packages/`.
+Every flavor uploads its final drop directly from its build job, with the NuGet under `packages/`.
+There are no shipping-only `input-...` drops.
 Historical `Firmware Binary File ...`, `Firmware Map Files ...`, `Firmware PDB Files ...`,
 `Build Logs <old job label>`, and `Build/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/Bin/` paths are retained
 alongside the shared staging layout. Source-check output retains `drop_Build_SourceChecks` and its
@@ -177,7 +180,7 @@ root-level logs, test results, and `MsvmPkg/` diagnostics. No consumer migration
 The shared staging module runs after Stuart, rather than as a post-build plugin, so setup/update failures
 also retain diagnostics. Existing Stuart plugins still own firmware version generation and PDB/MAP collection.
 Successful staging requires nonempty firmware, version JSON/blob, MAP files, and (except GCC) PDB files.
-Shipping flavors additionally require DSDT AML and `BiosInterface.h`. Missing required outputs fail staging;
+ADO flavors additionally require DSDT AML and `BiosInterface.h`. Missing required outputs fail staging;
 they are not silently omitted from a successful artifact.
 
 The shared layout is:
@@ -192,8 +195,8 @@ The shared layout is:
 GitHub uploads the contents of `firmware/`, preserving the existing `FV/MSVM.fd`, `PDB/`, and `MAP/`
 paths. Logs upload even when building or staging fails. Source-check logs have their own artifact.
 ADO includes the tree and compatibility folders at the drop root. Failed ADO builds also retain the
-historical `all/` copy of the full `Build/` tree. Shipping build failures retain the `input-...` drop;
-the final historical shipping drop is only produced after its packaging prerequisites pass.
+historical `all/` copy of the full `Build/` tree. A package validation/packing failure does not prevent
+OneBranch from uploading the already-staged firmware and logs from that job.
 The legacy flattened log view is retained, with warnings on basename collisions; the shared `logs/`
 tree always retains every original path.
 OneBranch owns uploads; the shared Python does not handle credentials or network publication.
@@ -205,22 +208,24 @@ the prefix comes from `FirmwareVersion.toml`, and the serialized release job all
 **OpenVMM is temporarily omitted from the release gate**, as agreed while restoring CI. Restore it before
 claiming runtime validation of releases. PRs and manual GitHub runs do not create releases.
 
-ADO indexes shipping PDBs in the build workspace while sources and submodules are present. The downstream
-Windows packaging jobs download the staged outputs, validate their provenance, and pack NuGet artifacts.
-PRs exercise packaging with `.PR.` / `.Test` IDs but cannot publish to feeds, VPack, or the symbol server.
-Official publication additionally requires `refs/heads/official/*` and a non-PR run. OneBranch publishing
-enable flags are compile-time booleans, never runtime matrix shipping variables. NuGet goes to the existing
-`OS/HyperVUefi` feed; OneBranch retains VPack version allocation; symbols are uploaded without reindexing.
+ADO indexes Windows PDBs in the build workspace while sources and submodules are present, then stages
+and packs each flavor in place. Linux jobs install Mono to support the existing NuGet pack task.
+PRs create `.PR.` / `.Test` NuGet files locally but do not publish to feeds, VPack storage, or symbol servers.
+Official builds additionally require `refs/heads/official/*`, a non-PR run, and successful source checks.
+OneBranch publication flags are compile-time booleans, never runtime matrix shipping variables.
+NuGet goes to the existing `OS/HyperVUefi` feed. The Windows OneBranch template creates/pushes VPack
+for all Windows flavors; Linux flavors retain their VPack-compatible staging tree but do not run that
+Windows-only task. Windows symbol publication is Official-only and uses the already-indexed PDBs.
 This change does not claim hosted Official validation.
 The governed VPack task supports `push`, `pull`, and `list`, not a local pack-only operation.
 PRs validate/stage the VPack payload and pack NuGet without external publication; VPack creation/push
-is Official-only. Historical pipelines packed non-shipping `.Test` flavors as well; the current three-flavor
-package scope is an intentional change, separate from retaining CI artifacts for all 15 builds.
+is Official-only. Non-shipping `.Test` packages are restored for every flavor, as in the old pipeline.
 
 PR run 160943879 passed all firmware builds but package validation rejected the dirty-worktree flag.
 Validation reports the exact mismatched fields, and the version plugin logs dirty paths when computing
-the flag. The hosted cause still requires another run; the dirty guard remains enforced for both PR
-and Official packaging rather than silently clearing or ignoring provenance.
+the flag. The hosted cause still requires another run. Local PR test packing now allows a dirty flag with an
+explicit warning and retains the original provenance in the package. Official packaging and GitHub
+releases still reject dirty firmware; commit, origin, version, and official-flag checks remain enforced.
 
 ### Closed Package Identity
 
@@ -234,9 +239,9 @@ Build IDs are not package names. The shared VPack/NuGet ID convention is:
 For example, the official ARM64 shipping ID remains `hyperv.uefi.mscoreuefi.AARCH64.RELEASE`, while its PR
 ID is `hyperv.uefi.mscoreuefi.PR.AARCH64.RELEASE.Test`.
 NuGet versions and OneBranch VPack version allocation remain separate contracts.
-Only shipping flavors are packaged now. Non-shipping Windows/Linux builds retain their historical suffix
-metadata but produce CI artifacts/logs only, not `.Test` packages or symbol-server uploads.
-`matrix.py --shipping-only` selects the three shipping rows; it does not authorize publishing.
+All 15 ADO flavors produce CI artifacts/logs and NuGet files, including non-shipping `.Test` flavors.
+`matrix.py --shipping-only` remains available for inspecting shipping metadata, but pipelines do not
+use it to filter artifacts or package creation. It does not authorize publishing.
 NuGet versions retain `<major>.<minor>-<branch-name>.<commit>`, while VPack uses the same TOML prefix and
 OneBranch's allocated version. Neither changes the already-compiled firmware's embedded build identity.
 NuGet preserves the old recursive paths: `Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/FV/MSVM.fd`,

@@ -153,13 +153,15 @@ class MatrixTests(unittest.TestCase):
             suffix = f"_{original['package_suffix']}" if original["package_suffix"] else ""
             self.assertEqual(row["artifact_name"],
                              f"drop_Build_{original['target']}_{original['arch']}_{original['tool_chain']}{suffix}")
-            self.assertEqual(row["build_artifact_name"],
-                             f"input-{original['id']}" if original["shipping"] == "true" else row["artifact_name"])
+            self.assertNotIn("build_artifact_name", row)
+            self.assertEqual(row["official_package_name"], matrix.package_name(original, "$(Build.Repository.Name)", True))
+            self.assertEqual(row["pr_package_name"], matrix.package_name(original, "$(Build.Repository.Name)", False))
             self.assertEqual(row["build_id"], original["id"])
         self.assertIn("/ Windows WinOrg", next(row["display_name"] for row in labeled
                                                if row["compiler_source"] == "windows_org"))
         self.assertEqual(len({row["artifact_name"] for row in labeled}), 15)
-        self.assertEqual(len({row["build_artifact_name"] for row in labeled}), 15)
+        self.assertEqual(len({row["official_package_name"] for row in labeled}), 15)
+        self.assertEqual(len({row["pr_package_name"] for row in labeled}), 15)
 
     def test_shipping_matrix_selects_only_three_windows_flavors(self) -> None:
         output = io.StringIO()
