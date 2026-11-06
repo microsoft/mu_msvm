@@ -81,8 +81,11 @@ class ArtifactTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     stage_artifacts.main([*arguments, "--build-succeeded"])
                 stage_artifacts.main(arguments)
-            self.assertTrue((root / "output/all/MsvmX64/DEBUG_VS2022/FV/MSVM.fd").is_file())
-            self.assertTrue((root / "output/Build Logs Windows X64 DEBUG VS2022/SETUPLOG.txt").is_file())
+            self.assertTrue((root / "output/all/MsvmX64" / f"DEBUG_{row['tool_chain']}/FV/MSVM.fd").is_file())
+            label = f"Windows X64 DEBUG {row['tool_chain']}"
+            if row["compiler_source"] == "windows_org":
+                label += " (WinOrg)"
+            self.assertTrue((root / f"output/Build Logs {label}/SETUPLOG.txt").is_file())
 
     def test_source_check_compatibility_keeps_package_diagnostics(self) -> None:
         with TemporaryDirectory() as temporary:
@@ -340,7 +343,7 @@ class ArtifactTests(unittest.TestCase):
                     payloads.append({path for path in archive.namelist()
                                      if path.endswith((".fd", ".map", ".pdb"))})
             self.assertEqual(payloads[0], payloads[1])
-            legacy_prefix = "MsvmX64/DEBUG_VS2022"
+            legacy_prefix = f"Msvm{row['arch']}/{row['target']}_{row['tool_chain']}"
             self.assertEqual(payloads[1], {f"{legacy_prefix}/FV/MSVM.fd",
                                          f"symbols/{legacy_prefix}/PDB/Module.pdb",
                                          f"map/{legacy_prefix}/MAP/Module.map"})

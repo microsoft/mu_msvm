@@ -10,6 +10,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
+#include <Library/EfiDiagnosticsLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/SynchronizationLib.h>
@@ -1689,7 +1690,7 @@ VmbusRootIsChannelAllowed (
     }
   }
 
-  DEBUG ((DEBUG_WARN, "%a: Channel not allowed during boot (%g).\n", __func__, &OfferMessage->InterfaceType));
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "%a: Channel not allowed during boot (%g).\n", __func__, &OfferMessage->InterfaceType));
   return FALSE;
 }
 

@@ -70,15 +70,20 @@ class MatrixTests(unittest.TestCase):
         shipping = {(row["arch"], row["target"], row["tool_chain"], row["compiler_source"], row["core"])
                     for row in closed if row["shipping"] == "true"}
         self.assertEqual(shipping, {
-            ("X64", "DEBUG", "VS2022", "visual_studio", "legacy"),
-            ("X64", "RELEASE", "VS2022", "visual_studio", "legacy"),
+            ("X64", "DEBUG", "CLANGPDB", "windows_org", "legacy"),
+            ("X64", "RELEASE", "CLANGPDB", "windows_org", "legacy"),
             ("AARCH64", "RELEASE", "CLANGPDB", "windows_org", "legacy"),
         })
         for row in closed:
             self.assertEqual(row["legacy_debugger"], "1" if row["arch"] == "X64" and row["target"] == "DEBUG" else "0")
             self.assertEqual(row["shipping"] == "true", row["package_suffix"] == "")
         self.assertEqual({row["package_suffix"] for row in closed if row["shipping"] == "false"},
-                         {"XDCV", "XRCV", "ADCV", "ARCV", "XDCW", "XRCW", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
+                         {"XDV", "XRV", "XDCV", "XRCV", "ADCV", "ARCV", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
+        for target, suffix in (("DEBUG", "XDV"), ("RELEASE", "XRV")):
+            row = next(row for row in closed if row["tool_chain"] == "VS2022" and row["target"] == target)
+            self.assertEqual(row["package_suffix"], suffix)
+            self.assertEqual(matrix.package_name(row, "hyperv.uefi", True),
+                             f"hyperv.uefi.mscoreuefi.X64.{target}.{suffix}.Test")
 
     def test_provider_formats_preserve_same_flavors(self) -> None:
         for path in MATRICES:
@@ -122,7 +127,7 @@ class MatrixTests(unittest.TestCase):
         names = [matrix.ado_job_name(row) for row in rows]
         self.assertEqual(len(set(names)), 15)
         self.assertTrue(all(len(name) <= 35 and not name.endswith(("_0", "_1")) for name in names))
-        self.assertEqual(names[0], "DEBUG_X64_VS2022_Debugger")
+        self.assertIn("DEBUG_X64_VS2022_Debugger", names)
         self.assertEqual(names[2], "RELEASE_AARCH64_ClangWin")
         self.assertEqual(names[-1], "RELEASE_X64_GCC")
         output = io.StringIO()

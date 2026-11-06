@@ -230,9 +230,11 @@ releases still reject dirty firmware; commit, origin, version, and official-flag
 ### Closed Package Identity
 
 Closed rows have explicit `shipping` and `package_suffix` metadata. Shipping variants are X64 DEBUG/RELEASE
-VS2022 legacy and AARCH64 RELEASE Windows-org CLANGPDB legacy. These three keep their empty package suffix;
+and AARCH64 RELEASE Windows-org CLANGPDB with the legacy core. These three keep their empty package suffix;
 all other closed variants retain their historical test suffixes. Metadata describes eligibility, not permission
 to publish, and does not mark a local or PR build official.
+VS2022 remains in the build matrix but now uses `XDV`/`XRV` test package suffixes, matching
+the shipping compiler switch in `official/main`. Shipping package IDs remain unchanged.
 
 Build IDs are not package names. The shared VPack/NuGet ID convention is:
 `<repo>.mscoreuefi.<PR. if PR><arch>.<target><.suffix if present><.Test if PR or non-shipping>`.

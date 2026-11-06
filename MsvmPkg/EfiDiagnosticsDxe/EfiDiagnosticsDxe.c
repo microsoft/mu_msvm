@@ -125,6 +125,9 @@ OnBeforeExitBootServicesUnregisterResetNotify (
   Used for both the ExitBootServices and UnableToBoot event groups. For
   ExitBootServices, registered at TPL_CALLBACK so it fires after TPL_NOTIFY
   handlers, capturing their final log entries.
+
+  @param[in] Event    The signaled event.
+  @param[in] Context  ASCII name of the event group.
 **/
 STATIC
 VOID
@@ -134,6 +137,7 @@ OnEventProcessDiagnostics (
   IN VOID       *Context
   )
 {
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "%a: Processing EFI diagnostics event: %a.\n", __func__, (CONST CHAR8 *)Context));
   NotifyHostToProcessEfiDiagnostics ();
 }
 
@@ -151,7 +155,7 @@ OnReadyToBoot (
   IN VOID       *Context
   )
 {
-  DEBUG ((DEBUG_WARN, "%a: Transitioning to boot manager; errors past this point and before ExitBootServices suggest a boot manager issue.\n", __func__));
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "%a: Transitioning to boot manager; errors past this point and before ExitBootServices suggest a boot manager issue.\n", __func__));
 }
 
 /**
@@ -202,7 +206,7 @@ EfiDiagnosticsDxeEntry (
                   EVT_NOTIFY_SIGNAL,
                   TPL_CALLBACK,
                   OnEventProcessDiagnostics,
-                  NULL,
+                  "ExitBootServices",
                   &gEfiEventExitBootServicesGuid,
                   &ExitBootServicesEvent
                   );
@@ -239,7 +243,7 @@ EfiDiagnosticsDxeEntry (
                   EVT_NOTIFY_SIGNAL,
                   TPL_CALLBACK,
                   OnEventProcessDiagnostics,
-                  NULL,
+                  "UnableToBoot",
                   &gMsvmUnableToBootEventGuid,
                   &UnableToBootEvent
                   );
