@@ -128,12 +128,13 @@ or source-check runners. GitHub does not invoke this adapter. The helper disable
 Git tracing while handling credentials and must not be used against a developer's
 global Git configuration.
 
-All ADO Windows jobs resolve the image's Python 3.12 interpreter with
-`py -3.12 -c "import sys; print(sys.executable)"`. The shared template verifies
-the version and pip, then prepends the resolved interpreter and Scripts directories
-to PATH. It does not assume an installation directory, download Python, or fall
-back to the default Python on PATH. Linux builds retain their distribution Python
-and isolated virtual environment.
+All ADO Windows jobs resolve the image's default `python`, matching `official/main`.
+The shared template logs the command path, resolves `sys.executable`, validates Python
+3.12 through 3.14 and pip, then prepends the interpreter and Scripts directories to PATH.
+It does not assume an installation directory or download Python. The moving image no longer
+guarantees Python 3.12: successful Official build 162988428 used 3.13.17. Missing/unsupported
+Python or pip fails explicitly. GitHub retains its separately provisioned 3.12 environment;
+Linux builds retain their distribution Python and isolated virtual environment.
 
 OneBranch PR build 160110571 passed source checks and all 15 firmware builds,
 validating the native matrices, runner tools, internal feeds, and repository
