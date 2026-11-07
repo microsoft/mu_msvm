@@ -25,7 +25,6 @@
 
 [Sources.AARCH64]
     Dbg2.aslc
-    Gtdt.aslc
 
 [Sources.X64]
     Facs.aslc
@@ -50,9 +49,6 @@
     gMsvmPkgTokenSpaceGuid.PcdGenCountEventVector       ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdPmemEventVector           ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdProcIdleEventVector       ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV     ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV       ## CONSUMES
-    gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV     ## CONSUMES
 
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdRtcRegisterBase           ## CONSUMES

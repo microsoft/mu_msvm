@@ -398,6 +398,11 @@
   # PPI for Linux. Older public kernels used by WSL2 had 16 and 17 hardcoded, so
   # use the next available, 18.
   gMsvmPkgTokenSpaceGuid.PcdVmbusVector|18
+  # PcdVmbusSintVector vs. PcdVmbusVector: Same purpose,
+  # but first is used by UEFI, torn down before ExitBootServices, second is reported to guest OS via ACPI tables.
+
+  # PcdVmbusSintVector vs. PcdVmbusVector
+  # Same purpose, but first is used by UEFI, second is reported to guest OS via ACPI tables.
 
   # BIOS Device
   gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress|0xEFFED000
@@ -436,13 +441,6 @@
 
   # Networking
   gEfiMdePkgTokenSpaceGuid.PcdEnforceSecureRngAlgorithms|FALSE    #Opt out of secure RNG until ARM64 has a way of doing TRNG.
-
-  # GTDT for AArch64. Currently these aren't exposed to guests, and 0 is a valid
-  # value to configure. Linux will attempt to configure them, so assign valid
-  # interrupt lines.
-  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV|19
-  gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV|20
-  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV|21
 
   # ARM architectural timer interrupt numbers for ArmPkg TimerDxe.
   gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|19
@@ -787,6 +785,18 @@
   # UEFI_CONFIG_PCIE_BAR_APERTURES
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0
+
+  # GTDT for AArch64. Currently these aren't exposed to guests, and 0 is a valid
+  # value to configure. Linux will attempt to configure them, so assign valid
+  # interrupt lines.
+  #
+  # These are configurable from host for nested/standard.
+  # The defaults here are legacy.
+  #
+  gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|19       # CNTP  standard value is 30
+  gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum|20   # CNTV  standard value is 27
+  gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum|21    # CNTHP standard value is 26
+  gArmTokenSpaceGuid.PcdArmArchTimerHypVirtIntrNum|0 # CNTHV standard value is 28
 
 ################################################################################
 #

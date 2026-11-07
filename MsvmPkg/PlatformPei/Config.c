@@ -1764,6 +1764,25 @@ Return Value:
           );
         break;
       }
+ #if defined (MDE_CPU_AARCH64)
+      case UefiConfigArm64Interrupts:
+      {
+        VM_CONFIG_ARM64_INTERRUPTS  *interrupts = (VM_CONFIG_ARM64_INTERRUPTS *)(1 + header);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (header->Length == sizeof (UEFI_CONFIG_ARM64_INTERRUPTS));
+
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (interrupts->CNTP == 19 || interrupts->CNTP == 30);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (interrupts->CNTV == 20 || interrupts->CNTV == 27);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (interrupts->CNTHP == 21 || interrupts->CNTHP == 26);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (interrupts->CNTHV == 0 || interrupts->CNTHV == 28);
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (interrupts->GICMaintenance == 0 || interrupts->GICMaintenance == 25);
+
+        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdArmArchTimerIntrNum, interrupts->CNTP));
+        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdArmArchTimerVirtIntrNum, interrupts->CNTV));
+        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdArmArchTimerHypIntrNum, interrupts->CNTHP));
+        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdArmArchTimerHypVirtIntrNum, interrupts->CNTHV));
+        break;
+      }
+ #endif
     }
 
     calculatedConfigSize += header->Length;
