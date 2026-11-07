@@ -25,6 +25,7 @@
 
 [Sources.AARCH64]
     Oem0AArch64.c
+    Gtdt.c
 
 [Sources.X64]
     Oem0X64.c
@@ -54,6 +55,9 @@
 
 [Guids]
     gAcpiReplacementTableHobGuid                      ## CONSUMES
+
+[Guids.AARCH64]
+    gArmTokenSpaceGuid
 
 [Protocols]
     gEfiAcpiTableProtocolGuid                     ## CONSUMES
@@ -97,6 +101,12 @@
 
 [Pcd.X64]
     gMsvmPkgTokenSpaceGuid.PcdAcpiMadtMpMailBoxAddress          ## PRODUCES
+
+[Pcd.AARCH64]
+    gArmTokenSpaceGuid.PcdArmArchTimerIntrNum        ## CONSUMES
+    gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum    ## CONSUMES
+    gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum     ## CONSUMES
+    gArmTokenSpaceGuid.PcdArmArchTimerHypVirtIntrNum ## CONSUMES
 
 [Depex]
     gEfiAcpiTableProtocolGuid
