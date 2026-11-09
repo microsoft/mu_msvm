@@ -7,6 +7,12 @@
 #include "EfiHvInternal.h"
 #include "MsCpuid.h"
 
+#if defined (MDE_CPU_X64)
+  #include <Library/GhcbLib.h>
+
+STATIC VOID  *mGhcbMapping;
+#endif
+
 EFI_STATUS
 EfiHvConnectToHypervisor (
   VOID
@@ -214,6 +220,28 @@ EfiHvConnectToHypervisor (
       mBypassOnly = !paravisorPresent;
     }
 
+    if (mIsolationType == UefiIsolationTypeSnp) {
+      VOID  *ghcb;
+
+      ghcb = GhcbInitializeGhcb ();
+      //
+      // SNP exchanges bypass hypercall input and results through the GHCB,
+      // including when a paravisor is present. Its MSR supplies an already
+      // shared page; map it before HvHypercallConnect first accesses it.
+      //
+      status = EfiHvpMapSharedGpaRange (
+                 mIsolationType,
+                 EfiHvpBasePa ((UINTN)ghcb) / EFI_PAGE_SIZE,
+                 1,
+                 TRUE
+                 );
+      if (EFI_ERROR (status)) {
+        goto Exit;
+      }
+
+      mGhcbMapping = ghcb;
+    }
+
     HvHypercallConnect (
       NULL,
       mIsolationType,
@@ -354,6 +382,27 @@ EfiHvDisconnectFromHypervisor (
   if (mHvBypassContext.Connected) {
     HvHypercallDisconnect (&mHvBypassContext);
   }
+
+ #if defined (MDE_CPU_X64)
+  if (mGhcbMapping != NULL) {
+    //
+    // Disconnect can still use the host-shared GHCB. Remove our mapping only
+    // after the bypass connection is torn down; the page itself is not ours.
+    //
+    status = EfiHvpMapSharedGpaRange (
+               mIsolationType,
+               EfiHvpBasePa ((UINTN)mGhcbMapping) / EFI_PAGE_SIZE,
+               1,
+               FALSE
+               );
+    if (EFI_ERROR (status)) {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    mGhcbMapping = NULL;
+  }
+
+ #endif
 
   //
   // Free the hypercall communication pages.  If these pages were originally

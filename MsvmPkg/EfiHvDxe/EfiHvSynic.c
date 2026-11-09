@@ -536,6 +536,27 @@ EfiHvpEnableSynicComponent (
     if (Direct) {
       component->Page = (VOID *)gpa;
     } else {
+ #if defined (MDE_CPU_X64)
+      EFI_STATUS  status;
+
+      //
+      // The host delivers messages or event flags through this already-enabled
+      // shared SynIC page. It bypasses our visibility API, so map its alias
+      // before guest access. The page remains enabled after we disconnect,
+      // so its mapping must remain valid beyond this connection's lifetime.
+      //
+      status = EfiHvpMapSharedGpaRange (
+                 mIsolationType,
+                 EfiHvpBasePa (gpa) / EFI_PAGE_SIZE,
+                 1,
+                 TRUE
+                 );
+      if (EFI_ERROR (status)) {
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+      }
+
+ #endif
+
       component->Page = EfiHvpSharedVa ((VOID *)gpa);
     }
   } else {
@@ -649,6 +670,12 @@ EfiHvpDisableSynicComponent (
     simp.BaseSimpGpa = 0;
     HvHypercallSetVpRegister64Self (context, Register, simp.AsUINT64);
   }
+
+  //
+  // Inherited pages stay enabled, so retain their alias mappings. Buffers we
+  // enabled are unmapped separately when their host visibility is revoked.
+  //
+  component->Page = NULL;
 }
 
 VOID
