@@ -21,6 +21,7 @@
     MdePkg/MdePkg.dec
     MdeModulePkg/MdeModulePkg.dec
     MsvmPkg/MsvmPkg.dec
+    PatinaPkg/PatinaPkg.dec
 
 [LibraryClasses]
     BaseLib
@@ -42,6 +43,7 @@
     gEfiVmbusProtocolGuid           #CONSUMES
     gEfiEmclV2ProtocolGuid          #CONSUMES
     gEfiPciIoProtocolGuid           #PRODUCES
+    gAliasedMemoryMappingProtocolGuid #SOMETIMES_CONSUMES
 
 [Guids]
     gEfiVmbusChannelDevicePathGuid  #CONSUMES

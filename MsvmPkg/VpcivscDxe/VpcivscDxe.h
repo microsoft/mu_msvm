@@ -28,6 +28,7 @@ typedef struct _VPCI_BAR_INFORMATION {
   UINT64     MappedAddress; // The address where this bar was allocated and mapped
   UINT64     Size;          // The size of this bar
   BOOLEAN    Is64Bit;       // The type of bar, 32 bit or 64 bit
+  BOOLEAN    AliasedMapping;
 } VPCI_BAR_INFORMATION, *PVPCI_BAR_INFORMATION;
 
 // Context structure for each VPCI device

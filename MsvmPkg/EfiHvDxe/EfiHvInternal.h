@@ -96,6 +96,15 @@ extern EFI_HV_PROTOCOL                    mHv;
 #if defined (MDE_CPU_X64)
 extern UINT8                  *mHypercallPage;
 extern EFI_CPU_ARCH_PROTOCOL  *mCpu;
+
+EFI_STATUS
+EfiHvpMapSharedGpaRange (
+  UINT32              IsolationType,
+  HV_GPA_PAGE_NUMBER  StartingPageNumber,
+  UINT64              PageCount,
+  BOOLEAN             Visible
+  );
+
 #elif defined (MDE_CPU_AARCH64)
 extern EFI_HARDWARE_INTERRUPT_PROTOCOL  *mHwInt;
 #endif
