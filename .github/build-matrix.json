@@ -1,0 +1,12 @@
+[
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "VS2022", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "VS2022", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "legacy", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "patina", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "patina", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "patina", "legacy_debugger": "0"},
+  {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "core": "patina", "legacy_debugger": "0"}
+]

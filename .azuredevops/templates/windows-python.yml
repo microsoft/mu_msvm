@@ -1,0 +1,20 @@
+steps:
+  - pwsh: |
+      $command = Get-Command python -CommandType Application -ErrorAction Stop | Select-Object -First 1
+      Write-Host "Image Python command: $($command.Source)"
+      $python = & $command.Source -c "import sys; print(sys.executable)"
+      if ($LASTEXITCODE -ne 0 -or -not $python) {
+          throw 'The default image Python could not report its executable'
+      }
+      $python = $python.Trim()
+      if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+          throw "Image Python was not found at $python"
+      }
+      $pythonHome = Split-Path -Parent $python
+      & $python -c "import sys; print(sys.executable); print(sys.version); sys.exit(0 if (3, 12) <= sys.version_info[:2] < (3, 15) else 1)"
+      if ($LASTEXITCODE -ne 0) { throw 'The default image Python must be a supported version (3.12 through 3.14)' }
+      & $python -m pip --version
+      if ($LASTEXITCODE -ne 0) { throw 'The image Python must provide pip' }
+      Write-Host "##vso[task.prependpath]$pythonHome\Scripts"
+      Write-Host "##vso[task.prependpath]$pythonHome"
+    displayName: Use Image Python

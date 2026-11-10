@@ -1,0 +1,57 @@
+jobs:
+  - job: SourceChecks
+    displayName: Stuart CI
+    pool:
+      type: windows
+    variables:
+      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+      GIT_CONFIG_COUNT: "2"
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: "false"
+      GIT_CONFIG_KEY_1: core.longpaths
+      GIT_CONFIG_VALUE_1: "true"
+      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/SOURCE_CHECKS
+      ob_artifactBaseName: drop_Build_SourceChecks
+      ob_pipelineartifacts_enabled: true
+      ob_artifacts_main_condition: succeededOrFailed()
+      ob_nugetPublishing_enabled: false
+      ob_createvpack_enabled: false
+    steps:
+      - template: /.azuredevops/templates/windows-python.yml@self
+
+      - task: NuGetAuthenticate@1
+        inputs:
+          nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+      - task: PipAuthenticate@1
+        inputs:
+          artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
+
+      - template: /.azuredevops/templates/repo-auth.yml@self
+        parameters:
+          mode: set
+
+      - script: python ci/scripts/source_checks.py --verbose
+        displayName: Run Source Checks
+        env:
+          GIT_TRACE: '1'
+          GIT_TRACE_CURL: '1'
+          GIT_TRACE_CURL_NO_DATA: '1'
+          GIT_TRACE_REDACT: '1'
+
+      - task: PublishTestResults@2
+        displayName: Publish Stuart Results
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: Build/TestSuites.xml
+          testRunTitle: Stuart CI
+          failTaskOnFailedTests: true
+
+      - template: /.azuredevops/templates/repo-auth.yml@self
+        parameters:
+          mode: unset
+
+      - script: python -m ci.scripts.stage_artifacts --logs-only --ado-layout --output "$(ob_outputDirectory)"
+        displayName: Stage Source Check Logs
+        condition: always()
