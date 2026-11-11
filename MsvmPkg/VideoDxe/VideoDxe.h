@@ -19,6 +19,7 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
 #include <Library/UefiLib.h>
+#include <Library/CrashLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/DebugLib.h>
 #include <Library/UefiDriverEntryPoint.h>
