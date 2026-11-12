@@ -387,18 +387,17 @@ Returns:
 
 --*/
 {
-  UINTN  length;
+  UINTN       length;
+  UINT64      maxStorage;
+  UINT64      remainingStorage;
+  UINT64      maxVarSize;
+  EFI_STATUS  status;
 
   if (mNvramNotAllowed) {
     // TODO: BDS currently does not work without returning success on writes. It would be preferable in the
     //       future to return EFI_UNSUPPORTED instead, but this requires fixing BDS.
     return EFI_SUCCESS;
   }
-
-  ZeroMem (mNvramCommandDescriptor, sizeof (NVRAM_COMMAND_DESCRIPTOR));
-  mNvramCommandDescriptor->Status                               = EFI_DEVICE_ERROR;
-  mNvramCommandDescriptor->Command                              = NvramSetVariableCommand;
-  mNvramCommandDescriptor->U.VariableCommand.VariableAttributes = Attributes;
 
   length = StrSize (VariableName);
   ASSERT (length <= (UINT32)-1);
@@ -417,6 +416,27 @@ Returns:
   if ((length + DataSize) > EFI_MAX_VARIABLE_NAME_SIZE + EFI_MAX_VARIABLE_DATA_SIZE) {
     return EFI_INVALID_PARAMETER;
   }
+
+  if (DataSize > 0) {
+    status = NvramQueryInfo (
+               Attributes,
+               &maxStorage,
+               &remainingStorage,
+               &maxVarSize
+               );
+    if (EFI_ERROR (status)) {
+      return status;
+    }
+
+    if ((DataSize > remainingStorage) || (DataSize > maxVarSize)) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+  }
+
+  ZeroMem (mNvramCommandDescriptor, sizeof (NVRAM_COMMAND_DESCRIPTOR));
+  mNvramCommandDescriptor->Status                               = EFI_DEVICE_ERROR;
+  mNvramCommandDescriptor->Command                              = NvramSetVariableCommand;
+  mNvramCommandDescriptor->U.VariableCommand.VariableAttributes = Attributes;
 
   CopyMem (mNvramCommandDataBuffer, VariableName, length);
   mNvramCommandDescriptor->U.VariableCommand.VariableNameAddress = mNvramCommandDataBufferGpa;
