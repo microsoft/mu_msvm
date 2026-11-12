@@ -393,6 +393,11 @@ Return Value:
   PSYNTHVID_MESSAGE_HEADER  messageHeader = (PSYNTHVID_MESSAGE_HEADER)Buffer;
 
   if (messageHeader != NULL) {
+    if (BufferLength < sizeof (SYNTHVID_MESSAGE_HEADER)) {
+      DEBUG ((EFI_D_ERROR, "VideoChannel: packet too small for header\n"));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
     switch (messageHeader->Type) {
       case SynthvidError:
         DEBUG ((
@@ -413,6 +418,11 @@ Return Value:
           EFI_D_VERBOSE,
           "VideoChannelReceivePacketCallback - SynthvidVersionResponse\n"
           ));
+
+        if (BufferLength < sizeof (SYNTHVID_VERSION_RESPONSE_MESSAGE)) {
+          DEBUG ((EFI_D_ERROR, "VideoChannel: version response too small\n"));
+          FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+        }
 
         VideoChannelOnVersionResponse (context, Buffer, BufferLength);
 

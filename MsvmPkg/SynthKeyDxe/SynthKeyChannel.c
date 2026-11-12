@@ -259,16 +259,27 @@ Return Value:
   PSYNTH_KEYBOARD_DEVICE  pDevice = (PSYNTH_KEYBOARD_DEVICE)ReceiveContext;
   PHK_MESSAGE_HEADER      message = (PHK_MESSAGE_HEADER)Buffer;
 
-  ASSERT (BufferLength > sizeof (HK_MESSAGE_HEADER));
+  if (BufferLength < sizeof (HK_MESSAGE_HEADER)) {
+    DEBUG ((EFI_D_ERROR, "%a: message too small (size %d)\n", __func__, BufferLength));
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
 
   switch (message->MessageType) {
     case HkMessageProtocolResponse:
-      ASSERT (BufferLength >= sizeof (HK_MESSAGE_PROTOCOL_RESPONSE));
+      if (BufferLength < sizeof (HK_MESSAGE_PROTOCOL_RESPONSE)) {
+        DEBUG ((EFI_D_ERROR, "%a: protocol response too small\n", __func__));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+      }
+
       OnProtocolResponse (pDevice, message);
       break;
 
     case HkMessageEvent:
-      ASSERT (BufferLength >= sizeof (HK_MESSAGE_KEYSTROKE));
+      if (BufferLength < sizeof (HK_MESSAGE_KEYSTROKE)) {
+        DEBUG ((EFI_D_ERROR, "%a: keystroke message too small\n", __func__));
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+      }
+
       OnMessageEvent (pDevice, message);
       break;
 
