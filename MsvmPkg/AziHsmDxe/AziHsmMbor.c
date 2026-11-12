@@ -23,7 +23,7 @@ const UINT8  MBOR_BYTES_PADDING_MASK = 0x03;
 #define MBOR_BOOLEAN_TRUE   0x15
 
 // Macro to check if advancing position exceeds capacity (overflow-safe)
-#define AZIHSM_MBOR_IS_POSITION_EXCEEDS_CAPACITY(e, len)  ((e->Position > e->Capacity) || (((UINT32)len) > ((e->Capacity) - (e->Position))))
+#define AZIHSM_MBOR_IS_POSITION_EXCEEDS_CAPACITY(e, len)  ((e->Position > e->Capacity) || (((UINT32)len) > (UINT32)((e->Capacity) - (e->Position))))
 
 /**
   Swaps bytes if the current platform is little endian.
