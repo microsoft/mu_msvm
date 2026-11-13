@@ -45,4 +45,15 @@ WdatInitializeTable (
   IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Wdat
   );
 
+#ifdef MDE_CPU_AARCH64
+
+extern EFI_ACPI_6_3_GENERIC_TIMER_DESCRIPTION_TABLE  GTDT;
+
+VOID
+AcpiInitGtdt (
+  VOID
+  );
+
+#endif
+
 extern BOOLEAN  mHardwareIsolatedNoParavisor;

@@ -8,6 +8,7 @@
 --*/
 #pragma once
 #include "AllowNamelessAggregate.h"
+#include "VmArm64Interrupts.h"
 
 //
 // BIOS Interface constants
@@ -450,7 +451,7 @@ typedef struct _CRYPTO_COMMAND_DESCRIPTOR {
 
 #define BIOS_WATCHDOG_RUNNING  (BIOS_WATCHDOG_CONFIGURED | BIOS_WATCHDOG_ENABLED)
 
-#pragma pack(push, 1)
+#pragma pack(push, 1) // {
 
 //
 // Common config header.
@@ -508,6 +509,7 @@ enum UefiStructureType {
   UefiConfigHmat                           = 0x26,
   UefiConfigIort                           = 0x27,
   UefiConfigPcieBarApertures               = 0x28,
+  UefiConfigArm64Interrupts                = 0x29, // UEFI_CONFIG_ARM64_INTERRUPTS
 };
 
 //
@@ -850,4 +852,12 @@ typedef struct _UEFI_IGVM_LOADER_BLOCK {
   UINT32    NumberOfProcessors;
 } UEFI_IGVM_LOADER_BLOCK;
 
-#pragma pack(pop)
+typedef struct _UEFI_CONFIG_ARM64_INTERRUPTS {
+  UEFI_CONFIG_HEADER            Header;
+  VM_CONFIG_ARM64_INTERRUPTS    Interrupts;
+  UINT8                         PaddingForAlignment[ALIGN_VALUE_ADDEND (sizeof (VM_CONFIG_ARM64_INTERRUPTS), 8)];
+} UEFI_CONFIG_ARM64_INTERRUPTS;
+
+STATIC_ASSERT ((sizeof (UEFI_CONFIG_ARM64_INTERRUPTS) % 8) == 0, "must be multiple of 8");
+
+#pragma pack(pop) // } UEFI_CONFIG

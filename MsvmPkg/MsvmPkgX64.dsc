@@ -418,6 +418,8 @@
   gMsvmPkgTokenSpaceGuid.PcdVmbusSintIndex|0x2
   gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector|0x41
   gMsvmPkgTokenSpaceGuid.PcdVmbusVector|0x5
+  # PcdVmbusSintVector vs. PcdVmbusVector: Same purpose,
+  # but first is used by UEFI, torn down before ExitBootServices, second is reported to guest OS via ACPI tables.
 
   # BIOS Device
   gMsvmPkgTokenSpaceGuid.PcdBiosBaseAddress|0x28
