@@ -9,6 +9,21 @@ This repository is built on top of Project Mu.  Please see Project Mu for detail
 
 See the [developer guide](MsvmPkg/Docs/DEVGUIDE.md) and in particular the getting started section.
 
+## Build Firmware on Windows (X64)
+
+See the [fresh-clone Windows build walkthrough](MsvmPkg/Docs/BUILDING.md#windows-fresh-clone-build)
+for prerequisites, dependency setup, and producing `MSVM.fd`. After completing the prerequisite
+and dependency setup, run the [Windows X64 build wrapper](Build.ps1) from the repository root:
+
+```powershell
+.\Build.ps1 -Target RELEASE
+```
+
+The wrapper automatically discovers Visual Studio 2022 or 2026 and configures the compiler
+environment; it does not install prerequisites or initialize source/binary dependencies.
+For other architectures or toolchains, use the [direct Stuart instructions](MsvmPkg/Docs/BUILDING.md#basic-build-commands)
+in the build guide.
+
 ## Firmware Artifacts
 
 Platform CI names firmware artifacts using this case-sensitive format:
@@ -69,4 +84,3 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
-

@@ -78,6 +78,7 @@ orleans.codegen.cs
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/.venv/
 
 # MSBuild Binary and Structured Log
 *.binlog
