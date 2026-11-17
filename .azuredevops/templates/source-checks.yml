@@ -52,6 +52,10 @@ jobs:
         parameters:
           mode: unset
 
-      - script: python -m ci.scripts.stage_artifacts --logs-only --ado-layout --output "$(ob_outputDirectory)"
+      - script: python -m ci.scripts.stage_artifacts --logs-only --allow-existing-output --output "$(ob_outputDirectory)"
         displayName: Stage Source Check Logs
         condition: always()
+
+      - template: /.azuredevops/templates/artifact-layout.yml@self
+        parameters:
+          mode: source-checks

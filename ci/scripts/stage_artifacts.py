@@ -55,55 +55,21 @@ def stage_logs(workspace: Path, output: Path) -> None:
         print(f"WARNING: no build logs found under {build}", flush=True)
 
 
-def ado_logs(output: Path, flavor: SelectedBuild) -> None:
-    name = f"{flavor['host'].title()} {flavor['arch']} {flavor['target']} {flavor['tool_chain']}"
-    if flavor["compiler_source"] == "windows_org":
-        name += " (WinOrg)"
-    destination = output / f"Build Logs {name}"
-    destination.mkdir(parents=True, exist_ok=True)
-    for file in sorted((output / "logs").rglob("*")):
-        if file.is_file():
-            target = destination / file.name
-            if target.exists() and target.read_bytes() != file.read_bytes():
-                print(f"WARNING: legacy log basename collision: {file.name}; full paths retained under logs/", flush=True)
-            shutil.copy2(file, target)
-
-
-def source_check_logs(workspace: Path, output: Path, ado: bool) -> None:
+def source_check_logs(workspace: Path, output: Path) -> None:
     stage_logs(workspace, output)
     package = workspace / "Build/MsvmPkg"
     if package.is_dir():
         shutil.copytree(package, output / "logs/MsvmPkg", dirs_exist_ok=True)
-        if ado:
-            shutil.copytree(package, output / "MsvmPkg", dirs_exist_ok=True)
-    if ado:
-        for file in (workspace / "Build").glob("*"):
-            if file.is_file() and any(fnmatch.fnmatchcase(file.name.lower(), pattern) for pattern in
-                                     ("ci_buildlog.*", "setuplog.*", "update_log.*", "testsuites.xml")):
-                shutil.copy2(file, output / file.name)
-
-
-def ado_layout(output: Path, flavor: SelectedBuild) -> None:
-    """Keep historical drop paths alongside the provider-independent payload."""
-    ado_logs(output, flavor)
-    suffix = f"{flavor['target']}_{flavor['arch']}"
-    copy_file(output / "firmware/FV/MSVM.fd", output / f"Firmware Binary File {suffix}/MSVM.fd")
-    shutil.copytree(output / "firmware/MAP", output / f"Firmware Map Files {suffix}")
-    if flavor["tool_chain"] != "GCC":
-        shutil.copytree(output / "firmware/PDB", output / f"Firmware PDB Files {suffix}")
-    build = Path("Build") / f"Msvm{flavor['arch']}" / f"{flavor['target']}_{flavor['tool_chain']}"
-    shutil.copytree(output / "package/Bin", output / build / "Bin")
 
 
 def stage_build(
     workspace: Path, output: Path, flavor: SelectedBuild, succeeded: bool,
-    ado: bool = False,
+    package_inputs: bool = False, full_build_on_failure: bool = False,
 ) -> None:
     stage_logs(workspace, output)
     build = workspace / "Build" / f"Msvm{flavor['arch']}" / f"{flavor['target']}_{flavor['tool_chain']}"
     if not succeeded:
-        if ado:
-            ado_logs(output, flavor)
+        if full_build_on_failure:
             if (workspace / "Build").is_dir():
                 shutil.copytree(workspace / "Build", output / "all", dirs_exist_ok=True)
             else:
@@ -123,7 +89,7 @@ def stage_build(
         copy_outputs(build / "PDB", firmware / "PDB", ".pdb")
     (firmware / "BuildInfo.json").write_text(json.dumps(flavor, indent=2) + "\n", encoding="utf-8")
 
-    if flavor.get("shipping") == "true" or ado:
+    if package_inputs:
         package = output / "package" / "Bin"
         copy_file(build / "FV" / "MSVM.fd", package / "MSVM.fd")
         copy_file(build / flavor["arch"] / "MsvmPkg/AcpiTables/AcpiTables/OUTPUT/Dsdt.aml", package / "Dsdt.aml")
@@ -133,8 +99,6 @@ def stage_build(
         copy_file(firmware / "BuildInfo.json", package / "BuildInfo.json")
         if flavor["tool_chain"] != "GCC":
             copy_outputs(build / "PDB", package / "PDB", ".pdb")
-    if ado:
-        ado_layout(output, flavor)
 
 
 class Arguments(argparse.Namespace):
@@ -143,7 +107,9 @@ class Arguments(argparse.Namespace):
     build_id: str | None
     build_succeeded: bool
     logs_only: bool
-    ado_layout: bool
+    package_inputs: bool
+    full_build_on_failure: bool
+    allow_existing_output: bool
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -153,26 +119,31 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--build-id")
     parser.add_argument("--build-succeeded", action="store_true")
     parser.add_argument("--logs-only", action="store_true")
-    parser.add_argument("--ado-layout", action="store_true", help="Also preserve historical OneBranch drop folders")
+    parser.add_argument("--package-inputs", action="store_true", help="Collect firmware, ACPI, interface and symbol package inputs")
+    parser.add_argument("--full-build-on-failure", action="store_true", help="Retain the entire Build tree after a failure")
+    parser.add_argument("--allow-existing-output", action="store_true",
+                        help="Allow unrelated destination files without overwriting previously staged payloads")
     args = parser.parse_args(argv, namespace=Arguments())
     workspace = Path.cwd().resolve()
     try:
         output = args.output.resolve()
         if output.is_relative_to(workspace / "Build") or workspace.is_relative_to(output):
             raise ValueError("Artifact destination must be outside Build and must not contain the workspace")
-        if args.ado_layout:
-            if args.build_succeeded and any((output / name).exists() for name in ("firmware", "logs", "package", "all")):
-                raise ValueError(f"Artifact destination already contains staged output: {output}")
-        elif output.exists() and any(output.iterdir()):
-            raise ValueError(f"Artifact destination must be empty: {output}")
+        if output.exists() and any(output.iterdir()) and (
+            args.build_succeeded or args.logs_only or not args.full_build_on_failure
+        ):
+            staged = any((output / name).exists() for name in ("firmware", "logs", "package", "all"))
+            if not args.allow_existing_output or staged:
+                raise ValueError(f"Artifact destination must not contain existing staged output: {output}")
         if args.logs_only:
-            if args.matrix or args.build_id or args.build_succeeded:
+            if args.matrix or args.build_id or args.build_succeeded or args.package_inputs or args.full_build_on_failure:
                 raise ValueError("--logs-only cannot be combined with build arguments")
-            source_check_logs(workspace, output, args.ado_layout)
+            source_check_logs(workspace, output)
         else:
             if args.matrix is None or args.build_id is None:
                 raise ValueError("Build staging requires --matrix and --build-id")
-            stage_build(workspace, output, select_flavor(args.matrix, args.build_id), args.build_succeeded, args.ado_layout)
+            stage_build(workspace, output, select_flavor(args.matrix, args.build_id), args.build_succeeded,
+                        args.package_inputs, args.full_build_on_failure)
     except (OSError, ValueError) as error:
         parser.error(str(error))
 

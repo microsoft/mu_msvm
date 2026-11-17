@@ -7,13 +7,17 @@ steps:
   - script: >-
       ${{ parameters.python }} -m ci.scripts.stage_artifacts
       --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
-      --output "$(ob_outputDirectory)" --ado-layout --build-succeeded
+      --output "$(ob_outputDirectory)" --allow-existing-output --package-inputs --build-succeeded
     displayName: Stage Firmware Artifacts
     condition: succeeded()
 
   - script: >-
       ${{ parameters.python }} -m ci.scripts.stage_artifacts
       --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
-      --output "$(ob_outputDirectory)" --ado-layout
+      --output "$(ob_outputDirectory)" --allow-existing-output --full-build-on-failure
     displayName: Stage Failure Diagnostics
     condition: not(succeeded())
+
+  - template: /.azuredevops/templates/artifact-layout.yml@self
+    parameters:
+      mode: build

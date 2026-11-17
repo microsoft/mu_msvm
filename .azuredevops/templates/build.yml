@@ -74,10 +74,7 @@ jobs:
           ob_createvpack_enabled: ${{ and(parameters.officialBuild, eq(host, 'windows')) }}
           ReleaseMajor: $[ dependencies.BuildMatrix.outputs['version.major'] ]
           ReleaseMinor: $[ dependencies.BuildMatrix.outputs['version.minor'] ]
-          ${{ if eq(parameters.officialBuild, true) }}:
-            ob_createvpack_packagename: $(official_package_name)
-          ${{ else }}:
-            ob_createvpack_packagename: $(pr_package_name)
+          ob_createvpack_packagename: $(PackageName)
           ob_createvpack_description: Hyper V UEFI Firmware
           ob_createvpack_versionAs: parts
           ob_createvpack_majorVer: $(ReleaseMajor)
@@ -186,11 +183,15 @@ jobs:
               - template: /.azuredevops/templates/repo-auth.yml@self
                 parameters:
                   mode: set
-                  python: python3
 
               - bash: |
                   set -euo pipefail
-                  python3 -m ci.scripts.configure_ubuntu_mirror
+                  shopt -s nullglob
+                  for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+                    if [[ -f "$source" ]]; then
+                      sed -i 's|://archive\.ubuntu\.com/|://azure.archive.ubuntu.com/|g' "$source"
+                    fi
+                  done
                   apt-get update
                   apt-get install -y python3-venv mono-devel
                   case "$BUILD_TOOL_CHAIN" in
@@ -225,7 +226,6 @@ jobs:
               - template: /.azuredevops/templates/repo-auth.yml@self
                 parameters:
                   mode: unset
-                  python: python3
 
               - template: /.azuredevops/templates/stage-artifacts.yml@self
                 parameters:

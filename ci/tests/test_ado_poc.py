@@ -67,9 +67,9 @@ class AdoPocTests(unittest.TestCase):
         reference = "/.azuredevops/templates/repo-auth.yml@self"
         auth = load_yaml(".azuredevops/templates/repo-auth.yml")["steps"][0]
         self.assertEqual(auth["${{ if eq(parameters.mode, 'unset') }}"]["condition"], "always()")
-        self.assertEqual(auth["${{ if eq(parameters.mode, 'set') }}"]["env"],
+        self.assertEqual(auth["env"]["${{ if eq(parameters.mode, 'set') }}"],
                          {"SYSTEM_ACCESSTOKEN": "$(System.AccessToken)"})
-        self.assertIn("ci/scripts/repo_auth.py", auth["script"])
+        self.assertIn("git config --global", auth["pwsh"])
         source = load_yaml(".azuredevops/templates/source-checks.yml")["jobs"][0]["steps"]
         job = load_yaml(".azuredevops/templates/build.yml")["jobs"][1]["${{ each host in parameters.hosts }}"][0]
         groups = [(source, "ci/scripts/source_checks.py")]

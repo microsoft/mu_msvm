@@ -21,12 +21,26 @@ runs:
         RELEASE_COMMIT: ${{ github.sha }}
         ARTIFACT_INPUT: ${{ runner.temp }}/firmware-artifacts
         RELEASE_OUTPUT: ${{ runner.temp }}/firmware-release
-      run: >-
-        python -m ci.scripts.package_artifacts github
-        --matrix .github/build-matrix.json
-        --source "$ARTIFACT_INPUT"
-        --output "$RELEASE_OUTPUT"
-        --commit "$RELEASE_COMMIT"
+      run: |
+        set -euo pipefail
+        shopt -s nullglob dotglob
+        matrix="$(python -m ci.scripts.matrix --matrix .github/build-matrix.json --format github)"
+        rows="$(jq -er '.include[] | [.id, .artifact_name] | @tsv' <<< "$matrix")"
+        expected="$(jq -er '.include | length' <<< "$matrix")"
+        artifacts=("$ARTIFACT_INPUT"/*)
+        if [[ ${#artifacts[@]} -ne "$expected" ]]; then
+          echo "Downloaded firmware artifacts do not exactly match the release matrix" >&2
+          exit 1
+        fi
+        while IFS=$'\t' read -r id name; do
+          python -m ci.scripts.package_artifacts validate --matrix .github/build-matrix.json \
+            --build-id "$id" --source "$ARTIFACT_INPUT/$name" --commit "$RELEASE_COMMIT" \
+            --origin open --official
+        done <<< "$rows"
+        mkdir "$RELEASE_OUTPUT"
+        while IFS=$'\t' read -r id name; do
+          (cd "$ARTIFACT_INPUT/$name"; tar -czf "$RELEASE_OUTPUT/$name.tar.gz" -- *)
+        done <<< "$rows"
 
     - name: Create GitHub release
       shell: bash

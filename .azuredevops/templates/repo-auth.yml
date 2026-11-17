@@ -4,15 +4,31 @@ parameters:
     values:
       - set
       - unset
-  - name: python
-    type: string
-    default: python
-
 steps:
-  - script: ${{ parameters.python }} ci/scripts/repo_auth.py ${{ parameters.mode }} --url https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      Get-ChildItem Env: | Where-Object { $_.Name -like 'GIT_TRACE*' -or $_.Name -eq 'GIT_CURL_VERBOSE' } |
+          ForEach-Object { Remove-Item "Env:$($_.Name)" }
+      $key = 'http.https://dev.azure.com/microsoft/OS/_git/hyperv.uefi.mu_basecore.extraheader'
+      if ($env:AUTH_MODE -eq 'set') {
+          $token = $env:SYSTEM_ACCESSTOKEN
+          if ([string]::IsNullOrWhiteSpace($token) -or $token -match '^\$\(.+\)$' -or $token -match "[`r`n]") {
+              throw 'SYSTEM_ACCESSTOKEN must contain the pipeline job token'
+          }
+          $ErrorActionPreference = 'Continue'
+          $result = & git config --global --replace-all $key "AUTHORIZATION: bearer $($token.Trim())" 2>&1
+      } else {
+          $ErrorActionPreference = 'Continue'
+          $result = & git config --global --unset-all $key 2>&1
+          if ($LASTEXITCODE -eq 5) { exit 0 }
+      }
+      $ErrorActionPreference = 'Stop'
+      if ($LASTEXITCODE -ne 0) { throw "Git authentication $env:AUTH_MODE failed (exit $LASTEXITCODE)" }
+      Write-Host "Git authentication $env:AUTH_MODE completed"
     displayName: ${{ parameters.mode }} ADO Repository Authentication
     ${{ if eq(parameters.mode, 'unset') }}:
       condition: always()
-    ${{ if eq(parameters.mode, 'set') }}:
-      env:
+    env:
+      AUTH_MODE: ${{ parameters.mode }}
+      ${{ if eq(parameters.mode, 'set') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)

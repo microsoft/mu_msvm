@@ -56,8 +56,6 @@ class SelectedBuild(BuildFlavor):
     artifact_name: NotRequired[str]
     logs_artifact_name: NotRequired[str]
     build_id: NotRequired[str]
-    official_package_name: NotRequired[str]
-    pr_package_name: NotRequired[str]
     shipping: NotRequired[str]
     package_suffix: NotRequired[str]
 
@@ -103,16 +101,6 @@ def ado_job_name(row: BuildFlavor) -> str:
     return name
 
 
-def package_name(row: SelectedBuild, repository: str, official: bool) -> str:
-    """Preserve shipping and test package identities independently of CI jobs."""
-    if "shipping" not in row or "package_suffix" not in row:
-        raise ValueError("Package identity requires explicit shipping and package_suffix metadata")
-    prefix = "" if official else "PR."
-    salt = f".{row['package_suffix']}" if row["package_suffix"] else ""
-    test = ".Test" if not official or row["shipping"] != "true" else ""
-    return f"{repository}.mscoreuefi.{prefix}{row['arch']}.{row['target']}{salt}{test}"
-
-
 def label_builds(rows: list[SelectedBuild], backend: OutputFormat) -> list[SelectedBuild]:
     """Add provider presentation fields without changing execution/package IDs.
 
@@ -135,9 +123,6 @@ def label_builds(rows: list[SelectedBuild], backend: OutputFormat) -> list[Selec
                     result["artifact_name"] = f"drop_Build_{row['target']}_{row['arch']}_{row['tool_chain']}{suffix}"
                 else:
                     result["artifact_name"] = f"firmware-{row['id']}"
-                if "package_suffix" in row:
-                    result["official_package_name"] = package_name(row, "$(Build.Repository.Name)", True)
-                    result["pr_package_name"] = package_name(row, "$(Build.Repository.Name)", False)
                 compiler = {"visual_studio": "VS", "windows_org": "WinOrg", "distribution": "Distro"}[row["compiler_source"]]
                 label += f" / {row['host'].title()} {compiler}"
                 if row["legacy_debugger"] == "1":

@@ -56,8 +56,8 @@ python .\ci\scripts\build.py --arch AARCH64 --target RELEASE --tool-chain CLANGP
 
 The local runner does not download private compiler packages or install system compilers. ADO provisions
 Windows-org LLVM tools and headers from the pinned internal feed; its Linux jobs install distribution tools
-and create a Python virtual environment. Before apt, the ADO Linux adapter invokes
-`python3 -m ci.scripts.configure_ubuntu_mirror` to switch Ubuntu archive sources to
+and create a Python virtual environment. Before apt, the ADO Linux setup step
+uses Bash/sed to switch Ubuntu archive sources to
 `azure.archive.ubuntu.com`, matching `official/main`. Security and third-party feeds are unchanged.
 Local developers provide the equivalent toolchain environment.
 
@@ -120,13 +120,13 @@ OneBranch's Official template publishes the NuGets and creates/pushes Windows VP
 NonOfficial/PR runs only pack local NuGet files and upload CI artifacts. Shipping metadata controls
 package naming, not whether a build produces an artifact or a NuGet.
 
-ADO source checks and both firmware build hosts use `repo-auth.yml` to call the
-shared `ci/scripts/repo_auth.py` before Stuart. The adapter supplies the job's
-`System.AccessToken` and private repository URL; the helper writes a URL-scoped
+ADO source checks and both firmware build hosts use `repo-auth.yml` before Stuart.
+The reusable PowerShell step supplies the job's
+`System.AccessToken` and private repository URL and writes a URL-scoped
 authorization header to the dedicated container's global Git configuration.
 An `always()` cleanup step removes it even after failures. This follows the
 working closed pipeline's authentication mechanism without changing shared build
-or source-check runners. GitHub does not invoke this adapter. The helper disables
+or source-check runners. GitHub does not invoke this adapter. The template disables
 Git tracing while handling credentials and must not be used against a developer's
 global Git configuration.
 
@@ -203,6 +203,9 @@ OneBranch from uploading the already-staged firmware and logs from that job.
 The legacy flattened log view is retained, with warnings on basename collisions; the shared `logs/`
 tree always retains every original path.
 OneBranch owns uploads; the shared Python does not handle credentials or network publication.
+ADO's `artifact-layout.yml` creates only the legacy compatibility folders from the shared outputs.
+The Python collector has no ADO layout mode: `--package-inputs` selects the optional firmware/ACPI/header
+payload, and `--full-build-on-failure` selects full-tree diagnostics without inferring the provider or shipping.
 
 GitHub releases run only for pushes to `main`, after all builds and source checks succeed. They download
 exactly the expected eight firmware artifacts, validate flavor, commit, source origin, version and clean/official
@@ -219,7 +222,9 @@ OneBranch publication flags are compile-time booleans, never runtime matrix ship
 NuGet goes to the existing `OS/HyperVUefi` feed. The Windows OneBranch template creates/pushes VPack
 for all Windows flavors; Linux flavors retain their VPack-compatible staging tree but do not run that
 Windows-only task. Windows symbol publication is Official-only and uses the already-indexed PDBs.
-This change does not claim hosted Official validation.
+`pack.yml` owns NuGet IDs, XML manifests and packing. It calls shared `package_artifacts.py validate`
+for flavor/commit/version/provenance checks; the same validator is used by GitHub's release action.
+GitHub's action owns its tar archive loop and release command. This change does not claim hosted Official validation.
 The governed VPack task supports `push`, `pull`, and `list`, not a local pack-only operation.
 PRs validate/stage the VPack payload and pack NuGet without external publication; VPack creation/push
 is Official-only. Non-shipping `.Test` packages are restored for every flavor, as in the old pipeline.
@@ -342,6 +347,12 @@ stuart_ci_build `
 Review the resulting changes and rerun the full source-check command before committing them.
 
 ## Developing CI Python
+
+Shared Python owns build execution, coverage validation, artifact collection and firmware metadata checks.
+Provider-specific authentication, runner provisioning, compatibility layouts, package formats and publication
+live in reusable `.azuredevops/templates` or `.github/actions` YAML, identical across the two repositories.
+Matrix serializers remain small data adapters; they do not manage credentials or execute provider tasks.
+Provider tests execute the actual YAML script bodies against isolated temporary directories and Git configs.
 
 Run these checks from the repository root in your activated virtual environment:
 

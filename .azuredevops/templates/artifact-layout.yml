@@ -1,0 +1,52 @@
+parameters:
+  - name: mode
+    type: string
+    values: [build, source-checks]
+
+steps:
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $output = $env:ARTIFACT_OUTPUT
+      if ($env:LAYOUT_MODE -eq 'source-checks') {
+          foreach ($file in Get-ChildItem "$output/logs" -File -ErrorAction Stop) {
+              if ($file.Name -match '^(CI_BUILDLOG\..*|SETUPLOG\..*|UPDATE_LOG\..*|TestSuites\.xml)$') {
+                  Copy-Item $file.FullName $output
+              }
+          }
+          if (Test-Path "$output/logs/MsvmPkg") {
+              Copy-Item "$output/logs/MsvmPkg" "$output/MsvmPkg" -Recurse
+          }
+          exit 0
+      }
+      $label = "$($env:BUILD_HOST.Substring(0, 1).ToUpper())$($env:BUILD_HOST.Substring(1)) $env:BUILD_ARCH $env:BUILD_TARGET $env:BUILD_TOOL_CHAIN"
+      if ($env:COMPILER_SOURCE -eq 'windows_org') { $label += ' (WinOrg)' }
+      $logs = New-Item "$output/Build Logs $label" -ItemType Directory -Force
+      foreach ($file in Get-ChildItem "$output/logs" -Recurse -File -ErrorAction Stop) {
+          $destination = Join-Path $logs.FullName $file.Name
+          if ((Test-Path $destination) -and (Get-FileHash $destination).Hash -ne (Get-FileHash $file.FullName).Hash) {
+              Write-Warning "Legacy log basename collision: $($file.Name); full paths retained under logs/"
+          }
+          Copy-Item $file.FullName $destination -Force
+      }
+      if ($env:JOB_STATUS -ne 'Succeeded') { exit 0 }
+      $suffix = "$($env:BUILD_TARGET)_$($env:BUILD_ARCH)"
+      New-Item "$output/Firmware Binary File $suffix" -ItemType Directory | Out-Null
+      Copy-Item "$output/firmware/FV/MSVM.fd" "$output/Firmware Binary File $suffix/MSVM.fd"
+      Copy-Item "$output/firmware/MAP" "$output/Firmware Map Files $suffix" -Recurse
+      if ($env:BUILD_TOOL_CHAIN -ne 'GCC') {
+          Copy-Item "$output/firmware/PDB" "$output/Firmware PDB Files $suffix" -Recurse
+      }
+      $build = "$output/Build/Msvm$($env:BUILD_ARCH)/$($env:BUILD_TARGET)_$($env:BUILD_TOOL_CHAIN)"
+      New-Item $build -ItemType Directory -Force | Out-Null
+      Copy-Item "$output/package/Bin" "$build/Bin" -Recurse
+    displayName: Preserve OneBranch Artifact Layout
+    condition: always()
+    env:
+      LAYOUT_MODE: ${{ parameters.mode }}
+      ARTIFACT_OUTPUT: $(ob_outputDirectory)
+      JOB_STATUS: $(Agent.JobStatus)
+      BUILD_HOST: $(host)
+      BUILD_ARCH: $(arch)
+      BUILD_TARGET: $(target)
+      BUILD_TOOL_CHAIN: $(tool_chain)
+      COMPILER_SOURCE: $(compiler_source)

@@ -1,16 +1,14 @@
-"""Validate staged firmware and prepare archives or a NuGet manifest, without publishing."""
+"""Read firmware version metadata and validate staged artifact provenance."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import re
-import tarfile
 import tomllib
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from ci.scripts.matrix import SelectedBuild, label_builds, package_name, select_builds
+from ci.scripts.matrix import SelectedBuild
 from ci.scripts.stage_artifacts import select_flavor
 
 
@@ -47,7 +45,7 @@ def validate_firmware(
         if flags & 1:
             message = "dirty-worktree flag is set; inspect the firmware build's Git status diagnostics"
             if allow_dirty:
-                print(f"WARNING: PR test package: {message}; provenance remains unchanged", flush=True)
+                print(f"WARNING: test artifact: {message}; provenance remains unchanged", flush=True)
             else:
                 mismatches.append(message)
     if mismatches:
@@ -62,106 +60,36 @@ def validate_firmware(
         raise ValueError(f"Missing PDB artifacts: {firmware}")
 
 
-def release_archives(matrix: Path, source: Path, output: Path, commit: str) -> None:
-    rows = select_builds(matrix)
-    labeled = label_builds(rows, "github")
-    expected = {row["artifact_name"] for row in labeled}
-    if {path.name for path in source.iterdir()} != expected:
-        raise ValueError("Downloaded firmware artifacts do not exactly match the release matrix")
-    for row, label in zip(rows, labeled):
-        validate_firmware(source / label["artifact_name"], row, commit, "open", True)
-    output.mkdir(parents=True, exist_ok=False)
-    for row in labeled:
-        name = row["artifact_name"]
-        with tarfile.open(output / f"{name}.tar.gz", "w:gz") as archive:
-            for child in sorted((source / name).iterdir()):
-                archive.add(child, arcname=child.name)
-
-
-def nuget_manifest(
-    matrix: Path, identifier: str, source: Path, output: Path,
-    commit: str, repository: str, branch: str, official: bool,
-) -> None:
-    flavor = select_flavor(matrix, identifier)
-    identity = package_name(flavor, repository, official)
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+", repository):
-        raise ValueError("Invalid package repository name")
-    if not re.fullmatch(r"[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*", branch):
-        raise ValueError("Branch name is not a valid NuGet prerelease identifier")
-    firmware = source / "firmware"
-    validate_firmware(firmware, flavor, commit, "closed", official, allow_dirty=not official)
-    package = source / "package/Bin"
-    for name in ("MSVM.fd", "Dsdt.aml", "BiosInterface.h", "FirmwareVersion.json", "FwVersionBlob.bin", "BuildInfo.json"):
-        if not (package / name).is_file() or (package / name).stat().st_size == 0:
-            raise ValueError(f"Missing package payload: {package / name}")
-    for source_file, package_file in (
-        (firmware / "FV/MSVM.fd", package / "MSVM.fd"),
-        (firmware / "FwVersion/FirmwareVersion.json", package / "FirmwareVersion.json"),
-        (firmware / "FwVersion/FwVersionBlob.bin", package / "FwVersionBlob.bin"),
-        (firmware / "BuildInfo.json", package / "BuildInfo.json"),
-    ):
-        if source_file.read_bytes() != package_file.read_bytes():
-            raise ValueError(f"Package payload differs from firmware artifact: {package_file}")
-    root = ET.Element("package")
-    metadata = ET.SubElement(root, "metadata")
-    for key, value in {
-        "id": identity, "version": f"{base_version()}-{branch}.{commit}",
-        "authors": "Microsoft", "description": "Hyper-V UEFI firmware binaries.",
-        "owners": "Microsoft",
-        "projectUrl": "https://microsoft.visualstudio.com/DefaultCollection/OS/_git/hyperv.uefi/",
-        "copyright": "Copyright (C) Microsoft. All rights reserved.",
-        "tags": "Microsoft,Hyper-V,UEFI",
-    }.items():
-        ET.SubElement(metadata, key).text = value
-    files = ET.SubElement(root, "files")
-    legacy_path = f"Msvm{flavor['arch']}/{flavor['target']}_{flavor['tool_chain']}"
-    payload = [("FV/MSVM.fd", f"{legacy_path}/FV"), ("MAP/*.map", f"map/{legacy_path}/MAP"),
-               ("FwVersion/*", "FwVersion"), ("BuildInfo.json", "")]
-    if flavor["tool_chain"] != "GCC":
-        payload.append(("PDB/*.pdb", f"symbols/{legacy_path}/PDB"))
-    for path, target in payload:
-        ET.SubElement(files, "file", src=str(firmware.resolve() / path), target=target)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    ET.indent(root)
-    ET.ElementTree(root).write(output, encoding="utf-8", xml_declaration=True)
-
-
 class Arguments(argparse.Namespace):
     command: str
     matrix: Path
     source: Path
-    output: Path
     commit: str
     build_id: str
-    repository: str
-    branch: str
     official: bool
+    origin: str
+    allow_dirty: bool
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("version")
-    for command in ("github", "nuget"):
-        child = subparsers.add_parser(command)
-        child.add_argument("--matrix", required=True, type=Path)
-        child.add_argument("--source", required=True, type=Path)
-        child.add_argument("--output", required=True, type=Path)
-        child.add_argument("--commit", required=True)
-        if command == "nuget":
-            child.add_argument("--build-id", required=True)
-            child.add_argument("--repository", required=True)
-            child.add_argument("--branch", required=True)
-            child.add_argument("--official", action="store_true")
+    child = subparsers.add_parser("validate")
+    child.add_argument("--matrix", required=True, type=Path)
+    child.add_argument("--source", required=True, type=Path)
+    child.add_argument("--commit", required=True)
+    child.add_argument("--build-id", required=True)
+    child.add_argument("--origin", required=True, choices=("open", "closed", "unknown"))
+    child.add_argument("--official", action="store_true")
+    child.add_argument("--allow-dirty", action="store_true")
     args = parser.parse_args(argv, namespace=Arguments())
     try:
         if args.command == "version":
             print(base_version())
-        elif args.command == "github":
-            release_archives(args.matrix, args.source, args.output, args.commit)
         else:
-            nuget_manifest(args.matrix, args.build_id, args.source, args.output,
-                           args.commit, args.repository, args.branch, args.official)
+            validate_firmware(args.source, select_flavor(args.matrix, args.build_id),
+                              args.commit, args.origin, args.official, args.allow_dirty)
     except (OSError, ValueError, KeyError) as error:
         parser.error(str(error))
 

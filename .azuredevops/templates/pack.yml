@@ -7,13 +7,73 @@ parameters:
     default: python
 
 steps:
-  - script: >-
-      ${{ parameters.python }} -m ci.scripts.package_artifacts nuget
-      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
-      --source "$(ob_outputDirectory)" --output "$(Agent.TempDirectory)/firmware.nuspec"
-      --commit "$(Build.SourceVersion)" --repository "$(Build.Repository.Name)"
-      --branch "$(Build.SourceBranchName)" ${{ iif(parameters.officialBuild, '--official', '') }}
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $firmware = Join-Path $env:ARTIFACT_OUTPUT 'firmware'
+      $validate = @('--matrix', '.azuredevops/build-matrix.json', '--build-id', $env:BUILD_ID,
+          '--source', $firmware, '--commit', $env:SOURCE_COMMIT, '--origin', 'closed')
+      if ($env:OFFICIAL_BUILD -eq '1') { $validate += '--official' } else { $validate += '--allow-dirty' }
+      & $env:PYTHON -m ci.scripts.package_artifacts validate @validate
+      if ($LASTEXITCODE -ne 0) { throw 'Firmware provenance validation failed' }
+      $version = & $env:PYTHON -m ci.scripts.package_artifacts version
+      if ($LASTEXITCODE -ne 0) { throw 'Could not read release version' }
+      $flavor = Get-Content "$firmware/BuildInfo.json" -Raw | ConvertFrom-Json
+      if ($null -eq $flavor.package_suffix -or $flavor.shipping -notin @('true', 'false')) {
+          throw 'Package identity requires explicit shipping and package_suffix metadata'
+      }
+      if ($env:SOURCE_REPOSITORY -notmatch '^[A-Za-z0-9_.-]+$' -or
+          $env:SOURCE_BRANCH -notmatch '^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*$') {
+          throw 'Invalid repository or NuGet prerelease branch name'
+      }
+      $prefix = if ($env:OFFICIAL_BUILD -eq '1') { '' } else { 'PR.' }
+      $salt = if ($flavor.package_suffix) { ".$($flavor.package_suffix)" } else { '' }
+      $test = if ($env:OFFICIAL_BUILD -ne '1' -or $flavor.shipping -ne 'true') { '.Test' } else { '' }
+      $identity = "$env:SOURCE_REPOSITORY.mscoreuefi.$prefix$($flavor.arch).$($flavor.target)$salt$test"
+      $bin = Join-Path $env:ARTIFACT_OUTPUT 'package/Bin'
+      foreach ($name in @('MSVM.fd', 'Dsdt.aml', 'BiosInterface.h', 'FirmwareVersion.json', 'FwVersionBlob.bin', 'BuildInfo.json')) {
+          $file = Get-Item "$bin/$name" -ErrorAction Stop
+          if ($file.Length -eq 0) { throw "Empty package payload: $name" }
+      }
+      foreach ($pair in @(@('FV/MSVM.fd', 'MSVM.fd'), @('FwVersion/FirmwareVersion.json', 'FirmwareVersion.json'),
+          @('FwVersion/FwVersionBlob.bin', 'FwVersionBlob.bin'), @('BuildInfo.json', 'BuildInfo.json'))) {
+          if ((Get-FileHash "$firmware/$($pair[0])").Hash -ne (Get-FileHash "$bin/$($pair[1])").Hash) {
+              throw "Package payload differs from firmware artifact: $($pair[1])"
+          }
+      }
+      $document = [xml]'<package><metadata/><files/></package>'
+      $metadata = @{
+          id = $identity; version = "$version-$env:SOURCE_BRANCH.$env:SOURCE_COMMIT"; authors = 'Microsoft'
+          owners = 'Microsoft'; description = 'Hyper-V UEFI firmware binaries.'
+          projectUrl = 'https://microsoft.visualstudio.com/DefaultCollection/OS/_git/hyperv.uefi/'
+          copyright = 'Copyright (C) Microsoft. All rights reserved.'; tags = 'Microsoft,Hyper-V,UEFI'
+      }
+      foreach ($key in $metadata.Keys) {
+          $element = $document.CreateElement($key)
+          $element.InnerText = $metadata[$key]
+          [void]$document.DocumentElement.SelectSingleNode('metadata').AppendChild($element)
+      }
+      $legacy = "Msvm$($flavor.arch)/$($flavor.target)_$($flavor.tool_chain)"
+      $files = @(@('FV/MSVM.fd', "$legacy/FV"), @('MAP/*.map', "map/$legacy/MAP"),
+          @('FwVersion/*', 'FwVersion'), @('BuildInfo.json', ''))
+      if ($flavor.tool_chain -ne 'GCC') { $files += ,@('PDB/*.pdb', "symbols/$legacy/PDB") }
+      foreach ($pair in $files) {
+          $element = $document.CreateElement('file')
+          $element.SetAttribute('src', (Join-Path $firmware $pair[0]))
+          $element.SetAttribute('target', $pair[1])
+          [void]$document.DocumentElement.SelectSingleNode('files').AppendChild($element)
+      }
+      $document.Save($env:PACKAGE_MANIFEST)
+      Write-Host "##vso[task.setvariable variable=PackageName]$identity"
     displayName: Validate Firmware and Prepare NuGet Manifest
+    env:
+      PYTHON: ${{ parameters.python }}
+      BUILD_ID: $(build_id)
+      ARTIFACT_OUTPUT: $(ob_outputDirectory)
+      PACKAGE_MANIFEST: $(Agent.TempDirectory)/firmware.nuspec
+      SOURCE_COMMIT: $(Build.SourceVersion)
+      SOURCE_REPOSITORY: $(Build.Repository.Name)
+      SOURCE_BRANCH: $(Build.SourceBranchName)
+      OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
   - task: NuGetCommand@2
     displayName: Pack NuGet

@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -18,11 +19,57 @@ from unittest.mock import patch
 
 from ci.scripts import matrix, package_artifacts, stage_artifacts
 from ci.tests.test_ado_poc import load_yaml
+from ci.tests.template_helpers import POWERSHELL, run_template
 
 ROOT = Path(__file__).resolve().parents[2]
 OPEN = ROOT / ".github/build-matrix.json"
 CLOSED = ROOT / ".azuredevops/build-matrix.json"
 COMMIT = "a" * 40
+
+
+def artifact_layout(output: Path, row: matrix.SelectedBuild, mode: str = "build", succeeded: bool = True) -> None:
+    result = run_template(".azuredevops/templates/artifact-layout.yml", {
+        "ARTIFACT_OUTPUT": str(output), "LAYOUT_MODE": mode, "BUILD_HOST": row["host"],
+        "BUILD_ARCH": row["arch"], "BUILD_TARGET": row["target"], "BUILD_TOOL_CHAIN": row["tool_chain"],
+        "COMPILER_SOURCE": row["compiler_source"], "JOB_STATUS": "Succeeded" if succeeded else "Failed",
+    })
+    if result.returncode:
+        raise ValueError(result.stdout + result.stderr)
+
+
+def expected_package_name(row: matrix.SelectedBuild, official: bool) -> str:
+    prefix = "" if official else "PR."
+    salt = f".{row['package_suffix']}" if row["package_suffix"] else ""
+    suffix = ".Test" if not official or row["shipping"] != "true" else ""
+    return f"hyperv.uefi.mscoreuefi.{prefix}{row['arch']}.{row['target']}{salt}{suffix}"
+
+
+def nuget_manifest(
+    matrix_path: Path, identifier: str, source: Path, output: Path,
+    commit: str, repository: str, branch: str, official: bool,
+) -> None:
+    row = stage_artifacts.select_flavor(matrix_path, identifier)
+    if "package_suffix" not in row:
+        raise ValueError("Package identity requires explicit shipping and package_suffix metadata")
+    result = run_template(".azuredevops/templates/pack.yml", {
+        "PYTHON": sys.executable, "BUILD_ID": identifier, "ARTIFACT_OUTPUT": str(source),
+        "PACKAGE_MANIFEST": str(output), "SOURCE_COMMIT": commit, "SOURCE_REPOSITORY": repository,
+        "SOURCE_BRANCH": branch, "OFFICIAL_BUILD": "1" if official else "0",
+    })
+    if result.returncode:
+        raise ValueError(result.stdout + result.stderr)
+    print(result.stdout)
+
+
+def release_archives(source: Path, output: Path) -> None:
+    script = load_yaml(".github/actions/release/action.yml")["runs"]["steps"][1]["run"]
+    result = subprocess.run(
+        ["bash", "-c", script], cwd=ROOT, text=True, capture_output=True,
+        env={**os.environ, "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"],
+             "ARTIFACT_INPUT": str(source), "RELEASE_OUTPUT": str(output), "RELEASE_COMMIT": COMMIT},
+    )
+    if result.returncode:
+        raise ValueError(result.stdout + result.stderr)
 
 
 def fixture(workspace: Path, row: matrix.SelectedBuild, origin: str, official: bool) -> Path:
@@ -49,13 +96,15 @@ def fixture(workspace: Path, row: matrix.SelectedBuild, origin: str, official: b
 
 
 class ArtifactTests(unittest.TestCase):
+    @unittest.skipUnless(POWERSHELL, "Requires Windows PowerShell")
     def test_ado_preserves_legacy_folders_for_all_flavors(self) -> None:
         for row in matrix.select_builds(CLOSED):
             with self.subTest(flavor=row["id"]), TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
                 root = Path(temporary)
                 workspace, output = root / "workspace", root / "output"
                 fixture(workspace, row, "closed", False)
-                stage_artifacts.stage_build(workspace, output, row, True, ado=True)
+                stage_artifacts.stage_build(workspace, output, row, True, package_inputs=True)
+                artifact_layout(output, row)
                 suffix = f"{row['target']}_{row['arch']}"
                 self.assertEqual((output / f"Firmware Binary File {suffix}/MSVM.fd").read_bytes(), b"firmware")
                 self.assertTrue((output / f"Firmware Map Files {suffix}/Module.map").is_file())
@@ -69,24 +118,27 @@ class ArtifactTests(unittest.TestCase):
                 for name in ("MSVM.fd", "Dsdt.aml", "BiosInterface.h", "FirmwareVersion.json", "FwVersionBlob.bin"):
                     self.assertTrue((legacy_bin / name).is_file(), name)
 
+    @unittest.skipUnless(POWERSHELL, "Requires Windows PowerShell")
     def test_ado_failure_adds_legacy_all_tree_after_partial_staging(self) -> None:
         with TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
             root = Path(temporary)
             row = matrix.select_builds(CLOSED)[0]
             build = fixture(root / "workspace", row, "closed", False)
             (build / "MAP/Module.map").unlink()
-            arguments = ["--matrix", str(CLOSED), "--build-id", row["id"], "--ado-layout",
+            arguments = ["--matrix", str(CLOSED), "--build-id", row["id"],
                          "--output", str(root / "output")]
             with patch.object(Path, "cwd", return_value=root / "workspace"), redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit):
-                    stage_artifacts.main([*arguments, "--build-succeeded"])
-                stage_artifacts.main(arguments)
+                    stage_artifacts.main([*arguments, "--build-succeeded", "--package-inputs"])
+                stage_artifacts.main([*arguments, "--full-build-on-failure"])
+            artifact_layout(root / "output", row, succeeded=False)
             self.assertTrue((root / "output/all/MsvmX64" / f"DEBUG_{row['tool_chain']}/FV/MSVM.fd").is_file())
             label = f"Windows X64 DEBUG {row['tool_chain']}"
             if row["compiler_source"] == "windows_org":
                 label += " (WinOrg)"
             self.assertTrue((root / f"output/Build Logs {label}/SETUPLOG.txt").is_file())
 
+    @unittest.skipUnless(POWERSHELL, "Requires Windows PowerShell")
     def test_source_check_compatibility_keeps_package_diagnostics(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -95,7 +147,8 @@ class ArtifactTests(unittest.TestCase):
             for name in ("CI_BUILDLOG.md", "SETUPLOG.txt", "UPDATE_LOG.txt", "TestSuites.xml",
                          "MsvmPkg/Uncrustify/output.diff"):
                 (build / name).write_text(name)
-            stage_artifacts.source_check_logs(root / "workspace", root / "output", True)
+            stage_artifacts.source_check_logs(root / "workspace", root / "output")
+            artifact_layout(root / "output", matrix.select_builds(CLOSED)[0], mode="source-checks")
             for name in ("CI_BUILDLOG.md", "SETUPLOG.txt", "UPDATE_LOG.txt", "TestSuites.xml",
                          "MsvmPkg/Uncrustify/output.diff"):
                 self.assertEqual((root / "output" / name).read_text(), name)
@@ -110,7 +163,7 @@ class ArtifactTests(unittest.TestCase):
                     if row["tool_chain"] == "GCC":
                         (build / "PDB/Module.pdb").unlink()
                     output = Path(temporary) / "output"
-                    stage_artifacts.stage_build(workspace, output, row, True)
+                    stage_artifacts.stage_build(workspace, output, row, True, package_inputs=coverage == CLOSED)
                     firmware = output / "firmware"
                     self.assertEqual((firmware / "FV/MSVM.fd").read_bytes(), b"firmware")
                     self.assertEqual((firmware / "MAP/Module.map").read_bytes(), b"map")
@@ -121,11 +174,14 @@ class ArtifactTests(unittest.TestCase):
                     self.assertEqual(len(list((output / "logs").rglob("BUILD_REPORT.TXT"))), 2)
                     self.assertTrue((output / "logs/SETUPLOG.txt").is_file())
                     package = output / "package/Bin"
-                    self.assertEqual(package.exists(), row.get("shipping") == "true")
+                    self.assertEqual(package.exists(), coverage == CLOSED)
                     if package.exists():
+                        expected = {"MSVM.fd", "Dsdt.aml", "BiosInterface.h",
+                                    "FirmwareVersion.json", "FwVersionBlob.bin", "BuildInfo.json"}
+                        if row["tool_chain"] != "GCC":
+                            expected.add("PDB/Module.pdb")
                         self.assertEqual({file.relative_to(package).as_posix() for file in package.rglob("*") if file.is_file()},
-                                         {"MSVM.fd", "Dsdt.aml", "BiosInterface.h", "PDB/Module.pdb",
-                                          "FirmwareVersion.json", "FwVersionBlob.bin", "BuildInfo.json"})
+                                         expected)
 
     def test_success_rejects_missing_outputs_but_retains_logs(self) -> None:
         row = matrix.select_builds(CLOSED)[0]
@@ -138,7 +194,7 @@ class ArtifactTests(unittest.TestCase):
                 (build / missing).unlink()
                 output = Path(temporary) / "output"
                 with self.assertRaises(ValueError):
-                    stage_artifacts.stage_build(workspace, output, row, True)
+                    stage_artifacts.stage_build(workspace, output, row, True, package_inputs=True)
                 self.assertTrue((output / "logs/SETUPLOG.txt").is_file())
 
     def test_failure_preserves_build_tree_without_releasable_firmware(self) -> None:
@@ -168,6 +224,26 @@ class ArtifactTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Build ID"):
                 stage_artifacts.select_flavor(OPEN, "missing")
 
+    def test_existing_provider_metadata_is_preserved_without_reusing_staged_payloads(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            row = matrix.select_builds(OPEN)[0]
+            fixture(root / "workspace", row, "open", False)
+            output = root / "output"
+            output.mkdir()
+            provider_metadata = output / "provider.txt"
+            provider_metadata.write_text("keep")
+            args = ["--output", str(output), "--matrix", str(OPEN), "--build-id", row["id"],
+                    "--build-succeeded", "--allow-existing-output"]
+            with patch.object(Path, "cwd", return_value=root / "workspace"):
+                stage_artifacts.main(args)
+                self.assertEqual(provider_metadata.read_text(), "keep")
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    stage_artifacts.main(args)
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    stage_artifacts.main(["--output", str(output), "--matrix", str(OPEN), "--build-id", row["id"]])
+
+    @unittest.skipIf(os.name == "nt", "Executes the Linux GitHub release adapter")
     def test_release_archives_preserve_names_layout_and_sidecars(self) -> None:
         rows = matrix.select_builds(OPEN)
         with TemporaryDirectory() as temporary:
@@ -179,7 +255,7 @@ class ArtifactTests(unittest.TestCase):
                 stage_artifacts.stage_build(workspace, stage, row, True)
                 destination = root / "downloaded" / label["artifact_name"]
                 shutil.copytree(stage / "firmware", destination)
-            package_artifacts.release_archives(OPEN, root / "downloaded", root / "release", COMMIT)
+            release_archives(root / "downloaded", root / "release")
             self.assertEqual({file.name for file in (root / "release").iterdir()},
                              {f"{row['artifact_name']}.tar.gz" for row in matrix.label_builds(rows, "github")})
             for file in (root / "release").iterdir():
@@ -189,9 +265,10 @@ class ArtifactTests(unittest.TestCase):
                                       "FwVersion/FirmwareVersion.json", "FwVersion/FwVersionBlob.bin", "BuildInfo.json"})
             shutil.rmtree(root / "downloaded" / matrix.label_builds(rows, "github")[0]["artifact_name"])
             with self.assertRaisesRegex(ValueError, "exactly match"):
-                package_artifacts.release_archives(OPEN, root / "downloaded", root / "incomplete", COMMIT)
+                release_archives(root / "downloaded", root / "incomplete")
             self.assertFalse((root / "incomplete").exists())
 
+    @unittest.skipUnless(POWERSHELL, "Requires Windows PowerShell")
     def test_nuget_identity_and_payload_for_all_closed_flavors(self) -> None:
         for row in matrix.select_builds(CLOSED):
             for official in (True, False):
@@ -201,10 +278,11 @@ class ArtifactTests(unittest.TestCase):
                     if row["tool_chain"] == "GCC":
                         (build / "PDB/Module.pdb").unlink()
                     with redirect_stdout(io.StringIO()):
-                        stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, ado=True)
+                        stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, package_inputs=True)
                     output = root / "package.nuspec"
-                    package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", output,
-                                                     COMMIT, "hyperv.uefi", "main" if official else "merge", official)
+                    with redirect_stdout(io.StringIO()):
+                        nuget_manifest(CLOSED, row["id"], root / "staged", output,
+                                       COMMIT, "hyperv.uefi", "main" if official else "merge", official)
                     manifest = ET.parse(output)
                     prefix = "" if official else "PR."
                     salt = f".{row['package_suffix']}" if row["package_suffix"] else ""
@@ -224,7 +302,7 @@ class ArtifactTests(unittest.TestCase):
             root = Path(temporary)
             row = matrix.select_builds(CLOSED)[0]
             fixture(root / "workspace", row, "closed", True)
-            stage_artifacts.stage_build(root / "workspace", root / "staged", row, True)
+            stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, package_inputs=True)
             firmware = root / "staged/firmware"
             metadata_path = firmware / "FwVersion/FirmwareVersion.json"
             metadata = json.loads(metadata_path.read_text())
@@ -236,14 +314,22 @@ class ArtifactTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, expected):
                         package_artifacts.validate_firmware(firmware, row, COMMIT, "closed", True)
             metadata_path.write_text(json.dumps(metadata))
-            other = matrix.select_builds(OPEN)[0]
-            with self.assertRaisesRegex(ValueError, "explicit shipping"):
-                package_artifacts.nuget_manifest(OPEN, other["id"], root / "staged", root / "bad.nuspec",
-                                                 COMMIT, "hyperv.uefi", "main", True)
+
+    @unittest.skipUnless(POWERSHELL, "Requires Windows PowerShell")
+    def test_nuget_adapter_rejects_mismatched_payload_and_invalid_identity(self) -> None:
+        with TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
+            root = Path(temporary)
+            row = matrix.select_builds(CLOSED)[0]
+            fixture(root / "workspace", row, "closed", True)
+            stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, package_inputs=True)
+            for repository, branch in (("bad;id", "main"), ("hyperv.uefi", "bad/branch")):
+                with self.assertRaisesRegex(ValueError, "Invalid repository"):
+                    nuget_manifest(CLOSED, row["id"], root / "staged", root / "bad.nuspec",
+                                   COMMIT, repository, branch, True)
             (root / "staged/package/Bin/MSVM.fd").write_bytes(b"wrong")
             with self.assertRaisesRegex(ValueError, "differs"):
-                package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", root / "bad.nuspec",
-                                                 COMMIT, "hyperv.uefi", "main", True)
+                nuget_manifest(CLOSED, row["id"], root / "staged", root / "bad.nuspec",
+                               COMMIT, "hyperv.uefi", "main", True)
 
     def test_dirty_pr_packs_warn_without_mutating_provenance(self) -> None:
         row = matrix.select_builds(CLOSED)[0]
@@ -258,20 +344,19 @@ class ArtifactTests(unittest.TestCase):
             original = (root / "staged/firmware/FwVersion/FirmwareVersion.json").read_bytes()
             messages = io.StringIO()
             with redirect_stdout(messages):
-                package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", root / "test.nuspec",
-                                                 COMMIT, "hyperv.uefi", "merge", False)
-            self.assertIn("WARNING: PR test package", messages.getvalue())
+                package_artifacts.validate_firmware(root / "staged/firmware", row, COMMIT, "closed", False,
+                                                    allow_dirty=True)
+            self.assertIn("WARNING: test artifact", messages.getvalue())
             self.assertIn("dirty-worktree flag", messages.getvalue())
             self.assertEqual((root / "staged/firmware/FwVersion/FirmwareVersion.json").read_bytes(), original)
-            self.assertTrue((root / "test.nuspec").is_file())
             with self.assertRaisesRegex(ValueError, "Official firmware cannot allow"):
                 package_artifacts.validate_firmware(root / "staged/firmware", row, COMMIT, "closed", True,
                                                     allow_dirty=True)
             for change in ({"git_commit": "b" * 40}, {"source_origin": "open"}, {"flags": 3}):
                 (root / "staged/firmware/FwVersion/FirmwareVersion.json").write_text(json.dumps({**metadata, **change}))
                 with redirect_stdout(io.StringIO()), self.assertRaisesRegex(ValueError, "provenance"):
-                    package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", root / "bad.nuspec",
-                                                     COMMIT, "hyperv.uefi", "merge", False)
+                    package_artifacts.validate_firmware(root / "staged/firmware", row, COMMIT, "closed", False,
+                                                        allow_dirty=True)
 
     @unittest.skipUnless(os.name == "nt" and shutil.which("nuget"), "Requires Windows NuGet CLI")
     def test_real_nuget_pack_for_every_flavor_in_pr_and_official_modes(self) -> None:
@@ -290,9 +375,9 @@ class ArtifactTests(unittest.TestCase):
                         metadata["flags"] = 1
                         metadata_path.write_text(json.dumps(metadata))
                     with redirect_stdout(io.StringIO()):
-                        stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, ado=True)
-                        package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", root / "firmware.nuspec",
-                                                         COMMIT, "hyperv.uefi", "main" if official else "merge", official)
+                        stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, package_inputs=True)
+                        nuget_manifest(CLOSED, row["id"], root / "staged", root / "firmware.nuspec",
+                                       COMMIT, "hyperv.uefi", "main" if official else "merge", official)
                     result = subprocess.run(
                         [nuget, "pack", str(root / "firmware.nuspec"), "-OutputDirectory", str(root / "staged/packages"),
                          "-NoPackageAnalysis", "-NonInteractive"], capture_output=True, text=True,
@@ -311,7 +396,7 @@ class ArtifactTests(unittest.TestCase):
                         self.assertEqual(metadata["flags"], 2 if official else 1)
                         spec = ET.fromstring(archive.read(next(name for name in names if name.endswith(".nuspec"))))
                         self.assertEqual(spec.findtext("{*}metadata/{*}id"),
-                                         matrix.package_name(row, "hyperv.uefi", official))
+                                         expected_package_name(row, official))
 
     @unittest.skipUnless(os.name == "nt" and shutil.which("nuget"), "Requires Windows NuGet CLI")
     def test_real_nuget_pack_matches_legacy_payload_paths(self) -> None:
@@ -321,10 +406,11 @@ class ArtifactTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             fixture(root / "workspace", row, "closed", True)
-            stage_artifacts.stage_build(root / "workspace", root / "staged", row, True)
+            stage_artifacts.stage_build(root / "workspace", root / "staged", row, True, package_inputs=True)
             manifest = root / "new.nuspec"
-            package_artifacts.nuget_manifest(CLOSED, row["id"], root / "staged", manifest,
-                                             COMMIT, "hyperv.uefi", "main", True)
+            with redirect_stdout(io.StringIO()):
+                nuget_manifest(CLOSED, row["id"], root / "staged", manifest,
+                               COMMIT, "hyperv.uefi", "main", True)
             legacy = ET.Element("package")
             metadata = ET.SubElement(legacy, "metadata")
             for key, value in {"id": "legacy", "version": "26.0", "authors": "Microsoft", "description": "Test"}.items():
@@ -368,8 +454,11 @@ class PublicationContractTests(unittest.TestCase):
             self.assertLess(stage, pack)
             self.assertEqual(steps[pack]["parameters"]["officialBuild"], "${{ parameters.officialBuild }}")
         packing = load_yaml(".azuredevops/templates/pack.yml")["steps"]
-        self.assertNotIn("shipping", packing[0]["script"])
-        self.assertIn('--source "$(ob_outputDirectory)"', packing[0]["script"])
+        self.assertIn("ci.scripts.package_artifacts validate", packing[0]["pwsh"])
+        self.assertEqual(packing[0]["env"]["ARTIFACT_OUTPUT"], "$(ob_outputDirectory)")
+        self.assertIn("ci.scripts.package_artifacts version", packing[0]["pwsh"])
+        self.assertEqual(variables["ob_createvpack_packagename"], "$(PackageName)")
+        self.assertIn("task.setvariable variable=PackageName", packing[0]["pwsh"])
         self.assertEqual(packing[1]["task"], "NuGetCommand@2")
         self.assertEqual(packing[1]["inputs"]["command"], "pack")
         self.assertEqual(packing[1]["inputs"]["packDestination"], "$(ob_outputDirectory)/packages")
