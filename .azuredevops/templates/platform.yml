@@ -27,9 +27,11 @@ extends:
     git:
       submodules: false
     stages:
+      # Run stuart plugins to validate the source code
       - stage: SourceChecks
         jobs:
           - template: /.azuredevops/templates/source-checks.yml@self
+      # Build the firmware for different architectures and targets
       - stage: Build
         ${{ if eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}:
           dependsOn: [SourceChecks]
@@ -39,5 +41,4 @@ extends:
         jobs:
           - template: /.azuredevops/templates/build.yml@self
             parameters:
-              matrixFile: .azuredevops/build-matrix.json
               officialBuild: ${{ eq(parameters.oneBranchBase, 'v2/Microsoft.Official.yml') }}

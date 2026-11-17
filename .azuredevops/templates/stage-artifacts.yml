@@ -1,23 +1,104 @@
 parameters:
-  - name: python
+  - name: host
     type: string
-    default: python
+  - name: compiler-source
+    type: string
+  - name: officialBuild
+    type: boolean
+    default: false
 
 steps:
-  - script: >-
-      ${{ parameters.python }} -m ci.scripts.stage_artifacts
-      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
-      --output "$(ob_outputDirectory)" --allow-existing-output --package-inputs --build-succeeded
-    displayName: Stage Firmware Artifacts
-    condition: succeeded()
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      foreach ($name in @('FV/MSVM.fd', 'FwVersion/FirmwareVersion.json', 'FwVersion/FwVersionBlob.bin')) {
+          if ((Get-Item "$env:BUILD_DIRECTORY/$name" -ErrorAction Stop).Length -eq 0) { throw "Empty firmware output: $name" }
+      }
+      foreach ($kind in @('MAP') + @('PDB' | Where-Object { $env:BUILD_TOOL_CHAIN -ne 'GCC' })) {
+          $extension = if ($kind -eq 'MAP') { 'map' } else { 'pdb' }
+          $files = @(Get-ChildItem "$env:BUILD_DIRECTORY/$kind/*.$extension" -File)
+          if ($files.Count -eq 0 -or ($files | Where-Object Length -eq 0)) { throw "Missing or empty $kind outputs" }
+      }
+      $metadata = Get-Content "$env:BUILD_DIRECTORY/FwVersion/FirmwareVersion.json" -Raw | ConvertFrom-Json
+      $version = [regex]::Match((Get-Content MsvmPkg/FirmwareVersion.toml -Raw), '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+      if (($metadata.flags -isnot [int] -and $metadata.flags -isnot [long]) -or
+          $metadata.git_commit -cne $env:SOURCE_COMMIT -or $metadata.source_origin -cne $env:SOURCE_ORIGIN -or
+          $metadata.base_version -cne $version -or ($metadata.flags -band 2) -ne (2 * [int]$env:OFFICIAL_BUILD)) {
+          throw 'Firmware provenance does not match the current build'
+      }
+      if ($metadata.flags -band 1) {
+          if ($env:OFFICIAL_BUILD -eq '1') { throw 'Official firmware has the dirty-worktree flag set' }
+          Write-Warning 'Test firmware has the dirty-worktree flag set; provenance is retained unchanged'
+      }
+      if ($version -notmatch '^([0-9]+)\.([0-9]+)$') { throw 'Release version must be major.minor' }
+      Write-Host "##vso[task.setvariable variable=ReleasePrefix]$version"
+      Write-Host "##vso[task.setvariable variable=ReleaseMajor]$($Matches[1])"
+      Write-Host "##vso[task.setvariable variable=ReleaseMinor]$($Matches[2])"
+    displayName: Verify Firmware
+    env:
+      BUILD_DIRECTORY: $(BuildDirectory)
+      BUILD_TOOL_CHAIN: $(tool_chain)
+      SOURCE_COMMIT: $(Build.SourceVersion)
+      SOURCE_ORIGIN: closed
+      OFFICIAL_BUILD: ${{ iif(parameters.officialBuild, '1', '0') }}
 
-  - script: >-
-      ${{ parameters.python }} -m ci.scripts.stage_artifacts
-      --matrix .azuredevops/build-matrix.json --build-id "$(build_id)"
-      --output "$(ob_outputDirectory)" --allow-existing-output --full-build-on-failure
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $build = $env:BUILD_DIRECTORY
+      $output = $env:ARTIFACT_OUTPUT
+      $suffix = "$($env:BUILD_TARGET)_$($env:BUILD_ARCH)"
+      $bin = "$output/$build/Bin"
+      New-Item $bin -ItemType Directory -Force | Out-Null
+      New-Item "$output/Firmware Binary File $suffix" -ItemType Directory -Force | Out-Null
+      Copy-Item "$build/FV/MSVM.fd" "$output/Firmware Binary File $suffix/MSVM.fd"
+      Copy-Item "$build/FV/MSVM.fd" "$bin/MSVM.fd"
+      foreach ($name in @('Dsdt.aml', 'BiosInterface.h')) {
+          $source = if ($name -eq 'Dsdt.aml') { "$build/$env:BUILD_ARCH/MsvmPkg/AcpiTables/AcpiTables/OUTPUT/$name" } else { "MsvmPkg/Include/$name" }
+          if ((Get-Item $source -ErrorAction Stop).Length -eq 0) { throw "Empty package input: $source" }
+          Copy-Item $source "$bin/$name"
+      }
+      Copy-Item "$build/FwVersion/*" $bin
+      Copy-Item "$build/FwVersion" "$output/FwVersion" -Recurse
+      Copy-Item "$build/FwVersion" Build/PackageMetadata -Recurse
+      Copy-Item "$build/MAP" "$output/Firmware Map Files $suffix" -Recurse
+      if ($env:BUILD_TOOL_CHAIN -ne 'GCC') {
+          Copy-Item "$build/PDB" "$output/Firmware PDB Files $suffix" -Recurse
+          Copy-Item "$build/PDB" "$bin/PDB" -Recurse
+      }
+    displayName: Stage Firmware
+    env:
+      BUILD_DIRECTORY: $(BuildDirectory)
+      ARTIFACT_OUTPUT: $(ob_outputDirectory)
+      BUILD_ARCH: $(arch)
+      BUILD_TARGET: $(target)
+      BUILD_TOOL_CHAIN: $(tool_chain)
+
+  - task: CopyFiles@2
+    displayName: Stage Build Logs
+    condition: always()
+    inputs:
+      SourceFolder: Build
+      Contents: |
+        **/BUILDLOG*.*
+        **/BuildLog.txt
+        **/BUILD_REPORT.TXT
+        **/CI*.txt
+        **/CI*.md
+        **/SETUP*.txt
+        **/UPDATE*.txt
+        **/PREVALLOG.txt
+        **/TestSuites.xml
+        **/BUILD_TOOLS_REPORT.*
+        **/OVERRIDELOG.TXT
+        **/BASETOOLS_BUILD*.*
+        **/FD_REPORT.HTML
+      TargetFolder: $(ob_outputDirectory)/Build Logs ${{ iif(eq(parameters.host, 'windows'), 'Windows', 'Linux') }} $(arch) $(target) $(tool_chain)${{ iif(eq(parameters['compiler-source'], 'windows_org'), ' (WinOrg)', '') }}
+      flattenFolders: true
+      OverWrite: true
+
+  - task: CopyFiles@2
     displayName: Stage Failure Diagnostics
-    condition: not(succeeded())
-
-  - template: /.azuredevops/templates/artifact-layout.yml@self
-    parameters:
-      mode: build
+    condition: failed()
+    inputs:
+      SourceFolder: Build
+      Contents: '**'
+      TargetFolder: $(ob_outputDirectory)/all

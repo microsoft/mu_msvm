@@ -1,425 +1,167 @@
 # Building MsvmPkg
 
-This guide covers building UEFI firmware images for all supported platforms.
-
 ## Prerequisites
 
-Follow the basic instructions for PlatformBuild [here](https://microsoft.github.io/mu/CodeDevelopment/compile/).
-
-## Basic Build Commands
-
-### Default Debug Build
+Follow the Project Mu [PlatformBuild instructions](https://microsoft.github.io/mu/CodeDevelopment/compile/).
+Activate your Python environment and install the repository requirements:
 
 ```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py
+python -m pip install -r pip-requirements.txt
 ```
 
-### Release Build
+Provide the compiler locally. CI provisions Visual Studio Clang, Windows-org Clang or
+distribution Clang/GCC in its provider-specific setup steps.
+
+## Building Locally
+
+Run native Stuart commands from the repository root. Pass the same flavor to setup, update and build:
 
 ```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
+$flavor = @('BUILD_ARCH=X64', 'TARGET=DEBUG', 'TOOL_CHAIN_TAG=CLANGPDB',
+    'BLD_*_USE_LEGACY_C_CORE=TRUE', 'BLD_*_LEGACY_DEBUGGER=0')
+$env:SOURCE_ORIGIN = 'open' # Use 'closed' in hyperv.uefi.
+foreach ($tool in @('stuart_setup', 'stuart_update', 'stuart_build')) {
+    & $tool -c MsvmPkg/PlatformBuild.py @flavor
+    if ($LASTEXITCODE -ne 0) { throw "$tool failed" }
+}
 ```
 
-### ARM64 Build
+Use `BUILD_ARCH=AARCH64` for ARM64, `TARGET=RELEASE` for a release build, and
+`BLD_*_USE_LEGACY_C_CORE=FALSE` for Patina. ARM64 MSVC is unsupported.
+Set `CLANG_BIN` to the selected Windows Clang bin directory, including its trailing slash.
+Windows-org Clang requires its corresponding resource headers too.
+Linux GCC requires `GCC_X64_PREFIX` or `GCC_AARCH64_PREFIX` for the installed cross-toolchain.
+
+The closed X64 Clang DEBUG flavors use `BLD_*_LEGACY_DEBUGGER=1`.
+Open-source, ARM64, GCC and Patina flavors do not enable that legacy debugger.
+
+## Source Checks
+
+The source checks use their own Stuart configuration:
 
 ```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
+stuart_setup -c .pytool/CISettings.py
+stuart_update -c .pytool/CISettings.py
+stuart_ci_build -c .pytool/CISettings.py --disable-all GuidCheck=run LineEndingCheck=run UncrustifyCheck=run
 ```
 
-## Building One CI Flavor Locally
-
-Use your activated Python virtual environment with the selected compiler installed and configured.
-From the repository root, run:
+Check each command's exit code before continuing. Add `--verbose` to setup when diagnosing
+dependency initialization. To run one check, select only that check after `--disable-all`.
+To apply Uncrustify corrections:
 
 ```powershell
-python .\ci\scripts\build.py --arch X64 --target DEBUG --tool-chain CLANGPDB --core legacy --source-origin open
+stuart_ci_build -c .pytool/CISettings.py --disable-all UncrustifyCheck=run UNCRUSTIFY_IN_PLACE=TRUE
 ```
 
-The script installs Python requirements, then runs `stuart_setup`, `stuart_update`, and `stuart_build`
-with `MsvmPkg/PlatformBuild.py`. All three Stuart commands receive the selected flavor.
-Architecture, target, toolchain, and core are required; use `--core patina` to select the Rust DXE core.
-Stuart executables are resolved from the invoking Python environment, and execution stops on the first failure.
+## Native CI Structure
 
-`--host windows|linux` defaults to the current host. `--compiler-source` distinguishes `visual_studio`,
-`windows_org`, and `distribution`; it defaults to Visual Studio on Windows and distribution tools on Linux.
-`--legacy-debugger 1` requires closed-source X64 VS2022 or CLANGPDB with the legacy core.
-CLANGPDB includes Windows Visual Studio Clang, Windows-org Clang, and Linux distribution Clang.
-GitHub/open builds, GCC, and Patina builds must use `0`. ARM64 MSVC is rejected before preparation.
-Actual execution requires the selected host; `--dry-run` can preview either host's commands.
+GitHub actions and ADO templates follow the same sequence:
 
-Windows-org Clang requires an explicit `--clang-bin` directory; it never falls back to Visual Studio Clang.
-For example, with the internal compiler tools and matching resource headers already installed:
+1. Prepare the runner, compiler, Python and credentials.
+2. Install requirements; run Stuart setup, update and build (or source checks).
+3. Verify and stage outputs, including diagnostics after failures.
+4. Upload artifacts and run provider-specific packaging/publication.
 
-```powershell
-python .\ci\scripts\build.py --arch AARCH64 --target RELEASE --tool-chain CLANGPDB --core legacy --host windows --compiler-source windows_org --clang-bin C:/tools/windows-clang/bin --source-origin closed
-```
+The build and source-check command bodies match between providers. There is no custom
+CI runner CLI, generated matrix job or separate CI Python layer.
+Firmware behavior remains in Stuart settings and build plugins. Provider YAML owns
+credentials, package manifests, scheduling and uploads. The same provider files are
+mirrored between mu_msvm and hyperv.uefi; private compatibility entrypoints remain in ADO.
 
-The local runner does not download private compiler packages or install system compilers. ADO provisions
-Windows-org LLVM tools and headers from the pinned internal feed; its Linux jobs install distribution tools
-and create a Python virtual environment. Before apt, the ADO Linux setup step
-uses Bash/sed to switch Ubuntu archive sources to
-`azure.archive.ubuntu.com`, matching `official/main`. Security and third-party feeds are unchanged.
-Local developers provide the equivalent toolchain environment.
+### Coverage
 
-Add `--dry-run` to print the commands without installing dependencies or starting a build.
-This command builds one flavor only; it does not select an open/closed repository matrix or publish artifacts.
+GitHub's native matrix in `.github/workflows/platform-ci.yml` has eight Windows builds:
+X64/AARCH64, DEBUG/RELEASE, legacy/Patina, all using Visual Studio Clang.
 
-### Selecting Repository Coverage
+ADO's native build list in `.azuredevops/templates/build.yml` has thirteen legacy-core builds:
 
-Coverage is maintained separately in `.github/build-matrix.json` (open-source mu_msvm) and
-`.azuredevops/build-matrix.json` (closed-source hyperv.uefi). Both use the shared validator and build script.
-Rows have no `repositories` field: the caller explicitly selects a file with `--matrix` instead of `--repo`.
-The path selects coverage, not source code, credentials, official-build status, or publishing permissions.
-Relative paths resolve from the current directory; either file can be selected locally.
-
-```powershell
-python .\ci\scripts\matrix.py --matrix .github/build-matrix.json
-python .\ci\scripts\matrix.py --matrix .azuredevops/build-matrix.json
-```
-
-The open profile contains eight Windows-hosted builds: DEBUG and RELEASE for X64 and AARCH64
-CLANGPDB with each of the legacy and Patina cores.
-The closed profile contains 13 legacy-core builds. VS2022 builds are no longer scheduled by either provider:
-
-| Host | Compiler source | Coverage |
+| Host | Compiler | Coverage |
 | --- | --- | --- |
-| Windows | Visual Studio Clang | X64 and AARCH64, DEBUG and RELEASE |
-| Windows | Windows-org Clang | X64 and AARCH64, DEBUG and RELEASE |
-| Linux | Distribution Clang | X64 and AARCH64, DEBUG and RELEASE |
-| Linux | Distribution GCC | X64 RELEASE only |
+| Windows | Visual Studio Clang | X64/AARCH64 DEBUG/RELEASE |
+| Windows | Windows-org Clang | X64/AARCH64 DEBUG/RELEASE |
+| Linux | Distribution Clang | X64/AARCH64 DEBUG/RELEASE |
+| Linux | GCC | X64 RELEASE |
 
-The three closed X64 DEBUG rows enable the legacy debugger across all three Clang compiler sources.
-Before removing VS2022 coverage, all 15 closed flavors compiled in PR
-build 160110571; runtime debugging still requires validation.
-All open rows and all GCC rows disable the legacy debugger.
-ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
+VS2022 builds are no longer scheduled. The three closed X64 Clang DEBUG variants enable
+the legacy debugger. Shipping flavors are Windows-org Clang X64 DEBUG/RELEASE and
+AARCH64 RELEASE. Shipping is package naming metadata, not an artifact filter.
+Every ADO build stages its artifact and packs its NuGet within its own job.
+OneBranch's agent capacity controls parallel execution.
 
-Persistent IDs are derived as `<host>_<arch>_<target>_<tool_chain>_<compiler_source>_<core>_<legacy_debugger>`;
-do not enter IDs in the JSON. Identical flavors may occur in both files, but may not occur twice within one file.
-Edit the respective JSON to change coverage independently, without editing shared Python or provider YAML.
-The selector rejects duplicate flavors and fails when the supplied file or requested host has no builds.
+ADO Windows uses the image's default Python, validated as 3.12 through 3.14 with pip.
+GitHub provisions Python 3.12. Linux uses a distribution Python virtual environment;
+its setup changes Ubuntu archive URLs to `azure.archive.ubuntu.com` before apt.
+ADO's reusable authentication template configures URL-scoped Git credentials and removes
+them with `always()` cleanup. Do not use it against a developer's global Git configuration.
 
-`--format github` emits an `include` object; `--format ado` emits a short job-leg name to variables mapping.
-ADO labels such as `DEBUG_X64_VS2022_Debugger` or `RELEASE_AARCH64_ClangWin` are independent
-of the full `build_id` carried in the variables. Artifact names and package identities do not change.
-These commands only print JSON. They do not execute builds, install tools, or publish anything.
-GitHub's platform workflow supplies `.github/build-matrix.json`, feeds the result to its native `strategy.matrix`, and
-calls the build action for each flavor. That action invokes the same `ci/scripts/build.py` used locally.
-Builds depend only on matrix generation; source checks run independently. Each build stages firmware and
-diagnostics through `python -m ci.scripts.stage_artifacts`; the provider adapter uploads them.
+### Artifacts and Publication
 
-ADO's shared platform template supplies `.azuredevops/build-matrix.json` through its build job template. A `BuildMatrix`
-job exports separate Windows and Linux matrices using `--host`. Dependent `BuildFirmware_windows` and
-`BuildFirmware_linux` jobs consume them through native `strategy.matrix`, with at most four parallel
-builds per host group. Host pools are selected at template expansion time, not by runtime matrix variables.
-Each job runs inside OneBranch and invokes the same `ci/scripts/build.py` as GitHub.
-Every ADO flavor stages its firmware/logs and packs its NuGet in that same build job. There is no
-intermediate artifact download or separate packaging stage. PR builds run independently of source checks;
-Official builds wait for source checks before starting, since publication belongs to the build jobs.
-OneBranch's Official template publishes the NuGets and creates/pushes Windows VPack outputs;
-NonOfficial/PR runs only pack local NuGet files and upload CI artifacts. Shipping metadata controls
-package naming, not whether a build produces an artifact or a NuGet.
+GitHub preserves `firmware-<TARGET>-<ARCH>-CLANGPDB[-patina]` and matching `logs-...` names.
+Firmware artifacts contain `FV/MSVM.fd`, `MAP/`, `PDB/` and `FwVersion/`.
+Source checks upload `source-check-logs`. Failed builds also upload their full Build tree.
 
-ADO source checks and both firmware build hosts use `repo-auth.yml` before Stuart.
-The reusable PowerShell step supplies the job's
-`System.AccessToken` and private repository URL and writes a URL-scoped
-authorization header to the dedicated container's global Git configuration.
-An `always()` cleanup step removes it even after failures. This follows the
-working closed pipeline's authentication mechanism without changing shared build
-or source-check runners. GitHub does not invoke this adapter. The template disables
-Git tracing while handling credentials and must not be used against a developer's
-global Git configuration.
+ADO preserves `drop_Build_<TARGET>_<ARCH>_<TOOLCHAIN>[_<salt>]`, with the historical
+`Firmware Binary File ...`, `Firmware Map Files ...`, `Firmware PDB Files ...`,
+`Build Logs <old job label>` and `Build/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/Bin/` folders.
+Failures retain the full Build tree under `all/`. Source checks retain
+`drop_Build_SourceChecks` with root logs, test results and `MsvmPkg/` diagnostics.
+There are no intermediate `input-...` drops, generated build IDs, `BuildInfo.json`,
+or separate package jobs.
 
-All ADO Windows jobs resolve the image's default `python`, matching `official/main`.
-The shared template logs the command path, resolves `sys.executable`, validates Python
-3.12 through 3.14 and pip, then prepends the interpreter and Scripts directories to PATH.
-It does not assume an installation directory or download Python. The moving image no longer
-guarantees Python 3.12: successful Official build 162988428 used 3.13.17. Missing/unsupported
-Python or pip fails explicitly. GitHub retains its separately provisioned 3.12 environment;
-Linux builds retain their distribution Python and isolated virtual environment.
+The static `MsvmPkg/HyperVUefi.NuSpec` preserves legacy firmware/symbol/map package paths.
+Sidecars are copied into `Build/PackageMetadata` for its fixed `FwVersion/` package entry.
+NuGet IDs remain `<repo>.mscoreuefi.<PR. if PR><arch>.<target>[.<salt>][.Test]`.
+Only Official shipping flavors omit `.Test`. Versions remain
+`<release-prefix>-<branch-name>.<commit>`; OneBranch allocates VPack versions.
 
-OneBranch PR build 160110571 passed source checks and all 15 firmware builds,
-validating the native matrices, runner tools, internal feeds, and repository
-authentication. Official builds and later pipeline changes still need hosted validation.
+PR/NonOfficial jobs pack NuGets and upload CI artifacts but never publish to feeds,
+VPack storage or symbol servers. Official builds require successful source checks,
+an `official/*` branch and a non-PR run. OneBranch publishes NuGets to `OS/HyperVUefi`
+and creates/pushes Windows VPack outputs. Linux stages the VPack-compatible payload
+but does not run the Windows-only VPack task. Windows symbols are indexed in the
+build workspace; symbol-server publication is Official-only.
 
-### Job Labels and Artifact Names
-
-Machine IDs remain stable and complete. They are not the human-facing job labels or package names.
-Provider matrix output adds a `display_name` derived from the same flavor:
-
-- GitHub: `DEBUG X64 CLANGPDB (Legacy)` or `RELEASE AARCH64 CLANGPDB (Patina)`.
-- ADO: the same label followed by host and compiler source, such as `/ Windows WinOrg` or `/ Linux Distro`.
-	Debugger-enabled rows also include `/ Legacy debugger` in the generated metadata.
-
-ADO job names cannot use the runtime matrix's `$(display_name)` in this OneBranch
-pipeline: it appeared literally in the hosted run. Instead, job display names use
-the compile-time `Firmware (windows)` or `Firmware (linux)` prefix; ADO appends
-short matrix labels to distinguish each flavor while retaining the full `build_id` in the variables. The generated
-`display_name` remains available as metadata, not as the job's UI name.
-
-GitHub matrix output also supplies `artifact_name` and `logs_artifact_name` for the upload steps.
-They preserve the pre-refactor consumer names exactly:
-
-| Flavor | Firmware artifact | Log artifact |
-| --- | --- | --- |
-| X64 DEBUG CLANGPDB legacy | `firmware-DEBUG-X64-CLANGPDB` | `logs-DEBUG-X64-CLANGPDB` |
-| AARCH64 RELEASE CLANGPDB Patina | `firmware-RELEASE-AARCH64-CLANGPDB-patina` | `logs-RELEASE-AARCH64-CLANGPDB-patina` |
-
-The pattern is `firmware-<TARGET>-<ARCH>-<TOOLCHAIN>[-patina]` (and `logs-` for logs).
-Legacy has no suffix. Keep the literal `AARCH64` and `CLANGPDB` in artifact names for existing consumers.
-If future host/compiler variants collide under this pattern, selection fails instead of silently renaming artifacts.
-Any expanded naming scheme must be coordinated with consumers first.
-
-ADO retains `drop_Build_<TARGET>_<ARCH>_<TOOLCHAIN>[_<suffix>]`, independent of the new display names.
-Every flavor uploads its final drop directly from its build job, with the NuGet under `packages/`.
-There are no shipping-only `input-...` drops.
-Historical `Firmware Binary File ...`, `Firmware Map Files ...`, `Firmware PDB Files ...`,
-`Build Logs <old job label>`, and `Build/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/Bin/` paths are retained
-alongside the shared staging layout. Source-check output retains `drop_Build_SourceChecks` and its
-root-level logs, test results, and `MsvmPkg/` diagnostics. No consumer migration is required.
-
-### Artifact Staging and Publication
-
-The shared staging module runs after Stuart, rather than as a post-build plugin, so setup/update failures
-also retain diagnostics. Existing Stuart plugins still own firmware version generation and PDB/MAP collection.
-Successful staging requires nonempty firmware, version JSON/blob, MAP files, and (except GCC) PDB files.
-ADO flavors additionally require DSDT AML and `BiosInterface.h`. Missing required outputs fail staging;
-they are not silently omitted from a successful artifact.
-
-The shared layout is:
-
-- `firmware/FV/MSVM.fd`, `firmware/MAP/`, `firmware/PDB/`, `firmware/FwVersion/`, and
-  `firmware/BuildInfo.json` (the selected matrix flavor).
-- `logs/`, preserving paths relative to `Build/` to prevent same-name logs overwriting each other.
-  Failed builds additionally retain the selected flavor's full build tree under `logs/failed-build/`.
-- ADO builds: `package/Bin/` with `MSVM.fd`, `Dsdt.aml`, `BiosInterface.h`, PDBs (except GCC),
-  version JSON/blob, and the flavor manifest. This is staged data, not permission to publish a package.
-
-GitHub uploads the contents of `firmware/`, preserving the existing `FV/MSVM.fd`, `PDB/`, and `MAP/`
-paths. Logs upload even when building or staging fails. Source-check logs have their own artifact.
-ADO includes the tree and compatibility folders at the drop root. Failed ADO builds also retain the
-historical `all/` copy of the full `Build/` tree. A package validation/packing failure does not prevent
-OneBranch from uploading the already-staged firmware and logs from that job.
-The legacy flattened log view is retained, with warnings on basename collisions; the shared `logs/`
-tree always retains every original path.
-OneBranch owns uploads; the shared Python does not handle credentials or network publication.
-ADO's `artifact-layout.yml` creates only the legacy compatibility folders from the shared outputs.
-The Python collector has no ADO layout mode: `--package-inputs` selects the optional firmware/ACPI/header
-payload, and `--full-build-on-failure` selects full-tree diagnostics without inferring the provider or shipping.
-
-GitHub releases run only for pushes to `main`, after all builds and source checks succeed. They download
-exactly the expected eight firmware artifacts, validate flavor, commit, source origin, version and clean/official
-flags, then create the historical `firmware-*.tar.gz` assets. Release tags remain `v<major>.<minor>.<patch>`;
-the prefix comes from `FirmwareVersion.toml`, and the serialized release job allocates the next patch.
-**OpenVMM is temporarily omitted from the release gate**, as agreed while restoring CI. Restore it before
-claiming runtime validation of releases. PRs and manual GitHub runs do not create releases.
-
-ADO indexes Windows PDBs in the build workspace while sources and submodules are present, then stages
-and packs each flavor in place. Linux jobs install Mono to support the existing NuGet pack task.
-PRs create `.PR.` / `.Test` NuGet files locally but do not publish to feeds, VPack storage, or symbol servers.
-Official builds additionally require `refs/heads/official/*`, a non-PR run, and successful source checks.
-OneBranch publication flags are compile-time booleans, never runtime matrix shipping variables.
-NuGet goes to the existing `OS/HyperVUefi` feed. The Windows OneBranch template creates/pushes VPack
-for all Windows flavors; Linux flavors retain their VPack-compatible staging tree but do not run that
-Windows-only task. Windows symbol publication is Official-only and uses the already-indexed PDBs.
-`pack.yml` owns NuGet IDs, XML manifests and packing. It calls shared `package_artifacts.py validate`
-for flavor/commit/version/provenance checks; the same validator is used by GitHub's release action.
-GitHub's action owns its tar archive loop and release command. This change does not claim hosted Official validation.
-The governed VPack task supports `push`, `pull`, and `list`, not a local pack-only operation.
-PRs validate/stage the VPack payload and pack NuGet without external publication; VPack creation/push
-is Official-only. Non-shipping `.Test` packages are restored for every flavor, as in the old pipeline.
-
-PR run 160943879 passed all firmware builds but package validation rejected the dirty-worktree flag.
-Validation reports the exact mismatched fields, and the version plugin logs dirty paths when computing
-the flag. The hosted cause still requires another run. Local PR test packing now allows a dirty flag with an
-explicit warning and retains the original provenance in the package. Official packaging and GitHub
-releases still reject dirty firmware; commit, origin, version, and official-flag checks remain enforced.
-
-### Closed Package Identity
-
-Closed rows have explicit `shipping` and `package_suffix` metadata. Shipping variants are X64 DEBUG/RELEASE
-and AARCH64 RELEASE Windows-org CLANGPDB with the legacy core. These three keep their empty package suffix;
-all other closed variants retain their historical test suffixes. Metadata describes eligibility, not permission
-to publish, and does not mark a local or PR build official.
-VS2022 builds and their `XDV`/`XRV` test packages are no longer scheduled. The shared runner still
-accepts explicit local VS2022 builds for compatibility. Shipping package IDs remain unchanged.
-
-Build IDs are not package names. The shared VPack/NuGet ID convention is:
-`<repo>.mscoreuefi.<PR. if PR><arch>.<target><.suffix if present><.Test if PR or non-shipping>`.
-For example, the official ARM64 shipping ID remains `hyperv.uefi.mscoreuefi.AARCH64.RELEASE`, while its PR
-ID is `hyperv.uefi.mscoreuefi.PR.AARCH64.RELEASE.Test`.
-NuGet versions and OneBranch VPack version allocation remain separate contracts.
-All 13 ADO flavors produce CI artifacts/logs and NuGet files, including non-shipping `.Test` flavors.
-`matrix.py --shipping-only` remains available for inspecting shipping metadata, but pipelines do not
-use it to filter artifacts or package creation. It does not authorize publishing.
-NuGet versions retain `<major>.<minor>-<branch-name>.<commit>`, while VPack uses the same TOML prefix and
-OneBranch's allocated version. Neither changes the already-compiled firmware's embedded build identity.
-NuGet preserves the old recursive paths: `Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/FV/MSVM.fd`,
-`symbols/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/PDB/`, and `map/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/MAP/`.
+GitHub releases require a push to main plus successful source checks and all builds.
+They retain `firmware-*.tar.gz` assets and `v<major>.<minor>.<patch>` tags.
+**OpenVMM remains deferred and is temporarily absent from the release gate.**
+Native YAML cannot be fully validated locally; hosted builds and Official publication
+still need validation before treating this POC as a production replacement.
 
 ## Firmware Versioning
 
-Think of three different labels:
+`MsvmPkg/FirmwareVersion.toml` is the source of truth for the firmware interface
+version and release prefix. The existing pre-build plugin writes matching PCDs,
+an unchanged 80-byte version-1 binary record, and `FwVersion/FirmwareVersion.json`.
+MAP/PDB collection remains owned by existing Stuart post-build plugins.
 
-| Label | Example | What it answers |
-| --- | --- | --- |
-| Interface version | `1.0` | Can this firmware communicate correctly with this VMM? |
-| Embedded build identity | `26.0` + Git SHA + flags | Which source produced this firmware? |
-| Package version | GitHub release / NuGet / VPack version | Which published download is this? |
+The interface major changes for incompatible firmware/VMM changes, and minor for
+backward-compatible additions. It is independent of the binary record's struct version.
+The embedded identity is the release prefix, Git commit and dirty/official flags;
+a package version allocated after compilation is not embedded in that firmware.
 
-The first two come from `MsvmPkg/FirmwareVersion.toml` and the checkout. The last is assigned during publishing.
-A package number assigned after compilation is not embedded in that firmware.
+`SOURCE_ORIGIN=open|closed|unknown` is sidecar metadata, not a firmware ABI extension.
+GitHub selects `open`; ADO selects `closed`. Set it explicitly for local builds.
+Origin and the official flag are declarations, not security attestations.
 
-Inside the firmware today:
+`BASE_VERSION` and `OFFICIAL_BUILD` use Stuart values first, then environment values,
+then in-tree defaults. An empty Stuart base version suppresses the environment override.
+The base version must fit 15 ASCII bytes plus NUL; interface fields must fit UINT16.
+For official status, empty, `0` and case-insensitive `false` mean unofficial.
+GitHub marks only pushes to main official; ADO uses the Official entrypoint.
 
-- **Interface version:** bump major for a breaking firmware/VMM contract change, minor for a compatible addition.
-- **Release prefix:** `26.0`, not the final package number.
-- **Git SHA:** the actual checkout built, including the merge commit for a PR merge checkout.
-- **Dirty flag:** the source had uncommitted changes.
-- **Official flag:** CI marked the build official. This does not mean signed or shipping.
-
-The plugin writes matching firmware PCDs and an 80-byte version-1 record in the DXE FV. That binary layout
-is unchanged. Future packaging must retain a mapping from package version to this build identity and flavor.
-
-### Open Versus Closed Source
-
-The build also writes `FwVersion/FirmwareVersion.json` under its build output directory. This sidecar
-contains the same identity values plus **`source_origin`**: `open`, `closed`, or `unknown`.
-GitHub explicitly selects `open`; ADO explicitly selects `closed`. Origin describes the source repository,
-not the compiler supplier, shipping eligibility, or official status.
-
-Locally, pass `--source-origin open` or `--source-origin closed` to `ci/scripts/build.py`.
-Omitting it records `unknown`, rather than guessing from remotes or inheriting a stale shell setting.
-For direct Stuart invocations, set `SOURCE_ORIGIN=open|closed|unknown` as a build or shell variable.
-An explicit Stuart value wins over the shell; an unrecognized value is rejected before output is written.
-
-Origin is currently **sidecar metadata, not embedded in MSVM.fd**. Staging and packaging retain the JSON.
-Identifying origin from the firmware file alone needs a separately reviewed
-binary-record extension. Origin and the official flag are declarations, not security attestations.
-
-### Overrides and CI Policy
-
-`BASE_VERSION` uses an explicit Stuart value first, then the shell, then TOML. An empty Stuart value suppresses
-the shell override and uses TOML. It must fit 15 ASCII bytes plus a NUL terminator; interface fields must fit UINT16.
-
-`OFFICIAL_BUILD` uses Stuart-over-shell precedence too. Empty, `0`, and case-insensitive `false` mean unofficial;
-other nonempty values mean official. Local builds default to unofficial unless explicitly overridden.
-
-- GitHub sets `1` only for a push to `main`; PRs and manual dispatches get `0`.
-- ADO sets `1` for the Official entry point and `0` for NonOfficial PR builds, on both build hosts.
-
-An official pipeline can produce test-only flavors; a shipping flavor built locally is still unofficial.
-Dirty and official flags can both be set. Public/private mirrors have different SHAs: source origin tells
-you which repository to look in, not how to translate commits between them.
-
-## Running CI Checks Locally
-
-Run the same source-check workflow used by platform CI from the repository root:
-
-```powershell
-python .\ci\scripts\source_checks.py
-```
-
-The workflow installs the Python requirements, runs `stuart_setup` and `stuart_update`, and then runs the configured
-`stuart_ci_build` checks. Pass `--verbose` to enable detailed Stuart setup logging.
-ADO source checks enable this option and Git command/HTTP tracing, with credential
-redaction enabled and HTTP payload logging disabled, to diagnose submodule access
-failures. GitHub and local runs retain their default logging.
-
-To run one check while iterating, invoke Stuart directly. For example:
-
-```powershell
-stuart_ci_build -c .\.pytool\CISettings.py --disable-all GuidCheck=run
-```
-
-### Fixing Uncrustify Failures
-
-Run Uncrustify in correction mode to update incorrectly formatted files in place:
-
-```powershell
-stuart_ci_build `
-	-c .\.pytool\CISettings.py `
-	--disable-all `
-	UncrustifyCheck=run `
-	UNCRUSTIFY_IN_PLACE=TRUE
-```
-
-Review the resulting changes and rerun the full source-check command before committing them.
-
-## Developing CI Python
-
-Shared Python owns build execution, coverage validation, artifact collection and firmware metadata checks.
-Provider-specific authentication, runner provisioning, compatibility layouts, package formats and publication
-live in reusable `.azuredevops/templates` or `.github/actions` YAML, identical across the two repositories.
-Matrix serializers remain small data adapters; they do not manage credentials or execute provider tasks.
-Provider tests execute the actual YAML script bodies against isolated temporary directories and Git configs.
-
-Run these checks from the repository root in your activated virtual environment:
-
-```powershell
-python -m pip install -r ci/requirements-dev.txt
-python -m mypy --config-file ci/mypy.ini
-python -B -m unittest discover -s ci/tests -v
-```
-
-Strict type checking covers both CI scripts and tests. Keep parameter and return annotations complete;
-document input/output contracts, side effects, and failure behavior in public API docstrings.
-The matrix module validates JSON into typed flavor records before using it, keeping provider serialization
-separate from the input definition. Runtime validation is still required: type annotations alone cannot
-validate JSON or command-line input. Tests mock external commands and do not build or download anything.
-
-These are local development checks; they have not been added to the hosted workflow yet.
+Staging checks expected commit, origin, release prefix and official status.
+Missing required outputs fail explicitly. Dirty PR test artifacts warn and retain their
+provenance; Official packages and GitHub releases reject dirty firmware.
 
 ## Specialized Builds
 
-### Debug-Enabled Build
-
-For interactive debugging with WinDbg:
-
 ```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py BLD_*_DEBUGGER_ENABLED=1
+# Debugger, serial logging, or both:
+stuart_build -c MsvmPkg/PlatformBuild.py BLD_*_DEBUGGER_ENABLED=1
+stuart_build -c MsvmPkg/PlatformBuild.py BLD_*_DEBUGLIB_SERIAL=1
+stuart_build -c MsvmPkg/PlatformBuild.py BLD_*_DEBUGGER_ENABLED=1 BLD_*_DEBUGLIB_SERIAL=1
 ```
 
-### Serial Logging Build
-
-For serial port debug output:
-
-```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py BLD_*_DEBUGLIB_SERIAL=1
-```
-
-### Combined Debug + Serial Build
-
-```powershell
-stuart_build -c .\MsvmPkg\PlatformBuild.py BLD_*_DEBUGGER_ENABLED=1 BLD_*_DEBUGLIB_SERIAL=1
-```
-
-## Build Output Structure
-
-Build artifacts follow this path structure:
-
-```
-{root}\Build\Msvm{architecture}\{flavor}_{toolchain}\
-├── FV\
-│   └── MSVM.fd                 # Main firmware image
-├── PDB\                        # Debug symbols
-└── ...
-```
-
-**Path Variables:**
-- `{root}` = Root directory of the UEFI project
-- `{architecture}` = X64, AARCH64, etc.
-- `{flavor}` = DEBUG or RELEASE
-- `{toolchain}` = VS2022, GCC, etc.
-
-**Examples:**
-- `Build\MsvmX64\DEBUG_VS2022\FV\MSVM.fd`
-- `Build\MsvmAARCH64\RELEASE_GCC\FV\MSVM.fd`
-
-## Next Steps
-
-After building, you'll need to deploy your firmware:
-
-- **Deploy Firmware:** See [FIRMWARE-DEPLOYMENT.md](FIRMWARE-DEPLOYMENT.md)
-- **Enable Debugging:** See [DEBUGGING.md](DEBUGGING.md)
-- **Collect Logs:** See [LOGGING.md](LOGGING.md)
+Outputs are under `Build/Msvm<ARCH>/<TARGET>_<TOOLCHAIN>/`; the image is `FV/MSVM.fd`.
+For deployment, debugging and logs, see [FIRMWARE-DEPLOYMENT.md](FIRMWARE-DEPLOYMENT.md),
+[DEBUGGING.md](DEBUGGING.md) and [LOGGING.md](LOGGING.md).

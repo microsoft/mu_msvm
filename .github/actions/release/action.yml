@@ -24,23 +24,24 @@ runs:
       run: |
         set -euo pipefail
         shopt -s nullglob dotglob
-        matrix="$(python -m ci.scripts.matrix --matrix .github/build-matrix.json --format github)"
-        rows="$(jq -er '.include[] | [.id, .artifact_name] | @tsv' <<< "$matrix")"
-        expected="$(jq -er '.include | length' <<< "$matrix")"
         artifacts=("$ARTIFACT_INPUT"/*)
-        if [[ ${#artifacts[@]} -ne "$expected" ]]; then
-          echo "Downloaded firmware artifacts do not exactly match the release matrix" >&2
+        if [[ ${#artifacts[@]} -eq 0 ]]; then
+          echo "No firmware artifacts were downloaded" >&2
           exit 1
         fi
-        while IFS=$'\t' read -r id name; do
-          python -m ci.scripts.package_artifacts validate --matrix .github/build-matrix.json \
-            --build-id "$id" --source "$ARTIFACT_INPUT/$name" --commit "$RELEASE_COMMIT" \
-            --origin open --official
-        done <<< "$rows"
+        version="$(jq -er '.base_version' "${artifacts[0]}/FwVersion/FirmwareVersion.json")"
+        for directory in "${artifacts[@]}"; do
+          jq -e --arg sha "$RELEASE_COMMIT" --arg version "$version" \
+            '.git_commit == $sha and .source_origin == "open" and .flags == 2 and .base_version == $version' \
+            "$directory/FwVersion/FirmwareVersion.json" > /dev/null
+          test -s "$directory/FV/MSVM.fd"
+          test -s "$directory/FwVersion/FwVersionBlob.bin"
+        done
         mkdir "$RELEASE_OUTPUT"
-        while IFS=$'\t' read -r id name; do
-          (cd "$ARTIFACT_INPUT/$name"; tar -czf "$RELEASE_OUTPUT/$name.tar.gz" -- *)
-        done <<< "$rows"
+        for directory in "${artifacts[@]}"; do
+          name="$(basename "$directory")"
+          (cd "$directory"; tar -czf "$RELEASE_OUTPUT/$name.tar.gz" -- *)
+        done
 
     - name: Create GitHub release
       shell: bash
@@ -51,7 +52,8 @@ runs:
         RELEASE_OUTPUT: ${{ runner.temp }}/firmware-release
       run: |
         set -euo pipefail
-        base_version="$(python -m ci.scripts.package_artifacts version)"
+        artifacts=("$RUNNER_TEMP"/firmware-artifacts/*)
+        base_version="$(jq -er '.base_version | select(test("^[0-9]+\\.[0-9]+$"))' "${artifacts[0]}/FwVersion/FirmwareVersion.json")"
         tags="$(gh api --paginate "repos/$RELEASE_REPOSITORY/releases?per_page=100" --jq '.[].tag_name')"
         patch="$(printf '%s\n' "$tags" | jq -Rs --arg prefix "v$base_version." \
           'split("\n") | map(select(startswith($prefix)) | ltrimstr($prefix) | select(test("^[0-9]+$")) | tonumber) | (max // -1) + 1')"

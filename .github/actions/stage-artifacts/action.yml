@@ -1,9 +1,12 @@
 name: Stage Firmware Artifacts
-description: Stage shared firmware outputs and diagnostics, then upload GitHub artifacts
+description: Verify native Stuart outputs and upload firmware and diagnostics
 
 inputs:
-  build-id:
-    description: Selected matrix build ID
+  arch:
+    description: Target architecture
+    required: true
+  target:
+    description: Build target
     required: true
   artifact-name:
     description: Firmware artifact name
@@ -18,31 +21,67 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Stage artifacts
-      if: always()
+    - name: Verify Firmware
+      if: inputs.build-succeeded == 'true'
       shell: pwsh
       env:
-        BUILD_ID: ${{ inputs.build-id }}
-        BUILD_SUCCEEDED: ${{ inputs.build-succeeded }}
-        ARTIFACT_OUTPUT: ${{ runner.temp }}/ci-artifacts
+        BUILD_DIRECTORY: Build/Msvm${{ inputs.arch }}/${{ inputs.target }}_CLANGPDB
+        BUILD_TOOL_CHAIN: CLANGPDB
+        SOURCE_COMMIT: ${{ github.sha }}
+        SOURCE_ORIGIN: open
       run: |
-        $stageArgs = @('--matrix', '.github/build-matrix.json', '--build-id', $env:BUILD_ID, '--output', $env:ARTIFACT_OUTPUT)
-        if ($env:BUILD_SUCCEEDED -eq 'true') { $stageArgs += '--build-succeeded' }
-        python -m ci.scripts.stage_artifacts @stageArgs
-        exit $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        foreach ($name in @('FV/MSVM.fd', 'FwVersion/FirmwareVersion.json', 'FwVersion/FwVersionBlob.bin')) {
+            if ((Get-Item "$env:BUILD_DIRECTORY/$name" -ErrorAction Stop).Length -eq 0) { throw "Empty firmware output: $name" }
+        }
+        foreach ($kind in @('MAP') + @('PDB' | Where-Object { $env:BUILD_TOOL_CHAIN -ne 'GCC' })) {
+            $extension = if ($kind -eq 'MAP') { 'map' } else { 'pdb' }
+            $files = @(Get-ChildItem "$env:BUILD_DIRECTORY/$kind/*.$extension" -File)
+            if ($files.Count -eq 0 -or ($files | Where-Object Length -eq 0)) { throw "Missing or empty $kind outputs" }
+        }
+        $metadata = Get-Content "$env:BUILD_DIRECTORY/FwVersion/FirmwareVersion.json" -Raw | ConvertFrom-Json
+        $version = [regex]::Match((Get-Content MsvmPkg/FirmwareVersion.toml -Raw), '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+        if (($metadata.flags -isnot [int] -and $metadata.flags -isnot [long]) -or
+            $metadata.git_commit -cne $env:SOURCE_COMMIT -or $metadata.source_origin -cne $env:SOURCE_ORIGIN -or
+            $metadata.base_version -cne $version -or ($metadata.flags -band 2) -ne (2 * [int]$env:OFFICIAL_BUILD)) {
+            throw 'Firmware provenance does not match the current build'
+        }
+        if ($metadata.flags -band 1) {
+            if ($env:OFFICIAL_BUILD -eq '1') { throw 'Official firmware has the dirty-worktree flag set' }
+            Write-Warning 'Test firmware has the dirty-worktree flag set; provenance is retained unchanged'
+        }
+        if ($version -notmatch '^([0-9]+)\.([0-9]+)$') { throw 'Release version must be major.minor' }
 
-    - name: Upload firmware
+    - name: Upload Firmware
       if: success() && inputs.build-succeeded == 'true'
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ${{ inputs.artifact-name }}
-        path: ${{ runner.temp }}/ci-artifacts/firmware/
+        path: |
+          Build/Msvm${{ inputs.arch }}/${{ inputs.target }}_CLANGPDB/FV/MSVM.fd
+          Build/Msvm${{ inputs.arch }}/${{ inputs.target }}_CLANGPDB/MAP/
+          Build/Msvm${{ inputs.arch }}/${{ inputs.target }}_CLANGPDB/PDB/
+          Build/Msvm${{ inputs.arch }}/${{ inputs.target }}_CLANGPDB/FwVersion/
         if-no-files-found: error
 
-    - name: Upload diagnostics
+    - name: Upload Diagnostics
       if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ${{ inputs.logs-artifact-name }}
-        path: ${{ runner.temp }}/ci-artifacts/logs/
+        path: |
+          Build/**/BUILDLOG*.*
+          Build/**/BuildLog.txt
+          Build/**/BUILD_REPORT.TXT
+          Build/**/CI*.txt
+          Build/**/CI*.md
+          Build/**/SETUP*.txt
+          Build/**/UPDATE*.txt
+          Build/**/PREVALLOG.txt
+          Build/**/TestSuites.xml
+          Build/**/BUILD_TOOLS_REPORT.*
+          Build/**/OVERRIDELOG.TXT
+          Build/**/BASETOOLS_BUILD*.*
+          Build/**/FD_REPORT.HTML
+          ${{ inputs.build-succeeded != 'true' && 'Build/**' || '' }}
         if-no-files-found: warn

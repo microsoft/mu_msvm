@@ -11,78 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  build-matrix:
-    name: Select Build Matrix
-    runs-on: ubuntu-24.04
-    outputs:
-      matrix: ${{ steps.select.outputs.matrix }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
-
-      - name: Select open-source builds
-        id: select
-        shell: bash
-        run: |
-          matrix="$(python ci/scripts/matrix.py --matrix .github/build-matrix.json --format github)"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-
-  build:
-    name: ${{ matrix.display_name }}
-    needs: build-matrix
-    runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.build-matrix.outputs.matrix) }}
-    steps:
-      - name: Configure Git
-        shell: pwsh
-        run: |
-          git config --global core.autocrlf false
-          git config --system core.longpaths true
-
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pip-requirements.txt
-
-      - name: Build firmware
-        id: firmware
-        uses: ./.github/actions/build
-        env:
-          OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
-        with:
-          arch: ${{ matrix.arch }}
-          target: ${{ matrix.target }}
-          tool-chain: ${{ matrix.tool_chain }}
-          core: ${{ matrix.core }}
-          host: ${{ matrix.host }}
-          compiler-source: ${{ matrix.compiler_source }}
-          legacy-debugger: ${{ matrix.legacy_debugger }}
-
-      - name: Stage and upload artifacts
-        if: always()
-        uses: ./.github/actions/stage-artifacts
-        with:
-          build-id: ${{ matrix.id }}
-          artifact-name: ${{ matrix.artifact_name }}
-          logs-artifact-name: ${{ matrix.logs_artifact_name }}
-          build-succeeded: ${{ steps.firmware.outcome == 'success' }}
-
+  # Run stuart plugins to validate the source code
   source-checks:
     name: Source Checks
     runs-on: windows-2022
@@ -108,21 +37,78 @@ jobs:
       - name: Run source checks
         uses: ./.github/actions/source-checks
 
-      - name: Stage source-check logs
-        if: always()
-        shell: pwsh
-        env:
-          ARTIFACT_OUTPUT: ${{ runner.temp }}/source-check-artifacts
-        run: python -m ci.scripts.stage_artifacts --logs-only --output "$env:ARTIFACT_OUTPUT"
-
       - name: Upload source-check logs
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-check-logs
-          path: ${{ runner.temp }}/source-check-artifacts/logs/
+          path: Build/
           if-no-files-found: warn
 
+  # Build the firmware for different architectures and targets
+  build:
+    name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core }})
+    runs-on: windows-2022
+    env:
+      OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [X64, AARCH64]
+        target: [DEBUG, RELEASE]
+        core: [legacy, patina]
+    steps:
+      - name: Configure Git
+        shell: pwsh
+        run: |
+          git config --global core.autocrlf false
+          git config --system core.longpaths true
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pip-requirements.txt
+
+      - name: Build firmware
+        id: firmware
+        uses: ./.github/actions/build
+        with:
+          arch: ${{ matrix.arch }}
+          target: ${{ matrix.target }}
+          core: ${{ matrix.core }}
+
+      - name: Stage and upload artifacts
+        if: always()
+        uses: ./.github/actions/stage-artifacts
+        with:
+          arch: ${{ matrix.arch }}
+          target: ${{ matrix.target }}
+          artifact-name: firmware-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
+          logs-artifact-name: logs-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
+          build-succeeded: ${{ steps.firmware.outcome == 'success' }}
+
+  # TODO: Test each built firmware artifact with OpenVMM
+  #openvmm-test:
+  #  name: OpenVMM Test
+  #  runs-on: ubuntu-24.04
+  #  needs: build
+  #  steps:
+  #    - name: Checkout repository
+  #      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  #      with:
+  #        persist-credentials: false
+
+  #    - name: Run OpenVMM tests
+  #      uses: ./.github/actions/openvmm-test
+
+  # Create a github release for the firmware (only on the main branch)
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -139,11 +125,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.12"
 
       - name: Release firmware
         uses: ./.github/actions/release

@@ -1,5 +1,5 @@
 name: Build Firmware
-description: Prepare and build one firmware flavor through Stuart
+description: Prepare and build one firmware flavor through native Stuart commands
 
 inputs:
   arch:
@@ -8,27 +8,14 @@ inputs:
   target:
     description: Build target
     required: true
-  tool-chain:
-    description: EDK II toolchain tag
-    required: true
   core:
     description: DXE core (legacy or patina)
-    required: true
-  host:
-    description: Build host
-    required: true
-  compiler-source:
-    description: Compiler distribution
-    required: true
-  legacy-debugger:
-    description: Enable the legacy debugger (0 or 1)
     required: true
 
 runs:
   using: composite
   steps:
     - name: Locate Visual Studio Clang
-      if: inputs.tool-chain == 'CLANGPDB' && inputs.compiler-source == 'visual_studio'
       shell: pwsh
       run: |
         $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
@@ -38,23 +25,29 @@ runs:
         if (-not (Test-Path (Join-Path $clangBin 'clang.exe'))) { throw 'Visual Studio Clang was not found' }
         "CLANG_BIN=$clangBin/" >> $env:GITHUB_ENV
 
-    - name: Build firmware
+    - name: Build Firmware
       shell: pwsh
       env:
         BUILD_ARCH: ${{ inputs.arch }}
         BUILD_TARGET: ${{ inputs.target }}
-        BUILD_TOOL_CHAIN: ${{ inputs.tool-chain }}
+        BUILD_TOOL_CHAIN: CLANGPDB
         BUILD_CORE: ${{ inputs.core }}
-        BUILD_HOST: ${{ inputs.host }}
-        BUILD_COMPILER_SOURCE: ${{ inputs.compiler-source }}
-        BUILD_LEGACY_DEBUGGER: ${{ inputs.legacy-debugger }}
-      run: >-
-        python ci/scripts/build.py
-        --arch "$env:BUILD_ARCH"
-        --target "$env:BUILD_TARGET"
-        --tool-chain "$env:BUILD_TOOL_CHAIN"
-        --core "$env:BUILD_CORE"
-        --host "$env:BUILD_HOST"
-        --compiler-source "$env:BUILD_COMPILER_SOURCE"
-        --legacy-debugger "$env:BUILD_LEGACY_DEBUGGER"
-        --source-origin open
+        BUILD_LEGACY_DEBUGGER: '0'
+        SOURCE_ORIGIN: open
+      run: |
+        $ErrorActionPreference = 'Stop'
+        python -m pip install -r pip-requirements.txt
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $legacy = if ($env:BUILD_CORE -eq 'legacy') { 'TRUE' } else { 'FALSE' }
+        $flavor = @("BUILD_ARCH=$env:BUILD_ARCH", "TARGET=$env:BUILD_TARGET",
+            "TOOL_CHAIN_TAG=$env:BUILD_TOOL_CHAIN", "BLD_*_USE_LEGACY_C_CORE=$legacy",
+            "BLD_*_LEGACY_DEBUGGER=$env:BUILD_LEGACY_DEBUGGER")
+        foreach ($tool in @('stuart_setup', 'stuart_update', 'stuart_build')) {
+            $buildOptions = @()
+            if ($tool -eq 'stuart_build') {
+                $buildOptions = @('BUILDREPORTING=TRUE', 'BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY',
+                    'LaunchLogOnSuccess=FALSE', 'LaunchLogOnError=FALSE')
+            }
+            & $tool -c MsvmPkg/PlatformBuild.py @flavor @buildOptions
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
