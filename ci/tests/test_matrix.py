@@ -50,7 +50,6 @@ class MatrixTests(unittest.TestCase):
             (arch, target, tool_chain, core)
             for target in ("DEBUG", "RELEASE")
             for arch, tool_chain, core in (
-                ("X64", "VS2022", "legacy"),
                 ("X64", "CLANGPDB", "legacy"),
                 ("AARCH64", "CLANGPDB", "legacy"),
                 ("X64", "CLANGPDB", "patina"),
@@ -58,14 +57,16 @@ class MatrixTests(unittest.TestCase):
             )
         }
         self.assertEqual({(row["arch"], row["target"], row["tool_chain"], row["core"]) for row in rows}, expected)
-        self.assertEqual(len(rows), 10)
+        self.assertEqual(len(rows), 8)
+        self.assertTrue(all(row["tool_chain"] != "VS2022" for row in rows))
         self.assertTrue(all(row["legacy_debugger"] == "0" for row in rows))
         for row in rows:
             self.assertEqual(row["id"], matrix.build_id(row))
         closed = matrix.select_builds(CLOSED_MATRIX)
-        self.assertEqual(len(closed), 15)
-        self.assertEqual(len({row["id"] for row in closed}), 15)
-        self.assertEqual(len(matrix.select_builds(CLOSED_MATRIX, host="windows")), 10)
+        self.assertEqual(len(closed), 13)
+        self.assertEqual(len({row["id"] for row in closed}), 13)
+        self.assertTrue(all(row["tool_chain"] != "VS2022" for row in closed))
+        self.assertEqual(len(matrix.select_builds(CLOSED_MATRIX, host="windows")), 8)
         self.assertEqual(len(matrix.select_builds(CLOSED_MATRIX, host="linux")), 5)
         shipping = {(row["arch"], row["target"], row["tool_chain"], row["compiler_source"], row["core"])
                     for row in closed if row["shipping"] == "true"}
@@ -78,12 +79,7 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(row["legacy_debugger"], "1" if row["arch"] == "X64" and row["target"] == "DEBUG" else "0")
             self.assertEqual(row["shipping"] == "true", row["package_suffix"] == "")
         self.assertEqual({row["package_suffix"] for row in closed if row["shipping"] == "false"},
-                         {"XDV", "XRV", "XDCV", "XRCV", "ADCV", "ARCV", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
-        for target, suffix in (("DEBUG", "XDV"), ("RELEASE", "XRV")):
-            row = next(row for row in closed if row["tool_chain"] == "VS2022" and row["target"] == target)
-            self.assertEqual(row["package_suffix"], suffix)
-            self.assertEqual(matrix.package_name(row, "hyperv.uefi", True),
-                             f"hyperv.uefi.mscoreuefi.X64.{target}.{suffix}.Test")
+                         {"XDCV", "XRCV", "ADCV", "ARCV", "ADCW", "XDCL", "XRCL", "ADCL", "ARCL", "XRG"})
 
     def test_provider_formats_preserve_same_flavors(self) -> None:
         for path in MATRICES:
@@ -125,9 +121,9 @@ class MatrixTests(unittest.TestCase):
     def test_ado_job_names_are_short_and_separate_from_artifact_identity(self) -> None:
         rows = matrix.select_builds(CLOSED_MATRIX)
         names = [matrix.ado_job_name(row) for row in rows]
-        self.assertEqual(len(set(names)), 15)
+        self.assertEqual(len(set(names)), 13)
         self.assertTrue(all(len(name) <= 35 and not name.endswith(("_0", "_1")) for name in names))
-        self.assertIn("DEBUG_X64_VS2022_Debugger", names)
+        self.assertIn("DEBUG_X64_ClangWin_Debugger", names)
         self.assertEqual(names[2], "RELEASE_AARCH64_ClangWin")
         self.assertEqual(names[-1], "RELEASE_X64_GCC")
         output = io.StringIO()
@@ -150,7 +146,7 @@ class MatrixTests(unittest.TestCase):
     def test_ado_labels_distinguish_compilers_without_renaming_packages(self) -> None:
         rows = matrix.select_builds(CLOSED_MATRIX)
         labeled = matrix.label_builds(rows, "ado")
-        self.assertEqual(len({row["display_name"] for row in labeled}), 15)
+        self.assertEqual(len({row["display_name"] for row in labeled}), 13)
         for original, row in zip(rows, labeled):
             self.assertEqual(row["id"], original["id"])
             self.assertEqual(row["package_suffix"], original["package_suffix"])
@@ -164,9 +160,9 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(row["build_id"], original["id"])
         self.assertIn("/ Windows WinOrg", next(row["display_name"] for row in labeled
                                                if row["compiler_source"] == "windows_org"))
-        self.assertEqual(len({row["artifact_name"] for row in labeled}), 15)
-        self.assertEqual(len({row["official_package_name"] for row in labeled}), 15)
-        self.assertEqual(len({row["pr_package_name"] for row in labeled}), 15)
+        self.assertEqual(len({row["artifact_name"] for row in labeled}), 13)
+        self.assertEqual(len({row["official_package_name"] for row in labeled}), 13)
+        self.assertEqual(len({row["pr_package_name"] for row in labeled}), 13)
 
     def test_shipping_matrix_selects_only_three_windows_flavors(self) -> None:
         output = io.StringIO()

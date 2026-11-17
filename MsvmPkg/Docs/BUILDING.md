@@ -77,20 +77,19 @@ python .\ci\scripts\matrix.py --matrix .github/build-matrix.json
 python .\ci\scripts\matrix.py --matrix .azuredevops/build-matrix.json
 ```
 
-The open profile contains ten Windows-hosted builds: DEBUG and RELEASE for X64 VS2022 with the legacy core,
-plus X64 and AARCH64 CLANGPDB with each of the legacy and Patina cores.
-The closed profile restores 15 legacy-core builds from the preserved hyperv.uefi matrix:
+The open profile contains eight Windows-hosted builds: DEBUG and RELEASE for X64 and AARCH64
+CLANGPDB with each of the legacy and Patina cores.
+The closed profile contains 13 legacy-core builds. VS2022 builds are no longer scheduled by either provider:
 
 | Host | Compiler source | Coverage |
 | --- | --- | --- |
-| Windows | VS2022 | X64 DEBUG and RELEASE |
 | Windows | Visual Studio Clang | X64 and AARCH64, DEBUG and RELEASE |
 | Windows | Windows-org Clang | X64 and AARCH64, DEBUG and RELEASE |
 | Linux | Distribution Clang | X64 and AARCH64, DEBUG and RELEASE |
 | Linux | Distribution GCC | X64 RELEASE only |
 
-The four closed X64 DEBUG rows enable the legacy debugger: VS2022 and all three Clang compiler sources.
-This matches the fetched ADO configuration. All 15 closed flavors compiled in PR
+The three closed X64 DEBUG rows enable the legacy debugger across all three Clang compiler sources.
+Before removing VS2022 coverage, all 15 closed flavors compiled in PR
 build 160110571; runtime debugging still requires validation.
 All open rows and all GCC rows disable the legacy debugger.
 ARM64 MSVC is unsupported. Disabled GCC combinations are not reintroduced.
@@ -206,7 +205,7 @@ tree always retains every original path.
 OneBranch owns uploads; the shared Python does not handle credentials or network publication.
 
 GitHub releases run only for pushes to `main`, after all builds and source checks succeed. They download
-exactly the expected ten firmware artifacts, validate flavor, commit, source origin, version and clean/official
+exactly the expected eight firmware artifacts, validate flavor, commit, source origin, version and clean/official
 flags, then create the historical `firmware-*.tar.gz` assets. Release tags remain `v<major>.<minor>.<patch>`;
 the prefix comes from `FirmwareVersion.toml`, and the serialized release job allocates the next patch.
 **OpenVMM is temporarily omitted from the release gate**, as agreed while restoring CI. Restore it before
@@ -237,15 +236,15 @@ Closed rows have explicit `shipping` and `package_suffix` metadata. Shipping var
 and AARCH64 RELEASE Windows-org CLANGPDB with the legacy core. These three keep their empty package suffix;
 all other closed variants retain their historical test suffixes. Metadata describes eligibility, not permission
 to publish, and does not mark a local or PR build official.
-VS2022 remains in the build matrix but now uses `XDV`/`XRV` test package suffixes, matching
-the shipping compiler switch in `official/main`. Shipping package IDs remain unchanged.
+VS2022 builds and their `XDV`/`XRV` test packages are no longer scheduled. The shared runner still
+accepts explicit local VS2022 builds for compatibility. Shipping package IDs remain unchanged.
 
 Build IDs are not package names. The shared VPack/NuGet ID convention is:
 `<repo>.mscoreuefi.<PR. if PR><arch>.<target><.suffix if present><.Test if PR or non-shipping>`.
 For example, the official ARM64 shipping ID remains `hyperv.uefi.mscoreuefi.AARCH64.RELEASE`, while its PR
 ID is `hyperv.uefi.mscoreuefi.PR.AARCH64.RELEASE.Test`.
 NuGet versions and OneBranch VPack version allocation remain separate contracts.
-All 15 ADO flavors produce CI artifacts/logs and NuGet files, including non-shipping `.Test` flavors.
+All 13 ADO flavors produce CI artifacts/logs and NuGet files, including non-shipping `.Test` flavors.
 `matrix.py --shipping-only` remains available for inspecting shipping metadata, but pipelines do not
 use it to filter artifacts or package creation. It does not authorize publishing.
 NuGet versions retain `<major>.<minor>-<branch-name>.<commit>`, while VPack uses the same TOML prefix and

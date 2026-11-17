@@ -49,7 +49,7 @@ def fixture(workspace: Path, row: matrix.SelectedBuild, origin: str, official: b
 
 
 class ArtifactTests(unittest.TestCase):
-    def test_ado_preserves_legacy_folders_for_all_15_flavors(self) -> None:
+    def test_ado_preserves_legacy_folders_for_all_flavors(self) -> None:
         for row in matrix.select_builds(CLOSED):
             with self.subTest(flavor=row["id"]), TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
                 root = Path(temporary)
@@ -101,7 +101,7 @@ class ArtifactTests(unittest.TestCase):
                 self.assertEqual((root / "output" / name).read_text(), name)
                 self.assertEqual((root / "output/logs" / name).read_text(), name)
 
-    def test_all_25_flavors_stage_expected_payloads(self) -> None:
+    def test_all_matrix_flavors_stage_expected_payloads(self) -> None:
         for coverage, origin in ((OPEN, "open"), (CLOSED, "closed")):
             for row in matrix.select_builds(coverage):
                 with self.subTest(flavor=row["id"]), TemporaryDirectory() as temporary:
@@ -192,7 +192,7 @@ class ArtifactTests(unittest.TestCase):
                 package_artifacts.release_archives(OPEN, root / "downloaded", root / "incomplete", COMMIT)
             self.assertFalse((root / "incomplete").exists())
 
-    def test_nuget_identity_and_payload_for_all_15_flavors(self) -> None:
+    def test_nuget_identity_and_payload_for_all_closed_flavors(self) -> None:
         for row in matrix.select_builds(CLOSED):
             for official in (True, False):
                 with self.subTest(flavor=row["id"], official=official), TemporaryDirectory() as temporary:
