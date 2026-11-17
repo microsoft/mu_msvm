@@ -45,18 +45,35 @@ jobs:
           path: Build/
           if-no-files-found: warn
 
+  # Creates a build matrix for different architectures and targets
+  select-builds:
+    name: Select Builds
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read build matrix
+        id: select
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $matrix = Get-Content .github/build-matrix.jsonc -Raw | ConvertFrom-Json
+          "matrix=$($matrix | ConvertTo-Json -Depth 10 -Compress)" >> $env:GITHUB_OUTPUT
+
   # Build the firmware for different architectures and targets
   build:
     name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core }})
     runs-on: windows-2022
+    needs: select-builds
     env:
       OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
     strategy:
       fail-fast: false
-      matrix:
-        arch: [X64, AARCH64]
-        target: [DEBUG, RELEASE]
-        core: [legacy, patina]
+      matrix: ${{ fromJSON(needs.select-builds.outputs.matrix) }}
     steps:
       - name: Configure Git
         shell: pwsh

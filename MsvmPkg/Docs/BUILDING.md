@@ -63,7 +63,8 @@ GitHub actions and ADO templates follow the same sequence:
 4. Upload artifacts and run provider-specific packaging/publication.
 
 The build and source-check command bodies match between providers. There is no custom
-CI runner CLI, generated matrix job or separate CI Python layer.
+CI runner CLI or separate CI Python layer. Each provider reads its JSONC coverage in a
+small native selection job before expanding its build matrix.
 Firmware behavior remains in Stuart settings and build plugins. Provider YAML owns
 credentials, package manifests, scheduling and uploads. The same provider files are
 mirrored between mu_msvm and hyperv.uefi; private compatibility entrypoints remain in ADO.
@@ -82,10 +83,10 @@ for the common pipeline; the required OneBranch extension stays in that pipeline
 
 ### Coverage
 
-GitHub's native matrix in `.github/workflows/platform-ci.yml` has eight Windows builds:
+GitHub's `.github/build-matrix.jsonc` has eight Windows builds:
 X64/AARCH64, DEBUG/RELEASE, legacy/Patina, all using Visual Studio Clang.
 
-ADO's native build list in `.azuredevops/pipelines/platform.yml` has thirteen legacy-core builds:
+ADO's `.azuredevops/build-matrix.jsonc` has thirteen legacy-core builds:
 
 | Host | Compiler | Coverage |
 | --- | --- | --- |
@@ -96,9 +97,15 @@ ADO's native build list in `.azuredevops/pipelines/platform.yml` has thirteen le
 
 VS2022 builds are no longer scheduled. The three closed X64 Clang DEBUG variants enable
 the legacy debugger. Shipping flavors are Windows-org Clang X64 DEBUG/RELEASE and
-AARCH64 RELEASE. Shipping is package naming metadata, not an artifact filter.
+AARCH64 RELEASE. Both JSONC files use a flat `include` array and allow comments.
+PowerShell 7 reads them and emits strict JSON for the native matrices. ADO follows `official/main`:
+an empty `salt` retains the production name; a nonempty `salt` identifies a `.Test` variant.
+There is no separate shipping flag or shipping suffix in job names.
 Every ADO build stages its artifact and packs its NuGet within its own job.
-OneBranch's agent capacity controls parallel execution.
+OneBranch requires separate Windows/Linux pools, so the selection step routes the flat
+list into host-specific runtime matrices, with up to four concurrent builds per host.
+Matrix leg names follow `<TARGET>_<ARCH>_<TOOLCHAIN>[_<salt>]`, as in `official/main`;
+OneBranch's job UI adds its fixed host-group prefix.
 
 ADO Windows uses the image's default Python and PATH, matching Official main.
 GitHub provisions Python 3.12. Linux uses a distribution Python virtual environment;

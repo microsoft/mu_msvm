@@ -1,8 +1,4 @@
 parameters:
-  - name: host
-    type: string
-  - name: compiler-source
-    type: string
   - name: officialBuild
     type: boolean
     default: false
@@ -91,7 +87,7 @@ steps:
         **/OVERRIDELOG.TXT
         **/BASETOOLS_BUILD*.*
         **/FD_REPORT.HTML
-      TargetFolder: $(ob_outputDirectory)/Build Logs ${{ iif(eq(parameters.host, 'windows'), 'Windows', 'Linux') }} $(arch) $(target) $(tool_chain)${{ iif(eq(parameters['compiler-source'], 'windows_org'), ' (WinOrg)', '') }}
+      TargetFolder: $(ob_outputDirectory)/Build Logs $(log_label)
       flattenFolders: true
       OverWrite: true
 
