@@ -1,78 +1,20 @@
-jobs:
-  - job: SourceChecks
-    displayName: Stuart CI
-    pool:
-      type: windows
-    variables:
-      WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
-      GIT_CONFIG_COUNT: "2"
-      GIT_CONFIG_KEY_0: core.autocrlf
-      GIT_CONFIG_VALUE_0: "false"
-      GIT_CONFIG_KEY_1: core.longpaths
-      GIT_CONFIG_VALUE_1: "true"
-      ob_outputDirectory: $(Build.ArtifactStagingDirectory)/SOURCE_CHECKS
-      ob_artifactBaseName: drop_Build_SourceChecks
-      ob_pipelineartifacts_enabled: true
-      ob_artifacts_main_condition: succeededOrFailed()
-      ob_nugetPublishing_enabled: false
-      ob_createvpack_enabled: false
-    steps:
-      - template: /.azuredevops/templates/windows-python.yml@self
-
-      - task: NuGetAuthenticate@1
-        inputs:
-          nuGetServiceConnections: WindowsPartners_NugetFeedConnection
-
-      - task: PipAuthenticate@1
-        inputs:
-          artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
-
-      - template: /.azuredevops/templates/repo-auth.yml@self
-        parameters:
-          mode: set
-
-      - pwsh: |
-          $ErrorActionPreference = 'Stop'
-          python -m pip install -r pip-requirements.txt
+steps:
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      python -m pip install -r pip-requirements.txt
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      foreach ($tool in @('stuart_setup', 'stuart_update')) {
+          $options = @()
+          if ($tool -eq 'stuart_setup' -and $env:SETUP_VERBOSE -eq '1') { $options += '--verbose' }
+          & $tool -c .pytool/CISettings.py @options
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          foreach ($tool in @('stuart_setup', 'stuart_update')) {
-              $options = @()
-              if ($tool -eq 'stuart_setup' -and $env:SETUP_VERBOSE -eq '1') { $options += '--verbose' }
-              & $tool -c .pytool/CISettings.py @options
-              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          stuart_ci_build -c .pytool/CISettings.py --disable-all GuidCheck=run LineEndingCheck=run UncrustifyCheck=run
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        displayName: Run Source Checks
-        env:
-          SETUP_VERBOSE: '1'
-          GIT_TRACE: '1'
-          GIT_TRACE_CURL: '1'
-          GIT_TRACE_CURL_NO_DATA: '1'
-          GIT_TRACE_REDACT: '1'
-
-      - task: PublishTestResults@2
-        displayName: Publish Stuart Results
-        condition: succeededOrFailed()
-        inputs:
-          testResultsFormat: JUnit
-          testResultsFiles: Build/TestSuites.xml
-          testRunTitle: Stuart CI
-          failTaskOnFailedTests: true
-
-      - template: /.azuredevops/templates/repo-auth.yml@self
-        parameters:
-          mode: unset
-
-      - task: CopyFiles@2
-        displayName: Stage Source Check Logs
-        condition: always()
-        inputs:
-          SourceFolder: Build
-          Contents: |
-            CI_BUILDLOG.*
-            SETUPLOG.*
-            UPDATE_LOG.*
-            TestSuites.xml
-            MsvmPkg/**
-          TargetFolder: $(ob_outputDirectory)
+      }
+      stuart_ci_build -c .pytool/CISettings.py --disable-all GuidCheck=run LineEndingCheck=run UncrustifyCheck=run
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    displayName: Run Source Checks
+    env:
+      SETUP_VERBOSE: '1'
+      GIT_TRACE: '1'
+      GIT_TRACE_CURL: '1'
+      GIT_TRACE_CURL_NO_DATA: '1'
+      GIT_TRACE_REDACT: '1'

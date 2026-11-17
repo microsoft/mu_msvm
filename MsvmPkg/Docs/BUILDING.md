@@ -68,12 +68,24 @@ Firmware behavior remains in Stuart settings and build plugins. Provider YAML ow
 credentials, package manifests, scheduling and uploads. The same provider files are
 mirrored between mu_msvm and hyperv.uefi; private compatibility entrypoints remain in ADO.
 
+Pipelines define jobs; actions/templates define steps:
+
+| GitHub | ADO | Responsibility |
+| --- | --- | --- |
+| `.github/workflows/platform-ci.yml` | `.azuredevops/pipelines/platform.yml` | Jobs, build coverage, runner setup and publication |
+| `.github/actions/build/action.yml` | `.azuredevops/templates/build.yml` | Build commands |
+| `.github/actions/source-checks/action.yml` | `.azuredevops/templates/source-checks.yml` | Source-check commands |
+| `.github/actions/stage-artifacts/action.yml` | `.azuredevops/templates/stage-artifacts.yml` | Verify/stage artifacts |
+
+ADO's `platform-ci.yml` and `platform-pr.yml` entrypoints select Official or NonOfficial mode
+for the common pipeline; the required OneBranch extension stays in that pipeline.
+
 ### Coverage
 
 GitHub's native matrix in `.github/workflows/platform-ci.yml` has eight Windows builds:
 X64/AARCH64, DEBUG/RELEASE, legacy/Patina, all using Visual Studio Clang.
 
-ADO's native build list in `.azuredevops/templates/build.yml` has thirteen legacy-core builds:
+ADO's native build list in `.azuredevops/pipelines/platform.yml` has thirteen legacy-core builds:
 
 | Host | Compiler | Coverage |
 | --- | --- | --- |
@@ -88,7 +100,7 @@ AARCH64 RELEASE. Shipping is package naming metadata, not an artifact filter.
 Every ADO build stages its artifact and packs its NuGet within its own job.
 OneBranch's agent capacity controls parallel execution.
 
-ADO Windows uses the image's default Python, validated as 3.12 through 3.14 with pip.
+ADO Windows uses the image's default Python and PATH, matching Official main.
 GitHub provisions Python 3.12. Linux uses a distribution Python virtual environment;
 its setup changes Ubuntu archive URLs to `azure.archive.ubuntu.com` before apt.
 ADO's reusable authentication template configures URL-scoped Git credentials and removes

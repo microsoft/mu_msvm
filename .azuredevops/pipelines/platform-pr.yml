@@ -1,6 +1,6 @@
 trigger: none
 
 extends:
-  template: /.azuredevops/templates/platform.yml
+  template: /.azuredevops/pipelines/platform.yml
   parameters:
-    oneBranchBase: v2/Microsoft.NonOfficial.yml
+    officialBuild: false

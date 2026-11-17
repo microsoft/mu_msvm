@@ -8,6 +8,6 @@ trigger:
 pr: none
 
 extends:
-  template: /.azuredevops/templates/platform.yml
+  template: /.azuredevops/pipelines/platform.yml
   parameters:
-    oneBranchBase: v2/Microsoft.Official.yml
+    officialBuild: true
