@@ -111,25 +111,29 @@ jobs:
           logs-artifact-name: logs-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
           build-succeeded: ${{ steps.firmware.outcome == 'success' }}
 
-  # TODO: Test each built firmware artifact with OpenVMM
-  #openvmm-test:
-  #  name: OpenVMM Test
-  #  runs-on: ubuntu-24.04
-  #  needs: build
-  #  steps:
-  #    - name: Checkout repository
-  #      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-  #      with:
-  #        persist-credentials: false
+  openvmm-test-x64:
+    name: OpenVMM Test X64
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-  #    - name: Run OpenVMM tests
-  #      uses: ./.github/actions/openvmm-test
+      - name: Test X64 firmware
+        uses: ./.github/actions/openvmm-test
+        with:
+          github-token: ${{ github.token }}
 
   # Create a github release for the firmware (only on the main branch)
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [source-checks, build]
+    needs: [source-checks, build, openvmm-test-x64]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

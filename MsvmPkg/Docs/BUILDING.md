@@ -140,9 +140,10 @@ and creates/pushes Windows VPack outputs. Linux stages the VPack-compatible payl
 but does not run the Windows-only VPack task. Windows symbols are indexed in the
 build workspace; symbol-server publication is Official-only.
 
-GitHub releases require a push to main plus successful source checks and all builds.
+GitHub releases require a push to main plus successful source checks, all builds and OpenVMM tests.
 They retain `firmware-*.tar.gz` assets and `v<major>.<minor>.<patch>` tags.
-**OpenVMM remains deferred and is temporarily absent from the release gate.**
+The OpenVMM job boots Ubuntu with every X64 firmware artifact (DEBUG/RELEASE, legacy/Patina),
+using the existing action from main. It runs on PRs and main; AARCH64 runtime tests are not included.
 Native YAML cannot be fully validated locally; hosted builds and Official publication
 still need validation before treating this POC as a production replacement.
 
