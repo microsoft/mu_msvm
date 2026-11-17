@@ -190,6 +190,7 @@ jobs:
 
               - bash: |
                   set -euo pipefail
+                  python3 -m ci.scripts.configure_ubuntu_mirror
                   apt-get update
                   apt-get install -y python3-venv mono-devel
                   case "$BUILD_TOOL_CHAIN" in

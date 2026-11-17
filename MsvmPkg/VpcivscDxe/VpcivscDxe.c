@@ -17,6 +17,9 @@
 #include <Library/UefiLib.h>
 #include <Vmbus/NtStatus.h>
 #include <IsolationTypes.h>
+#include <Protocol/AliasedMemoryMapping.h>
+
+STATIC ALIASED_MEMORY_MAPPING_PROTOCOL  *mAliasedMemoryMappingProtocol;
 
 #define AZIHSM_VENDOR_ID  0x1414
 #define AZIHSM_DEVICE_ID  0xC003
@@ -817,6 +820,26 @@ VpciChannelPdoSendAssignedResourcesMessage (
 
       // Canonicalize the address.
       Context->MappedBars[i].MappedAddress |= mCanonicalizationMask;
+
+      if (IsHardwareIsolated () && (mAliasedMemoryMappingProtocol != NULL)) {
+        //
+        // Device BAR accesses target host-backed MMIO through the shared GPA
+        // alias. BARs do not pass through RAM visibility changes, so establish
+        // their guest mappings here with uncacheable, non-executable attributes.
+        //
+        status = mAliasedMemoryMappingProtocol->CreateAliasedMapping (
+                                                  mAliasedMemoryMappingProtocol,
+                                                  Context->MappedBars[i].MappedAddress,
+                                                  Context->MappedBars[i].MappedAddress & ~mCanonicalizationMask,
+                                                  ALIGN_VALUE (Context->MappedBars[i].Size, EFI_PAGE_SIZE),
+                                                  EFI_MEMORY_UC | EFI_MEMORY_XP
+                                                  );
+        if (EFI_ERROR (status)) {
+          return status;
+        }
+
+        Context->MappedBars[i].AliasedMapping = TRUE;
+      }
     }
 
     // Since this is a 64 bit bar, set the next descriptor as null type.
@@ -1006,6 +1029,33 @@ VpcivscDestroyDevice (
   IN  PVPCI_DEVICE_CONTEXT  Context
   )
 {
+  UINTN       barIndex;
+  EFI_STATUS  status;
+
+  if (IsHardwareIsolated () && (mAliasedMemoryMappingProtocol != NULL)) {
+    for (barIndex = 0; barIndex < PCI_MAX_BAR; barIndex++) {
+      if (!Context->MappedBars[barIndex].AliasedMapping) {
+        continue;
+      }
+
+      //
+      // Release the host-backed BAR alias owned by this device, including BARs
+      // mapped before a later startup failure. No RAM visibility change is needed.
+      //
+      status = mAliasedMemoryMappingProtocol->UnmapAliasedMapping (
+                                                mAliasedMemoryMappingProtocol,
+                                                Context->MappedBars[barIndex].MappedAddress,
+                                                ALIGN_VALUE (Context->MappedBars[barIndex].Size, EFI_PAGE_SIZE)
+                                                );
+
+      // Something odd has occurred if we couldn't unmap this, but it isn't fatal, it doesn't leave the host
+      // sharing enable, just in the guest page table
+      ASSERT_EFI_ERROR (status);
+
+      Context->MappedBars[barIndex].AliasedMapping = FALSE;
+    }
+  }
+
   FreePool (Context->DevicePath);
 }
 
@@ -1054,6 +1104,17 @@ VpcivscDriverEntryPoint (
   if (!PcdGetBool (PcdVpciBootEnabled)) {
     DEBUG ((DEBUG_VPCI_INFO, "PcdVpciBootEnabled is false, VPCI VSC not being registered\n"));
     return EFI_UNSUPPORTED;
+  }
+
+  status = gBS->LocateProtocol (
+                  &gAliasedMemoryMappingProtocolGuid,
+                  NULL,
+                  (VOID **)&mAliasedMemoryMappingProtocol
+                  );
+  if (EFI_ERROR (status)) {
+    // If we can't find the protocol, this is the legacy C core, so we have the mappings already and can
+    // safely continue
+    mAliasedMemoryMappingProtocol = NULL;
   }
 
   // Install the DriverBinding and component name protocols onto the driver image handle

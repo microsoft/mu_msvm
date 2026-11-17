@@ -212,8 +212,6 @@ INF RuleOverride=ACPITABLE MsvmPkg/AcpiTables/AcpiTables.inf
 INF MsvmPkg/AziHsmDxe/AziHsmDxe.inf
 !if $(USE_LEGACY_C_CORE) == TRUE
   INF MsvmPkg/CpuDxe/CpuDxe.inf
-!else
-  INF PatinaPkg/MpDxe/MpDxe.inf
 !endif
 INF MsvmPkg/EfiHvDxe/EfiHvDxe.inf
 INF MsvmPkg/EmclDxe/EmclDxe.inf

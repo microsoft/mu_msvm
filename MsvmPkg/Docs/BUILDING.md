@@ -56,7 +56,10 @@ python .\ci\scripts\build.py --arch AARCH64 --target RELEASE --tool-chain CLANGP
 
 The local runner does not download private compiler packages or install system compilers. ADO provisions
 Windows-org LLVM tools and headers from the pinned internal feed; its Linux jobs install distribution tools
-and create a Python virtual environment. Local developers provide the equivalent toolchain environment.
+and create a Python virtual environment. Before apt, the ADO Linux adapter invokes
+`python3 -m ci.scripts.configure_ubuntu_mirror` to switch Ubuntu archive sources to
+`azure.archive.ubuntu.com`, matching `official/main`. Security and third-party feeds are unchanged.
+Local developers provide the equivalent toolchain environment.
 
 Add `--dry-run` to print the commands without installing dependencies or starting a build.
 This command builds one flavor only; it does not select an open/closed repository matrix or publish artifacts.

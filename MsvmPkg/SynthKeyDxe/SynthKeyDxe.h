@@ -23,6 +23,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/CrashLib.h>
 #include <Library/PcdLib.h>
 #include <Library/EmclLib.h>
 #include "AllowNamelessAggregate.h"

@@ -162,6 +162,12 @@ extern GUID  gEfiHvProtocolGuid;
 
 typedef struct _EFI_HV_PROTECTION_OBJECT *EFI_HV_PROTECTION_HANDLE;
 
+/**
+  Makes a page-aligned private address range host-visible. On hardware-isolated
+  systems, establishes the shared virtual mapping before zeroing the range. Callers
+  remain responsible for computing the shared VA. MakeAddressRangeNotHostVisible
+  removes protocol-created mappings when visibility is revoked.
+**/
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HV_MAKE_ADDRESS_RANGE_HOST_VISIBLE)(

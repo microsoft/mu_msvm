@@ -21,12 +21,12 @@ GhcbpEnableInterrupts (
   EFI_TPL  tpl
   );
 
-typedef struct _GHCB_HYPERCALL {
+typedef struct _GHCB_PAGE {
   UINT64    Parameters[511];
   UINT16    Reserved;
   UINT16    Version;
   UINT32    Format;
-} GHCB_HYPERCALL, *PGHCB_HYPERCALL;
+} GHCB_PAGE, *PGHCB_PAGE;
 
 #define SEV_MSR_GHCB  0xC0010130
 
@@ -137,8 +137,8 @@ GhcbWriteMsr (
   SetGhcbField64 (Ghcb, GHCB_FIELD64_RAX, (UINT32)RegisterValue);
   SetGhcbField64 (Ghcb, GHCB_FIELD64_RDX, (RegisterValue >> 32));
 
-  ((PGHCB_HYPERCALL)Ghcb)->Format  = 0;
-  ((PGHCB_HYPERCALL)Ghcb)->Version = 1;
+  ((PGHCB_PAGE)Ghcb)->Format  = 0;
+  ((PGHCB_PAGE)Ghcb)->Version = 1;
 
   AsmVmgExit ();
 
@@ -169,8 +169,8 @@ GhcbReadMsr (
   SetGhcbField64 (Ghcb, GHCB_FIELD64_EXITINFO2, 0);
   SetGhcbField64 (Ghcb, GHCB_FIELD64_RCX, MsrNumber);
 
-  ((PGHCB_HYPERCALL)Ghcb)->Format  = 0;
-  ((PGHCB_HYPERCALL)Ghcb)->Version = 1;
+  ((PGHCB_PAGE)Ghcb)->Format  = 0;
+  ((PGHCB_PAGE)Ghcb)->Version = 1;
 
   AsmVmgExit ();
 

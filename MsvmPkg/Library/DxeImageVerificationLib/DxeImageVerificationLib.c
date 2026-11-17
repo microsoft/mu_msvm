@@ -20,9 +20,12 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include "DxeImageVerificationLib.h"
 
-#include <BiosBootLogInterface.h>             // MS_HYP_CHANGE
-#include <Library/CrashLib.h>                 // MS_HYP_CHANGE
-#include <Library/ReportStatusCodeLib.h>      // MS_HYP_CHANGE
+// MS_HYP_CHANGE BEGIN
+#include <BiosBootLogInterface.h>
+#include <Library/CrashLib.h>
+#include <Library/ReportStatusCodeLib.h>
+#include <Library/EfiDiagnosticsLib.h>
+// MS_HYP_CHANGE END
 
 //
 // Caution: This is used by a function which may receive untrusted input.
@@ -75,7 +78,9 @@ HASH_TABLE  mHash[] = {
 
 EFI_STRING  mHashTypeStr;
 
-BOOLEAN  DxeImageVerificationStatusCodeReported = FALSE;     // MS_HYP_CHANGE
+// MS_HYP_CHANGE BEGIN
+BOOLEAN  DxeImageVerificationStatusCodeReported = FALSE;
+// MS_HYP_CHANGE END
 
 /**
   SecureBoot Hook for processing image verification.
@@ -624,6 +629,7 @@ Done:
   @param[in]  AuthDataSize        Size of the Authenticode Signature in bytes.
 
   @retval EFI_UNSUPPORTED             Hash algorithm is not supported.
+  @retval EFI_BAD_BUFFER_SIZE         AuthData provided is invalid size.
   @retval EFI_SUCCESS                 Hash successfully.
 
 **/
@@ -635,28 +641,28 @@ HashPeImageByType (
 {
   UINT8  Index;
 
-  for (Index = 0; Index < HASHALG_MAX; Index++) {
+  //
+  // Check the Hash algorithm in PE/COFF Authenticode.
+  //    According to PKCS#7 Definition:
+  //        SignedData ::= SEQUENCE {
+  //            version Version,
+  //            digestAlgorithms DigestAlgorithmIdentifiers,
+  //            contentInfo ContentInfo,
+  //            .... }
+  //    The DigestAlgorithmIdentifiers can be used to determine the hash algorithm in PE/COFF hashing
+  //    This field has the fixed offset (+32) in final Authenticode ASN.1 data.
+  //    Fixed offset (+32) is calculated based on two bytes of length encoding.
+  //
+  if ((AuthDataSize > 1) && ((*(AuthData + 1) & TWO_BYTE_ENCODE) != TWO_BYTE_ENCODE)) {
     //
-    // Check the Hash algorithm in PE/COFF Authenticode.
-    //    According to PKCS#7 Definition:
-    //        SignedData ::= SEQUENCE {
-    //            version Version,
-    //            digestAlgorithms DigestAlgorithmIdentifiers,
-    //            contentInfo ContentInfo,
-    //            .... }
-    //    The DigestAlgorithmIdentifiers can be used to determine the hash algorithm in PE/COFF hashing
-    //    This field has the fixed offset (+32) in final Authenticode ASN.1 data.
-    //    Fixed offset (+32) is calculated based on two bytes of length encoding.
+    // Only support two bytes of Long Form of Length Encoding.
     //
-    if ((*(AuthData + 1) & TWO_BYTE_ENCODE) != TWO_BYTE_ENCODE) {
-      //
-      // Only support two bytes of Long Form of Length Encoding.
-      //
-      continue;
-    }
+    return EFI_BAD_BUFFER_SIZE;
+  }
 
+  for (Index = 0; Index < HASHALG_MAX; Index++) {
     if (AuthDataSize < 32 + mHash[Index].OidLength) {
-      return EFI_UNSUPPORTED;
+      continue;
     }
 
     if (CompareMem (AuthData + 32, mHash[Index].OidValue, mHash[Index].OidLength) == 0) {
@@ -1356,7 +1362,9 @@ IsForbiddenByDbx (
                         mImageDigestSize
                         );
         if (IsForbidden) {
-          DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but signature is forbidden by DBX.\n"));
+          // MS_HYP_CHANGE BEGIN
+          DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is signed but signature is forbidden by DBX.\n"));
+          // MS_HYP_CHANGE END
           goto Done;
         }
 
@@ -1423,7 +1431,9 @@ IsForbiddenByDbx (
         continue;
       } else {
         IsForbidden = TRUE;
-        DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but signature failed the timestamp check.\n"));
+        // MS_HYP_CHANGE BEGIN
+        DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is signed but signature failed the timestamp check.\n"));
+        // MS_HYP_CHANGE END
         goto Done;
       }
     }
@@ -1583,7 +1593,9 @@ IsAllowedByDb (
               //
               VerifyStatus = PassTimestampCheck (AuthData, AuthDataSize, &RevocationTime);
               if (!VerifyStatus) {
-                DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed and signature is accepted by DB, but its root cert failed the timestamp check.\n"));
+                // MS_HYP_CHANGE BEGIN
+                DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is signed and signature is accepted by DB, but its root cert failed the timestamp check.\n"));
+                // MS_HYP_CHANGE END
               }
             }
           }
@@ -1625,7 +1637,7 @@ Done:
 // MS_HYP_CHANGE BEGIN
 
 /**
-  Report status code for DXE image verfication.
+  Report status code for DXE image verification.
 
   @param[in]    File       This is a pointer to the device path of the file that is
                            being dispatched.
@@ -1748,7 +1760,10 @@ DxeImageVerificationHandler (
   BOOLEAN                       IsFound;
   UINT8                         HashAlg;
   BOOLEAN                       IsFoundInDatabase;
-  UINTN                         CachedVerificationFailure; // MS_HYP_CHANGE
+  // MS_HYP_CHANGE BEGIN
+  UINTN  CachedVerificationFailure;
+
+  // MS_HYP_CHANGE END
 
   SignatureList     = NULL;
   SignatureListSize = 0;
@@ -1759,10 +1774,18 @@ DxeImageVerificationHandler (
   IsVerified        = FALSE;
   IsFound           = FALSE;
   IsFoundInDatabase = FALSE;
+
   // MS_HYP_CHANGE BEGIN
   CachedVerificationFailure              = BootPending;
   DxeImageVerificationStatusCodeReported = FALSE;
   // MS_HYP_CHANGE END
+
+  //
+  // Sanity check
+  //
+  if (File == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   //
   // Check the image type and get policy setting.
@@ -1797,7 +1820,9 @@ DxeImageVerificationHandler (
   }
 
   if (Policy == NEVER_EXECUTE) {
-    ReportDxeImageVerificationStatusCode (File, SecureBootPolicyDenied);     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    ReportDxeImageVerificationStatusCode (File, SecureBootPolicyDenied);
+    // MS_HYP_CHANGE END
     return EFI_ACCESS_DENIED;
   }
 
@@ -1807,7 +1832,9 @@ DxeImageVerificationHandler (
   //
   ASSERT (Policy != QUERY_USER_ON_SECURITY_VIOLATION && Policy != ALLOW_EXECUTE_ON_SECURITY_VIOLATION);
   if ((Policy == QUERY_USER_ON_SECURITY_VIOLATION) || (Policy == ALLOW_EXECUTE_ON_SECURITY_VIOLATION)) {
-    FAIL_FAST (EFI_SECURITY_VIOLATION, "Invalid secure boot policy");        // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    FAIL_FAST (EFI_SECURITY_VIOLATION, "Invalid secure boot policy");
+    // MS_HYP_CHANGE END
   }
 
   SecureBootSize = sizeof (SecureBoot);
@@ -1823,10 +1850,12 @@ DxeImageVerificationHandler (
   // Skip verification if SecureBoot is disabled but not AuditMode
   //
   if ((VarStatus == EFI_SUCCESS) &&
-      // MS_HYP_CHANGE: Hyper-V stack originally added EFI_VARIABLE_NON_VOLATILE to attributes,
+      // MS_HYP_CHANGE BEGIN
+      // Hyper-V stack originally added EFI_VARIABLE_NON_VOLATILE to attributes,
       // so skip this check for compatibility
       // (VarAttr == (EFI_VARIABLE_BOOTSERVICE_ACCESS |
       //             EFI_VARIABLE_RUNTIME_ACCESS)) &&
+      // MS_HYP_CHANGE END
       (SecureBoot == SECURE_BOOT_MODE_DISABLE))
   {
     return EFI_SUCCESS;
@@ -1854,8 +1883,10 @@ DxeImageVerificationHandler (
     //
     // The information can't be got from the invalid PeImage
     //
-    DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: PeImage invalid. Cannot retrieve image information.\n"));
-    CachedVerificationFailure = SecureBootInvalidImage;     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: PeImage invalid. Cannot retrieve image information.\n"));
+    CachedVerificationFailure = SecureBootInvalidImage;
+    // MS_HYP_CHANGE END
     goto Failed;
   }
 
@@ -1878,8 +1909,10 @@ DxeImageVerificationHandler (
     //
     // It is not a valid Pe/Coff file.
     //
-    DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Not a valid PE/COFF image.\n"));
-    CachedVerificationFailure = SecureBootInvalidImage;     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Not a valid PE/COFF image.\n"));
+    CachedVerificationFailure = SecureBootInvalidImage;
+    // MS_HYP_CHANGE END
     goto Failed;
   }
 
@@ -1931,8 +1964,10 @@ DxeImageVerificationHandler (
         //
         // Image Hash is in forbidden database (DBX).
         //
-        DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is forbidden by DBX.\n", mHashTypeStr));
-        CachedVerificationFailure = SecureBootHashDenied;     // MS_HYP_CHANGE
+        // MS_HYP_CHANGE BEGIN
+        DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is forbidden by DBX.\n", mHashTypeStr));
+        CachedVerificationFailure = SecureBootHashDenied;
+        // MS_HYP_CHANGE END
         goto Failed;
       }
 
@@ -1958,8 +1993,10 @@ DxeImageVerificationHandler (
     //
     // Image Hash is not found in both forbidden and allowed database.
     //
-    DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
-    CachedVerificationFailure = SecureBootUnsignedHashNotInDb;     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is not signed and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
+    CachedVerificationFailure = SecureBootUnsignedHashNotInDb;
+    // MS_HYP_CHANGE END
     goto Failed;
   }
 
@@ -2037,7 +2074,7 @@ DxeImageVerificationHandler (
       IsVerified = FALSE;
       // MS_HYP_CHANGE BEGIN
       CachedVerificationFailure = SecureBootCertDenied;
-      DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Certificate is forbidden by DBX.\n"));
+      DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Certificate is forbidden by DBX.\n"));
       // MS_HYP_CHANGE END
       break;
     }
@@ -2063,9 +2100,11 @@ DxeImageVerificationHandler (
                  );
     if (EFI_ERROR (DbStatus) || IsFound) {
       Action = EFI_IMAGE_EXECUTION_AUTH_SIG_FOUND;
-      DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but %s hash of image is found in DBX.\n", mHashTypeStr));
-      IsVerified                = FALSE;
-      CachedVerificationFailure = SecureBootHashDenied;   // MS_HYP_CHANGE
+      // MS_HYP_CHANGE BEGIN
+      DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is signed but %s hash of image is found in DBX.\n", mHashTypeStr));
+      CachedVerificationFailure = SecureBootHashDenied;
+      // MS_HYP_CHANGE END
+      IsVerified = FALSE;
       break;
     }
 
@@ -2081,8 +2120,10 @@ DxeImageVerificationHandler (
         IsVerified = TRUE;
       } else {
         Action = EFI_IMAGE_EXECUTION_AUTH_SIG_NOT_FOUND;
-        DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Image is signed but signature is not allowed by DB and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
-        CachedVerificationFailure = SecureBootSignedHashNotFound;   // MS_HYP_CHANGE
+        // MS_HYP_CHANGE BEGIN
+        DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Image is signed but signature is not allowed by DB and %s hash of image is not found in DB/DBX.\n", mHashTypeStr));
+        CachedVerificationFailure = SecureBootSignedHashNotFound;
+        // MS_HYP_CHANGE END
       }
     }
   }
@@ -2092,7 +2133,9 @@ DxeImageVerificationHandler (
     // The Size in Certificate Table or the attribute certificate table is corrupted.
     //
     IsVerified = FALSE;
-    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);
+    // MS_HYP_CHANGE END
   }
 
   if (IsVerified) {
@@ -2120,10 +2163,11 @@ DxeImageVerificationHandler (
   // MS_HYP_CHANGE BEGIN
   else {
     CachedVerificationFailure = SecureBootNeitherCertNorHashInDb;
-    DEBUG ((DEBUG_INFO, "DxeImageVerificationLib: Neither certificate nor hash found in DB.\n"));
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "DxeImageVerificationLib: Neither certificate nor hash found in DB.\n"));
   }
 
   // MS_HYP_CHANGE END
+
 Failed:
   // MS_HYP_CHANGE BEGIN
   //
@@ -2144,9 +2188,13 @@ Failed:
   // MU_CHANGE Start - CodeQL change - unguardednullreturndereference
   if (NameStr != NULL) {
     AddImageExeInfo (Action, NameStr, File, SignatureList, SignatureListSize);
-    DEBUG ((DEBUG_INFO, "The image doesn't pass verification: %s\n", NameStr));
+    // MS_HYP_CHANGE BEGIN
+    DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "The image doesn't pass verification: %s\n", NameStr));
+    // MS_HYP_CHANGE END
     FreePool (NameStr);
-    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);     // MS_HYP_CHANGE
+    // MS_HYP_CHANGE BEGIN
+    ReportDxeImageVerificationStatusCode (File, SecureBootFailed);
+    // MS_HYP_CHANGE END
   }
 
   // MU_CHANGE End - CodeQL change - unguardednullreturndereference

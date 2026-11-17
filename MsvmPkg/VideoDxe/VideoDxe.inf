@@ -27,6 +27,7 @@
 [LibraryClasses]
     BaseLib
     BaseMemoryLib
+    CrashLib
     DebugLib
     DevicePathLib
     DxeServicesTableLib

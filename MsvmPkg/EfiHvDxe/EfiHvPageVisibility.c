@@ -11,9 +11,8 @@
 
 STATIC ALIASED_MEMORY_MAPPING_PROTOCOL  *mAliasedMemoryMappingProtocol;
 
-STATIC
 EFI_STATUS
-EfiMapSharedGpaRange (
+EfiHvpMapSharedGpaRange (
   UINT32              IsolationType,
   HV_GPA_PAGE_NUMBER  StartingPageNumber,
   UINT64              PageCount,
@@ -25,7 +24,7 @@ EfiMapSharedGpaRange (
   UINT64      SharedPa;
   UINT64      SharedVa;
 
-  if ((IsolationType != UefiIsolationTypeTdx) || (PageCount == 0)) {
+  if (!IsHardwareIsolatedEx (IsolationType) || (PageCount == 0)) {
     return EFI_SUCCESS;
   }
 
@@ -36,8 +35,10 @@ EfiMapSharedGpaRange (
                     (VOID **)&mAliasedMemoryMappingProtocol
                     );
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_WARN, "%a: Failed to locate Aliased Memory Mapping Protocol. Status: %r\n", __func__, Status));
-      return Status;
+      // If the protocol is not present, we are not running with Patina and have mappings for the ranges
+      // we need already.
+      mAliasedMemoryMappingProtocol = NULL;
+      return EFI_SUCCESS;
     }
   }
 
@@ -46,6 +47,10 @@ EfiMapSharedGpaRange (
   Length   = PageCount * EFI_PAGE_SIZE;
 
   if (Visible) {
+    //
+    // Host-visible RAM is accessed through its shared GPA alias. Changing
+    // visibility does not install the guest VA mapping needed to use it.
+    //
     Status = mAliasedMemoryMappingProtocol->CreateAliasedMapping (
                                               mAliasedMemoryMappingProtocol,
                                               SharedVa,
@@ -54,6 +59,10 @@ EfiMapSharedGpaRange (
                                               EFI_MEMORY_WB | EFI_MEMORY_XP
                                               );
   } else {
+    //
+    // Visibility has been revoked, so the shared alias must no longer remain
+    // mapped when the underlying RAM is reused as private memory.
+    //
     Status = mAliasedMemoryMappingProtocol->UnmapAliasedMapping (
                                               mAliasedMemoryMappingProtocol,
                                               SharedVa,
@@ -156,10 +165,11 @@ EfiHvpModifySparseGpaPageHostVisibility (
       FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (pagesProcessed <= PageCount);
 
       //
-      // [Un]map the shared alias of the pages that had visibility changes so
-      // that they can be accessed through EfiHvpSharedVa.
+      // Before the bypass connection exists, its communication pages must be
+      // shared directly with the host. Map the shared alias for guest access,
+      // or remove it when this early visibility transition makes pages private.
       //
-      status = EfiMapSharedGpaRange (
+      status = EfiHvpMapSharedGpaRange (
                  mIsolationType,
                  GpaPageBase,
                  pagesProcessed,
@@ -305,16 +315,25 @@ EfiHvpModifySparseGpaPageHostVisibility (
         FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
       }
     }
+  }
 
-    // [Un]map the shared alias of the pages that had visibility changes.
-    status = EfiMapSharedGpaRange (
-               mIsolationType,
-               GpaPageBase,
-               totalPageCountProcessed,
-               MapFlags == 0 ? FALSE : TRUE
-               );
+  if (IsHardwareIsolatedEx (mIsolationType)) {
+    EFI_STATUS  mappingStatus;
 
-    if (EFI_ERROR (status)) {
+    //
+    // These pages carry host-visible data, including bypass hypercall input,
+    // Vmbus buffers, and DMA buffers. The guest needs their shared VA mappings
+    // even when a paravisor changes visibility. Update only the processed pages
+    // so partial failures can be rolled back through the same visibility API.
+    //
+    mappingStatus = EfiHvpMapSharedGpaRange (
+                      mIsolationType,
+                      GpaPageBase,
+                      totalPageCountProcessed,
+                      MapFlags == 0 ? FALSE : TRUE
+                      );
+
+    if (EFI_ERROR (mappingStatus)) {
       FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
     }
   }

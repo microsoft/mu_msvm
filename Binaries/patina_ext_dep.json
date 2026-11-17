@@ -2,9 +2,9 @@
     "scope": "global",
     "type": "web",
     "name": "Patina_Dxe_Core",
-    "source": "https://github.com/microsoft/msvm-patina-bins/releases/download/v0.1.0/patina_dxe_core_msvm.zip",
-    "version": "0.1.0",
-    "sha256": "91ca629fec2177c5ac685ea53e34306f621d208ee1c58c5cb7661f12573e6de9",
+    "source": "https://github.com/microsoft/msvm-patina-bins/releases/download/v0.3.1/patina_dxe_core_msvm.zip",
+    "version": "0.3.1",
+    "sha256": "047af6caafe64ad3ddf58062952132ac538594620c82e8de06738ffcecdc50fa",
     "internal_path": "/",
     "compression_type": "zip",
     "flags": [

@@ -65,7 +65,11 @@ HvHypercallpIssueGhcbHypercall (
       case HvCallPostMessage:
       {
         PHV_INPUT_POST_MESSAGE  input;
-        input      = InputPage;
+        input = InputPage;
+        if (input->PayloadSize > HV_MESSAGE_PAYLOAD_BYTE_COUNT) {
+          return HV_STATUS_INVALID_PARAMETER;
+        }
+
         headerSize = sizeof (*input) + input->PayloadSize;
         repSize    = 0;
         break;
