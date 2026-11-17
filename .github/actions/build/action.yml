@@ -1,0 +1,53 @@
+name: Build Firmware
+description: Prepare and build one firmware flavor through native Stuart commands
+
+inputs:
+  arch:
+    description: Target architecture
+    required: true
+  target:
+    description: Build target
+    required: true
+  core:
+    description: DXE core (legacy or patina)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Locate Visual Studio Clang
+      shell: pwsh
+      run: |
+        $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+        $installation = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        if ($LASTEXITCODE -ne 0 -or -not $installation) { throw 'Visual Studio 2022 was not found' }
+        $clangBin = Join-Path $installation 'VC/Tools/Llvm/x64/bin'
+        if (-not (Test-Path (Join-Path $clangBin 'clang.exe'))) { throw 'Visual Studio Clang was not found' }
+        "CLANG_BIN=$clangBin/" >> $env:GITHUB_ENV
+
+    - name: Build Firmware
+      shell: pwsh
+      env:
+        BUILD_ARCH: ${{ inputs.arch }}
+        BUILD_TARGET: ${{ inputs.target }}
+        BUILD_TOOL_CHAIN: CLANGPDB
+        BUILD_CORE: ${{ inputs.core }}
+        BUILD_LEGACY_DEBUGGER: '0'
+        SOURCE_ORIGIN: open
+      run: |
+        $ErrorActionPreference = 'Stop'
+        python -m pip install -r pip-requirements.txt
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $legacy = if ($env:BUILD_CORE -eq 'legacy') { 'TRUE' } else { 'FALSE' }
+        $flavor = @("BUILD_ARCH=$env:BUILD_ARCH", "TARGET=$env:BUILD_TARGET",
+            "TOOL_CHAIN_TAG=$env:BUILD_TOOL_CHAIN", "BLD_*_USE_LEGACY_C_CORE=$legacy",
+            "BLD_*_LEGACY_DEBUGGER=$env:BUILD_LEGACY_DEBUGGER")
+        foreach ($tool in @('stuart_setup', 'stuart_update', 'stuart_build')) {
+            $buildOptions = @()
+            if ($tool -eq 'stuart_build') {
+                $buildOptions = @('BUILDREPORTING=TRUE', 'BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY',
+                    'LaunchLogOnSuccess=FALSE', 'LaunchLogOnError=FALSE')
+            }
+            & $tool -c MsvmPkg/PlatformBuild.py @flavor @buildOptions
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }

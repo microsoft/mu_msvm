@@ -1,0 +1,301 @@
+parameters:
+  - name: officialPipeline
+    type: boolean
+    default: false
+  - name: publishNuget
+    type: boolean
+    default: false
+  - name: hosts
+    type: object
+    default: [windows, linux]
+
+resources:
+  repositories:
+    - repository: templates_onebranch
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: ${{ iif(parameters.officialPipeline, 'v2/Microsoft.Official.yml', 'v2/Microsoft.NonOfficial.yml') }}@templates_onebranch
+  parameters:
+    platform:
+      name: windows_undocked
+    globalSdl:
+      tsa:
+        enabled: false
+    featureFlags:
+      WindowsHostVersion: 1ESWindows2022
+    nugetPublishing:
+      feeds:
+        - name: OS/HyperVUefi
+          continueOnConflict: false
+          files_to_publish: '*.nupkg;!*.symbols.nupkg'
+    git:
+      submodules: false
+    stages:
+      # Run stuart plugins to validate the source code
+      - stage: SourceChecks
+        jobs:
+          - job: SourceChecks
+            displayName: Stuart CI
+            pool:
+              type: windows
+            variables:
+              WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+              GIT_CONFIG_COUNT: '2'
+              GIT_CONFIG_KEY_0: core.autocrlf
+              GIT_CONFIG_VALUE_0: 'false'
+              GIT_CONFIG_KEY_1: core.longpaths
+              GIT_CONFIG_VALUE_1: 'true'
+              ob_outputDirectory: $(Build.ArtifactStagingDirectory)/SOURCE_CHECKS
+              ob_artifactBaseName: drop_Build_SourceChecks
+              ob_pipelineartifacts_enabled: true
+              ob_artifacts_main_condition: succeededOrFailed()
+              ob_nugetPublishing_enabled: false
+              ob_createvpack_enabled: false
+            steps:
+              - task: NuGetAuthenticate@1
+                inputs:
+                  nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+              - task: PipAuthenticate@1
+                inputs:
+                  artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
+
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: set
+
+              - template: /.azuredevops/templates/source-checks.yml@self
+
+              - task: PublishTestResults@2
+                displayName: Publish Stuart Results
+                condition: succeededOrFailed()
+                inputs:
+                  testResultsFormat: JUnit
+                  testResultsFiles: Build/TestSuites.xml
+                  testRunTitle: Stuart CI
+                  failTaskOnFailedTests: true
+
+              - template: /.azuredevops/templates/repo-auth.yml@self
+                parameters:
+                  mode: unset
+
+              - task: CopyFiles@2
+                displayName: Stage Source Check Logs
+                condition: always()
+                inputs:
+                  SourceFolder: Build
+                  Contents: |
+                    CI_BUILDLOG.*
+                    SETUPLOG.*
+                    UPDATE_LOG.*
+                    TestSuites.xml
+                    MsvmPkg/**
+                  TargetFolder: $(ob_outputDirectory)
+
+      # Build the firmware for different architectures and targets
+      - stage: Build
+        ${{ if or(parameters.officialPipeline, parameters.publishNuget) }}:
+          dependsOn: [SourceChecks]
+        ${{ else }}:
+          dependsOn: []
+        variables:
+          # Official OneBranch runs on PR/topic refs publish test packages, not official firmware.
+          ${{ if parameters.officialPipeline }}:
+            OfficialBuild: $[iif(and(startsWith(variables['Build.SourceBranch'], 'refs/heads/official/'), ne(variables['Build.Reason'], 'PullRequest')), '1', '0')]
+          ${{ else }}:
+            OfficialBuild: '0'
+        jobs:
+          - job: SelectBuilds
+            displayName: Select Builds
+            pool:
+              type: windows
+            variables:
+              WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+              ob_outputDirectory: $(Build.ArtifactStagingDirectory)/MATRIX
+              ob_nugetPublishing_enabled: false
+              ob_createvpack_enabled: false
+            steps:
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+                  $builds = (Get-Content .azuredevops/build-matrix.jsonc -Raw | ConvertFrom-Json).include
+                  foreach ($platform in @('windows', 'linux')) {
+                      $matrix = @{}
+                      foreach ($row in $builds | Where-Object host -eq $platform) {
+                          $artifactSalt = if ($row.salt) { "_$($row.salt)" } else { '' }
+                          $label = "$($row.target)_$($row.arch)_$($row.tool_chain)$artifactSalt"
+                          if ($label -notmatch '^[A-Za-z][A-Za-z0-9_]{0,99}$' -or $matrix.ContainsKey($label)) {
+                              throw "Invalid or duplicate matrix label: $label"
+                          }
+                          $salt = if ($row.salt) { ".$($row.salt)" } else { '' }
+                          $prefix = if ($env:OFFICIAL_BUILD -eq '1') { '' } else { 'PR.' }
+                          $test = if ($env:OFFICIAL_BUILD -eq '1' -and -not $row.salt) { '' } else { '.Test' }
+                          $row | Add-Member PackageName "$env:SOURCE_REPOSITORY.mscoreuefi.$prefix$($row.arch).$($row.target)$salt$test"
+                          $row | Add-Member artifact_name "drop_Build_$($row.target)_$($row.arch)_$($row.tool_chain)$artifactSalt"
+                          $hostLabel = if ($platform -eq 'windows') { 'Windows' } else { 'Linux' }
+                          $compilerLabel = if ($row.compiler_source -eq 'windows_org') { ' (WinOrg)' } else { '' }
+                          $row | Add-Member log_label "$hostLabel $($row.arch) $($row.target) $($row.tool_chain)$compilerLabel"
+                          $matrix[$label] = $row
+                      }
+                      if ($matrix.Count -eq 0) { throw "No builds selected for $platform" }
+                      Write-Host "##vso[task.setvariable variable=$platform;isOutput=true]$($matrix | ConvertTo-Json -Depth 10 -Compress)"
+                  }
+                name: select
+                displayName: Read Build Matrix
+                env:
+                  SOURCE_REPOSITORY: $(Build.Repository.Name)
+                  OFFICIAL_BUILD: $(OfficialBuild)
+
+          - ${{ each host in parameters.hosts }}:
+              - job: Build_${{ host }}
+                displayName: Firmware (${{ host }})
+                dependsOn: SelectBuilds
+                pool:
+                  type: ${{ host }}
+                strategy:
+                  maxParallel: 4
+                  matrix: $[ dependencies.SelectBuilds.outputs['select.${{ host }}'] ]
+                variables:
+                  WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2022/vse2022:latest
+                  LinuxContainerImage: onebranch.azurecr.io/linux/ubuntu-2404:latest
+                  GIT_CONFIG_COUNT: '2'
+                  GIT_CONFIG_KEY_0: core.autocrlf
+                  GIT_CONFIG_VALUE_0: 'false'
+                  GIT_CONFIG_KEY_1: core.longpaths
+                  GIT_CONFIG_VALUE_1: 'true'
+                  BuildDirectory: Build/Msvm$(arch)/$(target)_$(tool_chain)
+                  ob_outputDirectory: $(Build.ArtifactStagingDirectory)/BUILD
+                  ob_artifactBaseName: $(artifact_name)
+                  ob_pipelineartifacts_enabled: true
+                  ob_artifacts_main_condition: succeededOrFailed()
+                  ob_nugetPublishing_enabled: ${{ parameters.publishNuget }}
+                  ob_createvpack_enabled: ${{ and(parameters.officialPipeline, eq(host, 'windows')) }}
+                  ob_createvpack_packagename: $(PackageName)
+                  ob_createvpack_description: Hyper V UEFI Firmware
+                  ob_createvpack_versionAs: parts
+                  ob_createvpack_majorVer: $(ReleaseMajor)
+                  ob_createvpack_minorVer: $(ReleaseMinor)
+                  ob_createvpack_metadata: $(Build.SourceVersion)
+                  ob_createvpack_vpackdirectory: $(ob_outputDirectory)/$(BuildDirectory)/Bin
+                  ob_createvpack_failOnStdErr: true
+                  ob_createvpack_verbose: true
+                steps:
+                  - task: NuGetAuthenticate@1
+                    inputs:
+                      nuGetServiceConnections: WindowsPartners_NugetFeedConnection
+
+                  - task: PipAuthenticate@1
+                    inputs:
+                      artifactFeeds: $(System.TeamProject)/$(System.TeamProject)_PublicPackages
+
+                  - ${{ if eq(host, 'windows') }}:
+                      - pwsh: |
+                          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+                          $installation = & $vswhere -latest -version '[17.0,18.0)' -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                          if ($LASTEXITCODE -ne 0 -or -not $installation) { throw 'Visual Studio 2022 was not found' }
+                          $clangBin = Join-Path $installation 'VC/Tools/Llvm/x64/bin'
+                          if (-not (Test-Path (Join-Path $clangBin 'clang.exe'))) { throw 'Visual Studio Clang was not found' }
+                          Write-Host "##vso[task.setvariable variable=CLANG_BIN]$clangBin/"
+                        displayName: Locate Visual Studio Clang
+                        condition: and(succeeded(), eq(variables['compiler_source'], 'visual_studio'))
+                      - task: DownloadPackage@1
+                        displayName: Download Windows-org LLVM Tools
+                        condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+                        inputs:
+                          packageType: nuget
+                          feed: ES-LLVM
+                          definition: llvm.tools
+                          version: '22.1.1-47'
+                          downloadPath: $(Agent.TempDirectory)/windows-clang/bin
+                      - task: DownloadPackage@1
+                        displayName: Download Windows-org Clang Headers
+                        condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+                        inputs:
+                          packageType: nuget
+                          feed: ES-LLVM
+                          definition: clang.headers
+                          version: '22.1.1-47'
+                          downloadPath: $(Agent.TempDirectory)/windows-clang/lib/clang/22
+                      - pwsh: Write-Host "##vso[task.setvariable variable=CLANG_BIN]$env:AGENT_TEMPDIRECTORY/windows-clang/bin/"
+                        displayName: Select Windows-org Clang
+                        condition: and(succeeded(), eq(variables['compiler_source'], 'windows_org'))
+
+                  - ${{ if eq(host, 'linux') }}:
+                      - bash: |
+                          set -euo pipefail
+                          shopt -s nullglob
+                          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+                            if [[ -f "$source" ]]; then
+                              sed -i 's|://archive\.ubuntu\.com/|://azure.archive.ubuntu.com/|g' "$source"
+                            fi
+                          done
+                          apt-get update
+                          apt-get install -y python3-venv mono-devel
+                          case "$BUILD_TOOL_CHAIN" in
+                            CLANGPDB) apt-get install -y clang lld llvm ;;
+                            GCC)
+                              case "$BUILD_ARCH" in
+                                X64) triple=x86_64; packages=x86-64 ;;
+                                AARCH64) triple=aarch64; packages=aarch64 ;;
+                                *) exit 2 ;;
+                              esac
+                              apt-get install -y "gcc-$packages-linux-gnu" "binutils-$packages-linux-gnu"
+                              echo "##vso[task.setvariable variable=GCC_${BUILD_ARCH}_PREFIX]/usr/bin/$triple-linux-gnu-"
+                              ;;
+                            *) exit 2 ;;
+                          esac
+                          python3 -m venv "$BUILD_VENV"
+                          echo "##vso[task.prependpath]$BUILD_VENV/bin"
+                        displayName: Prepare Linux Compiler and Python
+                        env:
+                          BUILD_ARCH: $(arch)
+                          BUILD_TOOL_CHAIN: $(tool_chain)
+                          BUILD_VENV: $(Agent.TempDirectory)/firmware-venv
+
+                  - template: /.azuredevops/templates/repo-auth.yml@self
+                    parameters:
+                      mode: set
+
+                  - template: /.azuredevops/templates/build.yml@self
+                    parameters:
+                      arch: $(arch)
+                      target: $(target)
+                      tool-chain: $(tool_chain)
+                      legacy-debugger: $(legacy_debugger)
+                      officialBuild: $(OfficialBuild)
+                  - ${{ if eq(host, 'windows') }}:
+                      - task: PublishSymbols@2
+                        displayName: Index Symbols
+                        inputs:
+                          SearchPattern: $(BuildDirectory)/PDB/*.pdb
+                          IndexSources: true
+                          PublishSymbols: false
+
+                  - template: /.azuredevops/templates/repo-auth.yml@self
+                    parameters:
+                      mode: unset
+
+                  - template: /.azuredevops/templates/stage-artifacts.yml@self
+                    parameters:
+                      officialBuild: $(OfficialBuild)
+
+                  - task: NuGetCommand@2
+                    displayName: Pack NuGet
+                    inputs:
+                      command: pack
+                      packagesToPack: MsvmPkg/HyperVUefi.NuSpec
+                      packDestination: $(ob_outputDirectory)/packages
+                      packTimezone: utc
+                      buildProperties: id=$(PackageName);version=$(ReleasePrefix)-$(Build.SourceBranchName).$(Build.SourceVersion)
+                  - ${{ if and(parameters.officialPipeline, eq(host, 'windows')) }}:
+                      - task: PublishSymbols@2
+                        displayName: Publish Symbols
+                        inputs:
+                          SymbolsFolder: $(BuildDirectory)/PDB
+                          SearchPattern: '*.pdb'
+                          IndexSources: false
+                          PublishSymbols: true
+                          SymbolServerType: TeamServices
+                          SymbolsProduct: Hyper-V UEFI
