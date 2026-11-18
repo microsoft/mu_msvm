@@ -424,11 +424,18 @@ Returns:
                &remainingStorage,
                &maxVarSize
                );
-    if (EFI_ERROR (status)) {
+
+    //
+    // Some hosts, including OpenVMM, do not yet implement QueryInfo.
+    // Allow writes on these hosts and use capacity outputs only on success.
+    //
+    if (EFI_ERROR (status) && (status != EFI_UNSUPPORTED)) {
       return status;
     }
 
-    if ((DataSize > remainingStorage) || (DataSize > maxVarSize)) {
+    if ((status == EFI_SUCCESS) &&
+        ((DataSize > remainingStorage) || (DataSize > maxVarSize)))
+    {
       return EFI_OUT_OF_RESOURCES;
     }
   }
