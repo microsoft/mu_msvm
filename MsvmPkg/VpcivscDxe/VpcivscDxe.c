@@ -13,6 +13,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/MmioAllocationLib.h>
 #include <Library/PcdLib.h>
+#include <Library/SafeIntLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Vmbus/NtStatus.h>
@@ -256,7 +257,12 @@ VpciChannelReceivePacketCallback (
 
     DEBUG ((DEBUG_VPCI_INFO, "Recv VpciMsgBusRelations packet, number of child devices 0x%x\n", busRelationsPacket->Devices));
 
-    sizeRequired = context->DeviceCount * sizeof (VPCI_DEVICE_DESCRIPTION) + OFFSET_OF (VPCI_QUERY_BUS_RELATIONS, Devices);
+    if (EFI_ERROR (SafeUint32Mult (busRelationsPacket->DeviceCount, (UINT32)sizeof (VPCI_DEVICE_DESCRIPTION), &sizeRequired)) ||
+        EFI_ERROR (SafeUint32Add (sizeRequired, (UINT32)OFFSET_OF (VPCI_QUERY_BUS_RELATIONS, Devices), &sizeRequired)))
+    {
+      DEBUG ((DEBUG_ERROR, "VPCI bus relations size overflow\n"));
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
 
     if (BufferLength < sizeRequired) {
       DEBUG ((DEBUG_ERROR, "Recv VPCI bus relations packet with not enough size for all devices.  Size: %x\n", BufferLength));
@@ -269,7 +275,7 @@ VpciChannelReceivePacketCallback (
     // Allocate a buffer to hold the child devices.
     context->DeviceCount = busRelationsPacket->DeviceCount;
     context->Devices     = AllocateCopyPool (
-                             context->DeviceCount * sizeof (VPCI_DEVICE_DESCRIPTION),
+                             sizeRequired - (UINT32)OFFSET_OF (VPCI_QUERY_BUS_RELATIONS, Devices),
                              busRelationsPacket->Devices
                              );
 

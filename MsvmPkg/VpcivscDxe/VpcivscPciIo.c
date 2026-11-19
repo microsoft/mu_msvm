@@ -12,6 +12,7 @@
 #include <Library/IoLib.h>
 #include <Library/IoMmuLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/SafeIntLib.h>
 
 #include <IndustryStandard/Pci.h>
 
@@ -158,10 +159,14 @@ VpcivscValidateBarAccess (
   ASSERT (BarIndex < PCI_MAX_BAR);
 
   // Check how big of a region we're accessing. Width * Count gives us that.
-  UINT64  totalSize = Count * DecodePciIoProtocolWidth (Width) + Offset;
+  UINT64  accessWidth = DecodePciIoProtocolWidth (Width);
+  UINT64  accessSize;
+  UINT64  totalSize;
 
   // If we overflowed, can't possibly be valid.
-  if (totalSize < Offset) {
+  if (EFI_ERROR (SafeUint64Mult (Count, accessWidth, &accessSize)) ||
+      EFI_ERROR (SafeUint64Add (accessSize, Offset, &totalSize)))
+  {
     return FALSE;
   }
 
