@@ -1,0 +1,16 @@
+{
+  // All builds use Windows Visual Studio Clang (CLANGPDB), without the closed-source legacy debugger.
+  "include": [
+    // Legacy C core.
+    {"arch": "X64", "target": "DEBUG", "core": "legacy"},
+    {"arch": "X64", "target": "RELEASE", "core": "legacy"},
+    {"arch": "AARCH64", "target": "DEBUG", "core": "legacy"},
+    {"arch": "AARCH64", "target": "RELEASE", "core": "legacy"},
+
+    // Patina core.
+    {"arch": "X64", "target": "DEBUG", "core": "patina"},
+    {"arch": "X64", "target": "RELEASE", "core": "patina"},
+    {"arch": "AARCH64", "target": "DEBUG", "core": "patina"},
+    {"arch": "AARCH64", "target": "RELEASE", "core": "patina"}
+  ]
+}

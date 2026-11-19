@@ -1,0 +1,14 @@
+trigger: none
+
+parameters:
+  - name: PublishPRNuget
+    displayName: Publish NuGet package for this PR for testing?
+    type: boolean
+    default: false
+
+# Test VPack creation requires an approved run of the Official pipeline.
+extends:
+  template: /.azuredevops/pipelines/platform.yml
+  parameters:
+    officialPipeline: false
+    publishNuget: ${{ parameters.PublishPRNuget }}

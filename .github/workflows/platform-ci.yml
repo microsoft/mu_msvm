@@ -5,132 +5,111 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - "*"
   workflow_dispatch:
 
-# Bump this when releasing a new major/minor version. The patch number
-# auto-increments from the latest existing GitHub release with this prefix.
-env:
-  RELEASE_BASE_VERSION: "26.0"
+permissions:
+  contents: read
 
 jobs:
+  # Run stuart plugins to validate the source code
   source-checks:
     name: Source Checks
     runs-on: windows-2022
     steps:
-      - name: Disable automatic line ending conversion
+      - name: Configure Git
         shell: pwsh
-        run: git config --global core.autocrlf false
-
-      - name: Enable long paths
-        shell: pwsh
-        run: git config --system core.longpaths true
+        run: |
+          git config --global core.autocrlf false
+          git config --system core.longpaths true
 
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pip-requirements.txt
 
-      - name: Install Python dependencies
-        shell: pwsh
-        run: python -m pip install -r pip-requirements.txt
-
       - name: Run source checks
-        id: source-checks
-        uses: microsoft/mu_devops/.github/actions/stuart-ci@9720bedf20a0e78a93b79f9d43a7bbfc2be38a62 # v18.0.10
-        with:
-          packages: MsvmPkg
-          targets: NO-TARGET
-          architectures: X64,AARCH64
-          toolchain: VS2022
-          stuart-setup: true
-          stuart-ci-setup: false
-          stuart-args: >-
-            --disable-all
-            GuidCheck=run
-            LineEndingCheck=run
-            UncrustifyCheck=run
+        uses: ./.github/actions/source-checks
 
-      - name: Upload source check logs
+      - name: Upload source-check logs
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-check-logs
-          path: ${{ steps.source-checks.outputs.log-path }}
+          path: Build/
+          if-no-files-found: warn
 
+  # Creates a build matrix for different architectures and targets
+  select-builds:
+    name: Select Builds
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read build matrix
+        id: select
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $matrix = Get-Content .github/build-matrix.jsonc -Raw | ConvertFrom-Json
+          "matrix=$($matrix | ConvertTo-Json -Depth 10 -Compress)" >> $env:GITHUB_OUTPUT
+
+  # Build the firmware for different architectures and targets
   build:
-    name: ${{ matrix.target }} ${{ matrix.arch }} ${{ matrix.tools }}${{ matrix.dxe-core == 'patina' && ' DXE=patina' || '' }}
+    name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core }})
     runs-on: windows-2022
+    needs: select-builds
+    env:
+      OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
     strategy:
       fail-fast: false
-      matrix:
-        target: [DEBUG, RELEASE]
-        arch: [X64, AARCH64]
-        tools: [VS2022, CLANGPDB]
-        dxe-core: [legacy, patina]
-        exclude:
-          - arch: AARCH64
-            tools: VS2022
-          - tools: VS2022
-            dxe-core: patina
-
+      matrix: ${{ fromJSON(needs.select-builds.outputs.matrix) }}
     steps:
-      - name: Enable long paths
+      - name: Configure Git
         shell: pwsh
-        run: git config --system core.longpaths true
+        run: |
+          git config --global core.autocrlf false
+          git config --system core.longpaths true
 
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: pip-requirements.txt
 
-      - name: Install Python dependencies
-        shell: pwsh
-        run: python -m pip install -r pip-requirements.txt
-
-      - name: Build platform
-        uses: ./.github/actions/build-platform
+      - name: Build firmware
+        id: firmware
+        uses: ./.github/actions/build
         with:
-          architecture: ${{ matrix.arch }}
-          c-core: ${{ matrix.dxe-core == 'legacy' && 'TRUE' || 'FALSE' }}
-          # Mark main-branch builds as official in the embedded firmware version record.
-          official-build: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '' }}
+          arch: ${{ matrix.arch }}
           target: ${{ matrix.target }}
-          tool-chain: ${{ matrix.tools }}
+          core: ${{ matrix.core }}
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: firmware-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}${{ matrix.dxe-core == 'patina' && '-patina' || '' }}
-          if-no-files-found: error
-          path: |
-            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_${{ matrix.tools }}/FV/MSVM.fd
-            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_${{ matrix.tools }}/MAP/
-            Build/Msvm${{ matrix.arch }}/${{ matrix.target }}_${{ matrix.tools }}/PDB/
-
-      - name: Upload build logs
+      - name: Stage and upload artifacts
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: ./.github/actions/stage-artifacts
         with:
-          name: logs-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.tools }}${{ matrix.dxe-core == 'patina' && '-patina' || '' }}
-          if-no-files-found: ignore
-          path: |
-            Build/**/BUILDLOG*.txt
-            Build/**/BUILD_REPORT.TXT
-            Build/**/OVERRIDELOG.TXT
-            Build/SETUP*.txt
-            Build/UPDATE*.txt
+          arch: ${{ matrix.arch }}
+          target: ${{ matrix.target }}
+          artifact-name: firmware-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
+          logs-artifact-name: logs-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
+          build-succeeded: ${{ steps.firmware.outcome == 'success' }}
 
   openvmm-test-x64:
     name: OpenVMM Test X64
@@ -150,13 +129,15 @@ jobs:
         with:
           github-token: ${{ github.token }}
 
+  # Create a github release for the firmware (only on the main branch)
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [source-checks, build, openvmm-test-x64]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
     concurrency:
       group: release
       cancel-in-progress: false
@@ -169,5 +150,4 @@ jobs:
       - name: Release firmware
         uses: ./.github/actions/release
         with:
-          base-version: ${{ env.RELEASE_BASE_VERSION }}
           github-token: ${{ github.token }}

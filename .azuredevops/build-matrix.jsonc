@@ -1,0 +1,28 @@
+{
+  // Match official/main: empty salt keeps the production name; other salts identify .Test variants.
+  // legacy_debugger maps to BLD_*_LEGACY_DEBUGGER in setup, update and build. All rows use the legacy C core.
+  "include": [
+    // Windows-org Clang production packages. We ship these.
+    {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "legacy_debugger": "1", "salt": ""},
+    {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "legacy_debugger": "0", "salt": ""},
+    {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "legacy_debugger": "0", "salt": ""},
+
+    // Visual Studio Clang test packages.
+    {"host": "windows", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "legacy_debugger": "1", "salt": "XDCV"},
+    {"host": "windows", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "legacy_debugger": "0", "salt": "XRCV"},
+    {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "legacy_debugger": "0", "salt": "ADCV"},
+    {"host": "windows", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "visual_studio", "legacy_debugger": "0", "salt": "ARCV"},
+
+    // Windows-org Clang ARM64 DEBUG test package.
+    {"host": "windows", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "windows_org", "legacy_debugger": "0", "salt": "ADCW"},
+
+    // Linux Clang test packages.
+    {"host": "linux", "arch": "X64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "legacy_debugger": "1", "salt": "XDCL"},
+    {"host": "linux", "arch": "X64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "legacy_debugger": "0", "salt": "XRCL"},
+    {"host": "linux", "arch": "AARCH64", "target": "DEBUG", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "legacy_debugger": "0", "salt": "ADCL"},
+    {"host": "linux", "arch": "AARCH64", "target": "RELEASE", "tool_chain": "CLANGPDB", "compiler_source": "distribution", "legacy_debugger": "0", "salt": "ARCL"},
+
+    // Linux GCC coverage. Other GCC combinations remain disabled.
+    {"host": "linux", "arch": "X64", "target": "RELEASE", "tool_chain": "GCC", "compiler_source": "distribution", "legacy_debugger": "0", "salt": "XRG"}
+  ]
+}

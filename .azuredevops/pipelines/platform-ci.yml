@@ -1,0 +1,15 @@
+name: $(SourceBranchName)_$(Date:yyyyMMdd_HHmmss)$(Rev:.r)
+
+trigger:
+  batch: false
+  branches:
+    include:
+      - official/*
+pr: none
+
+# OneBranch approval policy also permits manually running this pipeline on PR/topic refs.
+extends:
+  template: /.azuredevops/pipelines/platform.yml
+  parameters:
+    officialPipeline: true
+    publishNuget: true
