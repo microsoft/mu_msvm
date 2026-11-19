@@ -156,7 +156,10 @@ Return Value:
 
 Exit:
 
-  gBS->FreePool (bootEvent);
+  if (bootEvent != NULL) {
+    gBS->FreePool (bootEvent);
+  }
+
   return status;
 }
 

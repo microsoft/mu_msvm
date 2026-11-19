@@ -405,7 +405,7 @@ Return Value:
       break;
 
     case EFI_EXT_SCSI_DATA_DIRECTION_WRITE:
-      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (packet->VmSrb.DataTransferLength <= request->ScsiRequest->OutTransferLength)
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (packet->VmSrb.DataTransferLength <= request->ScsiRequest->OutTransferLength);
       break;
 
     case EFI_EXT_SCSI_DATA_DIRECTION_BIDIRECTIONAL:
