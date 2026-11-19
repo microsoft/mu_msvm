@@ -224,7 +224,7 @@ FilterHandles (
         (!KeepHandleFilter (DevicePath)))   // TRUE keeps handle, FALSE deletes handle
     {
       (*HandleCount)--;
-      CopyMem (&HandleBuffer[Index], &HandleBuffer[Index + 1], (*HandleCount-Index) * sizeof (EFI_HANDLE *));
+      CopyMem (&HandleBuffer[Index], &HandleBuffer[Index + 1], (*HandleCount-Index) * sizeof (EFI_HANDLE));
       continue;
     }
 

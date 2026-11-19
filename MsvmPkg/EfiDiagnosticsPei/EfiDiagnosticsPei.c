@@ -112,10 +112,10 @@ PublishCurrentAdvancedLoggerGpa (
     return EFI_SUCCESS;
   }
 
-  if (LogPtr->LogBuffer >= MAX_UINT32) {
+  if ((LogPtr->LogBuffer == 0) || (LogPtr->LogBuffer >= MAX_UINT32)) {
     DEBUG ((
       DEBUG_ERROR,
-      "%a: Advanced Logger buffer address 0x%llx >= 4GB. Setting GPA to 0.\n",
+      "%a: Advanced Logger buffer address 0x%llx invalid. Setting GPA to 0.\n",
       __func__,
       LogPtr->LogBuffer
       ));
