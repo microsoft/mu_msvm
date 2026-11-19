@@ -6,6 +6,7 @@
 #include <IsolationTypes.h>
 #include <Protocol/EfiHv.h>
 #include <Protocol/Emcl.h>
+#include <Library/CrashLib.h>
 #include <Library/DebugLib.h>
 #include <Library/EmclLib.h>
 #include <Library/MsEventSleepLib.h>
@@ -266,6 +267,8 @@ Return Value:
     goto Cleanup;
   }
 
+  ZeroMem (AdapterInfo->RxBufferAllocation, (UINTN)AdapterInfo->RxBufferPageCount * EFI_PAGE_SIZE);
+
   status = AdapterInfo->Emcl->CreateGpadl (
                                 AdapterInfo->Emcl,
                                 AdapterInfo->RxBufferAllocation,
@@ -335,6 +338,8 @@ Return Value:
     goto Cleanup;
   }
 
+  ZeroMem (AdapterInfo->TxBufferAllocation, (UINTN)AdapterInfo->TxBufferPageCount * EFI_PAGE_SIZE);
+
   //
   // SNP hardware does not support read-only pages. But only allow read
   // access for the software isolation case where more restricted access is possible.
@@ -385,6 +390,15 @@ Return Value:
   }
 
   AdapterInfo->TxSectionSize = nvspMessage.Messages.Version1Messages.SendSendBufferComplete.SectionSize;
+
+  if ((AdapterInfo->TxSectionSize < MAXIMUM_ETHERNET_PACKET_SIZE + RNDIS_MESSAGE_SIZE (RNDIS_PACKET)) ||
+      (AdapterInfo->TxSectionSize < RNDIS_MESSAGE_SIZE (RNDIS_INITIALIZE_REQUEST)) ||
+      (AdapterInfo->TxSectionSize < RNDIS_MESSAGE_SIZE (RNDIS_QUERY_REQUEST)) ||
+      (AdapterInfo->TxSectionSize < RNDIS_MESSAGE_SIZE (RNDIS_SET_REQUEST) + sizeof (UINT32)) ||
+      (AdapterInfo->TxSectionSize > NVSC_DEFAULT_SEND_BUFFER_SIZE))
+  {
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
 
   //
   // The Ring Buffer should always have an empty slot to differentiate
@@ -446,6 +460,7 @@ Return Value:
 
   rndisMsgSize = RNDIS_MESSAGE_SIZE (RNDIS_INITIALIZE_REQUEST);
 
+  ZeroMem (pRndisMessage, rndisMsgSize);
   pInitRequest                  = &pRndisMessage->Message.InitializeRequest;
   pInitRequest->RequestId       = 0xBEEF;
   pInitRequest->MajorVersion    = RNDIS_MAJOR_VERSION;
@@ -518,6 +533,7 @@ Return Value:
   //
   rndisMsgSize = RNDIS_MESSAGE_SIZE (RNDIS_QUERY_REQUEST);
 
+  ZeroMem (pRndisMessage, rndisMsgSize);
   pQueryRequest                          = &pRndisMessage->Message.QueryRequest;
   pQueryRequest->RequestId               = PERM_NODE_ADDR_REQUEST_ID;
   pQueryRequest->Oid                     = RNDIS_OID_802_3_CURRENT_ADDRESS;
@@ -587,6 +603,8 @@ Return Value:
   //
   rndisMsgSize = RNDIS_MESSAGE_SIZE (RNDIS_QUERY_REQUEST);
 
+  ZeroMem (pRndisMessage, rndisMsgSize);
+  pQueryRequest                          = &pRndisMessage->Message.QueryRequest;
   pQueryRequest->RequestId               = CURR_NODE_ADDR_REQUEST_ID;
   pQueryRequest->Oid                     = RNDIS_OID_802_3_CURRENT_ADDRESS;
   pQueryRequest->InformationBufferLength = 0;
@@ -748,6 +766,7 @@ Returns:
   //
   rndisMsgSize = RNDIS_MESSAGE_SIZE (RNDIS_SET_REQUEST) + sizeof (ndisFilter);
 
+  ZeroMem (pRndisMessage, rndisMsgSize);
   pSetRequest                          = &pRndisMessage->Message.SetRequest;
   pSetRequest->RequestId               = SET_FILTER_REQUEST_ID;
   pSetRequest->Oid                     = RNDIS_OID_GEN_CURRENT_PACKET_FILTER;
@@ -953,6 +972,7 @@ Returns:
   currentTxData = (VOID *)((UINT8 *)currentTxPacket + currentTxPacket->DataOffset);
   CopyMem (currentTxData, Buffer, BufferSize);
 
+  ZeroMem (&rndisMessage, sizeof (rndisMessage));
   rndisMessage.Header.MessageType                                               = NvspMessage1TypeSendRNDISPacket;
   rndisMessage.Messages.Version1Messages.SendRNDISPacket.ChannelType            = 2;
   rndisMessage.Messages.Version1Messages.SendRNDISPacket.SendBufferSectionIndex = bufferIndex;
@@ -1173,8 +1193,9 @@ Arguments:
   UINT8                  *nodeAddr;
   UINT32                 numDataPkts = 0;
   RX_PACKET_INSTANCE     newPacketInfo;
+  UINTN                  rxBufferSize;
+  UINT32                 remainingInRange;
 
-  ASSERT (RangeCount > 0);
   ZeroMem (&outNvspMessage, sizeof (NVSP_MESSAGE));
 
   adapterInfo = (NIC_DATA_INSTANCE *)ReceiveContext;
@@ -1183,17 +1204,35 @@ Arguments:
     goto Exit;
   }
 
+  rxBufferSize = (UINTN)adapterInfo->RxBufferPageCount * EFI_PAGE_SIZE;
+
   //
   // Assumption: Every range is a new packet.
   //
   for (rangeIndex = 0; rangeIndex < RangeCount; rangeIndex++) {
-    pRndisMessage = (PRNDIS_MESSAGE)((UINT8 *)adapterInfo->RxBuffer + Ranges[rangeIndex].ByteOffset);
+    if ((Ranges[rangeIndex].ByteOffset >= rxBufferSize) ||
+        (Ranges[rangeIndex].ByteCount > rxBufferSize - Ranges[rangeIndex].ByteOffset) ||
+        (Ranges[rangeIndex].ByteCount < OFFSET_OF (RNDIS_MESSAGE, Message)))
+    {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    remainingInRange = Ranges[rangeIndex].ByteCount - OFFSET_OF (RNDIS_MESSAGE, Message);
+    pRndisMessage    = (PRNDIS_MESSAGE)((UINT8 *)adapterInfo->RxBuffer + Ranges[rangeIndex].ByteOffset);
 
     switch (pRndisMessage->NdisMessageType) {
       case REMOTE_NDIS_PACKET_MSG:
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (remainingInRange >= sizeof (RNDIS_PACKET));
+        pRndisPacket = &pRndisMessage->Message.Packet;
+        if ((pRndisPacket->DataOffset < sizeof (RNDIS_PACKET)) ||
+            (pRndisPacket->DataOffset >= remainingInRange) ||
+            (pRndisPacket->DataLength > remainingInRange - pRndisPacket->DataOffset))
+        {
+          FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+        }
+
         adapterInfo->Statistics.RxTotalFrames++;
 
-        pRndisPacket                          = &pRndisMessage->Message.Packet;
         adapterInfo->Statistics.RxTotalBytes += pRndisPacket->DataLength;
 
         if (pRndisPacket->DataLength < 64) {
@@ -1213,12 +1252,6 @@ Arguments:
 
         numDataPkts++;
         packetBuffer = ((UINT8 *)pRndisPacket) + pRndisPacket->DataOffset;
-
-        //
-        // The packet should start and ends in the specified range.
-        //
-        ASSERT ((UINT64)packetBuffer < ((UINT64)pRndisMessage + Ranges[rangeIndex].ByteCount));
-        ASSERT (((UINT64)packetBuffer + pRndisPacket->DataLength) <= ((UINT64)pRndisMessage + Ranges[rangeIndex].ByteCount));
 
         //
         // If there are multiple packets, the extra data packets will be copied into separate pools
@@ -1247,16 +1280,24 @@ Arguments:
         break;
 
       case REMOTE_NDIS_QUERY_CMPLT:
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (remainingInRange >= sizeof (RNDIS_QUERY_COMPLETE));
         pQueryReqComplete = &pRndisMessage->Message.QueryComplete;
         if ((pQueryReqComplete->Status != RNDIS_STATUS_SUCCESS) ||
             (pQueryReqComplete->InformationBufferLength != PXE_HWADDR_LEN_ETHER))
         {
           adapterInfo->GetStnAddrStatus = EFI_DEVICE_ERROR;
         } else {
-          ASSERT (
+          FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (
             pQueryReqComplete->RequestId == PERM_NODE_ADDR_REQUEST_ID ||
             pQueryReqComplete->RequestId == CURR_NODE_ADDR_REQUEST_ID
             );
+
+          if ((pQueryReqComplete->InformationBufferOffset < sizeof (RNDIS_QUERY_COMPLETE)) ||
+              (pQueryReqComplete->InformationBufferOffset > remainingInRange) ||
+              (PXE_HWADDR_LEN_ETHER > remainingInRange - pQueryReqComplete->InformationBufferOffset))
+          {
+            FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+          }
 
           switch (pQueryReqComplete->RequestId) {
             case PERM_NODE_ADDR_REQUEST_ID:
@@ -1285,6 +1326,7 @@ Arguments:
         break;
 
       case REMOTE_NDIS_INITIALIZE_CMPLT:
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (remainingInRange >= sizeof (RNDIS_INITIALIZE_COMPLETE));
         DEBUG ((EFI_D_NET, "RNDIS Initialization Complete.\n"));
         if (pRndisMessage->Message.InitializeComplete.Status != RNDIS_STATUS_SUCCESS) {
           adapterInfo->InitRndisStatus = EFI_DEVICE_ERROR;
@@ -1296,6 +1338,7 @@ Arguments:
         break;
 
       case REMOTE_NDIS_SET_CMPLT:
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (remainingInRange >= sizeof (RNDIS_SET_COMPLETE));
         DEBUG ((EFI_D_NET, "RNDIS SetFilter Complete.\n"));
         if (pRndisMessage->Message.SetComplete.Status != RNDIS_STATUS_SUCCESS) {
           adapterInfo->SetRxFilterStatus = EFI_DEVICE_ERROR;
@@ -1307,6 +1350,7 @@ Arguments:
         break;
 
       case REMOTE_NDIS_INDICATE_STATUS_MSG:
+        FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (remainingInRange >= sizeof (RNDIS_INDICATE_STATUS));
         switch (pRndisMessage->Message.IndicateStatus.Status) {
           case NDIS_STATUS_NETWORK_CHANGE:
           case RNDIS_STATUS_MEDIA_CONNECT:
