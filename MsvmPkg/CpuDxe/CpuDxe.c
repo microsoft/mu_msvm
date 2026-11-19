@@ -60,18 +60,6 @@ EFI_CPU_ARCH_PROTOCOL  gCpu = {
 // Local function prototypes
 //
 
-VOID
-BdInitInterruptDescriptorTable (
-  VOID
-  );
-
-EFI_STATUS
-EFIAPI
-BdRegisterCpuInterruptHandler (
-  IN EFI_EXCEPTION_TYPE         InterruptType,
-  IN EFI_CPU_INTERRUPT_HANDLER  InterruptHandler
-  );
-
 #endif // MS_HYP_CHANGE
 
 //

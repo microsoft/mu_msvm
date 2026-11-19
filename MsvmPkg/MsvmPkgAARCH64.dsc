@@ -468,9 +468,6 @@
   gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize|0x037EC000
 
   #
-  # The runtime state of this PCD can be modified in the debugger by
-  # modifying EfiBdDebugPrintGlobalMask and EfiBdDebugPrintComponentMask.
-  #
   # We now expect the host bios device to parse the in-memory advanced logger 
   # buffer to our tracing facilities
   #
@@ -981,14 +978,6 @@
       NULL|MsvmPkg/Library/Tcg2PreInitLib/Tcg2PreInitLibDxe.inf
   }
 
-!if $(LEGACY_DEBUGGER) == 1
-  MsKdDebugPkg2/KdDxe/KdDxe.inf {
-    <LibraryClasses>
-      PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
-      SerialPortLib|MsvmPkg/Library/KdPL011SerialPortLib/KdPL011SerialPortLib.inf
-      SourceDebugEnabledLib|MsvmPkg/Library/SourceDebugEnabled/SourceDebugEnabledLib.inf
-  }
-!endif
 
   # UI Theme Protocol
   MsGraphicsPkg/MsUiTheme/Dxe/MsUiThemeProtocol.inf
