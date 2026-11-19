@@ -1323,8 +1323,11 @@ Return Value:
   //
   // Advance past initial header to other structures.
   //
-  calculatedConfigSize += header->Length;
-  header                = (UEFI_CONFIG_HEADER *)((UINT64)header + header->Length);
+  if (RETURN_ERROR (SafeUint32Add (calculatedConfigSize, header->Length, &calculatedConfigSize))) {
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
+
+  header = (UEFI_CONFIG_HEADER *)((UINT64)header + header->Length);
 
   //
   // Loop through the remaining structures.
@@ -1766,8 +1769,11 @@ Return Value:
       }
     }
 
-    calculatedConfigSize += header->Length;
-    header                = (UEFI_CONFIG_HEADER *)((UINT64)header + header->Length);
+    if (RETURN_ERROR (SafeUint32Add (calculatedConfigSize, header->Length, &calculatedConfigSize))) {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    header = (UEFI_CONFIG_HEADER *)((UINT64)header + header->Length);
   }
 
   if (requiredStructures.AsUINT64 != AllStructuresFound) {

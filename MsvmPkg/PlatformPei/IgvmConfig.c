@@ -21,6 +21,7 @@
 #include <Library/IoLib.h>
 #include <Library/PeiServicesLib.h>
 #include <Library/ResourcePublicationLib.h>
+#include <Library/SafeIntLib.h>
 #include <Hv.h>
 #include <Config.h>
 #include <AcpiReplacementTable.h>
@@ -66,7 +67,7 @@ Return Value:
 
 --*/
 {
-  return (UINT8 *)ParameterAreaBase + (PageOffset * EFI_PAGE_SIZE);
+  return (UINT8 *)ParameterAreaBase + ((UINT64)PageOffset * EFI_PAGE_SIZE);
 }
 
 EFI_STATUS
@@ -113,9 +114,15 @@ Return Value:
   VOID                       *uefiMemoryMap;
   EFI_STATUS                 Status;
 
-  memoryMap    = GetIgvmData (ParameterInfo, ParameterInfo->MemoryMapOffset);
-  maximumIndex = (ParameterInfo->MemoryMapPageCount * EFI_PAGE_SIZE) /
-                 sizeof (IGVM_VHS_MEMORY_MAP_ENTRY);
+  memoryMap = GetIgvmData (ParameterInfo, ParameterInfo->MemoryMapOffset);
+  if (RETURN_ERROR (SafeUint64ToUint32 (
+                      ((UINT64)ParameterInfo->MemoryMapPageCount * EFI_PAGE_SIZE) /
+                      sizeof (IGVM_VHS_MEMORY_MAP_ENTRY),
+                      &maximumIndex
+                      )))
+  {
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
 
   //
   // Make sure any SVSM region is sane.
@@ -136,9 +143,15 @@ Return Value:
 
   uefiMemoryMap = GetIgvmData (ParameterInfo, ParameterInfo->UefiMemoryMapOffset);
 
-  range        = uefiMemoryMap;
-  maximumRange = (ParameterInfo->UefiMemoryMapPageCount * EFI_PAGE_SIZE) /
-                 sizeof (VM_MEMORY_RANGE_V5);
+  range = uefiMemoryMap;
+  if (RETURN_ERROR (SafeUint64ToUint32 (
+                      ((UINT64)ParameterInfo->UefiMemoryMapPageCount * EFI_PAGE_SIZE) /
+                      sizeof (VM_MEMORY_RANGE_V5),
+                      &maximumRange
+                      )))
+  {
+    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+  }
 
   Status = PcdSetBoolS (PcdLegacyMemoryMap, FALSE);
   if (EFI_ERROR (Status)) {
@@ -269,10 +282,14 @@ Return Value:
       index += 1;
     }
 
-    range->BaseAddress = basePage * SIZE_4KB;
-    range->Length      = pageCount * SIZE_4KB;
-    range->Flags       = rangeFlags;
-    range->Reserved    = 0;
+    if (RETURN_ERROR (SafeUint64Mult (basePage, SIZE_4KB, &range->BaseAddress)) ||
+        RETURN_ERROR (SafeUint64Mult (pageCount, SIZE_4KB, &range->Length)))
+    {
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    }
+
+    range->Flags    = rangeFlags;
+    range->Reserved = 0;
 
     range      += 1;
     rangeIndex += 1;
@@ -444,7 +461,7 @@ Return Value:
   EFI_ACPI_DESCRIPTION_HEADER  *madtHdr = (EFI_ACPI_DESCRIPTION_HEADER *)GetIgvmData (parameterInfo, parameterInfo->MadtOffset);
 
   if ((madtHdr->Signature != EFI_ACPI_6_2_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE) ||
-      (madtHdr->Length > (parameterInfo->MadtPageCount * EFI_PAGE_SIZE)))
+      (madtHdr->Length > ((UINT64)parameterInfo->MadtPageCount * EFI_PAGE_SIZE)))
   {
     DEBUG ((DEBUG_ERROR, "*** Malformed MADT\n"));
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
@@ -461,7 +478,7 @@ Return Value:
   EFI_ACPI_DESCRIPTION_HEADER  *sratHdr = (EFI_ACPI_DESCRIPTION_HEADER *)GetIgvmData (parameterInfo, parameterInfo->SratOffset);
 
   if ((sratHdr->Signature != EFI_ACPI_6_2_SYSTEM_RESOURCE_AFFINITY_TABLE_SIGNATURE) ||
-      (sratHdr->Length > (parameterInfo->SratPageCount * EFI_PAGE_SIZE)))
+      (sratHdr->Length > ((UINT64)parameterInfo->SratPageCount * EFI_PAGE_SIZE)))
   {
     DEBUG ((DEBUG_ERROR, "*** Malformed SRAT\n"));
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
