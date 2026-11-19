@@ -1053,10 +1053,14 @@ Return Value:
 
     //
     // read the current record from the ring skipping the header
-    // The ASSERT detects RING_RECORD corruption.
     //
     curDataSize = record->Size - sizeof (RING_RECORD);
-    ASSERT (curDataSize <= ((UINTN)(*BufferSize) - ((UINTN)curOutput - (UINTN)Buffer)));
+
+    if (curDataSize > ((UINTN)(*BufferSize) - ((UINTN)curOutput - (UINTN)Buffer))) {
+      byteCount = 0;
+      status    = EFI_BUFFER_TOO_SMALL;
+      break;
+    }
 
     enumOffset = (enumOffset + sizeof (RING_RECORD)) & Ring->Mask;
     enumOffset = RingBufferReadDataAt (Ring, enumOffset, curOutput, curDataSize);

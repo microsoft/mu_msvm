@@ -759,7 +759,7 @@ Return Value:
     goto Cleanup;
   }
 
-  ASSERT (Packet->Operation == VStorOperationCompleteIo);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (Packet->Operation == VStorOperationCompleteIo);
 
   if (NT_SUCCESS (Packet->Status)) {
     status = EFI_SUCCESS;
@@ -822,7 +822,7 @@ Return Value:
     packet.Version.MajorMinor = majorMinor;
     status                    = StorChannelSendSyntheticVstorPacket (ChannelContext, &packet);
     if (!EFI_ERROR (status)) {
-      ASSERT (packet.Version.MajorMinor == majorMinor);
+      FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (packet.Version.MajorMinor == majorMinor);
       ChannelContext->ProtocolVersion = packet.Version.MajorMinor;
       ChannelContext->MaxPacketSize   =
         g_StorChannelSupportedVersions[index].MaxPacketSize;
@@ -854,7 +854,7 @@ Return Value:
   //
   //  Copy all the properties into the storagechannel structure.
   //
-  ASSERT (packet.StorageChannelProperties.MaxTransferBytes > 0);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (packet.StorageChannelProperties.MaxTransferBytes > 0);
 
   channelProperties->MaxTransferBytes = packet.StorageChannelProperties.MaxTransferBytes;
 

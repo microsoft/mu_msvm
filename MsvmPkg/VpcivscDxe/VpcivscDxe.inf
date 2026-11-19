@@ -35,6 +35,7 @@
     IsolationLib
     MemoryAllocationLib
     MmioAllocationLib
+    SafeIntLib
     UefiDriverEntryPoint
     UefiLib
     UefiBootServicesTableLib
