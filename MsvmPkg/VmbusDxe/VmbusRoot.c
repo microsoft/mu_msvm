@@ -973,8 +973,15 @@ VmbusRootHotAddAllocation (
   context   = (VMBUS_ROOT_CONTEXT *)Context;
   hvMessage = mHv->GetSintMessage (mHv, FixedPcdGet8 (PcdVmbusSintIndex), context->Confidential);
   if (hvMessage == NULL) {
-    DEBUG ((EFI_D_ERROR, "--- %a: failed to get hot message\n", __func__));
-    FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
+    //
+    // The hot allocation event can be signaled multiple times if
+    // additional SINT interrupts arrive before this callback runs.
+    // Each interrupt re-dispatches the same unconsumed message and
+    // signals the event again. The first invocation consumes and
+    // completes the message, so subsequent invocations find no
+    // message pending. This is benign.
+    //
+    return;
   }
 
   hotMessage = AllocatePool (sizeof (*hotMessage));
