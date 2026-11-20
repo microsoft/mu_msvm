@@ -115,11 +115,13 @@ Return Value:
   EFI_STATUS                 Status;
 
   memoryMap = GetIgvmData (ParameterInfo, ParameterInfo->MemoryMapOffset);
-  if (RETURN_ERROR (SafeUint64ToUint32 (
-                      ((UINT64)ParameterInfo->MemoryMapPageCount * EFI_PAGE_SIZE) /
-                      sizeof (IGVM_VHS_MEMORY_MAP_ENTRY),
-                      &maximumIndex
-                      )))
+  if (RETURN_ERROR (
+        SafeUint64ToUint32 (
+          ((UINT64)ParameterInfo->MemoryMapPageCount * EFI_PAGE_SIZE) /
+          sizeof (IGVM_VHS_MEMORY_MAP_ENTRY),
+          &maximumIndex
+          )
+        ))
   {
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
   }
@@ -144,11 +146,13 @@ Return Value:
   uefiMemoryMap = GetIgvmData (ParameterInfo, ParameterInfo->UefiMemoryMapOffset);
 
   range = uefiMemoryMap;
-  if (RETURN_ERROR (SafeUint64ToUint32 (
-                      ((UINT64)ParameterInfo->UefiMemoryMapPageCount * EFI_PAGE_SIZE) /
-                      sizeof (VM_MEMORY_RANGE_V5),
-                      &maximumRange
-                      )))
+  if (RETURN_ERROR (
+        SafeUint64ToUint32 (
+          ((UINT64)ParameterInfo->UefiMemoryMapPageCount * EFI_PAGE_SIZE) /
+          sizeof (VM_MEMORY_RANGE_V5),
+          &maximumRange
+          )
+        ))
   {
     FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR ();
   }
