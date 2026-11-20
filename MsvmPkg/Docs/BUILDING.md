@@ -26,6 +26,32 @@ stuart_build -c .\MsvmPkg\PlatformBuild.py TARGET=RELEASE
 stuart_build -c .\MsvmPkg\PlatformBuild.py BUILD_ARCH=AARCH64
 ```
 
+## Platform Descriptions
+
+Each architecture has repository-specific DSC/FDF wrappers and shared includes:
+
+| Architecture | Shared DSC | Shared FDF |
+| --- | --- | --- |
+| X64 | [MsvmPkgX64.dsc.inc](../MsvmPkgX64.dsc.inc) | [MsvmPkgX64.fdf.inc](../MsvmPkgX64.fdf.inc) |
+| AARCH64 | [MsvmPkgAARCH64.dsc.inc](../MsvmPkgAARCH64.dsc.inc) | [MsvmPkgAARCH64.fdf.inc](../MsvmPkgAARCH64.fdf.inc) |
+
+Add or remove common drivers, libraries, PCD settings, and build options in the
+shared DSC includes. Update their firmware-volume entries and common packaging
+rules in the shared FDF includes. Keep all shared includes byte-identical between
+`mu_msvm` and `hyperv.uefi`.
+
+The ARM64 shared FDF include places packaging rules before the MAIN volume.
+This lets wrappers append repository-specific components directly to that volume.
+
+The `.dsc` and `.fdf` wrappers retain platform identity, flash layout, branding,
+and repository-specific debugger and CPU-driver selections. FDF wrappers select
+the boot and front-page bitmaps through `MSVM_BOOT_LOGO` and
+`MSVM_FRONTPAGE_LOGO`. Keep private BD/KD debugger paths and branding choices in
+the wrappers, not the shared includes. DxeCore component library overrides also
+live in the DSC wrappers so each repository can select its debugger independently.
+
+Build commands and the platform DSC/FDF entry-point paths are unchanged.
+
 ## Running CI Checks Locally
 
 Run the source checks from the repository root before opening a pull request. Install the Python dependencies and download the
