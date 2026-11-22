@@ -7,7 +7,9 @@ This repository is built on top of Project Mu.  Please see Project Mu for detail
 
 ## Developer Guide
 
-See the [developer guide](MsvmPkg/Docs/DEVGUIDE.md) and in particular the getting started section.
+Start with [Building MsvmPkg](MsvmPkg/Docs/BUILDING.md) for a self-contained Windows clone-to-build workflow,
+including X64 and AARCH64 release builds with Visual Studio 2022 or 2026 and an unattended development loop.
+See the [developer guide](MsvmPkg/Docs/DEVGUIDE.md) for deployment, debugging, and logging.
 
 ## Firmware Artifacts
 
