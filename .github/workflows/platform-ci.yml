@@ -14,7 +14,7 @@ jobs:
   # Run stuart plugins to validate the source code
   source-checks:
     name: Source Checks
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     steps:
       - name: Configure Git
         shell: pwsh
@@ -67,7 +67,7 @@ jobs:
   # Build the firmware for different architectures and targets
   build:
     name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core }})
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     needs: select-builds
     env:
       OFFICIAL_BUILD: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && '1' || '0' }}
