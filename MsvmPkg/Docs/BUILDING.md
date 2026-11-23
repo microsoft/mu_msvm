@@ -1,8 +1,7 @@
 # Building MsvmPkg
 
 This guide covers cloning and building X64 and AARCH64 UEFI firmware from a Windows x64 host using PowerShell.
-The commands below build the C DXE core with CLANGPDB, as used by platform CI. No internal Microsoft documentation,
-Windows source checkout, or agent memory is required.
+The commands below build the C DXE core with CLANGPDB, as used by platform CI.
 
 ## Prerequisites
 
@@ -18,8 +17,7 @@ CI uses Visual Studio 2022's bundled Clang. Visual Studio 2026 Enterprise 18.12 
 LLVM 20.1.8 was also validated for both X64 and AARCH64 RELEASE builds. Use `TOOL_CHAIN_TAG=CLANGPDB` with either
 Visual Studio version; the pinned build definitions do not have a `VS2026` toolchain tag.
 
-Install Visual Studio workloads interactively if administrator privileges are required. Agents should not wait on an
-unattended elevation prompt. Python can be installed for the current user, for example:
+Python can be installed for the current user, for example:
 
 ```powershell
 winget install --id Python.Python.3.12 --exact --scope user --silent --accept-package-agreements --accept-source-agreements
@@ -48,7 +46,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Python dependency installation failed' }
 If `py` is unavailable, replace `py -3.12` with the full path to Python 3.12, typically
 `& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe"`. A newly installed Python may not appear on `PATH`
 until a new terminal is opened. Adding the venv's `Scripts` directory to `PATH` avoids needing PowerShell activation
-scripts or changing execution policy. Repeat that `PATH` assignment in each new terminal.
+scripts or changing execution policy. Repeat that `PATH` assignment in each new terminal. Recreate rather than move
+a venv: Windows console entry points embed its original path.
 
 ### Select Clang
 
@@ -82,12 +81,11 @@ $ErrorActionPreference = 'Stop'
 $env:SOURCE_ORIGIN = 'open'
 foreach ($arch in @('X64', 'AARCH64')) {
 	$flavor = @("BUILD_ARCH=$arch", 'TARGET=RELEASE', 'TOOL_CHAIN_TAG=CLANGPDB',
-		'BLD_*_USE_LEGACY_C_CORE=TRUE', 'BLD_*_LEGACY_DEBUGGER=0')
+		'BLD_*_USE_LEGACY_C_CORE=TRUE')
 	foreach ($tool in @('stuart_setup', 'stuart_update', 'stuart_build')) {
 		$buildOptions = @()
 		if ($tool -eq 'stuart_build') {
-			$buildOptions = @('LaunchLogOnSuccess=FALSE', 'LaunchLogOnError=FALSE',
-				'BUILDREPORTING=TRUE', 'BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY')
+			$buildOptions = @('LaunchLogOnSuccess=FALSE')
 		}
 		& $tool -c MsvmPkg/PlatformBuild.py @flavor @buildOptions
 		if ($LASTEXITCODE -ne 0) { throw "$tool failed for $arch with exit code $LASTEXITCODE" }
@@ -106,7 +104,7 @@ Quote arguments containing `*` or spaces as shown. Explicitly checking `$LASTEXI
 
 The default architecture is X64 and the default toolchain is VS2022, so an unqualified `stuart_build` is not equivalent
 to this recipe. `BUILD_ARCH=AARCH64` selects the ARM platform; `-a` is the source-check architecture selector, not its replacement.
-The explicit `BLD_*_LEGACY_DEBUGGER=0` matches CI and disables the legacy debugger, independently of the C/Patina core choice.
+`LaunchLogOnSuccess=FALSE` suppresses Notepad after successful builds; omit it for interactive log viewing.
 
 ### Development Loop
 
@@ -114,8 +112,7 @@ After setup/update, rerun only the build for an ordinary source change:
 
 ```powershell
 stuart_build -c MsvmPkg/PlatformBuild.py BUILD_ARCH=X64 TARGET=RELEASE TOOL_CHAIN_TAG=CLANGPDB `
-	'BLD_*_USE_LEGACY_C_CORE=TRUE' 'BLD_*_LEGACY_DEBUGGER=0' `
-	LaunchLogOnSuccess=FALSE LaunchLogOnError=FALSE
+	'BLD_*_USE_LEGACY_C_CORE=TRUE' LaunchLogOnSuccess=FALSE
 if ($LASTEXITCODE -ne 0) { throw 'X64 release build failed' }
 ```
 
@@ -123,10 +120,6 @@ Replace `BUILD_ARCH=X64` with `BUILD_ARCH=AARCH64` for ARM64, or `TARGET=RELEASE
 Rerun setup/update after changing branches, submodule pins, external dependency descriptors, or build flavor.
 For Patina, set `'BLD_*_USE_LEGACY_C_CORE=FALSE'` throughout setup/update/build; Stuart obtains the prebuilt core.
 C and Patina use the same local output directory, so preserve artifacts before switching cores.
-
-Before opening a PR, rebuild both architectures affected by the change, run the source checks below, review
-`git diff --check` and `git status --short`, and commit only intended files. A successful build validates compilation
-and firmware-image checks, not guest boot behavior; see the deployment guide for runtime testing.
 
 ## Running CI Checks Locally
 
@@ -180,7 +173,6 @@ Review the resulting changes and rerun the full source-check command before comm
 ## Specialized Builds
 
 These examples assume the Python and Clang environment above. They use X64 DEBUG with CLANGPDB;
-add `BUILD_ARCH=AARCH64` for ARM64 or `TARGET=RELEASE` for release firmware. As in the release loop,
 check `$LASTEXITCODE` after each build before continuing.
 
 ### Debug-Enabled Build
@@ -189,7 +181,7 @@ For interactive debugging with WinDbg:
 
 ```powershell
 stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=CLANGPDB 'BLD_*_DEBUGGER_ENABLED=1' `
-	LaunchLogOnSuccess=FALSE LaunchLogOnError=FALSE
+	LaunchLogOnSuccess=FALSE
 ```
 
 ### Serial Logging Build
@@ -198,14 +190,14 @@ For serial port debug output:
 
 ```powershell
 stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=CLANGPDB 'BLD_*_DEBUGLIB_SERIAL=1' `
-	LaunchLogOnSuccess=FALSE LaunchLogOnError=FALSE
+	LaunchLogOnSuccess=FALSE
 ```
 
 ### Combined Debug + Serial Build
 
 ```powershell
 stuart_build -c MsvmPkg/PlatformBuild.py TOOL_CHAIN_TAG=CLANGPDB `
-	'BLD_*_DEBUGGER_ENABLED=1' 'BLD_*_DEBUGLIB_SERIAL=1' LaunchLogOnSuccess=FALSE LaunchLogOnError=FALSE
+	'BLD_*_DEBUGGER_ENABLED=1' 'BLD_*_DEBUGLIB_SERIAL=1' LaunchLogOnSuccess=FALSE
 ```
 
 ## Build Output Structure
@@ -230,32 +222,25 @@ Build artifacts follow this path structure:
 - `Build\MsvmX64\RELEASE_CLANGPDB\FV\MSVM.fd`
 - `Build\MsvmAARCH64\RELEASE_CLANGPDB\FV\MSVM.fd`
 
-`MAP\` and `PDB\` contain flattened symbol files. `BUILD_TOOLS_REPORT.*` records tool versions, and
-`BUILD_REPORT.TXT` contains the optional report requested above. `Build\BUILDLOG.txt`, `Build\SETUPLOG.txt`, and
+`MAP\` and `PDB\` contain flattened symbol files. `BUILD_TOOLS_REPORT.*` records tool versions.
+To generate `BUILD_REPORT.TXT`, add `BUILDREPORTING=TRUE` and
+`'BUILDREPORT_TYPES=PCD DEPEX FLASH BUILD_FLAGS LIBRARY'` to `stuart_build`.
+`Build\BUILDLOG.txt`, `Build\SETUPLOG.txt`, and
 `Build\UPDATE_LOG.txt` are overwritten by subsequent invocations; preserve them before switching architectures
 when diagnosing a failure. Reports and symbols remain in their architecture-specific output directories.
 
 ## Troubleshooting
 
-- **Stuart or Python not found:** Add the external virtual environment's `Scripts` directory to `PATH` in the current
-	terminal. Do not move an existing venv: Windows console entry points embed its original path. Recreate it instead.
-- **Clang not found or failed to launch:** Check all four LLVM executables and the trailing separator in `CLANG_BIN`.
-	VS2026 works with CLANGPDB; do not select a nonexistent `VS2026` tag or rely on the VS2022 default.
-- **Visual Studio or Windows SDK not found:** Install the C++ workload and SDK, then use `vswhere` above to confirm
-	detection. Installing a newer IDE alone does not install the required compiler components.
-- **Missing tools, headers, or submodule contents:** Rerun platform setup and update with the same flavor arguments.
-	Inspect their exit codes before attempting the build. Check network/proxy access if dependency downloads fail.
+- **Dependency downloads fail:** Check network/proxy access, then rerun setup/update with the same flavor arguments.
 - **Line-ending check fails on untouched files:** Ensure `core.autocrlf=false` was applied before checkout and submodule
 	initialization. Prefer a fresh correctly configured clone rather than rewriting a working tree with local edits.
 - **Dirty-worktree warning:** Firmware version metadata records uncommitted and untracked files, including editor
-	settings and in-repo virtual environments. This is not itself a build failure. Do not discard someone else's changes
-	to remove the warning; keep tool environments outside the checkout and review the status before committing.
-- **Build failure or apparent hang:** Read the last errors in `Build\BUILDLOG.txt` and the corresponding EDK II log.
-	Keep `LaunchLogOnSuccess=FALSE` and `LaunchLogOnError=FALSE` for unattended builds to prevent Notepad launches.
+	settings. This is not itself a build failure.
+- **Build failure:** Read the last errors in `Build\BUILDLOG.txt` and the corresponding EDK II log.
 
 ## Next Steps
 
-After building, you'll need to deploy your firmware:
+A successful build validates compilation and firmware-image checks, not guest boot behavior. Deploy the image for runtime testing:
 
 - **Deploy Firmware:** See [FIRMWARE-DEPLOYMENT.md](FIRMWARE-DEPLOYMENT.md)
 - **Enable Debugging:** See [DEBUGGING.md](DEBUGGING.md)
