@@ -1,7 +1,11 @@
 name: Test MSVM Firmware with OpenVMM
-description: Boot every X64 MSVM firmware artifact with OpenVMM
+description: Boot every MSVM firmware artifact for the selected architecture with OpenVMM
 
 inputs:
+  arch:
+    description: Firmware architecture (X64 on Linux or AARCH64 on Windows with WHP)
+    required: false
+    default: X64
   github-token:
     description: GitHub token used to query and download OpenVMM artifacts
     required: true
@@ -9,21 +13,56 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Download all X64 firmware artifacts
+    - name: Select architecture
+      id: config
+      shell: bash
+      env:
+        ARCH: ${{ inputs.arch }}
+      run: |
+        case "$ARCH:$RUNNER_OS:$RUNNER_ARCH" in
+          X64:Linux:X64)
+            echo "prefix=x64-linux" >> "$GITHUB_OUTPUT"
+            echo "triple=x86_64-unknown-linux-gnu" >> "$GITHUB_OUTPUT"
+            echo "firmware-dir=x86_64" >> "$GITHUB_OUTPUT"
+            echo "image=ubuntu-25.04-server-cloudimg-amd64.vhd" >> "$GITHUB_OUTPUT"
+            echo "test=openvmm_uefi_x64_ubuntu_2504_server_x64_boot" >> "$GITHUB_OUTPUT"
+            echo "extension=" >> "$GITHUB_OUTPUT"
+            echo "pipette-prefix=x64-linux-musl" >> "$GITHUB_OUTPUT"
+            echo "temp-dir=$RUNNER_TEMP" >> "$GITHUB_OUTPUT"
+            ;;
+          AARCH64:Windows:ARM64)
+            echo "prefix=aarch64-windows" >> "$GITHUB_OUTPUT"
+            echo "triple=aarch64-pc-windows-msvc" >> "$GITHUB_OUTPUT"
+            echo "firmware-dir=aarch64" >> "$GITHUB_OUTPUT"
+            echo "image=ubuntu-24.04-server-cloudimg-arm64.vhd" >> "$GITHUB_OUTPUT"
+            echo "test=openvmm_uefi_aarch64_ubuntu_2404_server_aarch64_boot" >> "$GITHUB_OUTPUT"
+            echo "extension=.exe" >> "$GITHUB_OUTPUT"
+            echo "pipette-prefix=aarch64-linux-musl" >> "$GITHUB_OUTPUT"
+            echo "temp-dir=$(cygpath -m "$RUNNER_TEMP")" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::Unsupported firmware/runner combination: $ARCH:$RUNNER_OS:$RUNNER_ARCH"
+            exit 1
+            ;;
+        esac
+
+    - name: Download firmware artifacts
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
-        pattern: firmware-*-X64-*
+        pattern: firmware-*-${{ inputs.arch }}-*
         path: ${{ runner.temp }}/firmware
 
-    - name: Verify X64 firmware matrix
+    - name: Verify firmware matrix
       shell: bash
+      env:
+        FIRMWARE_ROOT: ${{ steps.config.outputs.temp-dir }}/firmware
       run: |
         mapfile -t firmware_files < <(
-          find "${{ runner.temp }}/firmware" -type f -name MSVM.fd | sort
+          find "$FIRMWARE_ROOT" -type f -name MSVM.fd | sort
         )
 
         if [[ "${#firmware_files[@]}" -eq 0 ]]; then
-          echo "::error::No X64 MSVM.fd files were downloaded from the completed build matrix"
+          echo "::error::No MSVM.fd files were downloaded from the completed build matrix"
           exit 1
         fi
 
@@ -32,7 +71,11 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        PREFIX: ${{ steps.config.outputs.prefix }}
+        PIPETTE_PREFIX: ${{ steps.config.outputs.pipette-prefix }}
       run: |
+        required="$(jq -nc --arg prefix "$PREFIX" --arg pipette "$PIPETTE_PREFIX" \
+          '[($prefix + "-vmm-tests-archive"), ($prefix + "-openvmm"), ($pipette + "-pipette")]')"
         response="$(gh api \
           "repos/microsoft/openvmm/actions/workflows/openvmm-ci.yaml/runs?branch=main&event=push&status=success&per_page=20")"
 
@@ -45,13 +88,8 @@ runs:
             "repos/microsoft/openvmm/actions/runs/$candidate_id/artifacts?per_page=100")"
           artifacts="$(jq -c '[.[].artifacts[]]' <<< "$artifact_pages")"
 
-          if jq -e '
-            [
-              "x64-linux-vmm-tests-archive",
-              "x64-linux-openvmm",
-              "x64-linux-musl-pipette"
-            ] as $required
-            | [.[] | select(.expired == false) | .name] as $available
+          if jq -e --argjson required "$required" '
+            [.[] | select(.expired == false) | .name] as $available
             | all($required[]; . as $name | $available | index($name) != null)
           ' <<< "$artifacts" > /dev/null; then
             run_id="$candidate_id"
@@ -59,13 +97,8 @@ runs:
             break
           fi
 
-          artifact_status="$(jq -r '
+          artifact_status="$(jq -r --argjson required "$required" '
             [
-              "x64-linux-vmm-tests-archive",
-              "x64-linux-openvmm",
-              "x64-linux-musl-pipette"
-            ] as $required
-            | [
                 $required[] as $name
                 | if any(.[]; .name == $name and .expired == false) then empty
                   elif any(.[]; .name == $name) then "\($name) (expired)"
@@ -86,31 +119,31 @@ runs:
         echo "head-sha=$head_sha" >> "$GITHUB_OUTPUT"
         echo "Using OpenVMM run $run_id at $head_sha"
 
-    - name: Download OpenVMM X64 test archive
+    - name: Download OpenVMM test archive
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         repository: microsoft/openvmm
         run-id: ${{ steps.openvmm.outputs.run-id }}
         github-token: ${{ inputs.github-token }}
-        name: x64-linux-vmm-tests-archive
+        name: ${{ steps.config.outputs.prefix }}-vmm-tests-archive
         path: ${{ runner.temp }}/openvmm-bundle
 
-    - name: Download OpenVMM X64 binary
+    - name: Download OpenVMM binary
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         repository: microsoft/openvmm
         run-id: ${{ steps.openvmm.outputs.run-id }}
         github-token: ${{ inputs.github-token }}
-        name: x64-linux-openvmm
+        name: ${{ steps.config.outputs.prefix }}-openvmm
         path: ${{ runner.temp }}/openvmm-bundle
 
-    - name: Download OpenVMM X64 pipette
+    - name: Download OpenVMM pipette
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         repository: microsoft/openvmm
         run-id: ${{ steps.openvmm.outputs.run-id }}
         github-token: ${{ inputs.github-token }}
-        name: x64-linux-musl-pipette
+        name: ${{ steps.config.outputs.pipette-prefix }}-pipette
         path: ${{ runner.temp }}/openvmm-bundle
 
     - name: Checkout matching OpenVMM source metadata
@@ -124,6 +157,10 @@ runs:
     - name: Download standalone cargo-nextest
       id: nextest
       shell: bash
+      env:
+        TEMP_ROOT: ${{ steps.config.outputs.temp-dir }}
+        TRIPLE: ${{ steps.config.outputs.triple }}
+        EXTENSION: ${{ steps.config.outputs.extension }}
       run: |
         version="$(sed -n 's/^pub const NEXTEST: &str = "\([^"]*\)";/\1/p' \
           openvmm-source/flowey/flowey_lib_hvlite/src/_jobs/cfg_versions.rs)"
@@ -133,25 +170,28 @@ runs:
           exit 1
         fi
 
-        destination="${{ runner.temp }}/nextest"
+        destination="$TEMP_ROOT/nextest"
         mkdir -p "$destination"
         curl --fail --location \
-          "https://get.nexte.st/$version/x86_64-unknown-linux-gnu.tar.gz" \
-          --output "${{ runner.temp }}/nextest.tar.gz"
-        tar -xf "${{ runner.temp }}/nextest.tar.gz" -C "$destination"
-        chmod +x "$destination/cargo-nextest"
-        echo "binary=$destination/cargo-nextest" >> "$GITHUB_OUTPUT"
+          "https://get.nexte.st/$version/$TRIPLE.tar.gz" \
+          --output "$TEMP_ROOT/nextest.tar.gz"
+        tar -xf "$TEMP_ROOT/nextest.tar.gz" -C "$destination"
+        chmod +x "$destination/cargo-nextest$EXTENSION"
+        echo "binary=$destination/cargo-nextest$EXTENSION" >> "$GITHUB_OUTPUT"
 
-    - name: Download Ubuntu 25.04 test image
+    - name: Download Ubuntu test image
       shell: bash
+      env:
+        TEMP_ROOT: ${{ steps.config.outputs.temp-dir }}
+        IMAGE_NAME: ${{ steps.config.outputs.image }}
       run: |
-        image_dir="${{ runner.temp }}/openvmm-images"
-        image="$image_dir/ubuntu-25.04-server-cloudimg-amd64.vhd"
+        image_dir="$TEMP_ROOT/openvmm-images"
+        image="$image_dir/$IMAGE_NAME"
         expected_size=3758211584
 
         mkdir -p "$image_dir"
         curl --fail --location --retry 5 --retry-all-errors \
-          "https://hvlitetestvhds.blob.core.windows.net/vhds/ubuntu-25.04-server-cloudimg-amd64.vhd" \
+          "https://hvlitetestvhds.blob.core.windows.net/vhds/$IMAGE_NAME" \
           --output "$image"
 
         actual_size="$(stat --format=%s "$image")"
@@ -161,6 +201,7 @@ runs:
         fi
 
     - name: Prepare Linux virtualization
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         if [[ ! -c /dev/kvm ]]; then
@@ -172,7 +213,24 @@ runs:
         echo 4096 | sudo tee \
           /sys/kernel/mm/hugepages/hugepages-2048kB/nr_overcommit_hugepages
 
-        bundle="${{ runner.temp }}/openvmm-bundle"
+    - name: Verify Windows virtualization
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $feature = Get-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform
+        if ($feature.State -ne 'Enabled') {
+          throw 'The ARM64 runner must have Windows Hypervisor Platform enabled and a running hypervisor'
+        }
+
+    - name: Prepare OpenVMM bundle
+      shell: bash
+      env:
+        TEMP_ROOT: ${{ steps.config.outputs.temp-dir }}
+        TRIPLE: ${{ steps.config.outputs.triple }}
+        EXTENSION: ${{ steps.config.outputs.extension }}
+        FIRMWARE_DIR: ${{ steps.config.outputs.firmware-dir }}
+      run: |
+        bundle="$TEMP_ROOT/openvmm-bundle"
         echo "Downloaded OpenVMM bundle:"
         find "$bundle" -maxdepth 4 -printf '%y %p\n' | sort
 
@@ -195,29 +253,37 @@ runs:
           fi
         }
 
-        normalize_bundle_file openvmm x86_64-unknown-linux-gnu/openvmm
-        normalize_bundle_file pipette x86_64-unknown-linux-musl/pipette
+        normalize_bundle_file "openvmm$EXTENSION" "$TRIPLE/openvmm$EXTENSION"
+        normalize_bundle_file pipette "$FIRMWARE_DIR-unknown-linux-musl/pipette"
         normalize_bundle_file vmm_tests.tar.zst vmm_tests.tar.zst
         chmod +x \
-          "$bundle/x86_64-unknown-linux-gnu/openvmm" \
-          "$bundle/x86_64-unknown-linux-musl/pipette"
+          "$bundle/$TRIPLE/openvmm$EXTENSION" \
+          "$bundle/$FIRMWARE_DIR-unknown-linux-musl/pipette"
 
-    - name: Boot Ubuntu with every X64 firmware
+    - name: Boot Ubuntu with every firmware
       working-directory: openvmm-source
       shell: bash
       env:
-        BUNDLE: ${{ runner.temp }}/openvmm-bundle
-        FIRMWARE_ROOT: ${{ runner.temp }}/firmware
+        BUNDLE: ${{ steps.config.outputs.temp-dir }}/openvmm-bundle
+        FIRMWARE_ROOT: ${{ steps.config.outputs.temp-dir }}/firmware
         NEXTEST: ${{ steps.nextest.outputs.binary }}
-        RESULTS_ROOT: ${{ runner.temp }}/openvmm-test-results
-        VMM_TEST_IMAGES: ${{ runner.temp }}/openvmm-images
-        OPENVMM_REQUIRE_2MB_HUGETLB: "1"
+        RESULTS_ROOT: ${{ steps.config.outputs.temp-dir }}/openvmm-test-results
+        VMM_TEST_IMAGES: ${{ steps.config.outputs.temp-dir }}/openvmm-images
+        TEMP_ROOT: ${{ steps.config.outputs.temp-dir }}
+        FIRMWARE_DIR: ${{ steps.config.outputs.firmware-dir }}
+        TEST_NAME: ${{ steps.config.outputs.test }}
+        OPENVMM_REQUIRE_2MB_HUGETLB: ${{ runner.os == 'Linux' && '1' || '0' }}
       run: |
         mapfile -t firmware_files < <(
           find "$FIRMWARE_ROOT" -type f -name MSVM.fd | sort
         )
 
-        destination="$BUNDLE/x86_64"
+        workspace="$PWD"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          workspace="$(pwd -W)"
+        fi
+
+        destination="$BUNDLE/$FIRMWARE_DIR"
         mkdir -p "$destination" "$RESULTS_ROOT"
         overall_result=0
 
@@ -225,7 +291,7 @@ runs:
           relative="${firmware#"$FIRMWARE_ROOT"/}"
           variant="${relative%%/*}"
           result_dir="$RESULTS_ROOT/$variant"
-          temp_dir="${{ runner.temp }}/openvmm-test-temp/$variant"
+          temp_dir="$TEMP_ROOT/openvmm-test-temp/$variant"
 
           mkdir -p "$result_dir" "$temp_dir"
           cp "$firmware" "$destination/MSVM.fd"
@@ -234,13 +300,16 @@ runs:
           if VMM_TESTS_CONTENT_DIR="$BUNDLE" \
             TEST_OUTPUT_PATH="$result_dir" \
             TMPDIR="$temp_dir" \
+            TEMP="$temp_dir" \
+            TMP="$temp_dir" \
             "$NEXTEST" nextest run \
               --archive-file "$BUNDLE/vmm_tests.tar.zst" \
-              --workspace-remap "$PWD" \
-              --config-file "$PWD/.config/nextest.toml" \
+              --workspace-remap "$workspace" \
+              --config-file "$workspace/.config/nextest.toml" \
               --profile ci \
+              --no-tests fail \
               --filter-expr \
-                "test(openvmm_uefi_x64_ubuntu_2504_server_x64_boot)"; then
+                "test($TEST_NAME)"; then
             echo "$variant: passed"
           else
             echo "::error::$variant failed"
@@ -255,6 +324,6 @@ runs:
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: openvmm-x64-firmware-test-results
+        name: openvmm-${{ inputs.arch == 'X64' && 'x64' || 'aarch64' }}-firmware-test-results
         if-no-files-found: warn
         path: ${{ runner.temp }}/openvmm-test-results/
