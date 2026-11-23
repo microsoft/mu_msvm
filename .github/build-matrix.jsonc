@@ -1,5 +1,5 @@
 {
-  // All builds use Windows Visual Studio Clang (CLANGPDB), without the closed-source legacy debugger.
+  // All builds use Visual Studio 2026 and standalone LLVM (CLANGPDB), without the closed-source legacy debugger.
   "include": [
     // Legacy C core.
     {"arch": "X64", "target": "DEBUG", "core": "legacy"},

@@ -6,6 +6,9 @@ This guide covers building UEFI firmware images for all supported platforms.
 
 Follow the basic instructions for PlatformBuild [here](https://microsoft.github.io/mu/CodeDevelopment/compile/).
 
+CI uses the `windows-2025-vs2026` GitHub-hosted runner with Visual Studio 2026 and standalone LLVM.
+Use `TOOL_CHAIN_TAG=CLANGPDB` for this configuration; the pinned build definitions do not have a `VS2026` toolchain tag.
+
 ## Basic Build Commands
 
 ### Default Debug Build
