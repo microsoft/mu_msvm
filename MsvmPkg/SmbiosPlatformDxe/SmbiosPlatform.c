@@ -1,6 +1,6 @@
 /*++
     This module is responsible for creating the SMBIOS table.
-    This driver will make a best effort to add all the SMBIOS v3.1 required
+    This driver will make a best effort to add all the SMBIOS v3.1/v3.8 required
     structures. Failure is not fatal and may result in some of the required
     structures to not be installed.
 
@@ -13,6 +13,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/DebugLib.h>
+#include <Library/EfiDiagnosticsLib.h>
 #include <Library/HobLib.h>
 #include <Library/ConfigLib.h>
 #include <Protocol/Smbios.h>
@@ -29,12 +30,6 @@ static CHAR8  RELEASE_VERSION_STRING[] = "Hyper-V UEFI DEBUG BUILD";
 static CHAR8  RELEASE_VERSION_STRING[] = "Hyper-V UEFI Release v4.1";
 #endif
 static CHAR8  RELEASE_DATE_STRING[] = "mm/dd/yyyy";
-
-//
-// Complying with SMBIOS v3.1 specification.
-//
-#define TARGETTED_SMBIOS_MAJOR_VERSION  3
-#define TARGETTED_SMBIOS_MINOR_VERSION  1
 
 //
 // Implementation specific constant strings.
@@ -2063,14 +2058,7 @@ Return Value:
     return EFI_PROTOCOL_ERROR;
   }
 
-  //
-  // Check if version matches.
-  //
-  if ((smbios->MajorVersion != TARGETTED_SMBIOS_MAJOR_VERSION) ||
-      (smbios->MinorVersion != TARGETTED_SMBIOS_MINOR_VERSION))
-  {
-    return EFI_INCOMPATIBLE_VERSION;
-  }
+  DEBUG ((EFI_DIAGNOSTICS_IMPORTANT_INFO, "SmbiosPlatform: SMBIOS version %u.%u\n", smbios->MajorVersion, smbios->MinorVersion));
 
   //
   // Add all the structures.

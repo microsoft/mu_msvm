@@ -1,6 +1,6 @@
 ## @file
 #  This module is responsible for creating the SMBIOS table.
-#  This driver will make a best effort to add all the SMBIOS v3.1 required
+#  This driver will make a best effort to add all the SMBIOS v3.1/v3.8 required
 #  structures. Failure is not fatal and may result in some of the required
 #  structures to not be installed.
 #
