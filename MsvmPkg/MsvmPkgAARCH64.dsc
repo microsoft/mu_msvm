@@ -502,9 +502,6 @@
   # FUTURE: figure out what this is all about
   gEfiMdeModulePkgTokenSpaceGuid.PcdResetOnMemoryTypeInformationChange|FALSE
 
-  # Support SMBIOS 3.1
-  gEfiMdeModulePkgTokenSpaceGuid.PcdSmbiosVersion|0x0301
-
   # Default OEM ID for ACPI table creation, its length must be 0x6 bytes to follow ACPI specification.
   gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiDefaultOemId|"VRTUAL"
 
@@ -564,10 +561,11 @@
   gArmTokenSpaceGuid.PcdGicDistributorBase|0xFFFF0000        # aka GICD
   gArmTokenSpaceGuid.PcdGicRedistributorsBase|0xEFFEE000     # aka GICR
 
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration|FALSE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformRecoverySupport|FALSE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSmbiosVersion|0x0301
   gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeUseMemory|FALSE
   gEfiMdeModulePkgTokenSpaceGuid.PcdStatusCodeUseSerial|FALSE
-  gEfiMdeModulePkgTokenSpaceGuid.PcdPlatformRecoverySupport|FALSE
-  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration|FALSE
 
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|0x0
 
