@@ -49,6 +49,21 @@ INIT_TABLE_ENTRY  AcpiInitTable[] =
 
 BOOLEAN  mHardwareIsolatedNoParavisor = FALSE;
 
+STATIC
+BOOLEAN
+AcpiIsTableSupported (
+  IN CONST EFI_ACPI_DESCRIPTION_HEADER  *Table
+  )
+{
+  switch (Table->Signature) {
+    case EFI_ACPI_6_2_DEBUG_PORT_2_TABLE_SIGNATURE:
+      return PcdGetBool (PcdSerialControllersEnabled);
+
+    default:
+      return TRUE;
+  }
+}
+
 EFI_STATUS
 RuntimeInitializeTableIfNecessary (
   IN OUT  EFI_ACPI_DESCRIPTION_HEADER  *Table
@@ -72,6 +87,10 @@ Return Value:
 {
   INIT_TABLE_ENTRY  *entry;
   UINT32            index;
+
+  if (!AcpiIsTableSupported (Table)) {
+    return EFI_UNSUPPORTED;
+  }
 
   for (index = 0; index < NUM_TABLE_ENTRIES; index++) {
     entry = &AcpiInitTable[index];
@@ -136,6 +155,11 @@ Return Value:
   hob = GetFirstAcpiReplacementTableHob ();
   while (hob != NULL) {
     EFI_ACPI_DESCRIPTION_HEADER  *table = AcpiReplacementTableFromHob (hob);
+
+    if (!AcpiIsTableSupported (table)) {
+      hob = GetNextAcpiReplacementTableHob (hob);
+      continue;
+    }
 
     DEBUG ((
       DEBUG_INFO,
