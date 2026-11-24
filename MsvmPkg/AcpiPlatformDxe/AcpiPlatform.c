@@ -55,8 +55,13 @@ AcpiIsTableSupported (
   IN CONST EFI_ACPI_DESCRIPTION_HEADER  *Table
   )
 {
-  return (Table->Signature != EFI_ACPI_6_2_DEBUG_PORT_2_TABLE_SIGNATURE) ||
-         PcdGetBool (PcdSerialControllersEnabled);
+  switch (Table->Signature) {
+    case EFI_ACPI_6_2_DEBUG_PORT_2_TABLE_SIGNATURE:
+      return PcdGetBool (PcdSerialControllersEnabled);
+
+    default:
+      return TRUE;
+  }
 }
 
 EFI_STATUS
