@@ -453,9 +453,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVendor|L"Microsoft"
 
   #
-  # The runtime state of this PCD can be modified in the debugger by
-  # modifying EfiBdDebugPrintGlobalMask and EfiBdDebugPrintComponentMask.
-  #
   # We now expect the host bios device to parse the in-memory advanced logger 
   # buffer to our tracing facilities
   #
@@ -471,8 +468,6 @@
 !endif
 
 # Disable asserts when not building debug
-# NOTE: Technically this is a lie, since BdDebugLib doesn't use this. But keep
-#       it for parity with AArch64.
 !if $(TARGET) == DEBUG
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x47
 !else

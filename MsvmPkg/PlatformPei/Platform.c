@@ -1022,7 +1022,7 @@ Return Value:
   context.StartOfConfigBlob = GetStartOfConfigBlob ();
 
   //
-  // DxeBdLib.c InitializeDebugAgent is called very early on in DXE Core,
+  // InitializeDebugAgent is called very early on in DXE Core,
   // before any drivers are dispatched. Thus, we need to send this boolean
   // flag via a HOB since the Pcd module isn't yet available.
   //

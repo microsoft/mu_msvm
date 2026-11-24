@@ -79,6 +79,16 @@ Review the resulting changes and rerun the full source-check command before comm
 
 ## Specialized Builds
 
+### Platform Configuration
+
+Both repositories use standalone DSC/FDF descriptions and contain both logo sets.
+The public descriptions link `BootLogo.bmp` and `FrontpageLogo.bmp`; the private
+descriptions link `HyperVLogo.bmp` and `MicrosoftLogo.bmp`.
+
+Both repositories enable the Mu and Hyper-V compiler defines. X64 GCC builds use
+the 8 MiB flash layout for both DEBUG and RELEASE. Other toolchains and ARM64
+retain their existing flash sizing.
+
 ### Debug-Enabled Build
 
 For interactive debugging with WinDbg:
