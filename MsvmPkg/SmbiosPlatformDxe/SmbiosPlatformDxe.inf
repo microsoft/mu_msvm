@@ -25,6 +25,10 @@
 
 [Sources]
     SmbiosPlatform.c
+    CacheInformation.h
+
+[Sources.AARCH64]
+    CacheInformation.c
 
 [Packages]
     MdePkg/MdePkg.dec
@@ -41,10 +45,16 @@
     UefiDriverEntryPoint
     UefiLib
 
+[LibraryClasses.AARCH64]
+    BaseLib
+    HobLib
+    MemoryAllocationLib
+
 [Protocols]
     gEfiSmbiosProtocolGuid                     ## CONSUMES
 
-[Guids]
+[Guids.AARCH64]
+    gAcpiReplacementTableHobGuid                     ## CONSUMES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdLegacyMemoryMap                   ## CONSUMES
@@ -100,6 +110,9 @@
     gMsvmPkgTokenSpaceGuid.PcdThreadsPerProcessor               ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled                       ## CONSUMES
     gMsvmPkgTokenSpaceGuid.PcdIpmiKcsMmioBase                   ## CONSUMES
+
+[Pcd.AARCH64]
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosCacheInformation            ## CONSUMES
 
 [Depex]
     gEfiSmbiosProtocolGuid

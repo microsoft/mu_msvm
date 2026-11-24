@@ -842,6 +842,7 @@ DebugDumpUefiConfigStruct (
       DEBUG ((DEBUG_VERBOSE, "\tMtrrsInitializedAtLoad: %u\n", flags->Flags.MtrrsInitializedAtLoad));
       DEBUG ((DEBUG_VERBOSE, "\tVmbusDisabled: %u\n", flags->Flags.VmbusDisabled));
       DEBUG ((DEBUG_VERBOSE, "\tForceDmaBounceEnabled: %u\n", flags->Flags.ForceDmaBounceEnabled));
+      DEBUG ((DEBUG_VERBOSE, "\tSmbiosCacheInformation: %u\n", flags->Flags.SmbiosCacheInformation));
       break;
     }
     case UefiConfigProcessorInformation:
@@ -1033,6 +1034,7 @@ ConfigSetUefiConfigFlags (
   PEI_FAIL_FAST_IF_FAILED (PcdSetBoolS (PcdPciDisableBusEnumeration, (UINT8)ConfigFlags->Flags.PciResourcesPreAssigned));
   PEI_FAIL_FAST_IF_FAILED (PcdSetBoolS (PcdForceDmaBounceEnabled, (UINT8)ConfigFlags->Flags.ForceDmaBounceEnabled));
   PEI_FAIL_FAST_IF_FAILED (PcdSetBoolS (PcdIpmiEnabled, (UINT8)ConfigFlags->Flags.IpmiEnabled));
+  PEI_FAIL_FAST_IF_FAILED (PcdSetBoolS (PcdSmbiosCacheInformation, (UINT8)ConfigFlags->Flags.SmbiosCacheInformation));
 
   //
   // If memory protections are enabled, configure the value into the HOB.

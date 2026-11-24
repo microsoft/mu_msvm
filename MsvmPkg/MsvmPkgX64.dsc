@@ -743,6 +743,7 @@
   gMsvmPkgTokenSpaceGuid.PcdHvEnabled|TRUE
   gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled|FALSE
   gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled|FALSE
+  gMsvmPkgTokenSpaceGuid.PcdSmbiosCacheInformation|FALSE
 
   # UEFI_CONFIG_PROCESSOR_INFORMATION
   gMsvmPkgTokenSpaceGuid.PcdProcessorCount|0x0

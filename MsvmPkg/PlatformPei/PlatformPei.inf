@@ -191,6 +191,7 @@
     gMsvmPkgTokenSpaceGuid.PcdHvEnabled
     gMsvmPkgTokenSpaceGuid.PcdIpmiEnabled
     gMsvmPkgTokenSpaceGuid.PcdForceDmaBounceEnabled
+    gMsvmPkgTokenSpaceGuid.PcdSmbiosCacheInformation
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr
     gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize
 
