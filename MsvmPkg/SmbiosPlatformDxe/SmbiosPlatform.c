@@ -20,6 +20,7 @@
 #include <IndustryStandard/Acpi.h>
 #include <stddef.h>
 #include "StaticAssert1.h"
+#include "CacheInformation.h"
 
 #define MAJOR_RELEASE_VERSION  4
 #define MINOR_RELEASE_VERSION  1
@@ -995,6 +996,16 @@ Return Value:
 
     cpuInfo.Formatted.ThreadCount2 = hwThreadCountInThisSocket;
     cpuInfo.Formatted.ThreadCount  = (UINT8)MIN (cpuInfo.Formatted.ThreadCount2, 0xFF);
+
+ #if defined (MDE_CPU_AARCH64)
+    cpuf->L1CacheHandle = 0xFFFF;
+    cpuf->L2CacheHandle = 0xFFFF;
+    cpuf->L3CacheHandle = 0xFFFF;
+    if (PcdGetBool (PcdSmbiosCacheInformation)) {
+      AddProcessorCacheInformation (Smbios, processorsAdded + 1, hwThreadCountInThisSocket, cpuf);
+    }
+
+ #endif
 
     //
     // Add the structure to the SMBIOS table. Error is not fatal and ignored.

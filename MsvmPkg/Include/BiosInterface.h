@@ -713,8 +713,9 @@ typedef struct _UEFI_CONFIG_FLAGS {
     UINT64    VmbusDisabled                : 1;
     UINT64    PciResourcesPreAssigned      : 1;
     UINT64    ForceDmaBounceEnabled        : 1;
-    UINT64    IpmiEnabled                  : 1; // Expose the emulated IPMI BMC via SMBIOS Type 38.
-    UINT64    Reserved                     : 30;
+    UINT64    IpmiEnabled                  : 1;  // Expose the emulated IPMI BMC via SMBIOS Type 38.
+    UINT64    SmbiosCacheInformation       : 1;
+    UINT64    Reserved                     : 29;
   } Flags;
 } UEFI_CONFIG_FLAGS;
 
