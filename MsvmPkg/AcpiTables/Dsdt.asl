@@ -393,7 +393,7 @@ DefinitionBlock (
             //     Name(_PS3, 0)
             // This is intentionally a do-nothing method in case any version of Windows requires _PS3 to be implemented
 
-            Method(_PS3, 0) { return(STA) }
+            Method(_PS3, 0) { }
 
             // TODO: SPIs are not available to the guest on AARCH64, which is what
             // PcdVmbusVector is currently defined as. Supposedly it should use a PPI,
