@@ -109,9 +109,11 @@
   gMsvmPkgTokenSpaceGuid.PcdSynicTimerDefaultPeriod|100000|UINT64|0x2003 # 1/100 of a second in 100 nanosecond units
 
   # Vmbus Driver Configuration
-  gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector|0x41|UINT8|0x3000
+  gMsvmPkgTokenSpaceGuid.PcdVmbusSintVector|0x41|UINT8|0x3000 # used by UEFI
   gMsvmPkgTokenSpaceGuid.PcdVmbusSintIndex|0x2|UINT8|0x3001
-  gMsvmPkgTokenSpaceGuid.PcdVmbusVector|0x5|UINT8|0x3002
+  gMsvmPkgTokenSpaceGuid.PcdVmbusVector|0x5|UINT8|0x3002      # reported to guest kernel in ACPI table
+  # PcdVmbusSintVector vs. PcdVmbusVector: Same purpose,
+  # but first is used by UEFI, torn down before ExitBootServices, second is reported to guest OS via ACPI tables.
 
   gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiTableStorageFile|{ 0x25, 0x4e, 0x37, 0x7e, 0x01, 0x8e, 0xee, 0x4f, 0x87, 0xf2, 0x39, 0xc, 0x23, 0xc6, 0x6, 0xcd }|VOID*|0x30000016
 
@@ -172,11 +174,6 @@
   # Virtual Processor Aggregator Device
   gMsvmPkgTokenSpaceGuid.PcdProcIdleBase|0xEFFE8000|UINT32|0x500D
   gMsvmPkgTokenSpaceGuid.PcdProcIdleEventVector|38|UINT8|0x500E
-
-  # GTDT for AArch64
-  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL1TimerGSIV|19|UINT32|0x500F
-  gMsvmPkgTokenSpaceGuid.PcdVirtualEL1TimerGSIV|20|UINT32|0x5010
-  gMsvmPkgTokenSpaceGuid.PcdNonSecureEL2TimerGSIV|21|UINT32|0x5011
 
   # Feature Debugger Custom Settings
   gMsvmPkgTokenSpaceGuid.PcdFeatureDebuggerPortUartBase|0x0|UINT64|0x5012
@@ -419,3 +416,9 @@
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesPtr|0x0|UINT64|0x6074
   ## Size in bytes of PcieBarApertures data
   gMsvmPkgTokenSpaceGuid.PcdPcieBarAperturesSize|0x0|UINT32|0x6075
+
+  # GTDT for AArch64 aka ARM architectural timer interrupt numbers for ArmPkg TimerDxe.
+  gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|19|UINT32|0x6076
+  gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum|20|UINT32|0x6077
+  gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum|21|UINT32|0x6078
+  gArmTokenSpaceGuid.PcdArmArchTimerHypVirtIntrNum|0x0|UINT32|0x6079

@@ -81,6 +81,7 @@
 
 [Guids.AARCH64]
     gArmTokenSpaceGuid
+    gMsvmPkgTokenSpaceGuid
 
 [Pcd]
     gEfiMdeModulePkgTokenSpaceGuid.PcdNvmeNamespaceFilterId
@@ -200,6 +201,10 @@
     gEfiSecurityPkgTokenSpaceGuid.PcdTpm2HashMask
     gArmTokenSpaceGuid.PcdGicDistributorBase
     gArmTokenSpaceGuid.PcdGicRedistributorsBase
+    gArmTokenSpaceGuid.PcdArmArchTimerIntrNum
+    gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum
+    gArmTokenSpaceGuid.PcdArmArchTimerHypIntrNum
+    gArmTokenSpaceGuid.PcdArmArchTimerHypVirtIntrNum
 
 [Pcd.X64]
     gEfiMdeModulePkgTokenSpaceGuid.PcdUse1GPageTable

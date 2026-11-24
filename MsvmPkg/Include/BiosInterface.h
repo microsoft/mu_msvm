@@ -508,6 +508,7 @@ enum UefiStructureType {
   UefiConfigHmat                           = 0x26,
   UefiConfigIort                           = 0x27,
   UefiConfigPcieBarApertures               = 0x28,
+  UefiConfigArm64Interrupts                = 0x29, // UEFI_CONFIG_ARM64_INTERRUPTS
 };
 
 //
@@ -849,5 +850,37 @@ typedef struct _UEFI_IGVM_PARAMETER_INFO {
 typedef struct _UEFI_IGVM_LOADER_BLOCK {
   UINT32    NumberOfProcessors;
 } UEFI_IGVM_LOADER_BLOCK;
+
+//
+// Standard interrupt assignments.
+//
+// See ARM base system architecture.
+//
+// 3.6 PPI assignments
+//
+// RB_PPI_00 A base system must map the interrupts shown in Table 3, Table 4 and Table 5 to PPI.
+//
+// IQKQRP The interrupt IDs in an implementation are allowed to be different from the recommended values that are
+// given in the following tables. However, assignment of the PPIs within the base PPI INTID range of 16 - 31 is
+// recommended. Failure to use these values might result in compatibility issues where software is expecting
+// these values.
+//
+typedef struct _VM_CONFIG_ARM64_INTERRUPTS {
+  // RB_PPI_01 Table 3: PPI assignments for operating system
+  UINT8    CNTP;           // Non-secure physical timer interrupt.
+  UINT8    CNTV;           // Virtual timer interrupt.
+  UINT8    CNTHV;          // Non-secure EL2 virtual timer interrupt if PEs are Armv8.1 or greater.
+  // RB_PPI_02 Table 4: PPI assignments for Hypervisor
+  UINT8    CNTHP;          // Non-secure EL2 physical timer interrupt.
+  UINT8    GICMaintenance; // The virtual PE interface list register overflow interrupt.
+} VM_CONFIG_ARM64_INTERRUPTS;
+
+typedef struct _UEFI_CONFIG_ARM64_INTERRUPTS {
+  UEFI_CONFIG_HEADER            Header;
+  VM_CONFIG_ARM64_INTERRUPTS    Interrupts;
+  UINT8                         PaddingForAlignment[ALIGN_VALUE_ADDEND (sizeof (VM_CONFIG_ARM64_INTERRUPTS), 8)];
+} UEFI_CONFIG_ARM64_INTERRUPTS;
+
+STATIC_ASSERT ((sizeof (UEFI_CONFIG_ARM64_INTERRUPTS) % 8) == 0, "must be multiple of 8");
 
 #pragma pack(pop)

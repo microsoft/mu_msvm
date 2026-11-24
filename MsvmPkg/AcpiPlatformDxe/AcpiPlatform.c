@@ -635,6 +635,25 @@ Return Value:
     goto Cleanup;
   }
 
+ #ifdef MDE_CPU_AARCH64
+  //
+  // Add generic timer descriptor table (GTDT) if not VMM provided.
+  //
+  if (!AcpiSignatureHasReplacementHob (GTDT.Header.Signature)) {
+    AcpiInitGtdt ();
+    status = acpiTable->InstallAcpiTable (
+                          acpiTable,
+                          &GTDT,
+                          GTDT.Header.Length,
+                          &tableHandle
+                          );
+    if (EFI_ERROR (status)) {
+      goto Cleanup;
+    }
+  }
+
+ #endif
+
   status = EFI_SUCCESS;
 
 Cleanup:
