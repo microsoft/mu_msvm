@@ -29,7 +29,8 @@ typedef struct _GPA_RANGE {
 #define VMBUS_MESSAGE_CONNECTION_ID  1
 #define VMBUS_MESSAGE_TYPE           1
 
-#define VMBUS_ROOT_NODE_HID_STR        "VMBus"
+#define VMBUS_ROOT_NODE_HID_STR        "MSFT1000"
+#define VMBUS_ROOT_NODE_CID_STR        "VMBus"
 #define VMBUS_NUMBER_OF_ALLOWED_GUIDS  6
 
 #define EFI_VMBUS_CHANNEL_DEVICE_PATH_GUID \
@@ -85,7 +86,7 @@ typedef struct {
   ACPI_EXTENDED_HID_DEVICE_PATH    AcpiExtendedNode;
   CHAR8                            HidStr[sizeof (VMBUS_ROOT_NODE_HID_STR)];
   CHAR8                            UidStr[1];
-  CHAR8                            CidStr[1];
+  CHAR8                            CidStr[sizeof (VMBUS_ROOT_NODE_CID_STR)];
 } VMBUS_ROOT_NODE;
 
 typedef struct {

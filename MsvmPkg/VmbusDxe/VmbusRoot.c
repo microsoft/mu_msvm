@@ -240,7 +240,7 @@ VMBUS_ROOT_NODE  gVmbusRootNode =
   },
   VMBUS_ROOT_NODE_HID_STR,
   { 0 },
-  { 0 }
+  VMBUS_ROOT_NODE_CID_STR
 };
 
 EFI_DEVICE_PATH_PROTOCOL  gEfiEndNode =
