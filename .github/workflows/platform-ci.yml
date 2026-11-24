@@ -66,7 +66,7 @@ jobs:
 
   # Build the firmware for different architectures and targets
   build:
-    name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core }})
+    name: ${{ matrix.target }} ${{ matrix.arch }} CLANGPDB (${{ matrix.core == 'legacy' && 'Legacy C Core' || 'Patina' }})
     runs-on: windows-2025-vs2026
     needs: select-builds
     env:
@@ -107,8 +107,8 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           target: ${{ matrix.target }}
-          artifact-name: firmware-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
-          logs-artifact-name: logs-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'patina' && '-patina' || '' }}
+          artifact-name: firmware-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'legacy' && '-legacy' || '' }}
+          logs-artifact-name: logs-${{ matrix.target }}-${{ matrix.arch }}-CLANGPDB${{ matrix.core == 'legacy' && '-legacy' || '' }}
           build-succeeded: ${{ steps.firmware.outcome == 'success' }}
 
   openvmm-test-x64:

@@ -11,10 +11,10 @@ See the [developer guide](MsvmPkg/Docs/DEVGUIDE.md) and in particular the gettin
 
 ## Firmware Artifacts
 
-Platform CI names firmware artifacts using this case-sensitive format:
+Patina and Legacy C Core CI names firmware artifacts using this case-sensitive format:
 
 ```text
-firmware-<TARGET>-<ARCH>-<TOOLCHAIN>[-patina]
+firmware-<TARGET>-<ARCH>-<TOOLCHAIN>[-legacy]
 ```
 
 GitHub release assets use the same name with a `.tar.gz` suffix. Consumers such as
@@ -22,10 +22,11 @@ OpenVMM should select an exact asset name from a specific release tag. For examp
 
 ```text
 firmware-RELEASE-X64-CLANGPDB.tar.gz
-firmware-RELEASE-X64-CLANGPDB-patina.tar.gz
+firmware-RELEASE-X64-CLANGPDB-legacy.tar.gz
 ```
 
-The C DXE core uses the unsuffixed name. The Rust Patina DXE core adds `-patina`;
+The Rust Patina DXE core is the default and uses the unsuffixed name. The legacy
+C DXE core adds `-legacy`;
 the brackets above indicate an optional suffix and are not part of the name.
 `TOOLCHAIN` identifies the EDK II toolchain; the Patina core is supplied as a
 prebuilt dependency. Both `DEBUG` and `RELEASE` targets are built for each of these
@@ -33,7 +34,6 @@ combinations:
 
 | Architecture | Toolchain | DXE Core |
 | --- | --- | --- |
-| X64 | VS2022 | C |
 | X64 | CLANGPDB | C, Patina |
 | AARCH64 | CLANGPDB | C, Patina |
 
@@ -42,10 +42,10 @@ directories. CI build logs use the same variant suffix with a `logs-` prefix and
 are not included in releases. Releases are published after successful main-branch
 push validation, including OpenVMM boot tests of all X64 variants.
 
-This restores unsuffixed C-core names from before the `-legacy-TRUE` naming and
-replaces `-legacy-FALSE` with `-patina`. Consumers of the original unsuffixed names
-can keep their asset selection and opt into Patina by adding `-patina`. Consumers
-using boolean-suffixed names must update their selection for new releases.
+Unsuffixed assets now contain Patina instead of the C core. Consumers that need
+the C core must add `-legacy` to their asset selection for new releases. Consumers
+using the former `-patina` suffix should switch to the unsuffixed names. Consumers
+using boolean-suffixed names must also update their selection for new releases.
 Existing release assets retain their names. Archive contents are unchanged.
 
 ## Contributing
