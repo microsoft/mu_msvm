@@ -1346,6 +1346,7 @@ Return Value:
       0,       // Minimum Voltage - Unknown
       0,       // Maximum Voltage - Unknown
       0,       // Configured Voltage - Unknown
+      MemoryTechnologyUnknown,
     }
   };
 
