@@ -468,7 +468,7 @@
   gMsvmPkgTokenSpaceGuid.PcdSystemMemorySize|0x037EC000
 
   #
-  # We now expect the host bios device to parse the in-memory advanced logger 
+  # We now expect the host bios device to parse the in-memory advanced logger
   # buffer to our tracing facilities
   #
   # NOTE: Additional debug levels may cause the in-memory advanced logger
@@ -837,6 +837,7 @@
   MdeModulePkg/Core/Dxe/DxeMain.inf {
     <LibraryClasses>
       NULL|MsCorePkg/Library/DebugPortProtocolInstallLib/DebugPortProtocolInstallLib.inf
+      ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf
       DebugTransportLib|MsvmPkg/Library/DebugTransportLibMsvm/DebugTransportLibMsvm.inf
       DebugAgentLib|DebuggerFeaturePkg/Library/DebugAgent/DebugAgentDxe.inf
       PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf

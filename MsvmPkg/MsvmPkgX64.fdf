@@ -43,7 +43,7 @@
 
 [FD.MSVM]
 BaseAddress   = 0x00100000|gMsvmPkgTokenSpaceGuid.PcdFdBaseAddress
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+!if $(TOOL_CHAIN_TAG) == GCC
 Size          = 0x00800000|gMsvmPkgTokenSpaceGuid.PcdFdSize
 !else
 Size          = 0x00600000|gMsvmPkgTokenSpaceGuid.PcdFdSize
@@ -51,14 +51,14 @@ Size          = 0x00600000|gMsvmPkgTokenSpaceGuid.PcdFdSize
 
 ErasePolarity = 1
 BlockSize     = 0x1000
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+!if $(TOOL_CHAIN_TAG) == GCC
 NumBlocks     = 0x800
 !else
 NumBlocks     = 0x600
 !endif
 
 # The MAIN volume (start|size)
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+!if $(TOOL_CHAIN_TAG) == GCC
 0x00000000|0x00600000
 !else
 0x00000000|0x005E0000
@@ -67,7 +67,7 @@ gMsvmPkgTokenSpaceGuid.PcdFvBaseAddress|gMsvmPkgTokenSpaceGuid.PcdFvSize
 FV = MAINFV
 
 # The SEC volume (start|size)
-!if $(TOOL_CHAIN_TAG) == GCC and $(TARGET) == DEBUG
+!if $(TOOL_CHAIN_TAG) == GCC
 0x00600000|0x00020000
 !else
 0x005E0000|0x00020000

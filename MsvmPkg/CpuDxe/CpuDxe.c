@@ -54,14 +54,6 @@ EFI_CPU_ARCH_PROTOCOL  gCpu = {
   4                           // DmaBufferAlignment
 };
 
-#if MS_HYP_CHANGE
-
-//
-// Local function prototypes
-//
-
-#endif // MS_HYP_CHANGE
-
 //
 // CPU Arch Protocol Functions
 //
