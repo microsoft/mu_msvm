@@ -171,11 +171,17 @@ Return Value:
   *Buffer   = 0;
 }
 
+typedef struct {
+  CHAR8                  *Value;
+  SMBIOS_TABLE_STRING    *Index;
+  CHAR8                  *Fallback;
+} SMBIOS_STRING;
+
 BOOLEAN
 AddStructure (
   IN              EFI_SMBIOS_PROTOCOL  *Smbios,
   IN              VOID                 *Structure,
-  IN OPTIONAL     CHAR8                **Strings,
+  IN OPTIONAL     CONST SMBIOS_STRING  *Strings,
   OUT OPTIONAL    EFI_SMBIOS_HANDLE    *Handle
   )
 
@@ -193,8 +199,9 @@ Arguments:
 
     Structure - The base or complete structure to add.
 
-    Strings - Optional strings that will be copied at the end of the
-              Structure before adding to the SMBIOS table.
+    Strings - Optional descriptors for string values, destination indexes,
+          and nonempty fallbacks. A NULL Value terminates the array.
+          A NULL Index preserves positional strings without an index field.
               Structure must have sufficient space beyond its Length
               for the strings.
 
@@ -209,6 +216,7 @@ Return Value:
   EFI_SMBIOS_HANDLE        handle  = SMBIOS_HANDLE_PI_RESERVED;
   EFI_SMBIOS_TABLE_HEADER  *header = (EFI_SMBIOS_TABLE_HEADER *)Structure;
   UINT32                   index;
+  UINT8                    stringCount  = 0;
   CHAR8                    *destination = (CHAR8 *)Structure + header->Length;
 
   //
@@ -220,11 +228,32 @@ Return Value:
     //
     // Append each string including its terminating null byte.
     //
-    for (index = 0; Strings[index] != NULL; index++) {
-      CHAR8  *source = Strings[index];
+    for (index = 0; Strings[index].Value != NULL; index++) {
+      CHAR8  *source = Strings[index].Value;
+
+      if ((*source == '\0') && (Strings[index].Fallback != NULL)) {
+        source = Strings[index].Fallback;
+      }
+
+      if (Strings[index].Index != NULL) {
+        *Strings[index].Index = 0;
+      }
+
+      if (*source == '\0') {
+        continue;
+      }
+
+      stringCount++;
+      if (Strings[index].Index != NULL) {
+        *Strings[index].Index = stringCount;
+      }
 
       while ((*destination++ = *source++) != '\0') {
       }
+    }
+
+    if (destination == (CHAR8 *)Structure + header->Length) {
+      *destination++ = '\0';
     }
 
     //
@@ -389,17 +418,6 @@ Return Value:
 --*/
 {
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    MANUFACTURER_STRING,
-    RELEASE_VERSION_STRING,
-    RELEASE_DATE_STRING,
-    (CHAR8 *)NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -473,10 +491,18 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { MANUFACTURER_STRING,    &biosInformation.Formatted.Vendor,          NULL },
+    { RELEASE_VERSION_STRING, &biosInformation.Formatted.BiosVersion,     NULL },
+    { RELEASE_DATE_STRING,    &biosInformation.Formatted.BiosReleaseDate, NULL },
+    { NULL,                   NULL,                                       NULL }
+  };
+
   //
   // Fill in build date as release date.
   //
-  DateToSmbiosDate (__DATE__, sizeof (__DATE__), strings[2], sizeof (RELEASE_DATE_STRING));
+  DateToSmbiosDate (__DATE__, sizeof (__DATE__), strings[2].Value, sizeof (RELEASE_DATE_STRING));
 
   //
   // Add the structure to the SMBIOS table. Error is not fatal and ignored.
@@ -506,20 +532,6 @@ Return Value:
 --*/
 {
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    MANUFACTURER_STRING,
-    VIRTUAL_MACHINE_STRING,
-    RELEASE_VERSION_STRING,
-    "",
-    NONE_STRING,
-    VIRTUAL_MACHINE_STRING,
-    NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -547,6 +559,17 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { MANUFACTURER_STRING,    &systemInformation.Formatted.Manufacturer, MANUFACTURER_STRING    },
+    { VIRTUAL_MACHINE_STRING, &systemInformation.Formatted.ProductName,  VIRTUAL_MACHINE_STRING },
+    { RELEASE_VERSION_STRING, &systemInformation.Formatted.Version,      NULL                   },
+    { "",                     &systemInformation.Formatted.SerialNumber, NULL                   },
+    { NONE_STRING,            &systemInformation.Formatted.SKUNumber,    NULL                   },
+    { VIRTUAL_MACHINE_STRING, &systemInformation.Formatted.Family,       NULL                   },
+    { NULL,                   NULL,                                      NULL                   }
+  };
+
   //
   // Add the dynamic system information table fields to the structure.
   // If the user passed in field values manually, or simply wants the
@@ -562,7 +585,7 @@ Return Value:
   stringLength = PcdGet32 (PcdSmbiosSystemManufacturerSize);
 
   if (stringLength) {
-    strings[0] =
+    strings[0].Value =
       LoadPcdSmbiosString (
         PcdGet64 (PcdSmbiosSystemManufacturerStr),
         stringLength,
@@ -576,7 +599,7 @@ Return Value:
   stringLength = PcdGet32 (PcdSmbiosSystemProductNameSize);
 
   if (stringLength) {
-    strings[1] =
+    strings[1].Value =
       LoadPcdSmbiosString (
         PcdGet64 (PcdSmbiosSystemProductNameStr),
         stringLength,
@@ -590,7 +613,7 @@ Return Value:
   stringLength = PcdGet32 (PcdSmbiosSystemVersionSize);
 
   if (stringLength) {
-    strings[2] =
+    strings[2].Value =
       LoadPcdSmbiosString (
         PcdGet64 (PcdSmbiosSystemVersionStr),
         stringLength,
@@ -602,7 +625,7 @@ Return Value:
   // Add the System Serial Number string.
   // If it wasn't passed in, then we set the System Serial Number to the default - "None".
   //
-  strings[3] =
+  strings[3].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosSystemSerialNumberStr),
       PcdGet32 (PcdSmbiosSystemSerialNumberSize),
@@ -615,7 +638,7 @@ Return Value:
   stringLength = PcdGet32 (PcdSmbiosSystemSKUNumberSize);
 
   if (stringLength) {
-    strings[4] =
+    strings[4].Value =
       LoadPcdSmbiosString (
         PcdGet64 (PcdSmbiosSystemSKUNumberStr),
         stringLength,
@@ -629,7 +652,7 @@ Return Value:
   stringLength = PcdGet32 (PcdSmbiosSystemFamilySize);
 
   if (stringLength) {
-    strings[5] =
+    strings[5].Value =
       LoadPcdSmbiosString (
         PcdGet64 (PcdSmbiosSystemFamilyStr),
         stringLength,
@@ -670,19 +693,6 @@ Return Value:
 --*/
 {
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    MANUFACTURER_STRING,
-    RELEASE_VERSION_STRING,
-    "",
-    "",
-    VIRTUAL_MACHINE_STRING,
-    NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -722,17 +732,27 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { MANUFACTURER_STRING,    &systemEnclosure.Formatted.Manufacturer,                              MANUFACTURER_STRING },
+    { RELEASE_VERSION_STRING, &systemEnclosure.Formatted.Version,                                   NULL                },
+    { "",                     &systemEnclosure.Formatted.SerialNumber,                              NULL                },
+    { "",                     &systemEnclosure.Formatted.AssetTag,                                  NULL                },
+    { VIRTUAL_MACHINE_STRING, &systemEnclosure.Formatted.ContainedElements[0].ContainedElementType, NULL                },
+    { NULL,                   NULL,                                                                 NULL                }
+  };
+
   //
   // Add the dynamic information to the structure.
   //
-  strings[2] =
+  strings[2].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosChassisSerialNumberStr),
       PcdGet32 (PcdSmbiosChassisSerialNumberSize),
       BiosInterfaceSmbiosStringMax + 1
       );
 
-  strings[3] =
+  strings[3].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosChassisAssetTagStr),
       PcdGet32 (PcdSmbiosChassisAssetTagSize),
@@ -771,20 +791,6 @@ Return Value:
 --*/
 {
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    MANUFACTURER_STRING,
-    VIRTUAL_MACHINE_STRING,
-    RELEASE_VERSION_STRING,
-    "",
-    NONE_STRING,
-    VIRTUAL_MACHINE_STRING,
-    NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -817,12 +823,23 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { MANUFACTURER_STRING,    &baseboardInformation.Formatted.Manufacturer,      MANUFACTURER_STRING    },
+    { VIRTUAL_MACHINE_STRING, &baseboardInformation.Formatted.ProductName,       VIRTUAL_MACHINE_STRING },
+    { RELEASE_VERSION_STRING, &baseboardInformation.Formatted.Version,           NULL                   },
+    { "",                     &baseboardInformation.Formatted.SerialNumber,      NULL                   },
+    { NONE_STRING,            &baseboardInformation.Formatted.AssetTag,          NULL                   },
+    { VIRTUAL_MACHINE_STRING, &baseboardInformation.Formatted.LocationInChassis, NULL                   },
+    { NULL,                   NULL,                                              NULL                   }
+  };
+
   //
   // Add the dynamic information to the structure.
   //
   baseboardInformation.Formatted.ChassisHandle = ChassisHandle;
 
-  strings[3] =
+  strings[3].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosBaseSerialNumberStr),
       PcdGet32 (PcdSmbiosBaseSerialNumberSize),
@@ -870,20 +887,6 @@ Return Value:
   UINT16  lpsPerSocketQuotient  = lpCount / totalSocketCount;
   UINT16  lpsPerSocketRemainder = lpCount % totalSocketCount;
 
-  //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    NULL
-  };
-
   static struct {
     SMBIOS_TABLE_TYPE4    Formatted;
     CHAR8                 Unformed[((MAX_SMBIOS_STRING_LENGTH + 1) * 6) + 1];
@@ -891,17 +894,21 @@ Return Value:
   {
     { STANDARD_HEADER (SMBIOS_TABLE_TYPE4, EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION) }
   };
+  static SMBIOS_STRING  strings[] =
+  {
+    { "",   &cpuInfo.Formatted.Socket,                NONE_STRING },
+    { "",   &cpuInfo.Formatted.ProcessorManufacturer, NONE_STRING },
+    { "",   &cpuInfo.Formatted.ProcessorVersion,      NULL        },
+    { "",   &cpuInfo.Formatted.SerialNumber,          NULL        },
+    { "",   &cpuInfo.Formatted.AssetTag,              NULL        },
+    { "",   &cpuInfo.Formatted.PartNumber,            NULL        },
+    { NULL, NULL,                                     NULL        }
+  };
   SMBIOS_TABLE_TYPE4  *cpuf = &cpuInfo.Formatted;
 
-  cpuf->L1CacheHandle         = 0xFFFF; // L1 Cache Handle - Unknown
-  cpuf->L2CacheHandle         = 0xFFFF; // L2 Cache Handle - Unknown
-  cpuf->L3CacheHandle         = 0xFFFF; // L3 Cache Handle - Unknown
-  cpuf->Socket                = 1;      // Strings.
-  cpuf->ProcessorManufacturer = 2;      //
-  cpuf->ProcessorVersion      = 3;      //
-  cpuf->SerialNumber          = 4;      //
-  cpuf->AssetTag              = 5;      //
-  cpuf->PartNumber            = 6;      //
+  cpuf->L1CacheHandle = 0xFFFF;         // L1 Cache Handle - Unknown
+  cpuf->L2CacheHandle = 0xFFFF;         // L2 Cache Handle - Unknown
+  cpuf->L3CacheHandle = 0xFFFF;         // L3 Cache Handle - Unknown
 
   // Set values and strings read in PEI via PCDs.
   cpuInfo.Formatted.ProcessorType            = PcdGet8 (PcdSmbiosProcessorType);
@@ -927,42 +934,42 @@ Return Value:
     cpuInfo.Formatted.ProcessorFamily = (UINT8)cpuInfo.Formatted.ProcessorFamily2;
   }
 
-  strings[0] =
+  strings[0].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorSocketDesignationStr),
       PcdGet32 (PcdSmbiosProcessorSocketDesignationSize),
       MAX_SMBIOS_STRING_LENGTH + 1
       );
 
-  strings[1] =
+  strings[1].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorManufacturerStr),
       PcdGet32 (PcdSmbiosProcessorManufacturerSize),
       MAX_SMBIOS_STRING_LENGTH + 1
       );
 
-  strings[2] =
+  strings[2].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorVersionStr),
       PcdGet32 (PcdSmbiosProcessorVersionSize),
       MAX_SMBIOS_STRING_LENGTH + 1
       );
 
-  strings[3] =
+  strings[3].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorSerialNumberStr),
       PcdGet32 (PcdSmbiosProcessorSerialNumberSize),
       MAX_SMBIOS_STRING_LENGTH + 1
       );
 
-  strings[4] =
+  strings[4].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorAssetTagStr),
       PcdGet32 (PcdSmbiosProcessorAssetTagSize),
       MAX_SMBIOS_STRING_LENGTH + 1
       );
 
-  strings[5] =
+  strings[5].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosProcessorPartNumberStr),
       PcdGet32 (PcdSmbiosProcessorPartNumberSize),
@@ -1037,17 +1044,6 @@ Return Value:
   static CHAR8  OEM_STRING_3[] = "To be filled by OEM";
 
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    OEM_STRING_1,
-    "",
-    OEM_STRING_3,
-    NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -1065,10 +1061,18 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { OEM_STRING_1, NULL, NULL        },
+    { "",           NULL, NONE_STRING },
+    { OEM_STRING_3, NULL, NULL        },
+    { NULL,         NULL, NULL        }
+  };
+
   //
   // Add the dynamic information to the structure.
   //
-  strings[1] =
+  strings[1].Value =
     LoadPcdSmbiosString (
       PcdGet64 (PcdSmbiosBiosLockStringStr),
       PcdGet32 (PcdSmbiosBiosLockStringSize),
@@ -1290,20 +1294,6 @@ Return Value:
 --*/
 {
   //
-  // Initialized array of pointers to the strings for this structure.
-  //
-  static CHAR8  *strings[] =
-  {
-    "",
-    NONE_STRING,
-    MANUFACTURER_STRING,
-    NONE_STRING,
-    NONE_STRING,
-    NONE_STRING,
-    NULL
-  };
-
-  //
   // Initialized structure with string space appended and extra terminator byte.
   //
   static struct {
@@ -1349,6 +1339,16 @@ Return Value:
     }
   };
 
+  static SMBIOS_STRING  strings[] =
+  {
+    { "",                  &memoryDevice.Formatted.DeviceLocator, NONE_STRING },
+    { NONE_STRING,         &memoryDevice.Formatted.BankLocator,   NULL        },
+    { MANUFACTURER_STRING, &memoryDevice.Formatted.Manufacturer,  NULL        },
+    { NONE_STRING,         &memoryDevice.Formatted.SerialNumber,  NULL        },
+    { NONE_STRING,         &memoryDevice.Formatted.AssetTag,      NULL        },
+    { NONE_STRING,         &memoryDevice.Formatted.PartNumber,    NULL        },
+    { NULL,                NULL,                                  NULL        }
+  };
   BOOLEAN  result = FALSE;
 
   UINT64  sizeInKB = (Size / 1024) + ((Size % 1024) > 0);
@@ -1388,7 +1388,7 @@ Return Value:
   //
   memoryDevice.Formatted.MemoryArrayHandle            = PhysicalMemoryArrayHandle;
   memoryDevice.Formatted.MemoryErrorInformationHandle = MemoryErrorHandle;
-  strings[0]                                          = LocationString;
+  strings[0].Value                                    = LocationString;
 
   //
   // Add the Memory Device Serial Number to the Bank 0 device.
@@ -1397,7 +1397,7 @@ Return Value:
     UINT32  stringLength = PcdGet32 (PcdSmbiosMemoryDeviceSerialNumberSize);
 
     if (stringLength) {
-      strings[3] =
+      strings[3].Value =
         LoadPcdSmbiosString (
           PcdGet64 (PcdSmbiosMemoryDeviceSerialNumberStr),
           stringLength,
@@ -1405,7 +1405,7 @@ Return Value:
           );
     }
   } else {
-    strings[3] = NONE_STRING;
+    strings[3].Value = NONE_STRING;
   }
 
   //
