@@ -102,7 +102,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (VOID **)&vmbus,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -192,7 +192,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   (VOID **)&context->Emcl,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -304,7 +304,7 @@ Return Value:
   //
   status = gBS->InstallMultipleProtocolInterfaces (
                   &context->Handle,
-                  &mMsGopOverrideProtocolGuid,
+                  &gMsGopOverrideProtocolGuid,
                   &context->GraphicsOutput,
                   NULL
                   );
@@ -328,7 +328,7 @@ Cleanup:
 
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclProtocolGuid,
+           &gMsvmEmclProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -378,7 +378,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &mMsGopOverrideProtocolGuid,
+                  &gMsGopOverrideProtocolGuid,
                   (VOID **)&GraphicsOutput,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -399,7 +399,7 @@ Return Value:
   //
   status = gBS->UninstallMultipleProtocolInterfaces (
                   context->Handle,
-                  &mMsGopOverrideProtocolGuid,
+                  &gMsGopOverrideProtocolGuid,
                   &context->GraphicsOutput,
                   NULL
                   );
@@ -408,7 +408,7 @@ Return Value:
   //
   gBS->CloseProtocol (
          ControllerHandle,
-         &gEfiEmclProtocolGuid,
+         &gMsvmEmclProtocolGuid,
          This->DriverBindingHandle,
          ControllerHandle
          );

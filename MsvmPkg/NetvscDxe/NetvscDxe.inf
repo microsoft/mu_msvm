@@ -85,8 +85,8 @@
   gEfiSimpleNetworkProtocolGuid                 # PRODUCES
   gEfiDevicePathProtocolGuid                    # PRODUCES
   gEfiAdapterInformationProtocolGuid            # PRODUCES MS_HYP_CHANGE
-  gEfiEmclProtocolGuid                          # CONSUMES MS_HYP_CHANGE
-  gEfiVmbusProtocolGuid                         # CONSUMES MS_HYP_CHANGE
+  gMsvmEmclProtocolGuid                          # CONSUMES MS_HYP_CHANGE
+  gMsvmVmbusProtocolGuid                         # CONSUMES MS_HYP_CHANGE
 
 [Pcd]
   gEfiNetworkPkgTokenSpaceGuid.PcdSnpCreateExitBootServicesEvent   ## CONSUMES

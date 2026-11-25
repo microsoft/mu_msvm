@@ -156,7 +156,7 @@ Returns:
   status = EfiTestManagedDevice (
              ControllerHandle,
              gSynthKeyDriverBinding.DriverBindingHandle,
-             &gEfiEmclProtocolGuid
+             &gMsvmEmclProtocolGuid
              );
 
   if (EFI_ERROR (status)) {

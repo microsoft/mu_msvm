@@ -59,9 +59,9 @@
   gBootEventChannelGuid                         ## CONSUMES
 
 [Protocols]
-  gEfiEventLogProtocolGuid                      ## PRODUCES
+  gMsvmEventLogProtocolGuid                      ## PRODUCES
   gEfiFirmwareVolume2ProtocolGuid               ## CONSUMES
-  gEfiHvIvmProtocolGuid                         ## SOMETIMES_CONSUMES
+  gMsvmHvIvmProtocolGuid                         ## SOMETIMES_CONSUMES
   gEfiRscHandlerProtocolGuid                    ## CONSUMES
   gEfiStatusCodeRuntimeProtocolGuid             ## PRODUCES
 

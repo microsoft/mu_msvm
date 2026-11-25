@@ -78,7 +78,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   Controller,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (VOID **)&vmbus,
                   This->DriverBindingHandle,
                   Controller,
@@ -91,7 +91,7 @@ Return Value:
 
   gBS->CloseProtocol (
          Controller,
-         &gEfiVmbusProtocolGuid,
+         &gMsvmVmbusProtocolGuid,
          This->DriverBindingHandle,
          Controller
          );
@@ -211,7 +211,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   (VOID **)&emclProtocol,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -293,7 +293,7 @@ Return Value:
   if (fileSystemInformation->EmclProtocol != NULL) {
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclProtocolGuid,
+           &gMsvmEmclProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -541,7 +541,7 @@ Return Value:
   status = EfiTestManagedDevice (
              ControllerHandle,
              gVmbfsDriverBindingProtocol.DriverBindingHandle,
-             &gEfiEmclProtocolGuid
+             &gMsvmEmclProtocolGuid
              );
   if (EFI_ERROR (status)) {
     return status;

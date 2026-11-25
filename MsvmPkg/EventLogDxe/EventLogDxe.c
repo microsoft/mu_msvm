@@ -51,7 +51,7 @@ Return Value:
   // error after that would leave dangling protocol entries.
   //
   if (IsHardwareIsolatedNoParavisor ()) {
-    status = gBS->LocateProtocol (&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
+    status = gBS->LocateProtocol (&gMsvmHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
 
     if (EFI_ERROR (status)) {
       goto Exit;

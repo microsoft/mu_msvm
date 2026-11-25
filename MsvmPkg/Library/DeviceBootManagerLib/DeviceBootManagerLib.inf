@@ -48,8 +48,8 @@ CONSTRUCTOR                    = DeviceBootManagerConstructor
   UefiLib
 
 [Protocols]
-  gEfiVmbusRootProtocolGuid
-  gEfiVmbusProtocolGuid
+  gMsvmVmbusRootProtocolGuid
+  gMsvmVmbusProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
   gEfiLoadFileProtocolGuid
 

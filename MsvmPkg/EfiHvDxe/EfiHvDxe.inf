@@ -58,8 +58,8 @@
     gEfiEventExitBootServicesGuid                                               ## CONSUMES
 
 [Protocols]
-    gEfiHvProtocolGuid                                                          ## PRODUCES
-    gEfiHvIvmProtocolGuid                                                       ## PRODUCES
+    gMsvmHvProtocolGuid                                                          ## PRODUCES
+    gMsvmHvIvmProtocolGuid                                                       ## PRODUCES
 
 [Protocols.X64]
     gAliasedMemoryMappingProtocolGuid                                           ## SOMETIMES_CONSUMES

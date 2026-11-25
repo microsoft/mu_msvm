@@ -54,6 +54,6 @@
 
 [Protocols]
   gEfiDevicePathProtocolGuid                    ## CONSUMES
-  gEfiEmclProtocolGuid                          ## CONSUMES
+  gMsvmEmclProtocolGuid                          ## CONSUMES
   gEfiSimpleFileSystemProtocolGuid              ## PRODUCES
-  gEfiVmbusProtocolGuid                         ## CONSUMES
+  gMsvmVmbusProtocolGuid                         ## CONSUMES

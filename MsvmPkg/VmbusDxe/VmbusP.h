@@ -45,7 +45,7 @@ extern UINT64               mCanonicalizationMask;
 // bus children to consume a protocol from the bus controller for child tracking
 // purposes, so we give the VMBus channels a dummy tag protocol to consume.
 //
-extern EFI_GUID  gEfiVmbusRootProtocolGuid;
+extern EFI_GUID  gMsvmVmbusRootProtocolGuid;
 
 //
 // Keep track of the GUIDs of channels that are created during the UEFI boot phase.

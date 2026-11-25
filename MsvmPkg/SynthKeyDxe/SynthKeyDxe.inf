@@ -48,8 +48,8 @@
 
 
 [Protocols]
-    gEfiVmbusProtocolGuid                   ## CONSUMES
-    gEfiEmclProtocolGuid                    ## CONSUMES
+    gMsvmVmbusProtocolGuid                   ## CONSUMES
+    gMsvmEmclProtocolGuid                    ## CONSUMES
     gEfiDevicePathProtocolGuid              ## CONSUMES
     gEfiSimpleTextInProtocolGuid            ## PRODUCES
     gEfiSimpleTextInputExProtocolGuid       ## PRODUCES

@@ -21,7 +21,7 @@ typedef struct _EMCL_LIB_COMPLETION_CONTEXT {
   UINT32       PacketSize;
 } EMCL_LIB_COMPLETION_CONTEXT;
 
-extern EFI_GUID  gEfiEmclTagProtocolGuid;
+extern EFI_GUID  gMsvmEmclTagProtocolGuid;
 extern EFI_GUID  gEfiVmbusChannelDevicePathGuid;
 
 EFI_STATUS
@@ -56,7 +56,7 @@ Return Value:
 
   status = gBS->LocateHandle (
                   ByProtocol,
-                  &gEfiEmclTagProtocolGuid,
+                  &gMsvmEmclTagProtocolGuid,
                   NULL,
                   &handleBufferSize,
                   &handle
@@ -118,7 +118,7 @@ Return Value:
 
   status = gBS->LocateHandle (
                   ByProtocol,
-                  &gEfiEmclTagProtocolGuid,
+                  &gMsvmEmclTagProtocolGuid,
                   NULL,
                   &handleBufferSize,
                   &handle

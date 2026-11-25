@@ -40,8 +40,8 @@
     UefiBootServicesTableLib
 
 [Protocols]
-    gEfiVmbusProtocolGuid           #CONSUMES
-    gEfiEmclV2ProtocolGuid          #CONSUMES
+    gMsvmVmbusProtocolGuid           #CONSUMES
+    gMsvmEmclV2ProtocolGuid          #CONSUMES
     gEfiPciIoProtocolGuid           #PRODUCES
     gAliasedMemoryMappingProtocolGuid #SOMETIMES_CONSUMES
 

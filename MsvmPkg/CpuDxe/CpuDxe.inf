@@ -87,7 +87,7 @@
 [Protocols]
   gEfiCpuArchProtocolGuid                       ## PRODUCES
   gEfiCpu2ProtocolGuid                          ## MS_HYP_CHANGE PRODUCES
-  gEfiHvProtocolGuid                            ## MS_HYP_CHANGE CONSUMES
+  gMsvmHvProtocolGuid                            ## MS_HYP_CHANGE CONSUMES
   gEfiMemoryAttributeProtocolGuid               ## PRODUCES
   gEfiMpServiceProtocolGuid                     ## PRODUCES
   # MS_HYP_CHANGE gEfiSmmBase2ProtocolGuid      ## SOMETIMES_CONSUMES

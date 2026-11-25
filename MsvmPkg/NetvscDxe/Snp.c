@@ -173,7 +173,7 @@ SimpleNetworkDriverSupported (
 
   status = gBS->OpenProtocol (
                   Controller,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (VOID **)&vmbus,
                   This->DriverBindingHandle,
                   Controller,
@@ -186,7 +186,7 @@ SimpleNetworkDriverSupported (
 
   gBS->CloseProtocol (
          Controller,
-         &gEfiVmbusProtocolGuid,
+         &gMsvmVmbusProtocolGuid,
          This->DriverBindingHandle,
          Controller
          );
@@ -247,7 +247,7 @@ Return Value:
   if (CloseEmclProtocol) {
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclProtocolGuid,
+           &gMsvmEmclProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -367,7 +367,7 @@ Return Value:
 
       gBS->CloseProtocol (
              ControllerHandle,
-             &gEfiEmclProtocolGuid,
+             &gMsvmEmclProtocolGuid,
              This->DriverBindingHandle,
              DeviceHandle
              );
@@ -463,7 +463,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   (VOID **)&emclProtocol,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -631,7 +631,7 @@ Return Value:
   //
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   (VOID **)&adapterContext->NicInfo.Emcl,
                   This->DriverBindingHandle,
                   snpDriver->AdapterContext->DeviceHandle,

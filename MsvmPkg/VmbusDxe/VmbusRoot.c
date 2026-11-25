@@ -373,7 +373,7 @@ VmbusRootDestroyChannel (
 
   status = gBS->UninstallMultipleProtocolInterfaces (
                   ChannelContext->Handle,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   &ChannelContext->VmbusProtocol,
                   &gEfiDevicePathProtocolGuid,
                   &ChannelContext->DevicePath,
@@ -399,7 +399,7 @@ VmbusRootDestroyChannel (
 
   gBS->CloseProtocol (
          mRootDevice,
-         &gEfiVmbusRootProtocolGuid,
+         &gMsvmVmbusRootProtocolGuid,
          mVmbusImageHandle,
          ChannelContext->Handle
          );
@@ -1596,7 +1596,7 @@ VmbusRootCreateChannel (
                   &channelContext->Handle,
                   &gEfiDevicePathProtocolGuid,
                   &channelContext->DevicePath,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   &channelContext->VmbusProtocol,
                   NULL
                   );
@@ -1618,7 +1618,7 @@ VmbusRootCreateChannel (
   //
   status = gBS->OpenProtocol (
                   mRootDevice,
-                  &gEfiVmbusRootProtocolGuid,
+                  &gMsvmVmbusRootProtocolGuid,
                   &protocol,
                   mVmbusImageHandle,
                   channelContext->Handle,
@@ -1800,7 +1800,7 @@ VmbusRootDriverSupported (
   //
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusRootProtocolGuid,
+                  &gMsvmVmbusRootProtocolGuid,
                   &protocol,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -1813,7 +1813,7 @@ VmbusRootDriverSupported (
 
   gBS->CloseProtocol (
          ControllerHandle,
-         &gEfiVmbusRootProtocolGuid,
+         &gMsvmVmbusRootProtocolGuid,
          This->DriverBindingHandle,
          ControllerHandle
          );
@@ -1881,14 +1881,14 @@ VmbusRootDriverStart (
 
   ASSERT (ControllerHandle == mRootDevice);
 
-  status = gBS->LocateProtocol (&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
+  status = gBS->LocateProtocol (&gMsvmHvProtocolGuid, NULL, (VOID **)&mHv);
 
   if (EFI_ERROR (status)) {
     DEBUG ((EFI_D_ERROR, "--- %a: failed to locate the EfiHv protocol - %r \n", __func__, status));
     return status;
   }
 
-  status = gBS->LocateProtocol (&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
+  status = gBS->LocateProtocol (&gMsvmHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
 
   if (EFI_ERROR (status)) {
     DEBUG ((EFI_D_ERROR, "--- %a: failed to locate the EfiHvIvm protocol - %r \n", __func__, status));
@@ -1944,7 +1944,7 @@ VmbusRootDriverStart (
   DEBUG ((DEBUG_VERBOSE, "--- %a after VmbusRootEnumerateChildren status %r\n", __func__, status));
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusRootProtocolGuid,
+                  &gMsvmVmbusRootProtocolGuid,
                   &protocol,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -2002,7 +2002,7 @@ VmbusRootDriverStop (
 
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiVmbusRootProtocolGuid,
+           &gMsvmVmbusRootProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -2182,7 +2182,7 @@ VmbusComponentNameGetControllerName (
   status = EfiTestManagedDevice (
              ControllerHandle,
              gVmbusDriverBindingProtocol.DriverBindingHandle,
-             &gEfiVmbusRootProtocolGuid
+             &gMsvmVmbusRootProtocolGuid
              );
   if (EFI_ERROR (status)) {
     DEBUG ((EFI_D_ERROR, "--- %a: failed to get the managing controller - %r \n", __func__, status));
@@ -2244,9 +2244,9 @@ VmbusDriverInitialize (
   // isolation behavior of the legacy protocol.
   //
   if (!IsIsolated ()) {
-    mVmbusLegacyProtocolGuid = &gEfiVmbusLegacyProtocolGuid;
+    mVmbusLegacyProtocolGuid = &gMsvmVmbusLegacyProtocolGuid;
   } else {
-    mVmbusLegacyProtocolGuid = &gEfiVmbusLegacyProtocolIvmGuid;
+    mVmbusLegacyProtocolGuid = &gMsvmVmbusLegacyIvmProtocolGuid;
   }
 
   //
@@ -2258,7 +2258,7 @@ VmbusDriverInitialize (
 
   status = gBS->InstallMultipleProtocolInterfaces (
                   &mRootDevice,
-                  &gEfiVmbusRootProtocolGuid,
+                  &gMsvmVmbusRootProtocolGuid,
                   NULL,
                   &gEfiDevicePathProtocolGuid,
                   &gVmbusRootDevicePath,

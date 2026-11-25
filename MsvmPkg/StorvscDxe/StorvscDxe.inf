@@ -43,8 +43,8 @@
     UefiLib
 
 [Protocols]
-    gEfiVmbusProtocolGuid               ## CONSUMES
-    gEfiEmclV2ProtocolGuid              ## CONSUMES
+    gMsvmVmbusProtocolGuid               ## CONSUMES
+    gMsvmEmclV2ProtocolGuid              ## CONSUMES
     gEfiExtScsiPassThruProtocolGuid     ## PRODUCES
 
 [Guids]

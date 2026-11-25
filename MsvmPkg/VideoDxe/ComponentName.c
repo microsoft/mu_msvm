@@ -120,7 +120,7 @@ Arguments:
   status = EfiTestManagedDevice (
              ControllerHandle,
              gVideoDxeDriverBinding.DriverBindingHandle,
-             &gEfiEmclProtocolGuid
+             &gMsvmEmclProtocolGuid
              );
 
   if (EFI_ERROR (status)) {

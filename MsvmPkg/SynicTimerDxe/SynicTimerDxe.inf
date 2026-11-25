@@ -31,10 +31,10 @@
 
 [Protocols]
     gEfiTimerArchProtocolGuid       ## PRODUCES
-    gEfiHvProtocolGuid              ## CONSUMES
+    gMsvmHvProtocolGuid              ## CONSUMES
 
 [Depex]
-    gEfiHvProtocolGuid
+    gMsvmHvProtocolGuid
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdSynicTimerSintIndex               ## CONSUMES

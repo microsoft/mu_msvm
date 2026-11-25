@@ -199,9 +199,9 @@ EfiHvInitialize (
   //
   status = gBS->InstallMultipleProtocolInterfaces (
                   &mHvHandle,
-                  &gEfiHvProtocolGuid,
+                  &gMsvmHvProtocolGuid,
                   &mHv,
-                  &gEfiHvIvmProtocolGuid,
+                  &gMsvmHvIvmProtocolGuid,
                   &mHvIvm,
                   NULL
                   );
