@@ -1560,9 +1560,9 @@ Return Value:
       case UefiConfigSmbiosProcessorPartNumber:
       {
         UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER  *processorPartNumber = (UEFI_CONFIG_SMBIOS_PROCESSOR_PART_NUMBER *)header;
-        PEI_FAIL_FAST_IF_FAILED (PcdSet64S (PcdSmbiosProcessorAssetTagStr, (UINT64)processorPartNumber->ProcessorPartNumber));
+        PEI_FAIL_FAST_IF_FAILED (PcdSet64S (PcdSmbiosProcessorPartNumberStr, (UINT64)processorPartNumber->ProcessorPartNumber));
         GetSmbiosStructureStringLength (header->Length, processorPartNumber->ProcessorPartNumber, &stringLength);
-        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdSmbiosProcessorAssetTagSize, stringLength));
+        PEI_FAIL_FAST_IF_FAILED (PcdSet32S (PcdSmbiosProcessorPartNumberSize, stringLength));
         break;
       }
       case UefiConfigFlags:
