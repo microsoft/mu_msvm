@@ -1,9 +1,9 @@
-/** @file
+/** @file VariableDxe.c
   EFI Variable Services
 
   Derivative of:
-    SecurityPkg\VariableAuthenticated\RuntimDxe\Variable.c
-    SecurityPkg\VariableAuthenticated\RuntimDxe\VariableDxe.c
+    MdeModulePkg\Universal\Variable\RuntimeDxe\Variable.c
+    MdeModulePkg\Universal\Variable\RuntimeDxe\VariableDxe.c
 
   Copyright (c) 2006 - 2012, Intel Corporation. All rights reserved.
   Copyright (c) Microsoft Corporation.

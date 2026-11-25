@@ -6,6 +6,8 @@
 #
 ##
 
+#Override : 00000002 | UefiCpuPkg/Library/MtrrLib/MtrrLib.inf | baf8a5c64eab2b4f6f4fa8511d7734f0 | 2026-11-25T21-08-13 | 17647f6d13d9365a96b10c909b6fe58014a2b096
+
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = MtrrLib
