@@ -352,13 +352,6 @@ Return Value:
   //
   if ((DeviceHandle != NULL) && (SnpDriver != NULL)) {
     // MS_HYP_CHANGE BEGIN - Close EMCL before uninstalling child protocols.
-    if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
-      //
-      // Close EXIT_BOOT_SERVICES Event
-      //
-      gBS->CloseEvent (SnpDriver->ExitBootServicesEvent);
-    }
-
     if (AdapterContext->NicInfo.Emcl != NULL) {
       PxeShutdown (SnpDriver);
       PxeStop (SnpDriver);
@@ -371,6 +364,8 @@ Return Value:
              );
     }
 
+    // MS_HYP_CHANGE END
+
     if (SnpInstalled && (SnpProtocol != NULL)) {
       gBS->UninstallMultipleProtocolInterfaces (
              DeviceHandle,
@@ -382,7 +377,12 @@ Return Value:
              );
     }
 
-    // MS_HYP_CHANGE END
+    if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
+      //
+      // Close EXIT_BOOT_SERVICES Event
+      //
+      gBS->CloseEvent (SnpDriver->ExitBootServicesEvent);
+    }
 
     if (DevicePathInstalled) {
       gBS->UninstallMultipleProtocolInterfaces (
