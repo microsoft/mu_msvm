@@ -266,7 +266,7 @@ Return Value:
   }
 
   //
-  // Device start for VMBUS devices is close to presense detect
+  // Device start for VMBUS devices is close to presence detect
   // (It will attempt to open the channel, etc.)
   //
   SynthKeyReportStatus (pDevice, EFI_PROGRESS_CODE, EFI_P_PC_PRESENCE_DETECT);

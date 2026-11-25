@@ -1171,7 +1171,7 @@ DefinitionBlock (
 
             // LSRM - Generic Method for Child _LSRs.
             // Arg0: Integer(DWORD) Byte Offset.
-            // Arg1: Integer(DWORD) Tranfer Byte Length.
+                // Arg1: Integer(DWORD) Transfer Byte Length.
             // Arg2: Integer Device Index.
             Method (LSRM, 3, Serialized, 0, {PkgObj})
             {

@@ -106,7 +106,7 @@ AziHsmBindingSupported (
   @retval EFI_SUCCESS              The device was started.
   @retval EFI_DEVICE_ERROR         The device could not be started due to a device error.Currently not implemented.
   @retval EFI_OUT_OF_RESOURCES     The request could not be completed due to a lack of resources.
-  @retval Others                   The driver failded to start the device.
+  @retval Others                   The driver failed to start the device.
 
 **/
 EFI_STATUS
@@ -153,7 +153,7 @@ AziHsmDriverBindingStop (
   @retval EFI_INVALID_PARAMETER Language is NULL.
   @retval EFI_INVALID_PARAMETER DriverName is NULL.
   @retval EFI_UNSUPPORTED       The driver specified by This does not support
-                                the language specified by Languag
+                                    the language specified by Language
 **/
 EFI_STATUS
 EFIAPI

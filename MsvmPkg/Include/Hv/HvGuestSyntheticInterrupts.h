@@ -206,7 +206,7 @@ typedef enum _HV_IOMMU_FAULT_TYPE {
  #if defined (MDE_CPU_AARCH64)
 
   //
-  // The IOMMU retrieved a transation for a DMA transaction, but the
+  // The IOMMU retrieved a translation for a DMA transaction, but the
   // transaction has insufficient privileges.
   //
   HvIommuPermissionFault,

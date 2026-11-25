@@ -709,7 +709,7 @@ VmbfsRead (
 Routine Description:
 
     Reads Size bytes starting at the offset indicated in the file information
-    structure : FileEntry->FileData.Infomation.FileOffset.
+    structure : FileEntry->FileData.Information.FileOffset.
 
 Arguments:
 

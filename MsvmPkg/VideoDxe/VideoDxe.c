@@ -145,7 +145,7 @@ Routine Description:
     Starts the device.
      -  Binds to the EMCL protocol.
      -  Creates the driver context.
-     -  Opens the vmbus channel and intializes with the VSP.
+    -  Opens the vmbus channel and initializes with the VSP.
      -  Exposes the GOP protocol interface.
 
 Arguments:

@@ -5,7 +5,7 @@
   is used to lookup a structure or other bit of information.  This implementation also
   allows lookup of an object or handle by a user defined object key.
 
-  Key lookup is accomplished by performing a memory comparision on between a caller
+  Key lookup is accomplished by performing a memory comparison between a caller
   supplied key and the first N bytes of the stored object. The maximum key size is fixed
   at the time of handle table initialization.
   The user of the table has the option to not enable keyed lookup by specifying an
@@ -354,7 +354,7 @@ Arguments:
 
     CallbackContext Caller defined context. This will be provided as is to the callback function.
 
-    Calback         Callback function to invoke.
+    Callback        Callback function to invoke.
 
 Return Value:
 

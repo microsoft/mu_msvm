@@ -129,7 +129,7 @@ Return Value:
   #define BELOW_4GB  (0xFFFFFFFFULL)
 
   //
-  // Allocate the descriptor from physcial memory below 4GB.
+  // Allocate the descriptor from physical memory below 4GB.
   //
   mNvramCommandDescriptorGpa = BELOW_4GB;
   status                     = gBS->AllocatePages (
@@ -144,7 +144,7 @@ Return Value:
   }
 
   //
-  // Allocate the name/data buffer from physcial memory below 4GB.
+  // Allocate the name/data buffer from physical memory below 4GB.
   //
   mNvramCommandDataBufferGpa = BELOW_4GB;
   status                     = gBS->AllocatePages (

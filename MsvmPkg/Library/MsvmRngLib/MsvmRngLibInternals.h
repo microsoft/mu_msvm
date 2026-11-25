@@ -25,7 +25,7 @@ BaseRngLibConstructor (
   );
 
 /**
-  Generate RNG fom the host using the BiosDevice.
+  Generate RNG from the host using the BiosDevice.
 
   @param SizeInBytes   Bytes to generate.
   @param[out] Rand     Buffer pointer to store the random value.

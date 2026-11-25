@@ -162,7 +162,7 @@ AziHsmFireHsmCmd (
   }
 
   //
-  // We have recieved the completion, It can be success or failure.
+  // We have received the completion; it can be success or failure.
   // Our posting and completing the command is good. If the device
   // has failed the command, let the called take action on it.
   // We will just copy the entire CQE to the caller and indicate

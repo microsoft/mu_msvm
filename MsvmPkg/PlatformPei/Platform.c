@@ -282,7 +282,7 @@ InitPeiMemoryArm (
 
 Routine Description:
 
-    Utility function to initalize PEI system memory.
+    Utility function to initialize PEI system memory.
 
 Arguments:
 
@@ -337,7 +337,7 @@ InitPeiMemoryIntel (
 
 Routine Description:
 
-    Utility function to initalize PEI system memory.  This also creates
+    Utility function to initialize PEI system memory.  This also creates
     special memory ranges below 1 MB.
 
 Arguments:
@@ -589,7 +589,7 @@ Return Value:
 
       if (pass == 0) {
         //
-        // Ignore any memory above 4 GB as a candiate for PEI memory.
+        // Ignore any memory above 4 GB as a candidate for PEI memory.
         //
         if (rangeBase >= 0x100000000) {
           rangeLength = 0;

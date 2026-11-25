@@ -8,8 +8,8 @@
 
 /*++
 
-Each WDAT instruction is exposed as two entires in the WDAT table (for compatibility with VMWP
-architecure). The first entry informs the VMWP the IoPort/MMIO hole to operate on. The second
+Each WDAT instruction is exposed as two entries in the WDAT table (for compatibility with VMWP
+architecture). The first entry informs the VMWP the IoPort/MMIO hole to operate on. The second
 instruction performs a read/write on the requested register (IoPort/MMIO hole). These
 read/writes are plumbed through the BiosWdatDataPort and operate on BiosWatchdog registers
 (BiosConfigWatchdogConfig & BiosConfigWatchdogCount).
@@ -114,7 +114,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -132,7 +132,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -149,7 +149,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -166,7 +166,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -183,7 +183,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -200,7 +200,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -217,7 +217,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -234,7 +234,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -251,7 +251,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -269,7 +269,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -286,7 +286,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -303,7 +303,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -320,7 +320,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -338,7 +338,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -355,7 +355,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -372,7 +372,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -389,7 +389,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -407,7 +407,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_IO,
                 32,
                 0,
@@ -456,7 +456,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -474,7 +474,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -491,7 +491,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -508,7 +508,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -525,7 +525,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -542,7 +542,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -559,7 +559,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -576,7 +576,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -593,7 +593,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -611,7 +611,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -628,7 +628,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -645,7 +645,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -662,7 +662,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -680,7 +680,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -697,7 +697,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -714,7 +714,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -731,7 +731,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,
@@ -749,7 +749,7 @@ VM_HARDWARE_WATCHDOG_ACTION_TABLE WDAT =
                 0,
                 0
             },
-            {                      // RegisterRegion (address populated during initalization)
+            {                      // RegisterRegion (address populated during initialization)
                 EFI_ACPI_6_2_SYSTEM_MEMORY,
                 32,
                 0,

@@ -35,7 +35,7 @@ EmclInstallProtocol (
 Routine Description:
 
     This method connects a device handle with the EMCL driver.
-    The device handle has to have VMBUS protocoll installed.
+    The device handle has to have VMBUS protocol installed.
 
 Arguments:
 

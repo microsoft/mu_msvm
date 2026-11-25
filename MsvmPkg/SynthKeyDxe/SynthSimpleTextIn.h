@@ -4,7 +4,7 @@
   for drivers to initialize the text input layer and for lower layers (like VMBUS or PS2)
   to queue processed key presses.
 
-  This code is dervied from:
+  This code is derived from:
     IntelFrameworkModulePkg\Bus\Isa\Ps2KeyboardDxe\Ps2Keyboard.h
 
   Copyright (c) Microsoft Corporation.

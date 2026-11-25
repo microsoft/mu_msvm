@@ -438,7 +438,7 @@ Return Value:
     }
 
     //
-    // Continue searching if not possibily pointing at FV header.
+    // Continue searching if not possibly pointing at FV header.
     //
     if (fv->Signature != EFI_FVH_SIGNATURE) {
       continue;

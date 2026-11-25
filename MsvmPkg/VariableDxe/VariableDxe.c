@@ -998,7 +998,7 @@ Returns:
     EFI_INVALID_PARAMETER - The DataSize was NULL.
     EFI_INVALID_PARAMETER - The DataSize is not too small and Data is NULL.
 
-    EFI_DEVICE_ERROR - The variable could not be retreived due to a hardware error.
+    EFI_DEVICE_ERROR - The variable could not be retrieved due to a hardware error.
 --*/
 {
   UINTN            dataSize;
@@ -1088,7 +1088,7 @@ Routine Description:
 
 Arguments:
 
-    VariableNameSize - The size fo the VariableName buffer.
+    VariableNameSize - The size of the VariableName buffer.
 
     VariableName - On input supplies the last VariableName that was
                    returned by this function.

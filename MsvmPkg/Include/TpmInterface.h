@@ -27,7 +27,7 @@ enum {
 };
 
 //
-// I/O port command defintiions
+// I/O port command definitions
 //
 enum {
   //

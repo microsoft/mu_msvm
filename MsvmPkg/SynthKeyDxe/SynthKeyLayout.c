@@ -768,7 +768,7 @@ Return Value:
 
   //
   // EFI is not concerned with break keys (i.e. there is no translation to be done.)
-  // There are also no relevent keys with a E1 prefix
+  // There are also no relevant keys with an E1 prefix
   //
   if ((RawKey->IsBreak) ||
       (RawKey->IsE1))

@@ -67,7 +67,7 @@ typedef struct _SYNTH_KEYBOARD_STATE {
     // TRUE -> EMCL Channel has been opened.
     unsigned    ChannelOpen         : 1;
 
-    // TRUE -> vdev protocol negotiation was successfull.
+    // TRUE -> vdev protocol negotiation was successful.
     unsigned    ChannelConnected    : 1;
 
     // TRUE -> both of the input protocols are installed.

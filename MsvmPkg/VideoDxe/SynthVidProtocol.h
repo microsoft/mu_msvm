@@ -63,7 +63,7 @@ typedef union {
 } SYNTHVID_VERSION, *PSYNTHVID_VERSION;
 
 //
-// The following messages are listed in order of occurance during startup
+// The following messages are listed in order of occurrence during startup
 // and handshaking.
 //
 

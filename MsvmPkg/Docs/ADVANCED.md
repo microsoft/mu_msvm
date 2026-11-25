@@ -64,6 +64,6 @@ For Hyper-V environments, attach the UEFI Shell VHDX as a standard disk to your 
 
 ## Next Steps
 
-- **Return to basics:** [README.md](README.md)
+- **Return to basics:** [DEVGUIDE.md](DEVGUIDE.md)
 - **Build fundamentals:** [BUILDING.md](BUILDING.md)
 - **Production deployment:** [FIRMWARE-DEPLOYMENT.md](FIRMWARE-DEPLOYMENT.md)

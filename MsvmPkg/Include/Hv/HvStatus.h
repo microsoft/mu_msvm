@@ -251,7 +251,7 @@ typedef UINT16 HV_STATUS, *PHV_STATUS;
 //
 // MessageText:
 //
-// The physical connection being used for debuggging has not recorded any receive activity since the last operation.
+// The physical connection being used for debugging has not recorded any receive activity since the last operation.
 //
 #define HV_STATUS_INACTIVE  ((HV_STATUS)0x001C)
 

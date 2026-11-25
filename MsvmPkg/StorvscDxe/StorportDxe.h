@@ -120,7 +120,7 @@ Description:
     AdditionalSenseLength field in the sense data payload as indicated
     by the device.
 
-    This function handles both Fixed and Desciptor format.
+    This function handles both Fixed and Descriptor format.
 
 Arguments:
 
@@ -200,7 +200,7 @@ Description:
         2. Additional Sense Code
         3. Additional Sense Code Qualifier
 
-    If Additional Sense Code or Additional Sense Code Qualifer is not available,
+    If Additional Sense Code or Additional Sense Code Qualifier is not available,
     it is set to 0 when the function returns.
 
 Arguments:
@@ -376,7 +376,7 @@ Arguments:
 
     SenseInfoBufferLength - Size of the buffer SenseInfoBuffer points to.
 
-    Options - Options used by this routine. It is a bit-field value. See defintions
+    Options - Options used by this routine. It is a bit-field value. See definitions
         of list of #define SCSI_SENSE_OPTIONS above in this file.
 
     SenseKey - On output, buffer contains the sense key.

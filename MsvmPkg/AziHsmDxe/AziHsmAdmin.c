@@ -45,7 +45,7 @@ AziHsmDisplayIdenData (
  * @param[in]   QueuePair           : The Admin queue pair representing the submission
  *                                      queue and completion queue.
  * @param[in]   AdminSqe            : The Admin command SQE
- * @param[in]   AdminCqe            : The Admin command CQE, where the reponse CQE is returned.
+ * @param[in]   AdminCqe            : The Admin command CQE, where the response CQE is returned.
  * @retval EFI_SUCCESS              : The operation completed successfully.
  * @retval EFI_INVALID_PARAMETER    : The QueuePair parameter is invalid.
  * @retval EFI_DEVICE_ERROR         :
@@ -68,7 +68,7 @@ AziHsmAdminIssueCmd (
   if (!QueuePair || !AdminSqe) {
     DEBUG ((
       DEBUG_ERROR,
-      "AziHsm: [%a][Line:%d]Invalid Paramters Passed -- return EFI_INVALID_PARAMETER\n",
+      "AziHsm: [%a][Line:%d]Invalid Parameters Passed -- return EFI_INVALID_PARAMETER\n",
       __func__,
       __LINE__
       ));
@@ -121,9 +121,9 @@ AziHsmAdminIssueCmd (
   }
 
   //
-  // We have recieved the completion, It can be success or failure.
+  // We have received the completion; it can be success or failure.
   // Our posting and completing the command is good. If the device
-  // has failed the command, let the called take action on it.
+  // has failed the command, let the caller take action on it.
   // We will just copy the entire CQE to the caller and indicate
   // Success from this function.
   //

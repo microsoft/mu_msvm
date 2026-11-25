@@ -89,7 +89,7 @@ PkpInitRingBufferControl (
   return EFI_SUCCESS;
 }
 
-/// This function reduces a specified value using a specfied modulus. This
+/// This function reduces a specified value using a specified modulus. This
 /// function replaces very expensive modulo division operations when it is known
 /// that the number of iterations is at most one and usually zero.
 ///
@@ -248,7 +248,7 @@ PkpFreeBytes (
   }
 }
 
-/// Checks to see if the ougoing ring buffer has enough space for the outgoing
+/// Checks to see if the outgoing ring buffer has enough space for the outgoing
 /// packet. If not, updates the PendingSendSize in the ring control.
 ///
 /// \param PkLibContext Pointer to the packet library context structure.

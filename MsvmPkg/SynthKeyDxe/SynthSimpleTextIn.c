@@ -141,7 +141,7 @@ Arguments:
 Return Value:
 
     EFI_SUCCESS if a key was available and returned.
-    EFI_NOT_READY if there was no keystroke data availiable.
+    EFI_NOT_READY if there was no keystroke data available.
 
 --*/
 {
@@ -232,7 +232,7 @@ SimpleTextInResetEx (
 Routine Description:
 
     SIMPLE_TEXT_INPUT_EX_PROTOCOL Reset implementation.
-    Reset's the input device and optionaly run diagnostics.
+    Resets the input device and optionally runs diagnostics.
 
 Arguments:
 
@@ -325,7 +325,7 @@ Routine Description:
 
     SIMPLE_TEXT_INPUT_EX_PROTOCOL ReadKeyStrokeEx Implementation.
     Reads the next keystroke from the input device. The WaitForKeyEx Event can
-    be used to test for existance of a keystroke via WaitForEvent() call.
+    be used to test for existence of a keystroke via WaitForEvent() call.
 
 Arguments:
 
@@ -337,7 +337,7 @@ Arguments:
 Return Value:
 
     EFI_SUCCESS           The keystroke information was returned.
-    EFI_NOT_READY         There was no keystroke data availiable.
+    EFI_NOT_READY         There was no keystroke data available.
     EFI_DEVICE_ERROR      The keystroke information was not returned due to
                           hardware errors.
     EFI_INVALID_PARAMETER KeyData is NULL.
@@ -549,7 +549,7 @@ Arguments:
 Return Value:
 
     EFI_SUCCESS               The notification function was registered successfully.
-    EFI_OUT_OF_RESOURCES      Unable to allocate resources for necesssary data structures.
+    EFI_OUT_OF_RESOURCES      Unable to allocate resources for necessary data structures.
     EFI_INVALID_PARAMETER     KeyData or NotifyHandle or KeyNotificationFunction is NULL.
 
 --*/
@@ -596,7 +596,7 @@ Return Value:
   }
 
   //
-  // No existing notfication matches the request,
+  // No existing notification matches the request,
   // allocate a notification and save the necessary information.
   //
   newNotify = (PSYNTH_KEYBOARD_EX_NOTIFY)AllocateZeroPool (sizeof (SYNTH_KEYBOARD_EX_NOTIFY));
@@ -709,7 +709,7 @@ Routine Description:
 
     Initializes the necessary state and registers the EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL
     and SIMPLE_TEXT_INPUT_PROTOCOL protocols. This will also initialize the communication
-    layer (i.e. VMBUS). SimpleTextInCleanup must be called upon successfull return.
+    layer (i.e. VMBUS). SimpleTextInCleanup must be called upon successful return.
 
 Arguments:
 

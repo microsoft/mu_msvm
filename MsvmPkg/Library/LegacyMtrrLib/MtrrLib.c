@@ -44,7 +44,7 @@ typedef struct {
   MTRR_MEMORY_CACHE_TYPE    Type    : 7;
 
   //
-  // Temprary use for calculating the best MTRR settings.
+  // Temporary use for calculating the best MTRR settings.
   //
   BOOLEAN                   Visited : 1;
   UINT8                     Weight;
@@ -2108,7 +2108,7 @@ MtrrLibSetMemoryRanges (
     }
 
     //
-    // Find continous ranges [Base0, Base1) which could be combined by MTRR.
+    // Find continuous ranges [Base0, Base1) which could be combined by MTRR.
     // Per SDM, the compatible types between[B0, B1) are:
     //   UC, *
     //   WB, WT
@@ -2296,7 +2296,7 @@ MtrrSetMemoryAttributesInMtrrSettings (
   MtrrLibInitializeMtrrMask (&MtrrValidBitsMask, &MtrrValidAddressMask);
 
   //
-  // TRUE indicating the accordingly Variable setting needs modificaiton in OriginalVariableMtrr.
+  // TRUE indicating the corresponding Variable setting needs modification in OriginalVariableMtrr.
   //
   SetMem (VariableSettingModified, ARRAY_SIZE (VariableSettingModified), FALSE);
 
