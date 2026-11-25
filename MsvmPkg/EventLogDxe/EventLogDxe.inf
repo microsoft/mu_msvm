@@ -59,11 +59,11 @@
   gBootEventChannelGuid                         ## CONSUMES
 
 [Protocols]
-  gMsvmEventLogProtocolGuid                      ## PRODUCES
   gEfiFirmwareVolume2ProtocolGuid               ## CONSUMES
-  gMsvmHvIvmProtocolGuid                         ## SOMETIMES_CONSUMES
   gEfiRscHandlerProtocolGuid                    ## CONSUMES
   gEfiStatusCodeRuntimeProtocolGuid             ## PRODUCES
+  gMsvmEventLogProtocolGuid                     ## PRODUCES
+  gMsvmHvIvmProtocolGuid                        ## SOMETIMES_CONSUMES
 
 [Pcd]
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile

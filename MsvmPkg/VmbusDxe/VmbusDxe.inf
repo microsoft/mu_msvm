@@ -47,13 +47,13 @@
     gMsvmVmbusClientGuid
 
 [Protocols]
-    gMsvmHvProtocolGuid                  ## CONSUMES
+    gEfiDevicePathProtocolGuid           ## PRODUCES
     gMsvmHvIvmProtocolGuid               ## CONSUMES
-    gEfiDevicePathProtocolGuid          ## PRODUCES
-    gMsvmVmbusRootProtocolGuid           ## PRODUCES
-    gMsvmVmbusProtocolGuid               ## PRODUCES
-    gMsvmVmbusLegacyProtocolGuid         ## PRODUCES
+    gMsvmHvProtocolGuid                  ## CONSUMES
     gMsvmVmbusLegacyIvmProtocolGuid      ## PRODUCES
+    gMsvmVmbusLegacyProtocolGuid         ## PRODUCES
+    gMsvmVmbusProtocolGuid               ## PRODUCES
+    gMsvmVmbusRootProtocolGuid           ## PRODUCES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                                  ## CONSUMES

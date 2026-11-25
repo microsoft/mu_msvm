@@ -85,11 +85,11 @@
   LoongArch64/CpuDxe.h
 
 [Protocols]
-  gEfiCpuArchProtocolGuid                       ## PRODUCES
   gEfiCpu2ProtocolGuid                          ## MS_HYP_CHANGE PRODUCES
-  gMsvmHvProtocolGuid                            ## MS_HYP_CHANGE CONSUMES
+  gEfiCpuArchProtocolGuid                       ## PRODUCES
   gEfiMemoryAttributeProtocolGuid               ## PRODUCES
   gEfiMpServiceProtocolGuid                     ## PRODUCES
+  gMsvmHvProtocolGuid                           ## MS_HYP_CHANGE CONSUMES
   # MS_HYP_CHANGE gEfiSmmBase2ProtocolGuid      ## SOMETIMES_CONSUMES
 
 [Guids]

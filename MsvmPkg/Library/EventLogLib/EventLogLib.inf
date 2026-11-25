@@ -34,7 +34,7 @@
   MsvmPkg/MsvmPkg.dec
 
 [Protocols]
-  gMsvmEventLogProtocolGuid      ## CONSUMES
+  gMsvmEventLogProtocolGuid     ## CONSUMES
 
 [Depex]
   gMsvmEventLogProtocolGuid

@@ -39,7 +39,7 @@
 
 [Protocols]
     gEdkiiIoMmuProtocolGuid         ## PRODUCES
-    gMsvmHvIvmProtocolGuid           ## CONSUMES
+    gMsvmHvIvmProtocolGuid          ## CONSUMES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdIsolationSharedGpaBoundary

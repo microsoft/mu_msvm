@@ -39,10 +39,10 @@
     UefiLib
 
 [Protocols]
-    gMsvmVmbusProtocolGuid           ## CONSUMES
-    gMsvmEmclProtocolGuid            ## CONSUMES
     gEfiDevicePathProtocolGuid      ## CONSUMES
     gMsGopOverrideProtocolGuid      ## PRODUCES
+    gMsvmEmclProtocolGuid           ## CONSUMES
+    gMsvmVmbusProtocolGuid          ## CONSUMES
 
 [Guids]
     gEfiVmbusChannelDevicePathGuid  ## CONSUMES
