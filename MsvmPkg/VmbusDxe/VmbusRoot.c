@@ -1254,7 +1254,7 @@ VmbusRootSetInterruptEntry (
 {
   EFI_TPL  tpl;
 
-  ASSERT (ChannelId < VMBUS_MAX_CHANNELS);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (ChannelId < VMBUS_MAX_CHANNELS);
 
   tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
   if (ChannelId > RootContext->MaxInterruptUsed) {
@@ -1285,7 +1285,7 @@ VmbusRootClearInterruptEntry (
   EFI_TPL  tpl;
   UINT32   index;
 
-  ASSERT (ChannelId < VMBUS_MAX_CHANNELS);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (ChannelId < VMBUS_MAX_CHANNELS);
 
   tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
@@ -1582,7 +1582,7 @@ VmbusRootCreateChannel (
   // channel offers with the same channel ID which would not be caught
   // unless an entry for this ID was made into the Channels list.
   //
-  ASSERT (OfferMessage->ChildRelId < VMBUS_MAX_CHANNELS);
+  FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (OfferMessage->ChildRelId < VMBUS_MAX_CHANNELS);
 
   tpl = gBS->RaiseTPL (TPL_HIGH_LEVEL);
   FAIL_FAST_UNEXPECTED_HOST_BEHAVIOR_IF_FALSE (RootContext->Channels[channelContext->ChannelId] == NULL);
