@@ -9,7 +9,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <PiPei.h>
 #include <Library/CcExitLib.h>
 #include "CpuExceptionCommon.h"
-// MU_CHANGE [START] - Add libraries for persistent exceptions
+// MU_CHANGE [START] - Add libraries for persistant exceptions
 #include <Library/ExceptionPersistenceLib.h>
 #include <Library/ResetSystemLib.h>
 // MU_CHANGE [END]

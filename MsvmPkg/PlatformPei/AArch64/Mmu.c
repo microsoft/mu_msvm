@@ -275,7 +275,7 @@ GetBlockEntryListFromAddress (
     } else {
       if (IndexLevel != PageLevel) {
         //
-        // Case when we have an Invalid Entry and we are at a page level above the one targeted.
+        // Case when we have an Invalid Entry and we are at a page level above of the one targetted.
         //
 
         // Create a new translation table

@@ -54,7 +54,7 @@
 #define LABEL_ABOUT_COMPLIANCE_LABLEL_TAG_END    0x2005
 
 //
-// Grid class Start delimiter (GUID opcode).
+// Grid class Start delimeter (GUID opcode).
 //
 #define SURFACE_GRID_START_OPCODE_GUID                                             \
   {                                                                                \
@@ -62,7 +62,7 @@
   }
 
 //
-// Grid class End delimiter (GUID opcode).
+// Grid class End delimeter (GUID opcode).
 //
 #define SURFACE_GRID_END_OPCODE_GUID                                               \
   {                                                                                \

@@ -2,7 +2,7 @@
 #  General BDS defines and produce general interfaces for platform BDS driver including:
 #  1) BDS boot policy interface;
 #  2) BDS boot device connect interface;
-#  3) BDS Misc interfaces for maintaining boot variable, output string, etc.
+#  3) BDS Misc interfaces for mainting boot variable, ouput string, etc.
 #
 #  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.
 #  Copyright (c) Microsoft Corporation.
