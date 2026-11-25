@@ -37,7 +37,7 @@ PopContext:
   move    $a0, $s0                // Restore a0 parameter through s0(EFI_SYSTEM_CONTEXT)
   bl      GetExceptionType        // Get current exception type, and stored in register a0
 
-  // Check whether the FPE is changed during interrupt handler, if true restore it.
+  // Check whether the FPE is changed during interrupt handler, if ture restore it.
   ld.d    $t1, $sp, (LOONGARCH_CSR_EUEN * RSIZE + GP_REG_CONTEXT_SIZE)
   csrrd   $t0, LOONGARCH_CSR_EUEN        // Current EUEN
   andi    $t0, $t0, CSR_EUEN_FPEN
@@ -54,7 +54,7 @@ CloseFP:
 
 PopRegs:
   //
-  // Pop CSR registers
+  // Pop CSR reigsters
   //
   addi.d  $sp, $sp, GP_REG_CONTEXT_SIZE
 
@@ -67,7 +67,7 @@ PopRegs:
   ld.d    $t0, $sp, LOONGARCH_CSR_ERA * RSIZE
   csrwr   $t0, LOONGARCH_CSR_ERA
 
-  addi.d  $sp, $sp, CSR_REG_CONTEXT_SIZE  // Force changing the stack pointer before popping the FP registers.
+  addi.d  $sp, $sp, CSR_REG_CONTEXT_SIZE  // Fource change the stack pointer befor pop the FP registers.
 
   beqz    $t1, PopGP                      // If the FPE not set, only pop the GP registers.
 

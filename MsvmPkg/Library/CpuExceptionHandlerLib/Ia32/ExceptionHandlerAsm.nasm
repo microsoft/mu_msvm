@@ -246,7 +246,7 @@ ErrorCodeAndVectorOnStack:
     push    ebx         ; temporarily save value of ebx on stack
     cpuid               ; use CPUID to determine if FXSAVE/FXRESTOR and DE
                         ; are supported
-    pop     ebx         ; restore value of ebx that was overwritten by CPUID
+    pop     ebx         ; retore value of ebx that was overwritten by CPUID
     mov     eax, cr4
     push    eax         ; push cr4 firstly
     test    edx, BIT24  ; Test for FXSAVE/FXRESTOR support

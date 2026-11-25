@@ -1,5 +1,5 @@
 /** @file
-  IA32 CPU Exception Handler functions.
+  IA32 CPU Exception Handler functons.
 
   Copyright (c) 2012 - 2022, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent

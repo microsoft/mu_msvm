@@ -420,7 +420,7 @@ InitializePcRtc (
 
  #if defined (MDE_CPU_AARCH64)
   //
-  // Allocate memory for Get/SetTime, under the 4GB boundary so 32 bit mmio
+  // Allocate memory for Get/SetTime, under the 4GB boundry so 32 bit mmio
   // writes are ok.
   //
   #define BELOW_4GB  (0xFFFFFFFFULL)

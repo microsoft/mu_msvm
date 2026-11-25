@@ -90,7 +90,7 @@ UpdateExceptionStartEntry (
 
   //
   // If PcdLoongArchExceptionVectorBaseAddress is not used during SEC and PEI stages, the exception
-  // base address is set to PcdLoongArchExceptionVectorBaseAddress.
+  // base addres is set to PcdLoongArchExceptionVectorBaseAddress.
   //
   if (CsrRead (LOONGARCH_CSR_EBASE) != ExceptionStartEntry) {
     SetExceptionBaseAddress (ExceptionStartEntry);
@@ -142,7 +142,7 @@ InitializeExceptions (
   }
 
   //
-  // Initialize the CpuExceptionHandlerLib so we take over the exception vector table from the DXE Core
+  // Intialize the CpuExceptionHandlerLib so we take over the exception vector table from the DXE Core
   //
   Status = InitializeCpuExceptionHandlers (VectorInfo);
   ASSERT_EFI_ERROR (Status);

@@ -1,5 +1,5 @@
 /** @file
-  CPU exception handler library implementation for SEC/PEIM modules.
+  CPU exception handler library implemenation for SEC/PEIM modules.
 
 Copyright (c) 2012 - 2022, Intel Corporation. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent

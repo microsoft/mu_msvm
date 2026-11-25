@@ -36,7 +36,7 @@ GetExceptionType (
 
   @param[in] SystemContext  Pointer to EFI_SYSTEM_CONTEXT.
 
-  @return    LoongArch64 interrupt type.
+  @return    LoongArch64 intrrupt type.
 
 **/
 EFI_EXCEPTION_TYPE

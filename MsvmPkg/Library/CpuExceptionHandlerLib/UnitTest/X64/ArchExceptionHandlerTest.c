@@ -90,7 +90,7 @@ AdjustCpuContextHandler (
 
   //
   // When fault exception happens, eip/rip points to the faulting instruction.
-  // For now, only GP and PF are tested in fault exception.
+  // For now, olny GP and PF are tested in fault exception.
   //
   if ((ExceptionType == EXCEPT_IA32_PAGE_FAULT) || (ExceptionType == EXCEPT_IA32_GP_FAULT)) {
     AdjustRipForFaultHandler (ExceptionType, SystemContext);
