@@ -129,11 +129,32 @@ jobs:
         with:
           github-token: ${{ github.token }}
 
+  openvmm-test-aarch64:
+    name: OpenVMM Test AARCH64
+    needs: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Windows, ARM64]
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test AARCH64 firmware
+        uses: ./.github/actions/openvmm-test
+        with:
+          arch: AARCH64
+          github-token: ${{ github.token }}
+
   # Create a github release for the firmware (only on the main branch)
   release:
     name: Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [source-checks, build, openvmm-test-x64]
+    needs: [source-checks, build, openvmm-test-x64, openvmm-test-aarch64]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

@@ -40,13 +40,33 @@ combinations:
 Each firmware archive contains `FV/MSVM.fd` and the `MAP/` and `PDB/` symbol
 directories. CI build logs use the same variant suffix with a `logs-` prefix and
 are not included in releases. Releases are published after successful main-branch
-push validation, including OpenVMM boot tests of all X64 variants.
+push validation, including OpenVMM boot tests of all X64 and AARCH64 variants.
 
 Unsuffixed assets now contain Patina instead of the C core. Consumers that need
 the C core must add `-legacy` to their asset selection for new releases. Consumers
 using the former `-patina` suffix should switch to the unsuffixed names. Consumers
 using boolean-suffixed names must also update their selection for new releases.
 Existing release assets retain their names. Archive contents are unchanged.
+
+## Runtime CI
+
+OpenVMM boots Ubuntu with every DEBUG/RELEASE C-core and Patina firmware variant.
+X64 runs on `ubuntu-24.04` with KVM and the Ubuntu 25.04 X64 image. AARCH64 uses
+the Ubuntu 24.04 ARM64 image and a self-hosted runner labeled `self-hosted`,
+`Windows`, and `ARM64`, with Windows Hypervisor Platform enabled and a running
+hypervisor. Provision this runner before enabling the workflow in a repository;
+without it, the ARM64 job will queue and releases will wait for that job.
+
+The Windows runner needs PowerShell 7, Git Bash (including GNU utilities),
+GitHub CLI, jq, curl, and tar on PATH. Its service account must be able to query
+Windows optional features. Prefer a dedicated ephemeral runner, restricted to
+this repository. Fork pull requests do not run on the self-hosted runner;
+same-repository pull requests, main pushes, and manual runs include ARM64 tests.
+
+Each architecture downloads matching OpenVMM binaries and test metadata from a
+successful upstream run. Missing artifacts or an empty test selection fail the
+job. Results are uploaded separately per architecture and firmware variant.
+These are boot smoke tests, not an Arm ACS or V-BSA compliance acceptance suite.
 
 ## Contributing
 
