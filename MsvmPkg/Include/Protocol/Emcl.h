@@ -155,7 +155,7 @@ struct _EFI_EMCL_PROTOCOL {
   EFI_EMCL_DESTROY_GPA_RANGE       DestroyGpaRange;
 };
 
-extern EFI_GUID  gEfiEmclProtocolGuid;
+extern EFI_GUID  gMsvmEmclProtocolGuid;
 
 //
 // VERSION 2 of EMCL interface
@@ -185,4 +185,4 @@ struct _EFI_EMCL_V2_PROTOCOL {
   EFI_EMCL_SEND_PACKET_EX    SendPacketEx;
 };
 
-extern EFI_GUID  gEfiEmclV2ProtocolGuid;
+extern EFI_GUID  gMsvmEmclV2ProtocolGuid;

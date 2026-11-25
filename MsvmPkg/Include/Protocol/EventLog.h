@@ -247,6 +247,6 @@ typedef struct _EFI_EVENTLOG_PROTOCOL {
 #define EFI_EVENTLOG_PROTOCOL_GUID \
 { 0xe916bdda, 0x6c85, 0x45a0, {0x91, 0x79, 0xb4, 0x18, 0xd0, 0x3d, 0x71, 0x45}}
 
-extern EFI_GUID  gEfiEventLogProtocolGuid;
+extern EFI_GUID  gMsvmEventLogProtocolGuid;
 
 #endif // __EFI_EVENTLOG_PROTOCOL_H__

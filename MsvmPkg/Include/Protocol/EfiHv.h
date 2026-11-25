@@ -158,7 +158,7 @@ struct _EFI_HV_PROTOCOL {
   EFI_HV_START_AP                  StartApplicationProcessor;
 };
 
-extern GUID  gEfiHvProtocolGuid;
+extern GUID  gMsvmHvProtocolGuid;
 
 typedef struct _EFI_HV_PROTECTION_OBJECT *EFI_HV_PROTECTION_HANDLE;
 
@@ -211,4 +211,4 @@ struct _EFI_HV_IVM_PROTOCOL {
   EFI_HV_UNPIN_ADDRESS_RANGE                    UnpinAddressRange;
 };
 
-extern GUID  gEfiHvIvmProtocolGuid;
+extern GUID  gMsvmHvIvmProtocolGuid;

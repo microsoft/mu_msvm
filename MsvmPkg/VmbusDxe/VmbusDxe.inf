@@ -47,13 +47,13 @@
     gMsvmVmbusClientGuid
 
 [Protocols]
-    gEfiHvProtocolGuid                  ## CONSUMES
-    gEfiHvIvmProtocolGuid               ## CONSUMES
-    gEfiDevicePathProtocolGuid          ## PRODUCES
-    gEfiVmbusRootProtocolGuid           ## PRODUCES
-    gEfiVmbusProtocolGuid               ## PRODUCES
-    gEfiVmbusLegacyProtocolGuid         ## PRODUCES
-    gEfiVmbusLegacyProtocolIvmGuid      ## PRODUCES
+    gEfiDevicePathProtocolGuid           ## PRODUCES
+    gMsvmHvIvmProtocolGuid               ## CONSUMES
+    gMsvmHvProtocolGuid                  ## CONSUMES
+    gMsvmVmbusLegacyIvmProtocolGuid      ## PRODUCES
+    gMsvmVmbusLegacyProtocolGuid         ## PRODUCES
+    gMsvmVmbusProtocolGuid               ## PRODUCES
+    gMsvmVmbusRootProtocolGuid           ## PRODUCES
 
 [Pcd]
     gMsvmPkgTokenSpaceGuid.PcdVmbusEnabled                                  ## CONSUMES
@@ -64,4 +64,4 @@
     gMsvmPkgTokenSpaceGuid.PcdEnableIMCWhenIsolated                         ## SOMETIMES_CONSUMES
 
 [Depex]
-    gEfiHvProtocolGuid
+    gMsvmHvProtocolGuid

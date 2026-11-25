@@ -48,11 +48,11 @@
 
 
 [Protocols]
-    gEfiVmbusProtocolGuid                   ## CONSUMES
-    gEfiEmclProtocolGuid                    ## CONSUMES
     gEfiDevicePathProtocolGuid              ## CONSUMES
     gEfiSimpleTextInProtocolGuid            ## PRODUCES
     gEfiSimpleTextInputExProtocolGuid       ## PRODUCES
+    gMsvmEmclProtocolGuid                   ## CONSUMES
+    gMsvmVmbusProtocolGuid                  ## CONSUMES
 
 [Guids]
     gEfiVmbusChannelDevicePathGuid          ## CONSUMES

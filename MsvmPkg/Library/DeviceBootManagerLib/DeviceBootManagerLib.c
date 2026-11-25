@@ -522,17 +522,17 @@ DeviceBootManagerBeforeConsole (
 
   Status = gBS->LocateHandleBuffer (
                   ByProtocol,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   NULL,
                   &HandleCount,
                   &HandleBuffer
                   );
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Handles with gEfiVmbusProtocolGuid not found. Status = %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "Handles with gMsvmVmbusProtocolGuid not found. Status = %r\n", Status));
     goto Exit;
   }
 
-  DEBUG ((DEBUG_INFO, "Count of handles with gEfiVmbusProtocolGuid = %d\n", HandleCount));
+  DEBUG ((DEBUG_INFO, "Count of handles with gMsvmVmbusProtocolGuid = %d\n", HandleCount));
 
   for (Index = 0; Index < HandleCount; Index++) {
     if (ConsoleIn == NULL) {
@@ -630,7 +630,7 @@ DeviceBootManagerAfterConsole (
   //
   gBS->LocateHandleBuffer (
          ByProtocol,
-         &gEfiVmbusRootProtocolGuid,
+         &gMsvmVmbusRootProtocolGuid,
          NULL,
          &HandleCount,
          &HandleBuffer

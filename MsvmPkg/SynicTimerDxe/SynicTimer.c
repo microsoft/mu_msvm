@@ -313,7 +313,7 @@ Return Value:
   //
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEfiTimerArchProtocolGuid);
 
-  status = gBS->LocateProtocol (&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
+  status = gBS->LocateProtocol (&gMsvmHvProtocolGuid, NULL, (VOID **)&mHv);
   if (EFI_ERROR (status)) {
     DEBUG ((EFI_D_ERROR, "--- %a: failed to locate the HV protocol - %r \n", __func__, status));
     goto Cleanup;

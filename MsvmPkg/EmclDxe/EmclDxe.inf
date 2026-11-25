@@ -36,11 +36,11 @@
     RingBufferWrapper.c
 
 [Protocols]
-    gEfiEmclProtocolGuid                #PRODUCES
-    gEfiEmclV2ProtocolGuid              #PRODUCES
-    gEfiEmclTagProtocolGuid             #PRODUCES
-    gEfiVmbusProtocolGuid               #CONSUMES
-    gEfiHvIvmProtocolGuid               #CONSUMES
+    gMsvmEmclProtocolGuid               #PRODUCES
+    gMsvmEmclTagProtocolGuid            #PRODUCES
+    gMsvmEmclV2ProtocolGuid             #PRODUCES
+    gMsvmHvIvmProtocolGuid              #CONSUMES
+    gMsvmVmbusProtocolGuid              #CONSUMES
 
 [Depex]
     TRUE

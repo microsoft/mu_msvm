@@ -141,7 +141,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (VOID **)&vmbus,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -212,7 +212,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclV2ProtocolGuid,
+                  &gMsvmEmclV2ProtocolGuid,
                   (VOID **)&instance->Emcl,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -271,7 +271,7 @@ Cleanup:
 
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclV2ProtocolGuid,
+           &gMsvmEmclV2ProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -346,7 +346,7 @@ Return Value:
 
   gBS->CloseProtocol (
          ControllerHandle,
-         &gEfiEmclV2ProtocolGuid,
+         &gMsvmEmclV2ProtocolGuid,
          This->DriverBindingHandle,
          ControllerHandle
          );

@@ -1129,7 +1129,7 @@ EndOfDxeCallback (
   ZeroMem (&VpContext, sizeof (HV_INITIAL_VP_CONTEXT));
   ApMailbox->HasVcpuEnteredMailboxWait = 0;
 
-  Status = gBS->LocateProtocol (&gEfiHvProtocolGuid, NULL, (VOID **)&mHv);
+  Status = gBS->LocateProtocol (&gMsvmHvProtocolGuid, NULL, (VOID **)&mHv);
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "%a: Failed to locate the protocol.\n", __func__));
     FAIL_FAST_INITIALIZATION_FAILURE (Status);

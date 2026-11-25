@@ -1325,7 +1325,7 @@ Return Value:
 
   status = gBS->InstallMultipleProtocolInterfaces (
                   &handle,
-                  &gEfiEventLogProtocolGuid,
+                  &gMsvmEventLogProtocolGuid,
                   &mEfiEventLogProtocol,
                   NULL
                   );

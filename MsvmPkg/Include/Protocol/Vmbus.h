@@ -183,5 +183,5 @@ typedef struct _VMBUS_DEVICE_PATH {
   GUID                  InterfaceInstance;
 } VMBUS_DEVICE_PATH;
 
-extern EFI_GUID  gEfiVmbusProtocolGuid;
-extern EFI_GUID  gEfiVmbusLegacyProtocolGuid;
+extern EFI_GUID  gMsvmVmbusProtocolGuid;
+extern EFI_GUID  gMsvmVmbusLegacyProtocolGuid;

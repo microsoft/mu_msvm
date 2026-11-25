@@ -142,7 +142,7 @@ Return Value:
   //
   status = gBS->OpenProtocol (
                   DeviceCandidate,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   NULL,
                   This->DriverBindingHandle,
                   DeviceCandidate,
@@ -253,7 +253,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   Controller,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   (VOID **)&pDevice->Emcl,
                   This->DriverBindingHandle,
                   Controller,
@@ -349,7 +349,7 @@ Return Value:
   if (pDevice->Emcl) {
     gBS->CloseProtocol (
            pDevice->Handle,
-           &gEfiEmclProtocolGuid,
+           &gMsvmEmclProtocolGuid,
            gSynthKeyDriverBinding.DriverBindingHandle,
            pDevice->Handle
            );

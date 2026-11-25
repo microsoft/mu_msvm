@@ -325,7 +325,7 @@ SimpleNetworkComponentNameGetControllerName (
   Status = EfiTestManagedDevice (
              ControllerHandle,
              gSimpleNetworkDriverBinding.DriverBindingHandle,
-             &gEfiEmclProtocolGuid
+             &gMsvmEmclProtocolGuid
              );
   if (EFI_ERROR (Status)) {
     return Status;

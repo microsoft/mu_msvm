@@ -126,7 +126,7 @@ IoMmuInitializeBounce (
     return EFI_SUCCESS;
   }
 
-  return gBS->LocateProtocol (&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
+  return gBS->LocateProtocol (&gMsvmHvIvmProtocolGuid, NULL, (VOID **)&mHvIvm);
 }
 
 /**

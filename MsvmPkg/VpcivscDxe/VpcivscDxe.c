@@ -1005,7 +1005,7 @@ VpciCreateChildDevice (
   // Open child device by child controller for tracking to support DisconnectController
   status = gBS->OpenProtocol (
                   Context->VpcivscContext->Handle,
-                  &gEfiEmclV2ProtocolGuid,
+                  &gMsvmEmclV2ProtocolGuid,
                   (VOID **)&dummyProtocol,
                   gImageHandle,
                   Context->Handle,
@@ -1157,7 +1157,7 @@ VpcivscDriverBindingSupported (
   // Get the vmbus protocol
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (void **)&vmbus,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -1232,7 +1232,7 @@ VpcivscDriverBindingStart (
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclV2ProtocolGuid,
+                  &gMsvmEmclV2ProtocolGuid,
                   (VOID **)&instance->Emcl,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -1530,7 +1530,7 @@ Cleanup:
 
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclV2ProtocolGuid,
+           &gMsvmEmclV2ProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -1576,7 +1576,7 @@ VpcivscDriverBindingStop (
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiEmclV2ProtocolGuid,
+                  &gMsvmEmclV2ProtocolGuid,
                   (VOID **)&Emcl,
                   This->DriverBindingHandle,
                   ControllerHandle,
@@ -1628,7 +1628,7 @@ VpcivscDriverBindingStop (
 
     gBS->CloseProtocol (
            ControllerHandle,
-           &gEfiEmclV2ProtocolGuid,
+           &gMsvmEmclV2ProtocolGuid,
            This->DriverBindingHandle,
            ControllerHandle
            );
@@ -1788,7 +1788,7 @@ Return Value:
   status = EfiTestManagedDevice (
              ControllerHandle,
              gVpcivscDriverBinding.DriverBindingHandle,
-             &gEfiEmclV2ProtocolGuid
+             &gMsvmEmclV2ProtocolGuid
              );
   if (EFI_ERROR (status)) {
     return status;

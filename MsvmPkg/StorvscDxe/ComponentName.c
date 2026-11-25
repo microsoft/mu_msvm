@@ -120,7 +120,7 @@ Arguments:
   status = EfiTestManagedDevice (
              ControllerHandle,
              gStorvscDriverBinding.DriverBindingHandle,
-             &gEfiEmclProtocolGuid
+             &gMsvmEmclProtocolGuid
              );
 
   if (EFI_ERROR (status)) {

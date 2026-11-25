@@ -34,7 +34,7 @@
   MsvmPkg/MsvmPkg.dec
 
 [Protocols]
-  gEfiEventLogProtocolGuid      ## CONSUMES
+  gMsvmEventLogProtocolGuid     ## CONSUMES
 
 [Depex]
-  gEfiEventLogProtocolGuid
+  gMsvmEventLogProtocolGuid

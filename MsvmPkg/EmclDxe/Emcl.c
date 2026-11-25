@@ -122,7 +122,7 @@ EFI_HV_IVM_PROTOCOL  *mHv;
 BOOLEAN              mUseBounceBuffer      = FALSE;
 UINT64               mCurrentTransactionId = 0;
 
-extern EFI_GUID  gEfiEmclTagProtocolGuid;
+extern EFI_GUID  gMsvmEmclTagProtocolGuid;
 
 EFI_STATUS
 EFIAPI
@@ -2240,7 +2240,7 @@ Return Value:
 
   status = gBS->OpenProtocol (
                   ControllerHandle,
-                  &gEfiVmbusProtocolGuid,
+                  &gMsvmVmbusProtocolGuid,
                   (VOID **)&vmbusProtocol,
                   mImageHandle,
                   ControllerHandle,
@@ -2256,7 +2256,7 @@ Return Value:
   }
 
   // EMCL communicates directly with Hypervisor for page visibility operations.
-  status = gBS->LocateProtocol (&gEfiHvIvmProtocolGuid, NULL, (VOID **)&mHv);
+  status = gBS->LocateProtocol (&gMsvmHvIvmProtocolGuid, NULL, (VOID **)&mHv);
   if (EFI_ERROR (status)) {
     DEBUG ((
       EFI_D_ERROR,
@@ -2298,9 +2298,9 @@ Return Value:
 
   status = gBS->InstallMultipleProtocolInterfaces (
                   &ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   &context->EmclProtocol,
-                  &gEfiEmclV2ProtocolGuid,
+                  &gMsvmEmclV2ProtocolGuid,
                   &context->EmclProtocol,
                   &gEfiCallerIdGuid,
                   context,
@@ -2316,7 +2316,7 @@ Cleanup:
     if (vmbusProtocol != NULL) {
       gBS->CloseProtocol (
              ControllerHandle,
-             &gEfiVmbusProtocolGuid,
+             &gMsvmVmbusProtocolGuid,
              mImageHandle,
              ControllerHandle
              );
@@ -2380,7 +2380,7 @@ Return Value:
 
   status = gBS->UninstallMultipleProtocolInterfaces (
                   ControllerHandle,
-                  &gEfiEmclProtocolGuid,
+                  &gMsvmEmclProtocolGuid,
                   &context->EmclProtocol,
                   &gEfiCallerIdGuid,
                   context,
@@ -2401,7 +2401,7 @@ Return Value:
   FreePool (context);
   gBS->CloseProtocol (
          ControllerHandle,
-         &gEfiVmbusProtocolGuid,
+         &gMsvmVmbusProtocolGuid,
          mImageHandle,
          ControllerHandle
          );
@@ -2596,7 +2596,7 @@ Return Value:
   //
   return gBS->InstallMultipleProtocolInterfaces (
                 &ImageHandle,
-                &gEfiEmclTagProtocolGuid,   // tag
+                &gMsvmEmclTagProtocolGuid,   // tag
                 NULL,
                 &gEfiDriverBindingProtocolGuid, // driver binding
                 &gEmclDriverBindingProtocol,
