@@ -7,8 +7,6 @@
 #
 ##
 
-#Override : 00000002 | UefiCpuPkg/Library/CpuExceptionHandlerLib/SecPeiCpuExceptionHandlerLib.inf | 840e7c672faefea616e495d35d894d44 | 2026-11-25T21-08-13 | 17647f6d13d9365a96b10c909b6fe58014a2b096
-
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = SecPeiCpuExceptionHandlerLib

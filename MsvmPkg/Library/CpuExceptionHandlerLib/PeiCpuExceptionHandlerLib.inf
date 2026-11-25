@@ -6,8 +6,6 @@
 #
 ##
 
-#Override : 00000002 | UefiCpuPkg/Library/CpuExceptionHandlerLib/PeiCpuExceptionHandlerLib.inf | 3d60dc94e7a7c9c0b47cf4f251314372 | 2026-11-25T21-08-13 | 17647f6d13d9365a96b10c909b6fe58014a2b096
-
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = PeiCpuExceptionHandlerLib
