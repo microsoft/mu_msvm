@@ -1,6 +1,6 @@
 /** @file
   Implementation of Watchdog Timer Architectural Protocol
-  If available, this driver will use the Hyper-V BIOS device watchdog equivelent to a
+  If available, this driver will use the Hyper-V BIOS device watchdog equivalent to a
   hardware watchdog timer.  If the hardware based timer is not available, a software timer
   will be used.
 
@@ -132,7 +132,7 @@ Return Value:
     mWatchdogTimerNotifyFunction (mWatchdogTimerPeriod);
   }
 
-  DEBUG ((EFI_D_ERROR, "Watchdog Timer reseting system\n"));
+  DEBUG ((EFI_D_ERROR, "Watchdog Timer resetting system\n"));
 
   gRT->ResetSystem (EfiResetCold, EFI_TIMEOUT, 0, NULL);
 }

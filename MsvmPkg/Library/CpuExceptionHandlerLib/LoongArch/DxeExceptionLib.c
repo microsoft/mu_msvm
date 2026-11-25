@@ -1,6 +1,6 @@
 /** @file DxeExceptionLib.c
 
-  LoongArch exception library implemenation for DXE modules.
+  LoongArch exception library implementation for DXE modules.
 
   Copyright (c) 2024, Loongson Technology Corporation Limited. All rights reserved.<BR>
 

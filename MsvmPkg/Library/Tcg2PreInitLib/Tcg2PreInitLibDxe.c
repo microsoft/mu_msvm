@@ -1,5 +1,5 @@
 /** @file
-  Tpm2 intialization hooks specific to the MSFT0101 virtual TPM device.
+  Tpm2 initialization hooks specific to the MSFT0101 virtual TPM device.
 
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -32,7 +32,7 @@ ReadTpmPort (
   the intended functionality.
 
   @retval EFI_SUCCESS     The entry point executed successfully.
-  @retval other           Some error occured when executing this entry point.
+  @retval other           Some error occurred when executing this entry point.
 
 **/
 EFI_STATUS

@@ -140,7 +140,7 @@ PxeRecvFilterRead (
   If the same bits are set in the Enable and Disable parameters, then the bits
   in the Disable parameter takes precedence.
   If the ResetMCastFilter parameter is TRUE, then the multicast address list
-  filter is disabled (irregardless of what other multicast bits are set in the
+  filter is disabled (regardless of what other multicast bits are set in the
   Enable and Disable parameters). The SNP->Mode->MCastFilterCount field is set
   to zero. The Snp->Mode->MCastFilter contents are undefined.
   After enabling or disabling receive filter settings, software should verify

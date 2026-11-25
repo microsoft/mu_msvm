@@ -10,7 +10,7 @@
   The data is cached outside of the backing store for easy updating (once in the ring
   it may wrap around)
 
-  The current pending event can be updated any number of times before commiting.
+  The current pending event can be updated any number of times before committing.
   Pending events can be incomplete if the event channel is reset or another pending event
   is logged before the current one is committed.
 
@@ -1067,7 +1067,7 @@ Return Value:
     ASSERT (EfiGetCurrentTpl () <= TPL_NOTIFY);
 
     //
-    // Attempt to resize the current buffer to accomodate the incoming data.
+    // Attempt to resize the current buffer to accommodate the incoming data.
     // Note that if this fails the currently pending data is not lost,
     // only the current log operation.
     //
@@ -1101,7 +1101,7 @@ Return Value:
   }
 
   //
-  // From this point on, errors should be avoided (and really should not occurr at all)
+  // From this point on, errors should be avoided (and really should not occur at all)
   // as space has already been reserved in the ring.
   //
 

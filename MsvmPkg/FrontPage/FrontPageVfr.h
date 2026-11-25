@@ -6,7 +6,7 @@
 **/
 
 //
-// THIS FILE MUST ONLY CONTAIN DEFINTIONS THAT CAN BE INTERPRETED
+// THIS FILE MUST ONLY CONTAIN DEFINITIONS THAT CAN BE INTERPRETED
 // BY BOTH THE VFR AND C COMPILERS.
 //
 
@@ -54,7 +54,7 @@
 #define LABEL_ABOUT_COMPLIANCE_LABLEL_TAG_END    0x2005
 
 //
-// Grid class Start delimeter (GUID opcode).
+// Grid class Start delimiter (GUID opcode).
 //
 #define SURFACE_GRID_START_OPCODE_GUID                                             \
   {                                                                                \
@@ -62,7 +62,7 @@
   }
 
 //
-// Grid class End delimeter (GUID opcode).
+// Grid class End delimiter (GUID opcode).
 //
 #define SURFACE_GRID_END_OPCODE_GUID                                               \
   {                                                                                \

@@ -604,7 +604,7 @@ PlatformConsoleInitialize (
 
 Routine Description:
 
-    Initializes the plaform console for use.
+    Initializes the platform console for use.
 
 Arguments:
 

@@ -81,7 +81,7 @@ typedef enum _HV_CALL_CODE {
   HvCallGetLogicalProcessorRunTime = 0x0004,
 
   //
-  // Deprectated index, now repurposed for updating processor features.
+  // Deprecated index, now repurposed for updating processor features.
   //
 
   HvCallUpdateHvProcessorFeatures = 0x0005,
@@ -411,7 +411,7 @@ typedef enum _HV_CALL_CODE {
   HvCallInjectSyntheticMachineCheck = 0x008C,
 
   //
-  // V4 Parition Management IDs
+  // V4 Partition Management IDs
   //
 
   HvCallScrubPartition = 0x008D,
@@ -888,7 +888,7 @@ typedef enum _HV_REGISTER_NAME {
   // Guest Debug
   HvRegisterDebugDeviceOptions = 0x00000260,
 
-  // Memory Zeroing Conrol Register
+  // Memory Zeroing Control Register
   HvRegisterMemoryZeroingControl = 0x00000270,
 
   // Pending Interruption Register

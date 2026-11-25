@@ -27,7 +27,7 @@ CONST UINT32  mErrorCodeExceptionFlag = 0x20227d00;
 
 /**
   Special handler for exception triggered by INTn instruction.
-  This hanlder only modifies a global variable for check.
+  This handler only modifies a global variable for checking.
 
   @param ExceptionType  Exception type.
   @param SystemContext  Pointer to EFI_SYSTEM_CONTEXT.

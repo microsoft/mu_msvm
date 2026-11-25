@@ -525,13 +525,13 @@ NeedSplitPage (
 /**
   This function splits one page entry to small page entries.
 
-  @param[in]  PageEntry         The page entry to be splitted.
+  @param[in]  PageEntry         The page entry to be split.
   @param[in]  PageAttribute     The page attribute of the page entry.
   @param[in]  SplitAttribute    How to split the page entry.
   @param[in]  AllocatePagesFunc If page split is needed, this function is used to allocate more pages.
 
-  @retval RETURN_SUCCESS            The page entry is splitted.
-  @retval RETURN_UNSUPPORTED        The page entry does not support to be splitted.
+  @retval RETURN_SUCCESS            The page entry is split.
+  @retval RETURN_UNSUPPORTED        The page entry does not support being split.
   @retval RETURN_OUT_OF_RESOURCES   No resource to split page entry.
 **/
 RETURN_STATUS
@@ -620,7 +620,7 @@ IsReadOnlyPageWriteProtected (
   IA32_CR0  Cr0;
 
   //
-  // To avoid unforseen consequences, don't touch paging settings in SMM mode
+  // To avoid unforeseen consequences, don't touch paging settings in SMM mode
   // in this driver.
   //
   if (!IsInSmm ()) {
@@ -642,7 +642,7 @@ DisableReadOnlyPageWriteProtect (
   IA32_CR0  Cr0;
 
   //
-  // To avoid unforseen consequences, don't touch paging settings in SMM mode
+  // To avoid unforeseen consequences, don't touch paging settings in SMM mode
   // in this driver.
   //
   if (!IsInSmm ()) {
@@ -663,7 +663,7 @@ EnableReadOnlyPageWriteProtect (
   IA32_CR0  Cr0;
 
   //
-  // To avoid unforseen consequences, don't touch paging settings in SMM mode
+  // To avoid unforeseen consequences, don't touch paging settings in SMM mode
   // in this driver.
   //
   if (!IsInSmm ()) {
@@ -686,7 +686,7 @@ EnableReadOnlyPageWriteProtect (
   @param[in]  PageAction        The page action.
   @param[in]  AllocatePagesFunc If page split is needed, this function is used to allocate more pages.
                                 NULL mean page split is unsupported.
-  @param[out] IsSplitted        TRUE means page table splitted. FALSE means page table not splitted.
+  @param[out] IsSplitted        TRUE means page table split. FALSE means page table not split.
   @param[out] IsModified        TRUE means page table modified. FALSE means page table not modified.
 
   @retval RETURN_SUCCESS           The attributes were modified for the memory region.

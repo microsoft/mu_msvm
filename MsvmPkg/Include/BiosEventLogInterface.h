@@ -30,7 +30,7 @@
 //
 typedef struct {
   //
-  // Optional GUID identifing the producer of the event
+  // Optional GUID identifying the producer of the event
   //
   EFI_GUID    Producer;
   //

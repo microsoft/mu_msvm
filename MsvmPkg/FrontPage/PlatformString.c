@@ -1,5 +1,5 @@
 /** @file
-  Functions to help with loading and string formating using HII resource strings.
+  Functions to help with loading and string formatting using HII resource strings.
 
   Copyright (c) Microsoft Corporation.
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -25,7 +25,7 @@ static const EFI_GUID  mPlatformConsoleStringPackGuid =
 };
 
 //
-// Buffer used for string formating.
+// Buffer used for string formatting.
 //
 CHAR16         *gStringBuffer    = NULL;
 static UINT32  gStringBufferSize = 0;
@@ -195,7 +195,7 @@ PlatformStringPrintSById (
 
 Routine Description:
 
-    Prints a formated string to the given buffer retrieving the format string
+    Prints a formatted string to the given buffer retrieving the format string
     using the provided string resource ID.
     If the provided buffer is too small this will write up to BufferSize - sizeof(CHAR16)
     characters before terminating the string.

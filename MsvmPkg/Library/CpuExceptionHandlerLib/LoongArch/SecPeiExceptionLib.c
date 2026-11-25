@@ -1,6 +1,6 @@
 /** @file SecPeiExceptionLib.c
 
-  LoongArch exception library implemenation for PEI and SEC modules.
+  LoongArch exception library implementation for PEI and SEC modules.
 
   Copyright (c) 2024, Loongson Technology Corporation Limited. All rights reserved.<BR>
 

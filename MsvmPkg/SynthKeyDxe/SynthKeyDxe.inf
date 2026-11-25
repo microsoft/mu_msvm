@@ -3,7 +3,7 @@
 # protocol.
 # The keyboard type implemented follows IBM compatible PS2 protocol, with Scan Codes Set 1.
 #
-# This dirver directly uses IsaIo protocol service to support KeyBoard work.
+# This driver directly uses IsaIo protocol service to support KeyBoard work.
 #
 # Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.<BR>
 # Copyright (c) Microsoft Corporation.

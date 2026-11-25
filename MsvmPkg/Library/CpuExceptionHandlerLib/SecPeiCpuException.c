@@ -1,5 +1,5 @@
 /** @file
-  CPU exception handler library implemenation for SEC/PEIM modules.
+  CPU exception handler library implementation for SEC/PEIM modules.
 
 Copyright (c) 2012 - 2022, Intel Corporation. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -9,7 +9,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <PiPei.h>
 #include <Library/CcExitLib.h>
 #include "CpuExceptionCommon.h"
-// MU_CHANGE [START] - Add libraries for persistant exceptions
+// MU_CHANGE [START] - Add libraries for persistent exceptions
 #include <Library/ExceptionPersistenceLib.h>
 #include <Library/ResetSystemLib.h>
 // MU_CHANGE [END]

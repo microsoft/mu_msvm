@@ -2195,7 +2195,7 @@ Return Value:
 {
   //
   // EMCL should not be autostarted by ConnectController. It should only be
-  // started directly on a VMBus channel handle, preferrably using EmclLib.
+  // started directly on a VMBus channel handle, preferably using EmclLib.
   //
 
   return EFI_UNSUPPORTED;

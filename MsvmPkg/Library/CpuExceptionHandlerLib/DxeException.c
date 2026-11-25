@@ -1,5 +1,5 @@
 /** @file
-  CPU exception handler library implemenation for DXE modules.
+  CPU exception handler library implementation for DXE modules.
 
   Copyright (c) 2013 - 2022, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent

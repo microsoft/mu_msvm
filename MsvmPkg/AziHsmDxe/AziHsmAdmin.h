@@ -96,7 +96,7 @@ typedef struct  {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_DELETE) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_DELETE Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_DELETE Size Incompatible."
   );
 
 //
@@ -115,7 +115,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_CREATE_CQ) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_CREATE Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_CREATE Size Incompatible."
   );
 
 typedef struct _AZIHSM_ADMIN_CMD_SQE_CREATE_SQ_ {
@@ -142,7 +142,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_IDENT) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_IDENT Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_IDENT Size Incompatible."
   );
 
 //
@@ -157,7 +157,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_ABORT) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_ABORT Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_ABORT Size Incompatible."
   );
 
 //
@@ -186,7 +186,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_SET_FEAT) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_SET_FEAT Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_SET_FEAT Size Incompatible."
   );
 
 //
@@ -200,7 +200,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_GET_FEAT) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_GET_FEAT Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_GET_FEAT Size Incompatible."
   );
 
 //
@@ -215,7 +215,7 @@ typedef struct {
 
 STATIC_ASSERT (
   sizeof (AZIHSM_ADMIN_CMD_SQE_SET_RES_CNT) == AZIHSM_ADMIN_CMD_SQE_SIZE,
-  "AZIHSM_ADMIN_CMD_SQE_SET_RES_CNT Size Incompatable."
+  "AZIHSM_ADMIN_CMD_SQE_SET_RES_CNT Size Incompatible."
   );
 
 typedef union {
@@ -252,7 +252,7 @@ typedef enum {
 #define AZIHSM_CTRL_IDENT_FR_LEN  32
 
 //
-// AZM HSM contrller Queue Entry Size
+// AZM HSM controller Queue Entry Size
 //
 typedef union _AZI_HSM_CTRL_IDEN_QES {
   UINT8    Val;
@@ -263,7 +263,7 @@ typedef union _AZI_HSM_CTRL_IDEN_QES {
 } AZI_HSM_CTRL_IDEN_QES;
 
 //
-// AZM HSM contrller Identy
+// AZM HSM controller Identity
 //
 typedef struct _AZI_HSM_CTRL_IDEN {
   UINT16                   Vid;

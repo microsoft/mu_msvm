@@ -812,7 +812,7 @@ VpciChannelPdoSendAssignedResourcesMessage (
       Context->MappedBars[i].Size
       );
 
-    // For confidental VMs, MMIO is translated to a shared section of memory
+    // For confidential VMs, MMIO is translated to a shared section of memory
     // above the shared GPA boundary. This requires a translation which must be
     // reflected in config space, but not sent to the VSP.
     if (IsIsolated ()) {

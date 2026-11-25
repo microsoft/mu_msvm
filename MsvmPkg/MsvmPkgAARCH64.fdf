@@ -4,7 +4,7 @@
 #  Copyright (C) Microsoft.
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
-# This file decribes the layout and contents of the firmware image that
+# This file describes the layout and contents of the firmware image that
 # would normally get burned to flash on a physical machine. In a Hyper-V VM
 # this image gets put into VM memory by the host VM worker process. The
 # net effect is the same. The code is present in the VM memory space.

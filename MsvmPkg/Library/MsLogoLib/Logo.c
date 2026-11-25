@@ -97,7 +97,7 @@ EnableQuietBoot (
   SizeOfX = GraphicsOutput->Mode->Info->HorizontalResolution;
   SizeOfY = GraphicsOutput->Mode->Info->VerticalResolution;
   ///
-  /// Print Mode information recived from Graphics Output Protocol
+  /// Print Mode information received from Graphics Output Protocol
   ///
   DEBUG ((DEBUG_INFO, "MaxMode:0x%x \n", GraphicsOutput->Mode->MaxMode));
   DEBUG ((DEBUG_INFO, "Mode:0x%x \n", GraphicsOutput->Mode->Mode));
@@ -404,7 +404,7 @@ MsLogoLibSetConsoleMode (
 
   if (IsVgaMode) {
     //
-    // The requried resolution and text mode is setup mode.
+    // The required resolution and text mode is setup mode.
     //
     NewHorizontalResolution = mVgaHorizontalResolution;
     NewVerticalResolution   = mVgaVerticalResolution;
@@ -463,7 +463,7 @@ MsLogoLibSetConsoleMode (
             goto CheckDraw;
           } else {
             //
-            // If current text mode is different from requried text mode.  Set new video mode
+            // If current text mode is different from required text mode.  Set new video mode
             //
             for (Index = 0; Index < MaxTextMode; Index++) {
               Status = SimpleTextOut->QueryMode (SimpleTextOut, Index, &CurrentColumn, &CurrentRow);
@@ -499,7 +499,7 @@ MsLogoLibSetConsoleMode (
 
             if (Index == MaxTextMode) {
               //
-              // If requried text mode is not supported, return error.
+              // If required text mode is not supported, return error.
               //
               FreePool (Info);
               Status = EFI_UNSUPPORTED;

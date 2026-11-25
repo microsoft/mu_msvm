@@ -290,7 +290,7 @@ BdInitInterruptDescriptorTable (
   }
 
   //
-  // Intialize IDT
+  // Initialize IDT
   //
   for (Index = 0; Index < CPU_INTERRUPT_NUM; Index++) {
     //

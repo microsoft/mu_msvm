@@ -555,7 +555,7 @@ Return Value:
     //  Duplicate shift state changes (which are ignored) will get here,
     //  but be dropped very quickly since SynthKeyLayoutTranslateKey doesn't handle
     //  shift or toggle keys.
-    //  See comment in SynthKeyLayoutUpdateKeyState in newShiftState procesing
+    //  See comment in SynthKeyLayoutUpdateKeyState in newShiftState processing
     //  for complete context.
     //
     // TODO: Pass a current layout pointer

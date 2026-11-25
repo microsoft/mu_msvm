@@ -1776,7 +1776,7 @@ Arguments:
 
     Memmap - A pointer to the memory map.
 
-    MemmapLength - The numer of entries (ranges) in the memory map.
+    MemmapLength - The number of entries (ranges) in the memory map.
 
     Callback - The function to call with each enumerated entry (range).
 

@@ -79,7 +79,7 @@ TriggerPFExceptionAfter:
 
 ;------------------------------------------------------------------------------
 ; ModifyRcxInGlobalBeforeException;
-; This function is writed by assebly code because it's only called in this file.
+; This function is written in assembly code because it's only called in this file.
 ; It's used to set Rcx in mExpectedContextInHandler for different exception.
 ;------------------------------------------------------------------------------
 global ASM_PFX(ModifyRcxInGlobalBeforeException)

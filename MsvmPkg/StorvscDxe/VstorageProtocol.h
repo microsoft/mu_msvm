@@ -155,7 +155,7 @@ STATIC_ASSERT_1 (VMSTORAGE_SIZEOF_VMSCSI_REQUEST_REVISION_1 == 0x24);
 STATIC_ASSERT_1 (VMSTORAGE_SIZEOF_VMSCSI_REQUEST_REVISION_2 == 0x34);
 
 //
-// This structure is sent during the intialization phase to get the different
+// This structure is sent during the initialization phase to get the different
 // properties of the channel.
 //
 // The reserved properties are not guaranteed to be zero before protocol version
@@ -312,7 +312,7 @@ typedef struct _VSTOR_PACKET {
     VSTOR_NOTIFICATION_PACKET       NotificationPacket;
 
     //
-    // Buffer. The buffer size will be the maximun of union members. It is
+    // Buffer. The buffer size will be the maximum of union members. It is
     // used to transfer data.
     //
     UINT8                           Buffer[0x34];

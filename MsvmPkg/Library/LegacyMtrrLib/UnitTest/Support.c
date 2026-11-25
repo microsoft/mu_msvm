@@ -611,10 +611,10 @@ CompareFuncUint64 (
 }
 
 /**
-  Determin the memory cache type for the Range.
+  Determine the memory cache type for the Range.
 
   @param DefaultType Default cache type.
-  @param Range       The memory range to determin the cache type.
+  @param Range       The memory range to determine the cache type.
   @param Ranges      The entire memory ranges.
   @param RangeCount  Count of the entire memory ranges.
 **/

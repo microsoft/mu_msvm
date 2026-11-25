@@ -350,12 +350,12 @@ DayValid (
   );
 
 /**
-  Check if it is a leapyear.
+  Check if it is a leap year.
 
   @param    Time   The time to be checked.
 
-  @retval   TRUE   It is a leapyear.
-  @retval   FALSE  It is NOT a leapyear.
+  @retval   TRUE   It is a leap year.
+  @retval   FALSE  It is NOT a leap year.
 **/
 BOOLEAN
 IsLeapYear (

@@ -190,7 +190,7 @@ RegisterCpuInterruptHandlerWorker (
   );
 
 /**
-  Internal worker function to update IDT entries accordling to vector attributes.
+  Internal worker function to update IDT entries according to vector attributes.
 
   @param[in] IdtTable              Pointer to IDT table.
   @param[in] TemplateMap           Pointer to a buffer where the address map is

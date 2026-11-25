@@ -143,7 +143,7 @@ AziHsmInitHsm (
   );
 
 /**
- * This function fires the HSM command and gets the reponse from
+ * This function fires the HSM command and gets the response from
  * the device. The function returns the status of operation.
  * The status returned by the firmware is also returned.
  *

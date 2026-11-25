@@ -139,7 +139,7 @@ RingBufferWrapIfNeeded (
 
 Routine Description:
 
-    Wraps the given offset to the begining of the ring if the required
+    Wraps the given offset to the beginning of the ring if the required
     number of bytes are not available between the current offset and the end of
     the ring.
 
@@ -149,7 +149,7 @@ Arguments:
 
     Offset          - Offset to wrap if needed.
 
-    BytesRequired   - Required contigous bytes between the offset and the end of the ring.
+    BytesRequired   - Required contiguous bytes between the offset and the end of the ring.
 
 Return Value:
 
@@ -423,7 +423,7 @@ Arguments:
 
     Header   - Returns the record header.
 
-    Data     - Associated data buffer. Contains the read data upon successfull return.
+    Data     - Associated data buffer. Contains the read data upon successful return.
 
     DataSize - Size of the data buffer. On return contains the actual data size.
 
@@ -489,10 +489,10 @@ Arguments:
 
     Header   - Returns a pointer to the record header.
 
-    Data     - Data buffer. If provided, contains the read data upon successfull return.
+    Data     - Data buffer. If provided, contains the read data upon successful return.
 
     DataSize - Size of the data buffer. If provided, contains the actual data size on return.
-               This is required if a Data bufffer is provided.
+               This is required if a Data buffer is provided.
 
 Return Value:
 
@@ -819,7 +819,7 @@ Arguments:
 
     Ring     - Ring buffer to read from.
 
-    Data     - Associated data buffer. Contains the read data upon successfull return.
+    Data     - Associated data buffer. Contains the read data upon successful return.
 
     DataSize - Size of the data buffer. On return contains the actual data size;
 

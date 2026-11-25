@@ -2240,7 +2240,7 @@ VmbusDriverInitialize (
   // Determine which GUID will be used for the legacy interface.  The legacy
   // protocol is available in all VMs, but the GUID used to expose it
   // differs between isolated and non-isolated VMs.  This is required to
-  // ensure that isolated VMs are correclty opting into the required
+  // ensure that isolated VMs are correctly opting into the required
   // isolation behavior of the legacy protocol.
   //
   if (!IsIsolated ()) {

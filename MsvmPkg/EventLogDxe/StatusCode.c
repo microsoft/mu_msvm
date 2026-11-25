@@ -381,7 +381,7 @@ Return Value:
       (Data->HeaderSize >= sizeof (EFI_STATUS_CODE_DATA)))
   {
     //
-    // Subract out the size of the embedded EFI_STATUS_CODE_DATA
+    // Subtract out the size of the embedded EFI_STATUS_CODE_DATA
     // to avoid over-allocating. The HeaderSize field will be set to the
     // needed size.
     //

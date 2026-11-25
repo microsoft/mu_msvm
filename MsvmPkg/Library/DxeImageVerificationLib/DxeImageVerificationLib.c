@@ -913,7 +913,7 @@ IsCertHashFoundInDbx (
     }
 
     //
-    // Calculate the hash value of current TBSCertificate for comparision.
+    // Calculate the hash value of current TBSCertificate for comparison.
     //
     if (mHash[HashAlg].GetContextSize == NULL) {
       goto Done;
@@ -1602,7 +1602,7 @@ IsAllowedByDb (
 
           //
           // There's no 'dbx' to check revocation time against (must-be pass),
-          // or, there's revocation time found in 'dbx' and checked againt 'dbt'
+          // or, there's revocation time found in 'dbx' and checked against 'dbt'
           // (maybe pass or fail, depending on timestamp compare result). Either
           // way the verification job has been completed at this point.
           //

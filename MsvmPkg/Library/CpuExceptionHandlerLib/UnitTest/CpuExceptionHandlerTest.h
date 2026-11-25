@@ -6,12 +6,12 @@
   Four test cases are created in this Unit Test module.
   a.Test if exception handler can be registered/unregistered for no error code exception
     In this test case, only no error code exception is triggered and tested by INTn instruction.
-    The special hanlder for these exception will modify a global variable for check.
+    The special handler for these exceptions will modify a global variable for checking.
 
   b.Test if exception handler can be registered/unregistered for GP and PF.
     In this test case, GP exception is triggered and tested by setting CR4_RESERVED_BIT to 1.
-    PF exception is triggered and tested by writting to not-present or RO addres.
-    The special hanlder for these exceptions will set a global vartiable for check and adjust Rip to return from fault exception.
+    PF exception is triggered and tested by writing to a not-present or RO address.
+    The special handler for these exceptions will set a global variable for checking and adjust Rip to return from the fault exception.
 
   c.Test if Cpu Context is consistent before and after exception.
     In this test case:
@@ -24,11 +24,11 @@
       2. Register values in mActualContextAfterException are the same with register values mActualContextAfterException.
 
   d.Test if stack overflow can be captured by CpuStackGuard in both Bsp and AP.
-    In this test case, stack overflow is triggered by a funtion which calls itself continuously. This test case triggers stack
+    In this test case, stack overflow is triggered by a function which calls itself continuously. This test case triggers stack
     overflow in both BSP and AP. All AP use same Idt with Bsp. The expectation is:
-      1. PF exception is triggered (leading to a DF if sepereated stack is not prepared for PF) when Rsp <= StackBase + SIZE_4KB
+      1. PF exception is triggered (leading to a DF if a separate stack is not prepared for PF) when Rsp <= StackBase + SIZE_4KB
          since [StackBase, StackBase + SIZE_4KB] is marked as not present in page table when PcdCpuStackGuard is TRUE.
-      2. Stack for PF/DF exception handler in both Bsp and AP is succussfully switched by InitializeSeparateExceptionStacks.
+      2. Stack for PF/DF exception handler in both Bsp and AP is successfully switched by InitializeSeparateExceptionStacks.
 
 **/
 

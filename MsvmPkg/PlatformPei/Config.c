@@ -540,7 +540,7 @@ DebugDumpHmat (
         break;
 
       default:
-        DEBUG ((DEBUG_VERBOSE, "Uknown HMAT entry type %x\n", (UINT32)hmatEntryHeader->Type));
+        DEBUG ((DEBUG_VERBOSE, "Unknown HMAT entry type %x\n", (UINT32)hmatEntryHeader->Type));
         break;
     }
 
@@ -1793,7 +1793,7 @@ GetConfiguration (
 
 Routine Description:
 
-    Gets the configuraton from the loader.
+    Gets the configuration from the loader.
 
 Arguments:
 

@@ -290,7 +290,7 @@ BootDeviceEventComplete (
 Routine Description:
 
     Completes a previously started device boot event.
-    The event is committed to teh log and cannot be updated any more.
+    The event is committed to the log and cannot be updated any more.
 
 Arguments:
 
@@ -362,7 +362,7 @@ BootDeviceEventFlushLog (
 
 Routine Description:
 
-    Flushes the boot event log to peristent storage
+    Flushes the boot event log to persistent storage
 
 Arguments:
 
@@ -402,7 +402,7 @@ Routine Description:
 
 Arguments:
 
-    Stats           Contains the boot event channel statistic upon successfull return.
+    Stats           Contains the boot event channel statistic upon successful return.
 
 Return Value:
 

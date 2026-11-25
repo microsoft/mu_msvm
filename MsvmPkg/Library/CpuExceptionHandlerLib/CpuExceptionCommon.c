@@ -193,7 +193,7 @@ ReadAndVerifyVectorInfo (
   while (VectorInfo->Attribute != EFI_VECTOR_HANDOFF_LAST_ENTRY) {
     if (VectorInfo->Attribute > EFI_VECTOR_HANDOFF_HOOK_AFTER) {
       //
-      // If vector attrubute is invalid
+      // If vector attribute is invalid
       //
       return EFI_INVALID_PARAMETER;
     }

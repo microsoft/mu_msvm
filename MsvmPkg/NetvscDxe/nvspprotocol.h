@@ -36,7 +36,7 @@
 #define NVSP_OPERATIONAL_STATUS_LOST_COMMUNICATION  ((UINT32)0x00000004)
 
 //
-// The maximun number of transfer pages (packets) the VSP will use on on a receive
+// The maximum number of transfer pages (packets) the VSP will use on a receive
 //
 #define NVSP_MAX_PACKETS_PER_RECEIVE  375
 
