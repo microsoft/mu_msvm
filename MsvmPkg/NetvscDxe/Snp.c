@@ -7,6 +7,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
+#include <IsolationTypes.h>
 #include "Snp.h"
 
 /**
@@ -170,6 +171,10 @@ SimpleNetworkDriverSupported (
 {
   EFI_STATUS          status;
   EFI_VMBUS_PROTOCOL  *vmbus;
+
+  if (IsIsolated ()) {
+    return EFI_UNSUPPORTED;
+  }
 
   status = gBS->OpenProtocol (
                   Controller,
@@ -343,17 +348,6 @@ Return Value:
   // Uninstall protocols on DeviceHandle
   //
   if ((DeviceHandle != NULL) && (SnpDriver != NULL)) {
-    if (SnpInstalled && (SnpProtocol != NULL)) {
-      gBS->UninstallMultipleProtocolInterfaces (
-             DeviceHandle,
-             &gEfiSimpleNetworkProtocolGuid,
-             SnpProtocol,
-             &gEfiAdapterInformationProtocolGuid,           // MS_HYP_CHANGE
-             &(SnpDriver->Aip),                             // MS_HYP_CHANGE
-             NULL
-             );
-    }
-
     if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
       //
       // Close EXIT_BOOT_SERVICES Event
@@ -370,6 +364,17 @@ Return Value:
              &gEfiEmclProtocolGuid,
              This->DriverBindingHandle,
              DeviceHandle
+             );
+    }
+
+    if (SnpInstalled && (SnpProtocol != NULL)) {
+      gBS->UninstallMultipleProtocolInterfaces (
+             DeviceHandle,
+             &gEfiSimpleNetworkProtocolGuid,
+             SnpProtocol,
+             &gEfiAdapterInformationProtocolGuid,           // MS_HYP_CHANGE
+             &(SnpDriver->Aip),                             // MS_HYP_CHANGE
+             NULL
              );
     }
 
