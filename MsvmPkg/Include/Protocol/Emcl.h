@@ -162,7 +162,7 @@ extern EFI_GUID  gEfiEmclProtocolGuid;
 //
 
 // Modify the handling of ExternalBuffers in scenarios
-  // where the data is transferred in a bounce buffer.
+// where the data is transferred in a bounce buffer.
 // Data In Only and Data Out Only are mutually exclusive
 #define EMCL_SEND_FLAG_DATA_IN_ONLY   0x1
 #define EMCL_SEND_FLAG_DATA_OUT_ONLY  0x2
