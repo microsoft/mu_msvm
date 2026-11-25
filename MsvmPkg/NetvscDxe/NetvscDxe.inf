@@ -65,6 +65,7 @@
   UefiBootServicesTableLib
   UefiDriverEntryPoint
   BaseMemoryLib
+  CrashLib                      ## MS_HYP_CHANGE
   DebugLib
   NetLib
   EmclLib                       ## MS_HYP_CHANGE
