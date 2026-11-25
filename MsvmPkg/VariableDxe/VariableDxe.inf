@@ -6,6 +6,8 @@
 #
 ##
 
+#Override : 00000002 | MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf | f3d29c877a5d45566902354dde9429dc | 2026-11-25T21-08-14 | 17647f6d13d9365a96b10c909b6fe58014a2b096
+
 [Defines]
     INF_VERSION                    = 0x00010005
     BASE_NAME                      = VariableRuntimeDxe

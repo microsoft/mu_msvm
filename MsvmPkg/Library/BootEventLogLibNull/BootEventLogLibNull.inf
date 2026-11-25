@@ -9,7 +9,7 @@
 [Defines]
   INF_VERSION                    = 0x00010016
   BASE_NAME                      = MsvmBootEventLogLib
-  FILE_GUID                      = 6170063C-1FB6-4960-8353-BB8413E952B2
+  FILE_GUID                      = BEF0E176-2E57-4E10-B15F-1CC4768D370E
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = BootEventLogLib|DXE_CORE DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER

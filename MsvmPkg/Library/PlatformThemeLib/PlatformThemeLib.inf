@@ -5,6 +5,8 @@
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 
+#Override : 00000002 | MsGraphicsPkg/Library/SamplePlatformThemeLib/PlatformThemeLib.inf | ab14532bd3a212c03f8a9a7be7a17708 | 2026-11-25T21-08-14 | 49625b8f6cabe7e4d9797d192c354b14af0490d1
+
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = PlatformThemeLib

@@ -9,7 +9,7 @@
 [Defines]
     INF_VERSION                    = 0x00010005
     BASE_NAME                      = IsolationLib
-    FILE_GUID                      = 50c4ccb1-a610-47d6-ae29-9e8368091795
+    FILE_GUID                      = 18F9A1EA-42D6-46A0-A6B3-8D9AF00E40FF
     MODULE_TYPE                    = BASE
     VERSION_STRING                 = 1.0
     LIBRARY_CLASS                  = IsolationLib
