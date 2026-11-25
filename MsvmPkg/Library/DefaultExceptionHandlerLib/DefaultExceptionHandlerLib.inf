@@ -28,12 +28,12 @@
 [Packages]
   MdePkg/MdePkg.dec
   ArmPkg/ArmPkg.dec
-  MsvmPkg/MsvmPkg.dec       // MS_HYP_CHANGE
+  MsvmPkg/MsvmPkg.dec       ## MS_HYP_CHANGE
 
 [LibraryClasses]
   UefiLib
   BaseLib
-  CrashLib                  // MS_HYP_CHANGE
+  CrashLib                  ## MS_HYP_CHANGE
   PrintLib
   DebugLib
   PeCoffGetEntryPointLib
