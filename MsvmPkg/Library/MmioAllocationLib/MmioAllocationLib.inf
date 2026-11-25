@@ -25,6 +25,7 @@
   EventLogLib
   MemoryAllocationLib
   PcdLib
+  SafeIntLib
   UefiBootServicesTableLib
 
 [Packages]

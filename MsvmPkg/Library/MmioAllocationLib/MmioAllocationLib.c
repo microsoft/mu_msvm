@@ -11,6 +11,7 @@
 #include <Library/DebugLib.h>
 #include <Library/MmioAllocationLib.h>
 #include <Library/PcdLib.h>
+#include <Library/SafeIntLib.h>
 
 // The base address to allocate from
 static UINT64  mMmioFreeBaseAddress = 0;
@@ -53,10 +54,17 @@ AllocateMmioPages (
   //
   // In the future, if reclaim is needed the allocator could become much smarter.
   // But for now, it doesn't need to be.
-  UINT64  spaceToAllocate       = NumberOfPages * EFI_PAGE_SIZE;
-  VOID    *baseAddress          = NULL;
-  UINT64  alignedAllocationBase = ALIGN_VALUE (mMmioFreeBaseAddress, spaceToAllocate);
-  UINT64  totalAllocationSize   = (alignedAllocationBase - mMmioFreeBaseAddress) + spaceToAllocate;
+  UINT64  spaceToAllocate;
+  VOID    *baseAddress = NULL;
+  UINT64  alignedAllocationBase;
+  UINT64  totalAllocationSize;
+
+  if (RETURN_ERROR (SafeUint64Mult (NumberOfPages, EFI_PAGE_SIZE, &spaceToAllocate))) {
+    return NULL;
+  }
+
+  alignedAllocationBase = ALIGN_VALUE (mMmioFreeBaseAddress, spaceToAllocate);
+  totalAllocationSize   = (alignedAllocationBase - mMmioFreeBaseAddress) + spaceToAllocate;
 
   if ((totalAllocationSize > mMmioFreeSpaceRemaining) ||
       (totalAllocationSize == 0))
