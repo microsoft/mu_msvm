@@ -7,7 +7,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
-#include <IsolationTypes.h>
+#include <IsolationTypes.h> // MS_HYP_CHANGE
 #include "Snp.h"
 
 /**
@@ -172,9 +172,12 @@ SimpleNetworkDriverSupported (
   EFI_STATUS          status;
   EFI_VMBUS_PROTOCOL  *vmbus;
 
+  // MS_HYP_CHANGE BEGIN - Reject isolated VMs before opening protocols.
   if (IsIsolated ()) {
     return EFI_UNSUPPORTED;
   }
+
+  // MS_HYP_CHANGE END
 
   status = gBS->OpenProtocol (
                   Controller,
@@ -348,6 +351,7 @@ Return Value:
   // Uninstall protocols on DeviceHandle
   //
   if ((DeviceHandle != NULL) && (SnpDriver != NULL)) {
+    // MS_HYP_CHANGE BEGIN - Close EMCL before uninstalling child protocols.
     if (PcdGetBool (PcdSnpCreateExitBootServicesEvent)) {
       //
       // Close EXIT_BOOT_SERVICES Event
@@ -377,6 +381,8 @@ Return Value:
              NULL
              );
     }
+
+    // MS_HYP_CHANGE END
 
     if (DevicePathInstalled) {
       gBS->UninstallMultipleProtocolInterfaces (
